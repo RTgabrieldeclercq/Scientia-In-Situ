@@ -1,0 +1,1 @@
+Firebase JS SDK — Apache License 2.0 — https://github.com/firebase/firebase-js-sdk
