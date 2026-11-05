@@ -33,6 +33,9 @@ const M = {
     const n = b.status === 'superseded' ? '' : (p && p.ordered ? `${p.noun} ${M.blockIndex(b)}` : '');
     return [n, b.label].filter(Boolean).join(' · ') || snippet(b.body.text, 40) || (p ? p.noun : 'Block');
   },
+  /** One end of a connection: a component, or a region of a note (13v) — {id, docId, block | region}. */
+  end(id) { const b = M.block(id); if (b) return { id, docId: b.docId, block: b }; const x = typeof REGION !== 'undefined' && REGION.find(id); return x ? { id, docId: x.d.id, region: x.r } : null; },
+  endName(id) { const e = M.end(id); return !e ? '—' : e.block ? M.blockName(e.block) : 'Region · ' + e.region.name; },
   /** Structures recorded on a component are immutable once the day turns (§3). */
   isLocked(b) { if (!b || b.kind !== 'component' || b.status === 'superseded') return false; if (localDate(b.created) === localDate(new Date())) return false; return (b.body.marks || []).some(m => m.type === 'struct' && (M.item(m.ref) || {}).originBlockId === b.id); },
 

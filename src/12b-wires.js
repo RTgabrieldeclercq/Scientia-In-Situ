@@ -32,11 +32,13 @@ const WIRES = {
   at(R, side, f) { return side === 'r' ? { x: R.x + R.w, y: R.y + R.h * f } : side === 'l' ? { x: R.x, y: R.y + R.h * f } : side === 'b' ? { x: R.x + R.w * f, y: R.y + R.h } : { x: R.x + R.w * f, y: R.y }; },
   hits(pts, R, inset = 3) { return pts.some(p => p.x > R.x + inset && p.x < R.x + R.w - inset && p.y > R.y + inset && p.y < R.y + R.h - inset); },
   /** Lay out all the wires of a pane: [{x, A, B, sa, sb, p1, p2, c1, c2, crossed[]}] */
+  /** The ends a wire is drawn between: its own, or (w.f / w.t) the folded region that hides one (13v). */
+  fa: w => w.f || w.x.from, fb: w => w.t || w.x.to,
   layout(list, R) {
     const ends = new Map(); // key box|cell|side → [{w, end, other}]
     const key = (id, cell, side) => id + '|' + (cell || '') + '|' + side;
-    list.forEach(w => { const [sa, sb] = WIRES.sides(w.A, w.B, R, [w.x.from, w.x.to]); w.sa = sa; w.sb = sb;
-      const ka = key(w.x.from, w.x.fromCell, sa), kb = key(w.x.to, w.x.toCell, sb);
+    list.forEach(w => { const [sa, sb] = WIRES.sides(w.A, w.B, R, [WIRES.fa(w), WIRES.fb(w)]); w.sa = sa; w.sb = sb;
+      const ka = key(WIRES.fa(w), w.f ? null : w.x.fromCell, sa), kb = key(WIRES.fb(w), w.t ? null : w.x.toCell, sb);
       (ends.get(ka) || ends.set(ka, []).get(ka)).push({ w, end: 'a', o: w.B, side: sa, R: w.A });
       (ends.get(kb) || ends.set(kb, []).get(kb)).push({ w, end: 'b', o: w.A, side: sb, R: w.B }); });
     for (const L of ends.values()) {
@@ -63,7 +65,7 @@ const WIRES = {
       if (vertical) { c1.x += bow; c2.x += bow; } else { c1.y -= bow; c2.y -= bow; }
     }
     const pts = []; for (let i = 1; i < 24; i++) pts.push(WIRES.bez(p1, c1, c2, p2, i / 24));
-    const crossed = R.filter(r => r.id !== w.x.from && r.id !== w.x.to && WIRES.hits(pts, r));
+    const crossed = R.filter(r => r.id !== WIRES.fa(w) && r.id !== WIRES.fb(w) && WIRES.hits(pts, r));
     if (crossed.length && !bowK) { const keep = { p1, p2, c1, c2, crossed, pts }; WIRES.curve(w, R, 1); if (w.crossed.length > crossed.length) Object.assign(w, keep); else w.lifted = true; return; }
     Object.assign(w, { p1, p2, c1, c2, crossed, pts }); if (bowK) w.lifted = true;
   },
@@ -72,7 +74,7 @@ const WIRES = {
   labelAt(w, placed, R, text) {
     const lw = 7 * text.length + 18, lh = 18;
     const free = p => !placed.some(q => Math.abs(q.x - p.x) < (q.w + lw) / 2 + 3 && Math.abs(q.y - p.y) < (lh + q.h) / 2 + 2);
-    const off = p => !R.some(r => r.id !== w.x.from && r.id !== w.x.to && p.x > r.x && p.x < r.x + r.w && p.y > r.y && p.y < r.y + r.h);
+    const off = p => !R.some(r => r.id !== WIRES.fa(w) && r.id !== WIRES.fb(w) && p.x > r.x && p.x < r.x + r.w && p.y > r.y && p.y < r.y + r.h);
     const T = [.5, .42, .58, .34, .66, .27, .73, .2, .8];
     let best = null; for (const t of T) { const p = WIRES.bez(w.p1, w.c1, w.c2, w.p2, t); if (free(p) && off(p)) { best = p; break; } if (!best && free(p)) best = Object.assign({ over: true }, p); }
     best = best || WIRES.bez(w.p1, w.c1, w.c2, w.p2, .5); placed.push({ x: best.x, y: best.y, w: lw, h: lh }); return best;
@@ -99,9 +101,12 @@ DocView.drawWires = function (temp) {
   if (!$(':scope > .obsbox.drag', w)) PROTO.layoutObs(this);
   if (!this.svgOver || !this.svgOver.isConnected || this.svgOver.parentNode !== w) { this.svgOver = SV('svg', { class: 'wires wires-over' }); w.append(this.svgOver); }
   else if (this.svgOver !== w.lastElementChild) w.append(this.svgOver);
-  const ws = DB.all('wires').filter(x => { const a = M.block(x.from), b = M.block(x.to); return a && b && a.docId === this.docId && b.docId === this.docId && $(`.box[data-id="${x.from}"]`, w) && $(`.box[data-id="${x.to}"]`, w); });
-  const R = $$(':scope > .box.cmp', w).map(el => ({ id: el.dataset.id, x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight }));
-  const list = []; for (const x of ws) { const A = this.partRect(x.from, x.fromCell), B = this.partRect(x.to, x.toCell); if (!A || !B) continue; list.push({ x, A, B }); }
+  // an end is a component or a region (13v); one inside a folded region is drawn to that region
+  const ws = DB.all('wires').filter(x => { const a = M.end(x.from), b = M.end(x.to); return a && b && a.docId === this.docId && b.docId === this.docId; });
+  const R = $$(':scope > .box.cmp', w).filter(el => el.offsetWidth).map(el => ({ id: el.dataset.id, x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight }));
+  const list = []; for (const x of ws) { const f = REGION.shown(this, x.from), t = REGION.shown(this, x.to); if (f === t) continue;
+    const A = this.partRect(f, f === x.from ? x.fromCell : null), B = this.partRect(t, t === x.to ? x.toCell : null); if (!A || !B) continue;
+    list.push({ x, A, B, f: f === x.from ? null : f, t: t === x.to ? null : t }); }
   WIRES.layout(list, R);
   const cols = [...new Set(list.map(l => wireColor(l.x.rel)))], mid = c => 'wa' + cols.indexOf(c);
   let defs = '<defs>' + cols.map(c => `<marker id="${mid(c)}-${this.uid}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${c}"/></marker>`).join('') +
@@ -112,8 +117,9 @@ DocView.drawWires = function (temp) {
     html += `<path class="w${dir ? '' : ' und'}${sel ? ' sel' : ''}${L.lifted ? ' arch' : ''}" data-w="${x.id}" style="stroke:${c}" d="${d}" ${dir ? `marker-end="url(#${mid(c)}-${this.uid})"` : ''}/><circle class="wend" data-w="${x.id}" cx="${L.p1.x.toFixed(1)}" cy="${L.p1.y.toFixed(1)}" r="2.6" fill="${c}"/>`;
     if (L.crossed.length) { const cid = `wc-${this.uid}-${k}`; clips.push(`<clipPath id="${cid}">${L.crossed.map(r => `<rect x="${r.x - 1}" y="${r.y - 1}" width="${r.w + 2}" height="${r.h + 2}" rx="7"/>`).join('')}</clipPath>`);
       over += `<g clip-path="url(#${cid})"><path class="w lift${dir ? '' : ' und'}${sel ? ' sel' : ''}" data-w="${x.id}" style="stroke:${c}" filter="url(#wlift-${this.uid})" d="${d}"/></g>`; }
-    const lab = (REL[x.rel] || { label: x.rel }).label, p = WIRES.labelAt(L, placed, R, String(lab || ''));
-    labels.push(h('button.wl.nopan' + (sel ? '.sel' : '') + (p.over ? '.lift' : ''), { 'data-w': x.id, style: { left: p.x + 'px', top: p.y + 'px', '--wc': c }, title: `${M.blockName(M.block(x.from))}${x.fromCell ? ' (one image)' : ''} ${(REL[x.rel] || REL.related).verb} ${M.blockName(M.block(x.to))}${x.toCell ? ' (one image)' : ''}`, on: { click: e => this.wireMenu(x, e) } }, lab)); });
+    const lab = (REL[x.rel] || { label: x.rel }).label; if (lab === '') return;   // V3.955 — a bare arrow (the story's `next`) has no label
+    const p = WIRES.labelAt(L, placed, R, String(lab || ''));
+    labels.push(h('button.wl.nopan' + (sel ? '.sel' : '') + (p.over ? '.lift' : ''), { 'data-w': x.id, style: { left: p.x + 'px', top: p.y + 'px', '--wc': c }, title: `${M.endName(x.from)}${x.fromCell ? ' (one image)' : ''} ${(REL[x.rel] || REL.related).verb} ${M.endName(x.to)}${x.toCell ? ' (one image)' : ''}`, on: { click: e => this.wireMenu(x, e) } }, lab)); });
   over = over.replace('</defs>', clips.join('') + '</defs>');
   html += PROTO.obsWires(this);
   if (temp) html += `<path class="w tmp" d="${temp}"/>`;

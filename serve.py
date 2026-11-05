@@ -22,6 +22,11 @@ if os.environ.get('SIS_CONFIG'): CONFIG = os.environ['SIS_CONFIG']
 elif os.name == 'nt': CONFIG = os.path.join(os.environ.get('APPDATA') or os.path.expanduser('~'), 'ScientiaInSitu', 'config.json')
 else: CONFIG = os.path.join(os.path.expanduser('~'), '.config', 'scientia-in-situ', 'config.json')
 os.chdir(ROOT)
+PEN = [0.0]               # the pen's button: when it was last pressed (pen-button/ScientiaPen.exe → /api/pen-button?press=1)
+PEN_CV = threading.Condition()   # a press wakes the app's waiting request at once (no polling)
+# The whiteboard (board.html, the McGhee Lab's board engine) records audio with the lab's recorder-core.js and transcribes
+# with its speech-to-text.js, which it loads from these addresses: they are bundled in vendor/rm/ and served from there.
+BOARD_SCRIPTS = {'/rm/js/recorder-core.js', '/rm/js/speech-to-text.js', '/rm/js/stt-device-worker.js'}
 os.makedirs(APP_IMAGES, exist_ok=True)
 LOCK = threading.Lock()
 
@@ -167,6 +172,13 @@ def browse():
         return {'error': str(e)}
 
 class H(http.server.SimpleHTTPRequestHandler):
+    def copyfile(self, source, outputfile):
+        # every byte, even when the browser reads slowly: the unbuffered socket file can write less than it is given,
+        # and the stock copy drops the rest — a ~5 MB app page then never finishes loading
+        while True:
+            buf = source.read(1 << 16)
+            if not buf: break
+            self.connection.sendall(buf)
     def end_headers(self):
         self.send_header('Cache-Control', 'no-store, must-revalidate')
         super().end_headers()
@@ -196,7 +208,7 @@ class H(http.server.SimpleHTTPRequestHandler):
         else: self.send_response(401); self.send_header('Content-Length', '0'); self.end_headers()
         return False
     def _text(self, body, ctype):
-        b = body.encode('utf-8'); self.send_response(200); self.send_header('Content-Type', ctype); self.send_header('Content-Length', str(len(b))); self.end_headers(); self.wfile.write(b)
+        b = body.encode('utf-8'); self.send_response(200); self.send_header('Content-Type', ctype); self.send_header('Content-Length', str(len(b))); self.end_headers(); self.connection.sendall(b)
     def translate_path(self, path):
         u = unquote(urlparse(path).path)
         if u.startswith('/recordings/'):
@@ -210,7 +222,7 @@ class H(http.server.SimpleHTTPRequestHandler):
         return super().translate_path(path)
     def _json(self, code, obj):
         body = json.dumps(obj).encode()
-        self.send_response(code); self.send_header('Content-Type', 'application/json'); self.send_header('Content-Length', str(len(body))); self.end_headers(); self.wfile.write(body)
+        self.send_response(code); self.send_header('Content-Type', 'application/json'); self.send_header('Content-Length', str(len(body))); self.end_headers(); self.connection.sendall(body)   # whole, even when large
     def _body(self, limit=2 * 1024 ** 3):
         n = int(self.headers.get('Content-Length') or 0)
         if n <= 0 or n > limit: return None
@@ -226,8 +238,42 @@ class H(http.server.SimpleHTTPRequestHandler):
         try: return raw, json.loads(raw)
         except Exception: return raw, None
 
+    def board_script(self, p):
+        """The whiteboard's recorder and speech-to-text (vendor/rm/, bundled): nothing else under /rm/ is served."""
+        f = os.path.join(ROOT, 'vendor', 'rm', os.path.basename(p))
+        if p not in BOARD_SCRIPTS or not os.path.isfile(f): return self._json(404, {'ok': False})
+        return self._text(open(f, encoding='utf-8').read(), 'text/javascript; charset=utf-8')
+    def pen_button(self, q):
+        """V3.949: the pen's tail button (pen-button/ScientiaPen.exe, assigned in Windows Settings → Pen) says ?press=1; the app
+        waits here (?wait=1&since=<last>, up to 25 s) for the next press."""
+        g = lambda k: (q.get(k) or [''])[0]
+        if g('press'):
+            with PEN_CV: PEN[0] = time.time(); PEN_CV.notify_all()
+            return self._json(200, {'ok': True, 'pressed': PEN[0]})
+        if g('wait'):
+            try: since = float(g('since') or 0)
+            except ValueError: since = 0
+            deadline = time.time() + 25
+            with PEN_CV:
+                while PEN[0] <= since:
+                    left = deadline - time.time()
+                    if left <= 0: break
+                    PEN_CV.wait(left)   # V3.957: woken by the press itself, not a tenth of a second later
+            return self._json(200, {'ok': True, 'pressed': PEN[0] if PEN[0] > since else 0})
+        return self._json(200, {'ok': True, 'pressed': PEN[0]})
+    def macros(self, q):
+        """V3.947: macro files (.sis-macro.json) in the notebook folder's macros/ — the list, or one by name (Settings → Commands imports them)."""
+        d = nb('macros'); name = (q.get('name') or [''])[0]
+        if not d or not os.path.isdir(d): return self._json(200, {'ok': True, 'files': [], 'folder': d})
+        files = sorted(f for f in os.listdir(d) if f.lower().endswith('.json') and not f.startswith('.'))
+        if not name: return self._json(200, {'ok': True, 'files': files, 'folder': d})
+        if name not in files: return self._json(404, {'ok': False, 'error': 'no such macro file'})
+        return self._text(open(os.path.join(d, name), encoding='utf-8').read(), 'application/json; charset=utf-8')
     def do_GET(self):
         u = urlparse(self.path); p = u.path; q = parse_qs(u.query)
+        if p.startswith('/rm/js/') and self.is_local(): return self.board_script(p)
+        if p == '/api/macros' and self.is_local(): return self.macros(q)
+        if p == '/api/pen-button' and self.is_local(): return self.pen_button(q)
         if not self.gate(p, False): return
         if p == '/': self.path = '/scientia.html'; return super().do_GET()
         if p == '/sw.js': return self._text(SW, 'text/javascript')
@@ -243,7 +289,7 @@ class H(http.server.SimpleHTTPRequestHandler):
                 data = SYNC.export('state')
                 if (q.get('journal') or [''])[0] == '0': data['stores'].pop('journal', None); data['counts'].pop('journal', None)
                 body = json.dumps(data).encode('utf-8')
-            self.send_response(200); self.send_header('Content-Type', 'application/json'); self.send_header('Content-Length', str(len(body))); self.end_headers(); self.wfile.write(body); return
+            self.send_response(200); self.send_header('Content-Type', 'application/json'); self.send_header('Content-Length', str(len(body))); self.end_headers(); self.connection.sendall(body); return
         if p == '/api/sync/pull':
             if not SYNC.ensure(): return self._json(409, {'ok': False, 'error': 'no notebook folder'})
             g = lambda k, d='': (q.get(k) or [d])[0]
@@ -254,7 +300,7 @@ class H(http.server.SimpleHTTPRequestHandler):
             body = json.dumps(dict(st, ok=True)).encode()
             self.send_response(200); self.send_header('Content-Type', 'application/json'); self.send_header('Content-Length', str(len(body)))
             if tok: self.send_header('Set-Cookie', f'sis_tok={tok}; Path=/; Max-Age=315360000; HttpOnly; SameSite=Lax')
-            self.end_headers(); self.wfile.write(body); return
+            self.end_headers(); self.connection.sendall(body); return
         if p == '/api/pair/pending': return self._json(200, {'ok': True, 'pending': SYNC.pending()})
         if p == '/api/devices': return self._json(200, {'ok': True, 'devices': SYNC.devices()})
         if p == '/api/net': return self._json(200, net())
@@ -269,7 +315,7 @@ class H(http.server.SimpleHTTPRequestHandler):
         if p == '/api/snapshot':
             if not SYNC.ensure() or not SYNC.has_record: return self._json(404, {'ok': False})
             with SYNC.lock: body = json.dumps(SYNC.export('state')).encode('utf-8')
-            self.send_response(200); self.send_header('Content-Type', 'application/json'); self.send_header('Content-Length', str(len(body))); self.end_headers(); self.wfile.write(body); return
+            self.send_response(200); self.send_header('Content-Type', 'application/json'); self.send_header('Content-Length', str(len(body))); self.end_headers(); self.connection.sendall(body); return
         if p == '/api/vault':
             return self._json(200, {'ok': True, 'files': list((load_json(nb('.scientia', 'manifest.json') or '', {}) or {}).items())})
         return super().do_GET()
@@ -411,7 +457,12 @@ class H(http.server.SimpleHTTPRequestHandler):
             atomic(mf, json.dumps(man).encode('utf-8'))
         return self._json(200, {'ok': True, 'wrote': wrote, 'removed': removed})
 
-srv = http.server.ThreadingHTTPServer(('', PORT), H)
+class Server(http.server.ThreadingHTTPServer):
+    def handle_error(self, request, client_address):
+        if isinstance(sys.exc_info()[1], (ConnectionAbortedError, ConnectionResetError, BrokenPipeError)): return
+        super().handle_error(request, client_address)
+
+srv = Server(('', PORT), H)
 if not os.environ.get('SIS_NOBROWSER'): threading.Timer(0.6, lambda: webbrowser.open(f'http://localhost:{PORT}/scientia.html')).start()
 print(f'Scientia In Situ on http://localhost:{PORT}/scientia.html  (close this window to stop)')
 print(f'Notebook folder: {notebook() or "not chosen yet — Settings → Notebook folder"}')

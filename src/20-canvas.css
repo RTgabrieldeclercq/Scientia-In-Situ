@@ -311,6 +311,18 @@ svg.wires circle.owd{fill:var(--ink-3)}
 .prunrow .paddstep{margin:0}
 .paddstep.temp{border-color:color-mix(in srgb,var(--warn) 50%,transparent);color:var(--warn)}
 .paddstep.temp:hover{background:var(--warn-soft)}
+/* a step done by following another protocol */
+.psub{grid-column:2/-1;margin:-3px 0 1px;font-size:11.5px}
+.psub-h{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.psub-fold{border:0;background:none;padding:0;width:14px;cursor:pointer;color:var(--ink-3);font-size:10px;line-height:1}
+.psub-name{cursor:pointer;color:var(--teal);font-weight:600}
+.psub-n{font-family:var(--f-m);font-size:9.5px;color:var(--ink-4)}
+.psub-run{border:1px solid color-mix(in srgb,var(--teal) 45%,transparent);background:transparent;color:var(--teal);border-radius:9px;font-size:10.5px;line-height:16px;padding:0 8px;cursor:pointer}
+.psub-run:hover{background:color-mix(in srgb,var(--teal) 10%,transparent)}
+.psub-steps{list-style:none;margin:4px 0 2px 6px;padding:0 0 0 10px;border-left:2px solid color-mix(in srgb,var(--teal) 35%,transparent)}
+.psub-steps li{display:grid;grid-template-columns:18px 1fr;gap:4px;padding:2px 0;color:var(--ink-3)}
+.psub-num{font-family:var(--f-m);font-size:9.5px;color:var(--teal);padding-top:2px}
+.psub-in{grid-column:2;color:var(--ink-3)}
 .ppromote{border:1px solid var(--teal);background:var(--teal-soft);color:var(--teal);border-radius:4px;font-size:11.5px;font-weight:600;padding:1px 9px;cursor:pointer}
 .ppromote:hover{background:var(--teal);color:var(--surface)}
 .it-note{font-family:var(--f-b);font-size:12px;color:var(--ink-2);font-style:italic;border-left:2px solid var(--rule-2);padding-left:7px;margin:2px 0}
@@ -422,7 +434,7 @@ svg.wires circle.owd{fill:var(--ink-3)}
 .winfo{z-index:20}
 .well.sel{z-index:21}
 .well:hover{z-index:30}
-.wplate-wrap[data-fmt="1"] .wplate{width:min(100%,300px);margin:0 auto;border-radius:50%;aspect-ratio:1;grid-template-columns:0 1fr;padding:18px;gap:0}
+.wplate-wrap[data-fmt="1"] .wplate{width:100%;margin:0 auto;border-radius:50%;aspect-ratio:1;grid-template-columns:0 1fr;padding:18px;gap:0}
 .wplate-wrap[data-fmt="1"] .wcol,.wplate-wrap[data-fmt="1"] .wrow,.wplate-wrap[data-fmt="1"] .wcorner{display:none}
 .wplate-wrap[data-fmt="1"] .wid{font-size:22px}
 /* calculator */
@@ -858,6 +870,18 @@ body{--keyboard-zindex:400}
 body.rg-drawing{cursor:crosshair}
 .rg-sw{display:flex;gap:4px;margin-top:4px}
 .rg-sw button{width:16px;height:16px;border-radius:50%;border:1px solid rgba(0,0,0,.15);cursor:pointer}
+/* folding (regions and components), a region's link circle, what a folded region hides */
+.rg-fold,.cfold{border:0;background:none;padding:0;width:14px;flex:none;cursor:pointer;color:inherit;opacity:.7;font-size:10px;line-height:1}
+.rg-fold:hover,.cfold:hover{opacity:1}
+.rg-fold:disabled,.cfold:disabled{cursor:default}
+.cfold{color:var(--ink-4);margin-right:-2px}
+.box.cmp.folded > :not(.bh):not(.port):not(.rz){display:none!important}
+.region.folded{background:color-mix(in srgb,var(--rg) 14%,var(--paper,var(--surface)));border-style:dashed;border-radius:14px;pointer-events:auto;box-shadow:var(--shadow);z-index:2}
+.region.folded > .rg-tab{background:transparent;border-color:transparent}
+.rg-port{position:absolute;right:-7px;top:12px;width:12px;height:12px;border-radius:50%;border:2px solid color-mix(in srgb,var(--rg) 70%,transparent);background:var(--paper,var(--surface));cursor:crosshair;pointer-events:auto;opacity:.35;transition:opacity .15s,transform .15s}
+.region:hover > .rg-port,body.wiring .rg-port{opacity:1}
+.rg-port:hover{transform:scale(1.25)}
+.rg-hid{display:none!important}
 .lb-region{margin:8px -4px -4px;padding:6px 8px;border:1.5px dashed color-mix(in srgb,var(--rg) 70%,transparent);border-radius:9px;background:color-mix(in srgb,var(--rg) 6%,var(--surface));display:flex;flex-direction:column;gap:3px;font-size:12px}
 .lb-rh{color:color-mix(in srgb,var(--rg) 80%,var(--ink));font-size:11.5px}
 .lb-rh span{color:var(--ink-3)}
@@ -875,6 +899,20 @@ body.rg-drawing{cursor:crosshair}
 .fg-cell.empty{display:grid;place-items:center;cursor:pointer;outline:1.5px dashed var(--rule-2);background:transparent}
 .fg-cell.over{outline:2px solid var(--teal)}
 .fg-add{font-size:12px;color:var(--ink-3)}
+/* a whiteboard in place of an image (13zzd) */
+.fg-empty{display:flex;flex-direction:column;align-items:center;gap:6px}
+.fg-wb{border:1px dashed var(--rule-2);background:transparent;color:var(--ink-3);border-radius:10px;font-size:11px;padding:1px 9px;cursor:pointer}
+.fg-wb:hover{color:var(--teal);border-color:var(--teal)}
+.fg-cell.wb{background:var(--surface);cursor:pointer}
+.fg-cell.wb > .wb-frame{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none;background:var(--surface)}
+.fg-cell.wb > .wb-card{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;color:var(--ink-3)}
+.fg-cell.wb > .fg-letter{color:var(--ink-3);text-shadow:none}
+.fg-cell.wb > .fg-wbcrop{position:absolute;left:6px;bottom:6px;z-index:2;font-size:10.5px;color:#fff;background:rgba(0,0,0,.45);border:0;border-radius:9px;padding:1px 7px;cursor:pointer;opacity:0;transition:opacity .15s}
+.fg-cell.wb:hover > .fg-wbcrop{opacity:1}
+.wb-max .wb-full{flex:1;width:100%;border:0;background:var(--surface)}
+/* V3.941 — the notebook's ink bar in the whiteboard window, on its own row under the title */
+.wb-inkrow{display:flex;padding:4px 10px;border-bottom:1px solid var(--rule);background:var(--surface);overflow-x:auto}
+.wb-inkrow > .ink-bar{position:static;max-width:none;flex-wrap:nowrap;box-shadow:none;border:0;background:transparent;padding:0}
 .fg-letter{position:absolute;left:5px;top:4px;font:700 13px/1 var(--f-b);color:#fff;text-shadow:0 0 3px rgba(0,0,0,.8),0 0 1px #000;pointer-events:none}
 .fg-kind{position:absolute;right:4px;top:4px;border:0;background:transparent;padding:0;cursor:pointer}
 .fg-kind.add{font-size:10.5px;color:#fff;background:rgba(0,0,0,.45);border-radius:9px;padding:1px 7px;opacity:0;transition:opacity .15s}

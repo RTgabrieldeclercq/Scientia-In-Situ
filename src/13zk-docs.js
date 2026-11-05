@@ -23,8 +23,10 @@ const DOCS = {
   grip(b, wrap, pane, hk = 'h') {
     const g = h('div.embed-rz', { title: 'Drag to resize' });
     g.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); const box = wrap.closest('.box'), z = (pane && pane.paper && pane.paper.view.z) || 1, x0 = e.clientX, y0 = e.clientY, w0 = box.offsetWidth, h0 = wrap.offsetHeight;
-      const mv = ev => { b.w = clamp(Math.round(w0 + (ev.clientX - x0) / z), 280, 2400); b[hk] = clamp(Math.round(h0 + (ev.clientY - y0) / z), 160, 3000); box.style.width = b.w + 'px'; wrap.style.height = b[hk] + 'px'; pane && pane.drawWires && pane.drawWires(); };
-      const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); b.w = Math.round(b.w / 14) * 14; DB.put('blocks', b); DB.beginGroup(); DOCS.repaint(b); };
+      // V3.942 — no largest size, either way
+      document.body.classList.add('resizing');
+      const mv = ev => { b.w = Math.max(280, Math.round(w0 + (ev.clientX - x0) / z)); b[hk] = Math.max(160, Math.round(h0 + (ev.clientY - y0) / z)); box.style.width = b.w + 'px'; wrap.style.height = b[hk] + 'px'; pane && pane.drawWires && pane.drawWires(); };
+      const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); document.body.classList.remove('resizing'); b.w = Math.round(b.w / 14) * 14; b[hk] = Math.round(b[hk] / 14) * 14; DB.put('blocks', b); DB.beginGroup(); DOCS.repaint(b); };
       addEventListener('pointermove', mv); addEventListener('pointerup', up); });
     return g;
   },
@@ -176,7 +178,8 @@ const PDFW = {
   /* ---- the card on the canvas ---- */
   sig: (b, ro) => [b.media, b.view || 'scroll', b.view === 'page' ? (b.cur || 0) : '', b.pages || 0, b.w || 616, b.h || 560, ro ? 1 : 0].join('|'),
   zoom: C => (C.pane.paper && C.pane.paper.view.z) || 1,
-  res: C => clamp(Math.round(PDFW.zoom(C) * (window.devicePixelRatio || 1) * 4) / 4, .5, 3),
+  // V3.942 — a card can grow without limit; a page's canvas stays within what every browser draws (≤ 3600 px a side)
+  res: C => clamp(Math.round(PDFW.zoom(C) * (window.devicePixelRatio || 1) * 4) / 4, .25, Math.max(.25, Math.min(3, 3600 / PDFW.width(C)))),
   width: C => Math.max(200, (C.stage.clientWidth || ((C.b.w || 616) - 24)) - 16),
   blank(W, a) { const cv = h('canvas.pdf-page', { style: { width: W + 'px', height: Math.round(W * a) + 'px' } }); cv.width = 0; cv.height = 0; return cv; },
   card(b, pane, ro, sig) {

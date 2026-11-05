@@ -2,7 +2,7 @@
    01 · Utilities — DOM builder, ids, dates, formatting
    ========================================================================== */
 'use strict';
-const BUILD = '2026-10-25 · tables, pen mode, ink library, canvas export (with read beside + clip from the lab); large ink split so it syncs', DEMO_V = 2;
+const BUILD = '2026-11-05 · standalone: the app on its own, without the lab layer; the DOI lookup on the Library page', DEMO_V = 2;
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

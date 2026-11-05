@@ -16,13 +16,14 @@ const MEDIA = {
       if (kind === 'video') { const v = document.createElement('video'); v.preload = 'metadata'; v.muted = true; v.onloadedmetadata = () => { res({ w: v.videoWidth, h: v.videoHeight, dur: v.duration }); URL.revokeObjectURL(u); }; v.onerror = () => res({ w: 1, h: 1 }); v.src = u; }
       else { const i = new Image(); i.onload = () => { res({ w: i.naturalWidth, h: i.naturalHeight }); URL.revokeObjectURL(u); }; i.onerror = () => res({ w: 1, h: 1 }); i.src = u; } });
   },
-  async add(file) {
+  /** quiet: not an undo step (a file a whiteboard keeps, 13zzd); extra: fields kept on the record. */
+  async add(file, { quiet = false, extra = null } = {}) {
     if (this.server == null) await this.ping();
     const kind = this.kindOf(file), ext = this.extOf(file), id = uid('m'), dims = kind === 'html' || kind === 'pdf' || kind === 'sheet' ? { w: 0, h: 0 } : await this.measure(file, kind);
-    const rec = { id, kind, ext, name: file.name || id + '.' + ext, mime: file.type, size: file.size, w: dims.w, h: dims.h, dur: dims.dur || null, created: isoLocal(new Date()), fileDate: file.lastModified ? isoLocal(new Date(file.lastModified)) : null, path: null, local: false };
+    const rec = Object.assign({ id, kind, ext, name: file.name || id + '.' + ext, mime: file.type, size: file.size, w: dims.w, h: dims.h, dur: dims.dur || null, created: isoLocal(new Date()), fileDate: file.lastModified ? isoLocal(new Date(file.lastModified)) : null, path: null, local: false }, extra);
     if (this.server && await this.upload(id, ext, file)) rec.path = `images/${id}.${ext}`;
     else { rec.local = true; DB.put('blobs', { id: 'media:' + id, blob: file }); }
-    DB.put('media', rec); return rec;
+    DB.quiet = quiet; try { DB.put('media', rec); } finally { DB.quiet = false; } return rec;
   },
   async upload(id, ext, blob) {
     try { const r = await fetch(`api/media?id=${encodeURIComponent(id)}&ext=${encodeURIComponent(ext)}`, { method: 'POST', body: blob, headers: { 'Content-Type': 'application/octet-stream' } }); return r.ok; }

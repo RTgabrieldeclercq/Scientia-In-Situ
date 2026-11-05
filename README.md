@@ -2,6 +2,19 @@
 
 One file, `scientia.html`, holds the whole app: projects, themes, aims, notes, terms, wiring, the library, timers, weekly reviews and exports. Everything is loaded and saved in real time to IndexedDB in your browser.
 
+## This repository (5 Nov 2026)
+
+The app as it stands in the McGhee Lab's repository on 5 Nov 2026 (`scientia/`, through V3.958), **without the lab layer**: it runs on its own, on your computer, and talks to nothing but the computer that runs it, your paired phones and tablets, and — when you look up a DOI — doi.org.
+
+**Left out** (they belong to the lab's site, RM): the lab layer (`lab-mode.js`: RM's library, inventory, tasks and My Week, the Portfolio's assigned work, the canvas pills and Quick cast, the one recorder, sharing), the lab cloud and pairing this computer with it (`labsync.py`, `scientia_cloud.py`, Settings → The lab), the installer and updater the lab site hands out (`install/`, `service.py`, `open_local.py`), the ✓ that reports a component to My Week, Export for the lab website, the sync dot for the lab, presence and locks, and the @-list of lab members. A notebook that was synced with the lab opens here as it is: its records stay, and what only the lab could do simply doesn't happen.
+
+**Kept from the lab, as copies** (run offline, never fetched from the site):
+- the whiteboard an image panel opens — the McGhee Lab's board page and engine, `vendor/board/lab-board.html`, which `build.py` wraps around this app's own `board/` (store, pen, styles) into `board.html`; its recorder and speech-to-text scripts are in `vendor/rm/` and `serve.py` serves those three files only;
+- the figure and equation finders on a PDF page (`vendor/page-layout.js`, `vendor/page-regions.js`);
+- the whiteboard's stroke outline the notes' pen writes with (`vendor/wb-ink.js`).
+
+**Build:** `python build.py` writes `scientia.html` and `board.html` (both git-ignored). **Test the DOI lookup:** `node tests/doi-lookup.test.mjs`.
+
 ## Run it
 
 If you don't see recent changes, close any old server window and start `launch.bat` again. It now stops an older server still holding port 8766 and turns browser caching off. Hover the SiS logo to see the build. If this browser still holds the earlier demo data, the app offers to reload the new demo; the offer never wipes anything without asking.
@@ -126,30 +139,8 @@ Your computer is the hub: phones and tablets open the app from it (privately, th
 - **Dashed and dotted lines:** select strokes with the lasso (pen button) and pick ─ solid, ┄ dashed or ┈ dotted in the selection bar. Works on straight lines, shapes and freehand strokes; Ctrl+Z undoes it.
 - **Faster eraser (pen's back end):** the eraser now does its work once per screen frame instead of on every pen sample, redraws connections only when you lift the pen, and no longer adds extra points to the strokes it cuts (repeated erasing used to make ink heavier and slower).
 
-## Cloud sync with Firebase (23 Oct)
-Every device syncs through your own Firebase project, so the computer doesn't have to be on. The computer, whenever the app runs there, keeps writing the notebook folder and its backups (and saves files that arrive from the iPad into images/). Settings → **Cloud sync** has the steps, the rules to paste, and the status; the ☁ in the header shows it at a glance (grey = sign in, green = in sync, blue = sending, red = offline with changes waiting).
-
-**One-time setup (Firebase console, your Google account):**
-1. Project settings → General → Your apps → **Add app → Web (</>)**. Copy the `firebaseConfig` block. It is not a secret; the rules below are what protect the data.
-2. **Authentication** → Get started → Sign-in method → **Google** → Enable. Then Settings → **Authorized domains** → add each address you open the app at: `localhost` is there already; add your Tailscale name (e.g. `surface.tail1234.ts.net`) and, if you use Firebase Hosting, it's added for you.
-3. **Firestore Database** → Create database (production mode, a region near you) → **Rules** → paste the Firestore rules from Settings → Cloud sync → Publish.
-4. **Files (PDFs, images, recordings) need Cloud Storage, which needs the Blaze plan** (a card on file; free up to 5 GB stored and 100 GB a month downloaded in us-central1 / us-west1 / us-east1). Upgrade → Storage → Get started → Rules → paste the Storage rules → Publish. Then let the app read files: open **Google Cloud Shell** (the >_ icon in console.cloud.google.com) and run the `gsutil cors set` line shown in Settings → Cloud sync.
-5. In the app on the computer: Settings → Cloud sync → paste the config → **Save config** → **Sign in with Google**. The first device puts its notebook in the cloud.
-6. On the iPad and iPhone: open **Link for another device** on the computer and scan the QR code (or use Firebase Hosting below), then Sign in with Google. A device that already has its own data asks whether to use the cloud's notebook or merge both.
-
-Until Storage is set up (Spark plan), notes, library entries, groups and everything else sync; files stay on the device that has them and go up once Storage exists.
-
-**Opening the app without the computer:** either keep using the Tailscale https address (the app stays installed on the iPad after the first visit), or put it on **Firebase Hosting** (free on Spark): save your config as `firebase-config.json` next to `hosting.py`, then run `deploy-hosting.bat` (needs Node.js; it signs in to Firebase once). Open `https://<project>.web.app` on each device, sign in, and Add to Home Screen. Re-run it after each update of the app. Features that need the computer (Whisper transcripts, Windows handwriting reading, slide conversion) still need it.
-
-**How it syncs:** every change goes up within a couple of seconds (or waits offline in an outbox) as `users/<you>/rec/<store~id>`; the other devices receive it live; last change wins per record. Settings → Cloud sync also has **Full upload** / **Full download** and **Turn off here** (Tailscale sync comes back).
-
-## Export for the lab website (24 Oct)
-The McGhee Lab website runs Scientia inside its Lab Notebook (mcgheelab.com → Lab Notebook → Scientia), synced through the lab's cloud hub. **Settings → Data → Export for the lab website** (or Ctrl+P → Export for the lab website) saves `scientia-for-mcgheelab-<date>.json` — the whole notebook in the format the site's *Upload from desktop…* takes (undo history, browser-kept files and data-folder handles left out) — and shows what to do next and what the online copy can't show yet. Nothing in this app changes.
-1. **One copy:** Lab Notebook → Scientia → ⋯ → *Upload from desktop…* → the file → Upload (replaces the online notebook; up to 31 MB).
-2. **Keep both in step, files included (recommended):** *Desktop sync…* → make a key → download `scientia-cloud.py` next to launch.bat → with the app running: `py scientia-cloud.py --key <key>`, then `py scientia-cloud.py --prefer local` the first time, and `py scientia-cloud.py` afterwards. It is one more device of this app; launch.bat, the notebook folder and the backups work as before.
-- Files over 30 MB, and spreadsheets (.xlsx/.csv — a table's cells travel in the record anyway), stay on this computer.
-- The site runs this app as of 22 Oct: tables and plots show as their name and first rows, library themes/groups, saved ink and dashed lines are kept in the record but not shown — they appear once the newer app is merged into the lab repository (scientia/src, by pull request).
-- Use one cloud: if you use the lab's desktop sync, leave Settings → Cloud sync (your own Firebase project) off.
+## Moving a notebook to the lab's website
+This copy has no lab connection (see *This repository* above). To take a notebook to the McGhee Lab's site, use **Settings → Export everything (JSON)** here and the site's own import; the site's copy of the app is built from the lab's repository.
 
 ## Tables from Excel / CSV, and plots (23 Oct)
 - **+ Insert → Table (Excel / CSV)…** copies every sheet of an .xlsx / .xls / .ods / .csv / .tsv into the note (so it syncs and works on every device) and keeps the original file (⋯ → Download the original file). **Empty table** starts one to type or paste into. Up to 60,000 cells per sheet.

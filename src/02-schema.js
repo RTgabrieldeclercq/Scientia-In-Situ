@@ -7,7 +7,7 @@
    panels — is derived in memory by IX and can be thrown away.
    ========================================================================== */
 const DB_NAME = 'scientia-in-situ';
-const DB_VERSION = 9;
+const DB_VERSION = 11;
 
 const STORES = {
   settings:  { key: 'id',  doc: 'App settings singleton' },
@@ -36,6 +36,8 @@ const STORES = {
   verdicts:  { key: 'id',  doc: 'Accepted/dismissed suggested links' },
   inklib:    { key: 'id',  doc: 'Saved ink (the ink library): strokes to place again anywhere' },
   libsets:   { key: 'id',  doc: 'Library themes and groups: {kind: theme | group, name, themeId, paperIds} — a paper can be in several groups' },
+  mwsteps:   { key: 'id',  doc: 'My Week steps from RM, mirrored by the lab hub (read-only): what a component’s ✓ reports onto, offline too' },
+  boards:    { key: 'id',  doc: 'Whiteboards in image panels (the lab’s board, 13zzd): the board’s documents (strokes, cards, recordings) by path; a large board continues in rows <id>~1, ~2…' },
   journal:   { key: 'seq', auto: true, doc: 'Append-only change log with previous values (undo, time travel)' },
 };
 const AUTHORED = Object.keys(STORES);

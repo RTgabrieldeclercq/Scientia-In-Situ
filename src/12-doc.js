@@ -5,11 +5,11 @@
    Superseded wordings stay inside the box that replaced them (§5).
    ========================================================================== */
 const DocView = {
-  canvas: true, title: true, docId: null, paper: null, sel: null, pendingFocus: null, inspOpen: _ls.get('insp', false), openGhosts: new Set(), travel: null,
+  canvas: true, title: true, docId: null, paper: null, sel: null, pendingFocus: null, openGhosts: new Set(), travel: null,
 
   render(docId) {
     const d = M.doc(docId); this.docId = docId; this.sel = null; this.travel = VIEWER && d && docId === VIEWER.X.docId ? { at: VIEWER.X.at, viewer: true, doc: d, blocks: M.docBlocks(d.id) } : null;
-    if (!d) return h('div.canvas-host', h('div.empty-c', 'Note not found'));
+    if (!d) { this.paper = null; this.host = null; return h('div.canvas-host', h('div.empty-c', 'Note not found')); }   // V3.942 — no paper: update() draws it whole when the note arrives
     const host = h('div.canvas-host'); host._dv = this; this.host = host;
     host.addEventListener('pointerdown', () => { App.pane = this; }, true); host.addEventListener('focusin', () => { App.pane = this; });
     this.paper = makePaper(host, { view: (_ls.get('view:' + docId, null)) || undefined,
@@ -18,10 +18,10 @@ const DocView = {
       onDouble: (e, p) => this.newAt(p.x - 20, p.y - 20),
       onContext: (e, p) => this.menu(e, p) });
     this.svg = SV('svg', { class: 'wires' }); this.paper.world.append(this.svg);
-    this.dock = h('div.dock.nopan'); this.insp = h('aside.insp.nopan.scrolly'); this.hint = h('div.hint');
+    this.dock = h('div.dock.nopan'); this.hint = h('div.hint');
     this.ctools = h('div.ctools.nopan', h('button', { title: 'Open a calculator in this note (as many as you like)', on: { click: () => CALC.open(this) } }, h('span', { style: { fontSize: '14px' } }, '🖩'), 'Calculator'),
       h('button', { title: 'New equation, or insert a registered one', on: { click: e => EQ.newMenu(this, e) } }, h('span', { style: { fontSize: '14px' } }, '∑'), 'Equation'));
-    host.append(this.dock, this.insp, this.hint, this.ctools);
+    host.append(this.dock, this.hint, this.ctools);
     this.paper.el.addEventListener('pointerdown', e => this.pointer(e));
     this.fill(d);
     if (!_ls.get('view:' + docId, null)) requestAnimationFrame(() => { this.settle(); const bb = this.bbox(); if (bb) this.paper.fit({ x0: bb.x0, y0: bb.y0, x1: bb.x1, y1: Math.min(bb.y1, bb.y0 + 1100) }, false); });
@@ -29,6 +29,9 @@ const DocView = {
   },
   update(docId) {
     const d = M.doc(docId); if (!d) return App.refresh();
+    // V3.942 — the note was opened before it had arrived (a reload while the notebook loads, a note that came with the
+    // sync): there is no paper to update yet, so it is drawn whole
+    if (!this.paper || !this.host || !this.host.isConnected) { App._mounted = false; return App.refresh(); }
     const ae = document.activeElement, box = ae && ae.closest && ae.closest('.box'), ed = ae && ae.classList && ae.classList.contains('ed') ? ae : null;
     let keep = null; if (ed && box) { const s = ED.selection(ed); keep = { id: box.dataset.id, pos: s ? s.from : 0, label: false }; }
     else if (ae && ae.classList && ae.classList.contains('blab') && box) keep = { id: box.dataset.id, label: true };
@@ -46,7 +49,7 @@ const DocView = {
     if (M.liveBlocks(d.id).some(b => b.x == null)) { M.autoLayout(d); }
     $$(':scope > .nextbtn', this.host).forEach(x => x.remove()); { const nb = CHAIN.button(d, this); if (nb) this.host.append(nb); }
     if (!this.side) App.setTitle(d.title, [typechip(d.type), CHAIN.strip(d), h('span', M.docPath(d).replace(/ › [^›]*$/, '')), h('span', 'edited ' + fmtWhen(d.modified)), this.travel && !this.travel.viewer ? h('span.pill.warn', 'as it stood ' + fmtWhen(this.travel.at)) : null],
-      { editable: !this.travel, onEdit: v => { if (v && v !== d.title) { d.title = v; M.touchDoc(d); changed(); } } });
+      { editable: !this.travel, onEdit: v => { if (v && v !== d.title) { d.title = v; M.touchDoc(d); changed(); } }, more: this.travel ? null : e => this.docMenu(d, e) });
     $$(':scope > .box, :scope > .wl, :scope > .obsbox', w).forEach(x => x.remove());
     const src = this.travel || { doc: d, blocks: M.docBlocks(d.id) };
     w.append(this.headBox(src.doc));
@@ -54,7 +57,7 @@ const DocView = {
     for (const b of live) w.append(this.box(b, src.doc, p));
     PROTO.obsLayer(this, src.doc);
     w.append(this.synthBox(src.doc, live));
-    this.drawWires(); this.renderDock(d); this.renderInsp(); this.renderHint(d, live);
+    this.drawWires(); this.renderDock(d); this.renderHint(d, live);
     requestAnimationFrame(() => { this.settle(); this.drawWires(); });
     this.focusPending();
   },
@@ -105,7 +108,10 @@ const DocView = {
     const el = h('div.box.cmp' + (isRef ? '.ref' : '') + (isP ? '.proto' + (b.kind === 'run' ? '.run' : '') + (b.kind === 'protocol' && !b.registered ? '.draft' : '') : '') + (this.sel === b.id ? '.sel' : '') + (b.boundTo ? '.bound' : '') + (W ? '.widget.w-' + b.kind : ''), { 'data-id': b.id, style: { left: (b.x || 0) + 'px', top: (b.y || 0) + 'px', width: (b.w || (isP ? 448 : W ? W.w : 392)) + 'px', '--kc': isP ? 'var(--teal)' : accent ? `var(--k-${accent})` : null } });
     const stepBox = p.steps && !isRef && !isP && !W && !ro ? h('button.step' + (b.step && b.step.checkedAt ? '.done' : ''), { title: TIMER.activeFor(d.id) ? 'Check off — records this step’s time inside the running timer' : 'Check off (start the timer to time steps)', on: { click: e => { e.stopPropagation(); TIMER.checkStep(b.id); } } }, b.step && b.step.checkedAt ? '✓' : '') : null;
     const num = W ? W.label : isRef ? 'pulled in' : isP ? (b.kind === 'run' ? 'protocol run' : b.registered ? 'protocol' : b.localOnly ? 'protocol · local' : 'protocol · draft') : p.ordered ? `${p.noun} ${M.blockIndex(b)}` : p.noun;
-    el.append(h('div.bh', stepBox, h('span.num', num),
+    // ▾ left of the title folds the component up to its title (b.collapsed)
+    if (b.collapsed) el.classList.add('folded');
+    const fold = b.kind === 'ink' ? null : h('button.cfold', { title: b.collapsed ? 'Unfold' : 'Fold it up — only its title shows', disabled: ro, on: { click: e => { e.stopPropagation(); b.collapsed = !b.collapsed || undefined; DB.put('blocks', b); changed(); } } }, b.collapsed ? '▸' : '▾');
+    el.append(h('div.bh', fold, stepBox, h('span.num', num),
       isP ? (pEdit ? h('input.blab.pname', { value: b.label || '', placeholder: 'Protocol name', on: { change: e => PROTO.setName(b, e.target.value.trim() || 'Protocol'), keydown: e => { if (e.key === 'Enter') e.target.blur(); } } }) : h('span.pname', pdef ? pdef.label : 'missing protocol')) :
       isRef ? null : h('input.blab', { value: b.label || '', placeholder: 'label', readOnly: ro, on: { change: e => { b.label = e.target.value; DB.put('blocks', b); changed(); }, keydown: e => { if (e.key === 'Enter' || (e.key === 'Tab' && !e.shiftKey)) { e.preventDefault(); const ed = $('.ed', el); if (!ed) return; if (e.key === 'Tab' && e.target.value !== (b.label || '')) { b.label = e.target.value; DB.put('blocks', b); } ed.focus(); if (ed.contentEditable === 'true') { const n = (ED.read(ed, []).text || '').length; ED.setCaret(ed, n); } } } } }),
       h('span.spacer'),
@@ -132,6 +138,7 @@ const DocView = {
     }
     if (!ro) el.append(h('div.port', { title: 'Drag to another component to connect them' }));
     if (!ro) el.append(h('div.rz', { title: 'Drag to resize' }));
+    if (!ro && b.kind === 'deck') el.append(h('div.rz.rz-corner', { title: 'Drag to resize — the slides keep their shape' }));   // V3.942 — slides grow downwards too
     return el;
   },
   chipsFor(b, d) {
@@ -139,8 +146,9 @@ const DocView = {
     if (b.boundTo) { const pb = M.block(b.boundTo.componentId), pd = M.doc(b.boundTo.protocolId); if (pd) chips.push(h('button.wchip.bind', { title: 'Bound to the protocol step this run followed' + (pd.modified !== b.boundTo.protocolVersion ? ' (the protocol has changed since)' : ''), on: { click: e => App.jump(b.boundTo.componentId, e) } }, '↳ ' + snippet(pd.title, 20) + ' › ' + (pb ? snippet(M.blockName(pb), 22) : 'step') + (pb && pb.status === 'superseded' ? ' (earlier wording)' : ''))); }
     if (d.type === 'protocol' && b.kind === 'component') { const runs = IX.boundRuns(b.id), roll = IX.rollup(b.id), nb = roll.filter(x => x.it.kind === 'barrier').length, nd = roll.filter(x => x.it.kind === 'deviation').length;
       if (runs.length || roll.length) chips.push(h('button.wchip.roll', { title: 'Everything recorded at this step, its earlier wordings, and every run bound to it', on: { click: e => this.rollupPopover(b, e) } }, `⟲ ${plural(runs.length, 'run')} · ${plural(nb, 'barrier')} · ${plural(nd, 'deviation')}`)); }
-    for (const w of wires) { const out = w.from === b.id, other = M.block(out ? w.to : w.from); if (!other || other.docId === b.docId) continue;
-      const rel = REL[w.rel] || REL.related; chips.push(h('button.wchip.cross', { title: M.docPath(M.doc(other.docId)) + ' · Alt+click: open beside', on: { click: e => App.jump(other.id, e) } }, (w.directed ? (out ? '→ ' : '← ') : '↔ ') + (out ? rel.label : rel.inv) + ' · ⇱ ' + snippet(M.blockName(other), 28))); }
+    for (const w of wires) { const out = w.from === b.id, oid = out ? w.to : w.from, other = M.end(oid); if (!other || other.docId === b.docId) continue;
+      const go = other.block ? oid : REGION.blocksOf(other.region)[0];   // a region in another note: open it at its first component
+      const rel = REL[w.rel] || REL.related; chips.push(h('button.wchip.cross', { title: M.docPath(M.doc(other.docId)) + ' · Alt+click: open beside', on: { click: e => go && App.jump(go, e) } }, (w.directed ? (out ? '→ ' : '← ') : '↔ ') + (out ? rel.label : rel.inv) + ' · ⇱ ' + snippet(M.endName(oid), 28))); }
     const refs = [...(IX.refsOfBlock.get(b.id) || []), ...IX.itemsOf(b.id).flatMap(i => IX.refsOfItem.get(i.id) || [])].map(M.block).filter(x => x && x.docId !== b.docId && x.status !== 'removed');
     if (refs.length) chips.push(h('button.wchip.teal', { on: { click: e => metaPop(e.clientX, e.clientY + 8, 'Appears in', [...new Set(refs.map(r => r.docId))].map(id => ({ label: M.doc(id).title, sub: M.docPath(M.doc(id)), date: M.doc(id).modified, note: M.doc(id).title, run: ev => App.jump(refs.find(r => r.docId === id).id, ev) }))) } }, `⇲ in ${plural(new Set(refs.map(r => r.docId)).size, 'other note')}`));
     const bl = IX.backlinks(b.id); if (bl.length) chips.push(h('button.wchip', { on: { click: e => metaPop(e.clientX, e.clientY + 8, 'Linked from', bl.filter(x => x.blockId && M.block(x.blockId)).map(x => ({ label: M.blockName(M.block(x.blockId)), sub: M.docPath(M.doc(M.block(x.blockId).docId)), date: M.block(x.blockId).modified, note: (M.doc(M.block(x.blockId).docId) || {}).title, run: ev => App.jump(x.blockId, ev) }))) } }, `↩ linked from ${bl.length}`));
@@ -175,7 +183,7 @@ const DocView = {
   },
 
   /* ---------------- connections drawn on the paper ---------------- */
-  rectOf(id) { const el = $(`.box[data-id="${id}"]`, this.paper.world); if (!el || !el.isConnected || !el.offsetWidth) return null; return { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight }; },
+  rectOf(id) { const el = $(`.box[data-id="${id}"]`, this.paper.world) || (REGION.isRg(id) ? $(`:scope > .region[data-rg="${id}"]`, this.paper.world) : null); if (!el || !el.isConnected || !el.offsetWidth) return null; return { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight }; },
   boxH(id) { const r = this.rectOf(id); return r ? r.h : 120; },
   geom(a, b, R) {
     const blocked = R && (b.y > a.y + a.h || a.y > b.y + b.h) && R.some(r => r.id !== a.id && r.id !== b.id && r.y > Math.min(a.y + a.h, b.y + b.h) - 4 && r.y + r.h < Math.max(a.y, b.y) + 4 && r.x < Math.max(a.x + a.w, b.x + b.w) && r.x + r.w > Math.min(a.x, b.x));
@@ -207,7 +215,7 @@ const DocView = {
     this.svg.innerHTML = html; w.append(...labels);
   },
   wireMenu(x, e) {
-    this.selWire = x.id; this.drawWires(); const A = M.blockName(M.block(x.from)), B = M.blockName(M.block(x.to));
+    this.selWire = x.id; this.drawWires(); const A = M.endName(x.from), B = M.endName(x.to);
     ctxMenu(e.clientX, e.clientY + 10, [{ head: `“${snippet(A, 24)}” ${(REL[x.rel] || REL.related).verb} “${snippet(B, 24)}”` },
       ...RELATIONS.filter(r => r.id !== x.rel).map(r => ({ label: 'Make it: ' + r.label, run: () => M.setWire(x, { rel: r.id, directed: r.dir }) })),
       { label: 'Make it: your own words…', run: async () => { const v = customRel(await askText('Name this connection', 'Connection', REL[x.rel] && REL[x.rel].custom ? REL[x.rel].label : '')); if (v) M.setWire(x, { rel: v, directed: true }); } }, 'sep',
@@ -217,7 +225,7 @@ const DocView = {
     setTimeout(() => { this.selWire = null; }, 0);
   },
   relationPopover(from, to, x, y) {
-    let rev = false; const A = () => M.blockName(M.block(rev ? to : from)), B = () => M.blockName(M.block(rev ? from : to));
+    let rev = false; const A = () => M.endName(rev ? to : from), B = () => M.endName(rev ? from : to);
     const go = r => { closePop(); M.wire(rev ? to : from, rev ? from : to, r.id, r.dir); toast('Connected · ' + r.label); };
     // typing straight away names your own connection (Enter connects with it)
     const own = h('input.inp.rel-own', { placeholder: 'Or type your own connection…', maxlength: 40, on: { input: () => draw(), keydown: e => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); const v = customRel(own.value); if (v) go(REL[v]); } else if (e.key === 'Escape') closePop(); } } });
@@ -235,9 +243,13 @@ const DocView = {
     const box = e.target.closest('.box'); if (!box) return;
     const id = box.dataset.id, P = this.paper;
     if (e.target.closest('.port')) { e.preventDefault(); e.stopPropagation(); this.wireDrag(id, e); return; }
-    if (e.target.closest('.rz')) { e.preventDefault(); const b = M.block(id); if (!b) return; const x0 = e.clientX, w0 = box.offsetWidth;
-      const mv = ev => { b.w = clamp(Math.round(w0 + (ev.clientX - x0) / P.view.z), 240, WIDGETS[b.kind] ? 1600 : 900); box.style.width = b.w + 'px'; this.drawWires(); };
-      const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); b.w = Math.round(b.w / 14) * 14; box.style.width = b.w + 'px'; DB.put('blocks', b); DB.beginGroup(); this.drawWires(); };
+    // V3.942 — no largest size: a component grows as wide as you drag it. A corner grip on a component whose height
+    // follows its width (an image panel, slides) follows a drag down too: the larger of the two pulls.
+    if (e.target.closest('.rz')) { e.preventDefault(); const b = M.block(id); if (!b) return; const x0 = e.clientX, y0 = e.clientY, w0 = box.offsetWidth, h0 = Math.max(1, box.offsetHeight), corner = !!e.target.closest('.rz-corner');
+      document.body.classList.add('resizing');
+      const mv = ev => { const z = P.view.z, wx = w0 + (ev.clientX - x0) / z, wy = w0 * (h0 + (ev.clientY - y0) / z) / h0;
+        b.w = Math.max(240, Math.round(corner && Math.abs(wy - w0) > Math.abs(wx - w0) ? wy : wx)); box.style.width = b.w + 'px'; this.drawWires(); };
+      const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); document.body.classList.remove('resizing'); b.w = Math.round(b.w / 14) * 14; box.style.width = b.w + 'px'; DB.put('blocks', b); DB.beginGroup(); this.drawWires(); };
       addEventListener('pointermove', mv); addEventListener('pointerup', up); return; }
     if (e.target.closest('.ed,input,textarea,select,button,a,label,.chips,.ghosts,.refs,.tags,.ptext.edit,.obsn,.itdot,.wplate,.wlegend,.fg-cell')) { if (id[0] !== '_') this.select(id, true); return; }
     // drag the box by its frame or header
@@ -268,7 +280,7 @@ const DocView = {
   },
   crossWire(from) {
     const m = modal({ title: 'Connect to a component in another note', wide: true, actions: [{ label: 'Cancel' }], body: optionPicker({ placeholder: 'Search components across all notes…',
-      items: q => DB.where('blocks', b => b.id !== from && b.status === 'live' && b.kind === 'component' && b.docId !== M.block(from).docId && (!q || (b.body.text + ' ' + b.label + ' ' + (M.doc(b.docId) || {}).title).toLowerCase().includes(q))).sort((a, b) => (b.modified || '').localeCompare(a.modified || '')),
+      items: q => DB.where('blocks', b => b.id !== from && b.status === 'live' && b.kind === 'component' && b.docId !== (M.end(from) || {}).docId && (!q || (b.body.text + ' ' + b.label + ' ' + (M.doc(b.docId) || {}).title).toLowerCase().includes(q))).sort((a, b) => (b.modified || '').localeCompare(a.modified || '')),
       render: b => h('div', h('b', M.blockName(b)), ' ', h('span.serif', snippet(b.body.text, 80)), h('span.s', M.docPath(M.doc(b.docId)))),
       onPick: b => { m.close(); DocView.relationPopover(from, b.id, innerWidth / 2 - 150, 160); } }) });
   },
@@ -276,13 +288,12 @@ const DocView = {
   /* ---------------- selection, layout helpers ---------------- */
   select(id, quiet) {
     this.sel = id; $$('.box.sel', this.paper && this.paper.world).forEach(x => x.classList.toggle('sel', x.dataset.id === id)); if (id) { const el = $(`.box[data-id="${id}"]`, this.paper.world); el && el.classList.add('sel'); }
-    this.renderInsp();
   },
   reveal(id) { const r = this.rectOf(id); if (!r) return; const P = this.paper, s = P.toScreen(r.x, r.y), pr = P.rect(); const inView = s.x > pr.left + 20 && s.y > pr.top + 20 && s.x + r.w * P.view.z < pr.right - 20 && s.y + Math.min(r.h, 300) * P.view.z < pr.bottom - 20;
     if (!inView) P.centerOn(r.x + r.w / 2, r.y + Math.min(r.h, 300) / 2, Math.max(P.view.z, .8)); },
   orderedEditors() { return M.liveBlocks(this.docId).map(b => $(`.box[data-id="${b.id}"] .ed`, this.paper.world)).filter(x => x && x.contentEditable === 'true'); },
   bboxOf(bs) { const xs = bs.filter(b => b.x != null); if (!xs.length) return null; let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; xs.forEach(b => { const r = this.rectOf(b.id) || { x: b.x, y: b.y, w: b.w || 392, h: 120 }; x0 = Math.min(x0, r.x); y0 = Math.min(y0, r.y); x1 = Math.max(x1, r.x + r.w); y1 = Math.max(y1, r.y + r.h); }); return { x0, y0, x1, y1 }; },
-  bbox() { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; $$(':scope > .box', this.paper.world).forEach(el => { x0 = Math.min(x0, el.offsetLeft); y0 = Math.min(y0, el.offsetTop); x1 = Math.max(x1, el.offsetLeft + el.offsetWidth); y1 = Math.max(y1, el.offsetTop + el.offsetHeight); }); return x0 < 1e9 ? { x0, y0, x1, y1 } : null; },
+  bbox() { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; $$(':scope > .box', this.paper.world).forEach(el => { if (!el.offsetWidth) return; x0 = Math.min(x0, el.offsetLeft); y0 = Math.min(y0, el.offsetTop); x1 = Math.max(x1, el.offsetLeft + el.offsetWidth); y1 = Math.max(y1, el.offsetTop + el.offsetHeight); }); return x0 < 1e9 ? { x0, y0, x1, y1 } : null; },
   makeRoomBelow(nb) { const h0 = 130; M.liveBlocks(nb.docId).filter(x => x.id !== nb.id && x.x != null && Math.abs(x.x - nb.x) < 200 && x.y >= nb.y - 10).forEach(x => { x.y += h0 + 28; DB.put('blocks', x); }); },
   /** Tidy: re-flow components in order, respecting their heights. */
   tidy() { const d = M.doc(this.docId), p = prof(d.type), bs = M.liveBlocks(d.id); let y = 168, col = 0, rowH = 0;
@@ -297,7 +308,10 @@ const DocView = {
   /** Boxes placed automatically are nudged apart once their real heights are known. */
   settle() {
     const d = M.doc(this.docId); if (!d || this.travel || !this.paper) return false;
-    const live = M.liveBlocks(d.id).filter(b => b.x != null && b.kind !== 'ink'), auto = live.filter(b => b.auto); // ink floats where it was written
+    // ink floats where it was written; so does a box put on top of another on purpose (`float` = that spot: a clip on its paper,
+    // 13zza) until it is moved
+    const floats = b => b.float && b.float.x === b.x && b.float.y === b.y;
+    const live = M.liveBlocks(d.id).filter(b => b.x != null && b.kind !== 'ink' && !floats(b)), auto = live.filter(b => b.auto);
     const head = this.rectOf('_head'); let moved = false;
     // boxes never overlap: a box that grew (or was placed automatically) pushes the ones below it down
     const R = live.map(b => ({ b, r: this.rectOf(b.id) })).filter(x => x.r).sort((a, c) => a.b.y - c.b.y || d.blockIds.indexOf(a.b.id) - d.blockIds.indexOf(c.b.id));
@@ -313,7 +327,7 @@ const DocView = {
     const sy = $('.box.synth', this.paper.world); if (sy && !d.layout.synth) { const bb = this.bboxOf(live); if (bb) sy.style.left = (bb.x1 + 80) + 'px'; }
     this.drawWires(); return moved;
   },
-  softRefresh(blockId) { const el = blockId && $(`.box[data-id="${blockId}"]`, this.paper && this.paper.world); requestAnimationFrame(() => { if (this.settle()) this.drawWires(); }); if (el) { const b = M.block(blockId), d = M.doc(b.docId); const c = $(':scope > .chips', el); c && c.replaceWith(this.chipsFor(b, d)); const k = IX.kindsOf(b)[0]; el.style.setProperty('--kc', k ? `var(--k-${k})` : null); } this.renderInsp(); this.drawWires(); },
+  softRefresh(blockId) { const el = blockId && $(`.box[data-id="${blockId}"]`, this.paper && this.paper.world); requestAnimationFrame(() => { if (this.settle()) this.drawWires(); }); if (el) { const b = M.block(blockId), d = M.doc(b.docId); const c = $(':scope > .chips', el); c && c.replaceWith(this.chipsFor(b, d)); const k = IX.kindsOf(b)[0]; el.style.setProperty('--kc', k ? `var(--k-${k})` : null); } this.drawWires(); },
   anchorOf(g) { const q = [...(g.supersededBy || [])], seen = new Set(); while (q.length) { const id = q.shift(); if (seen.has(id)) continue; seen.add(id); const x = M.block(id); if (!x) continue; if (x.status === 'live') return x.id; q.push(...(x.supersededBy || [])); } return null; },
   ancestors(b) { const out = [], seen = new Set(); const walk = (x, g) => { for (const id of x.supersedes || []) { if (seen.has(id)) continue; seen.add(id); const a = M.block(id); if (a) { out.push(Object.assign(a, { _gen: g })); walk(a, g + 1); } } }; walk(b, 1); return out; },
 };

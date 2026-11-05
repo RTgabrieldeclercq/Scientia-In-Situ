@@ -1,6 +1,11 @@
 /* ==========================================================================
-   13 · Note tools — the floating dock, the provenance panel, menus, time
-   entry, pulling barriers/structures/components in, and time travel.
+   13 · Note tools — the floating dock, menus, time entry, pulling
+   barriers/structures/components in, and time travel.
+   V3.941: the provenance panel (ⓘ, I) is gone from notes — provenance lives
+   in the Terms maps (16-lens); PROV and Export provenance… stay. ⋯ More sits
+   beside the note's title (App.setTitle more); its menu holds Log time… and
+   the citation style, which were in this dock. With the lab's pills the dock
+   shows only for a read-only note (the Quick cast takes its place).
    ========================================================================== */
 Object.assign(DocView, {
   renderDock(d) {
@@ -15,21 +20,22 @@ Object.assign(DocView, {
       h('span.dk-sep'),
       h('button.dk', { title: 'Pull an unresolved barrier, a structure or a component from another note', on: { click: () => this.pullMenu(d) } }, '⤓ Pull in'),
       h('button.dk' + (flag ? '.on' : ''), { title: 'Flag this note for the weekly review', on: { click: () => M.toggleFlag('doc', d.id) } }, flag ? '⚑' : '⚐'),
-      h('button.dk' + (this.inspOpen ? '.on' : ''), { title: 'Provenance panel (I)', on: { click: () => { this.inspOpen = !this.inspOpen; _ls.set('insp', this.inspOpen); this.renderInsp(); this.renderDock(d); } } }, 'ⓘ'),
       h('button.dk', { title: 'Fit (Ctrl+0)', on: { click: () => this.paper.fit(this.bbox()) } }, '⤢'),
-      h('button.dk' + (document.fullscreenElement ? '.on' : ''), { title: 'Focus mode (Ctrl+.) — fullscreen; frees Ctrl+W for terms', on: { click: () => App.toggleFocus() } }, '⛶'),
-      h('button.dk', { title: 'More', on: { click: e => this.docMenu(d, e) } }, '⋯'));
+      h('button.dk' + (document.fullscreenElement ? '.on' : ''), { title: 'Focus mode (Ctrl+.) — fullscreen; frees Ctrl+W for terms', on: { click: () => App.toggleFocus() } }, '⛶'));
   },
   renderHint(d, live) {
-    const s = settings(); this.hint.replaceChildren(live.length && live.some(b => b.body.text.trim() || b.kind === 'ref') ? h('span', `${keyLabel(s.structKey)} says what a phrase is · Ctrl+W term (Focus) · Ctrl+I cite · drag ● to connect`)
+    const s = settings(); this.hint.replaceChildren(live.length && live.some(b => b.body.text.trim() || b.kind === 'ref') ? h('span', `${keyLabel(s.structKey)} says what a phrase is · Ctrl+W term (Focus) · Ctrl+I or /cite cite · drag ● to connect`)
       : h('span', 'Write in the first box. Double-click the paper for another; right-click to pull in barriers or components from other notes.'));
   },
   docMenu(d, e) {
     ctxMenu(e.clientX - 200, e.clientY - 10, [{ head: d.title },
       { label: 'Note details…', sub: 'Title, type, project, theme, date', run: () => EDIT.noteDialog(d) },
+      { label: 'Log time…', sub: 'Time worked without the timer', run: () => this.logTime(d) },
       { label: 'Time entries…', sub: 'Move, change or delete recorded time', run: () => EDIT.timeDialog(d) },
       prof(d.type).type === 'protocol' ? { label: 'Run this protocol…', sub: 'New experiment with its steps bound here; starts the timer', run: () => App.newDoc({ type: 'experiment', projectId: d.projectId }) } : null,
       { label: 'Tidy layout', sub: 'Re-flow the boxes in order', run: () => this.tidy() },
+      'sep', { head: 'Citations in this note' },
+      ...['title', 'author', 'number'].map(m => ({ label: ((d.citeMode || 'title') === m ? '✓ ' : '') +(m === 'title' ? 'Title' : m === 'author' ? 'Author–year' : '[1]'), run: () => { d.citeMode = m; DB.put('documents', d); changed(); } })), 'sep',
       { label: 'View as it stood on…', sub: 'Time travel through the journal', run: () => this.travelDialog(d) },
       { label: 'Export canvas (HTML)…', sub: 'One file: the live canvas with its PDFs, pages and recordings, read-only', run: () => Exporter.doc(d.id) },
       { label: 'Save structure as template…', run: async () => { const n = await askText('Save as template', 'Template name', d.title + ' template'); if (n) { M.saveAsTemplate(d, n); toast('Template saved — tick it in Settings to use it'); } } },
@@ -88,7 +94,7 @@ Object.assign(DocView, {
       { label: 'Stamp & manual duration…', run: () => this.stampPopover(b, e) },
       { label: flag ? 'Clear flag' : 'Flag for weekly review', run: () => M.toggleFlag('block', b.id) },
       b.kind === 'ref' ? { label: 'Remove from this note', sub: 'The original stays where it was written', run: () => M.removeRef(b) } : null,
-      b.kind !== 'ref' ? { label: 'Delete component…', danger: true, sub: 'With its structures and connections · Ctrl+Z undoes it', run: () => EDIT.confirmBlock(b) } : null]);
+      b.kind !== 'ref' ? { label: 'Delete component', danger: true, sub: 'With its structures and connections · Ctrl+Z undoes it', run: () => EDIT.confirmBlock(b) } : null]);
   },
   stampPopover(b, e) {
     const st = b.stamp, dt = h('input.inp.mono', { type: 'datetime-local', value: toInputDT(st.at) });
@@ -195,53 +201,6 @@ Object.assign(DocView, {
     return { doc, blocks: doc.blockIds.map(id => blocks.get(id)).filter(Boolean) };
   },
 
-  /* ---------------- provenance panel ---------------- */
-  renderInsp() {
-    if (!this.insp) return; this.insp.classList.toggle('open', !!this.inspOpen); if (!this.inspOpen) return;
-    const d = M.doc(this.docId); if (!d) return;
-    const b = this.sel && M.block(this.sel);
-    this.insp.replaceChildren(h('button.ib.x', { on: { click: () => { this.inspOpen = false; _ls.set('insp', false); this.renderInsp(); this.renderDock(d); } } }, '✕'), b && b.docId === d.id ? this.blockInsp(b, d) : this.docInsp(d));
-  },
-  blockInsp(b, d) {
-    const items = IX.itemsOf(b.id), wires = IX.wiresOf(b.id), terms = [...(IX.blockTerms.get(b.id) || [])].map(M.term).filter(Boolean), s = b.stamp.sessionId && M.session(b.stamp.sessionId);
-    const anc = DocView.ancestors(b), hist = M.historyFor(b.id);
-    return h('div',
-      h('div.ins-h', h('div.k', b.kind === 'ref' ? 'pulled-in component' : 'component'), h('b', M.blockName(b)), h('div.tiny.muted', M.docPath(d))),
-      h('div.ins-s', h('h6', 'Provenance'), h('dl.kv',
-        h('dt', 'created'), h('dd', fmtDayLong(b.created) + ' ' + fmtTime(b.created)),
-        h('dt', 'stamp'), h('dd', fmtTime(b.stamp.at), ' ', h('button.btn.xs', { on: { click: e => this.stampPopover(b, e) } }, 'adjust')),
-        s ? [h('dt', 'timer'), h('dd', `+${fmtDur(b.stamp.offsetMs || 0)} into a ${fmtDur(TIMER.elapsed(s))} session`)] : null,
-        b.manualSec ? [h('dt', 'manual'), h('dd', fmtDur(b.manualSec * 1000))] : null,
-        (b.timed || []).length ? [h('dt', 'timed'), h('dd', fmtDur(sum(b.timed.map(t => t.sec)) * 1000) + (b.timed.length > 1 ? ` · ${b.timed.length} timers` : ''))] : null,
-        b.step && b.step.checkedAt ? [h('dt', 'step'), h('dd', 'checked ' + fmtTime(b.step.checkedAt) + (b.step.durMs != null ? ` · ${fmtDur(b.step.durMs, true)}` : ''))] : null,
-        b.boundTo ? [h('dt', 'bound to'), h('dd', h('a', { on: { click: e => App.jump(b.boundTo.componentId, e) } }, (M.doc(b.boundTo.protocolId) || {}).title + ' › ' + M.blockName(M.block(b.boundTo.componentId))))] : null,
-        M.isLocked(b) ? [h('dt', 'record'), h('dd', 'locked since the day turned — revise or correct')] : null,
-        h('dt', 'edited'), h('dd', fmtWhen(b.modified || b.created)))),
-      h('div.ins-s', h('h6', 'Structures', h('span.muted', items.length)), items.length ? items.map(it => h('div.ins-it', { on: { click: e => ED.itemPopover(it.id, e.clientX - 200, e.clientY + 10, b, (b.body.marks.find(m => m.ref === it.id) || {}).id) } },
-        h('div.row', kchip(it.kind), IX.status(it) ? h('span.pill' + (IX.status(it) === 'open' ? '.bad' : IX.status(it) === 'resolved' ? '.ok' : ''), IX.status(it)) : null, it.originBlockId !== b.id ? h('span.pill', 'referenced') : null),
-        h('div.serif', snippet(it.text, 120)))) : h('div.tiny.muted', `Select text and press ${keyLabel(settings().structKey)}.`)),
-      h('div.ins-s', h('h6', 'Connections', h('span.muted', wires.length)),
-        wires.map(w => { const out = w.from === b.id, o = M.block(out ? w.to : w.from), rel = REL[w.rel] || REL.related; return h('div.ins-w', h('span.mono', (w.directed ? (out ? '→ ' : '← ') : '↔ ') + (out ? rel.label : rel.inv)),
-          h('a', { title: 'Alt+click: open beside', on: { click: e => o && App.jump(o.id, e) } }, o ? M.blockName(o) : '—'), h('button.ib', { title: 'Remove connection', on: { click: () => M.unwire(w.id) } }, '×')); }),
-        h('div.tiny.muted', { style: { marginTop: '4px' } }, 'Drag the ● on a box to connect.')),
-      PROV.has(b) || (d.materials || []).length ? h('div.ins-s', h('h6', 'Provenance chain'), PROV.tree(PROV.chain(b.id)), h('button.btn.xs', { style: { marginTop: '6px' }, on: { click: () => PROV.export(b.id) } }, 'Export')) : null,
-      terms.length ? h('div.ins-s', h('h6', 'Terms'), h('div.row', terms.map(t => h('a.btn.xs', { href: '#/lens/' + t.id }, h('span.term-demo', t.label))))) : null,
-      anc.length ? h('div.ins-s', h('h6', 'Lineage', h('span.muted', plural(anc.length, 'ancestor'))), h('div.tiny.muted', `${plural(hist.filter(x => x.generation === 0).length, 'structure')} on this wording, plus ${plural(hist.filter(x => x.generation > 0).length, 'more')} from earlier versions.`)) : null,
-      h('div.ins-s', h('h6', 'Review'), h('button.btn.sm' + (M.flagFor('block', b.id) ? '.on' : ''), { on: { click: () => M.toggleFlag('block', b.id) } }, M.flagFor('block', b.id) ? '⚑ Flagged' : '⚐ Flag for weekly review')));
-  },
-  docInsp(d) {
-    const blocks = M.docBlocks(d.id).filter(b => b.status !== 'removed'), items = blocks.flatMap(b => IX.itemsOf(b.id)), byK = groupBy(items, i => i.kind);
-    const sess = DB.where('sessions', s => s.docId === d.id).sort((a, b) => b.created.localeCompare(a.created));
-    const total = sum(sess.filter(s => s.state !== 'open').map(s => TIMER.elapsed(s))) + sum(blocks.map(b => (b.manualSec || 0) * 1000));
-    const terms = new Set(blocks.flatMap(b => [...(IX.blockTerms.get(b.id) || [])])), bl = IX.backlinks(d.id);
-    return h('div', h('div.ins-h', h('div.k', 'note'), h('b', d.title), h('div.tiny.muted', 'Select a component for its provenance')),
-      h('div.ins-s', h('h6', 'Structures'), items.length ? h('div.row', Object.entries(byK).map(([k, v]) => kchip(k, `${KIND[k].label} ${v.length}`))) : h('div.tiny.muted', 'None yet')),
-      h('div.ins-s', h('h6', 'Time', h('span.muted', fmtDur(total))), sess.length ? sess.slice(0, 8).map(s => h('div.ins-w', h('span.mono', s.entry === 'duration' ? s.localDate.slice(5) : fmtWhen(s.created)),
-        h('span', s.state === 'open' ? h('span.pill.warn', 'open entry') : fmtDur(TIMER.elapsed(s)) + (s.steps && s.steps.length ? ` · ${s.steps.length} steps` : '')),
-        s.state === 'open' ? h('button.btn.xs', { on: { click: () => this.completeOpen(s) } }, 'complete') : h('span.pill', s.source))) : h('div.tiny.muted', 'No time recorded')),
-      terms.size ? h('div.ins-s', h('h6', 'Terms'), h('div.row', [...terms].map(M.term).filter(Boolean).map(t => h('a.btn.xs', { href: '#/lens/' + t.id }, h('span.term-demo', t.label))))) : null,
-      bl.length ? h('div.ins-s', h('h6', 'Linked from'), bl.map(x => { const bb = x.blockId && M.block(x.blockId); return h('div.ins-w', h('a', { on: { click: e => bb && App.jump(bb.id, e) } }, bb ? M.docPath(M.doc(bb.docId)) : '—')); })) : null);
-  },
 });
 
 /* ==========================================================================
@@ -249,7 +208,7 @@ Object.assign(DocView, {
    two side by side, a third splits the right column, a fourth makes a 2×2
    grid. Ctrl+click opens the note in the pane you clicked in.
    ========================================================================== */
-function makePane(side) { const p = Object.create(DocView); Object.assign(p, { docId: null, paper: null, sel: null, pendingFocus: null, openGhosts: new Set(), travel: null, inspOpen: false, side: !!side, selWire: null }); return p; }
+function makePane(side) { const p = Object.create(DocView); Object.assign(p, { docId: null, paper: null, sel: null, pendingFocus: null, openGhosts: new Set(), travel: null, side: !!side, selWire: null }); return p; }
 const PANES = [DocView, makePane(true), makePane(true), makePane(true)], SidePane = PANES[1], MAXPANES = 4;
 /** The pane (note canvas) an element belongs to, or the active one. */
 function DV(el) { const host = el && el.closest && el.closest('.canvas-host'); return (host && host._dv) || App.pane || DocView; }
@@ -283,7 +242,7 @@ Object.assign(DocView, {
   paneHead(i) {
     const d = M.doc(this.docId); if (!d) return null; const docs = SplitView.parse(App.route.args).docs;
     const without = docs.filter((_, k) => k !== i), go = list => App.go(list.length > 1 ? SplitView.route(list) : '#/doc/' + list[0]);
-    return h('div.panehead.nopan', typechip(d.type), h('b', d.title), h('span.s', M.docPath(d).replace(/ › [^›]*$/, '')),
+    return h('div.panehead.nopan', typechip(d.type), h('b', d.title), h('button.ib', { title: 'More for this note', on: { click: e => this.docMenu(d, e) } }, '⋯'), h('span.s', M.docPath(d).replace(/ › [^›]*$/, '')),
       h('button.ib', { title: 'Open this note alone', on: { click: () => App.go('#/doc/' + d.id) } }, '⤢'),
       docs.length === 2 ? h('button.ib', { title: 'Swap sides', on: { click: () => go([docs[1], docs[0]]) } }, '⇄') : h('button.ib', { title: 'Move to the first pane', on: { click: () => go([d.id, ...without]) } }, '⇤'),
       h('button.ib', { title: 'Close this pane', on: { click: () => go(without) } }, '✕'));

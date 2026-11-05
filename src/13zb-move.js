@@ -3,8 +3,9 @@
    there. From a component's ⋯ / right-click menu ("Move to another note…",
    where you can tick more components to take along), from a region's menu
    (the whole region, re-made in the new note), or by dragging a component
-   (or a region by its name tab) from one split pane into another — a component
-   with Alt held (a plain drag embeds it there instead, 13zp).
+   (or a region by its name tab) from one split pane into another, with Alt
+   held (a plain drag embeds it there instead: a component 13zp, a region
+   REGION.copyTo). A region takes the regions inside it along.
    Along with it go its earlier versions, its sub-steps, its structures
    (they now originate in the new note), its marks, terms and time. Nothing
    is left behind in the old note. Connections to components that stay are
@@ -56,8 +57,13 @@ const MOVE = {
     MOVE.crossing(ids).forEach(w => { if (!keepWires.includes(w.id)) DB.del('wires', w.id); });
     // regions: whole regions travel (re-made in the new note); otherwise the moved ones just leave theirs
     const carried = [];
-    srcs.forEach(d => { REGION.list(d).forEach(r => { const live = r.members.filter(id => (M.block(id) || {}).status === 'live'); if (live.length && live.every(id => set.has(id)) && (regionsToo == null || regionsToo.includes(r.id))) carried.push(Object.assign({}, r, { id: uid('rg'), members: r.members.filter(id => set.has(id)) })); });
-      d.regions = REGION.list(d).map(r => Object.assign({}, r, { members: r.members.filter(id => !set.has(id)) })).filter(r => r.members.length); REGION.save(d); });
+    srcs.forEach(d => { const all = REGION.list(d);
+      // a region goes when everything in it goes (inner regions with it, re-made under new ids); the rest just lose what moved
+      const go = new Set(all.filter(r => { const live = REGION.blocksOf(r, d).filter(id => (M.block(id) || {}).status === 'live'); return live.length && live.every(id => set.has(id)) && (regionsToo == null || regionsToo.includes(r.id) || REGION.ancestors(d, r.id).some(a => regionsToo.includes(a.id))); }).map(r => r.id));
+      const nid = new Map([...go].map(id => [id, uid('rg')]));
+      all.filter(r => go.has(r.id)).forEach(r => carried.push(Object.assign({}, r, { id: nid.get(r.id), members: r.members.filter(id => set.has(id) || go.has(id)).map(id => nid.get(id) || id) })));
+      DB.where('wires', w => nid.has(w.from) || nid.has(w.to)).forEach(w => { w.from = nid.get(w.from) || w.from; w.to = nid.get(w.to) || w.to; DB.put('wires', w); });
+      d.regions = all.filter(r => !go.has(r.id)).map(r => Object.assign({}, r, { members: r.members.filter(id => !set.has(id) && !go.has(id)) })); REGION.tidy(d); REGION.save(d); });
     if (carried.length) { dest.regions = [...REGION.list(dest).map(r => Object.assign({}, r, { members: r.members.filter(id => !set.has(id)) })).filter(r => r.members.length), ...carried]; }
     // the boxes keep their arrangement, placed at the drop point (or beside the note's content)
     const live = blocks.filter(b => b.x != null), x0 = live.length ? Math.min(...live.map(b => b.x)) : 0, y0 = live.length ? Math.min(...live.map(b => b.y || 0)) : 0, at = pos || MOVE.spot(dest);
@@ -77,7 +83,7 @@ const MOVE = {
     toast(`${plural(n, 'component')} moved to “${snippet(dest.title, 40)}”`, 3500);
   },
   /** Move a whole region by its menu. */
-  region(d, r) { const ids = r.members.filter(id => MOVE.can(M.block(id))); if (!ids.length) return toast('Nothing in this region can move');
+  region(d, r) { const ids = REGION.blocksOf(r, d).filter(id => MOVE.can(M.block(id))); if (!ids.length) return toast('Nothing in this region can move');
     const first = M.block(ids[0]); MOVE.dialog(first, ids); },
   /** The pane under a screen point, other than `not`. */
   paneAt(x, y, not) { const els = document.elementsFromPoint(x, y); for (const el of els) { const host = el.closest && el.closest('.canvas-host'); if (host && host._dv && host._dv !== not) return host._dv; if (host) return null; } return null; },
@@ -99,7 +105,10 @@ const MOVE = {
     const mv = ev => { const t = MOVE.paneAt(ev.clientX, ev.clientY, src); if (t !== target) { if (target && target.host) target.host.classList.remove('mv-drop'); target = t && t.docId !== src.docId ? t : null; if (target && target.host) target.host.classList.add('mv-drop'); } };
     const up = ev => { removeEventListener('pointermove', mv, true); removeEventListener('pointerup', up, true); const t = target; if (t && t.host) t.host.classList.remove('mv-drop'); if (!t) return;
       if (!regionId && !ev.altKey) return; // a plain (or pen) drag embeds it there instead (13zp); Alt moves it
-      const p = t.paper.toWorld(ev.clientX, ev.clientY), live = ids.filter(id => MOVE.can(M.block(id))); if (!live.length) return;
+      const p = t.paper.toWorld(ev.clientX, ev.clientY);
+      if (regionId && !ev.altKey) { const sd = M.doc(src.docId), r = REGION.list(sd).find(x => x.id === regionId); if (!r) return;   // a region embeds the same way; it stays where it was here
+        REGION._stay = true; return setTimeout(() => REGION.copyTo(sd, r, t.docId, { x: p.x - 40, y: p.y - 20 }), 0); }
+      const live = ids.filter(id => MOVE.can(M.block(id))); if (!live.length) return;
       setTimeout(() => MOVE.ask(live, t.docId, { x: p.x - 40, y: p.y - 20 }, regionId ? [regionId] : undefined), 0); };
     addEventListener('pointermove', mv, true); addEventListener('pointerup', up, true);
   };
@@ -108,5 +117,5 @@ const MOVE = {
       if (box && box.dataset.id[0] !== '_' && !e.target.closest('.port,.rz,.ed,input,textarea,select,button,a,label,.chips,.ghosts,.refs,.tags,.ptext.edit,.obsn,.itdot,.wplate,.wlegend,.fg-cell') && MOVE.can(M.block(box.dataset.id)) && App.panes().length > 1) watch(this, [box.dataset.id], e); }
     return ptr.call(this, e);
   };
-  const rd = REGION.drag; REGION.drag = function (pane, d, r, e) { if (App.panes().length > 1) watch(pane, r.members.slice(), e, r.id); return rd.call(this, pane, d, r, e); };
+  const rd = REGION.drag; REGION.drag = function (pane, d, r, e) { if (App.panes().length > 1) watch(pane, REGION.blocksOf(r, d), e, r.id); return rd.call(this, pane, d, r, e); };
 }

@@ -7,11 +7,11 @@
    ========================================================================== */
 const DASH = {
   KINDS: [['', '─', 'Solid'], ['dash', '┄', 'Dashed'], ['dot', '┈', 'Dotted']],
-  /** average drawn width of a pen stroke (the same formula the outline uses, without the taper) */
+  /** average drawn width of a pen stroke (the outline's own width at the stroke's mean pressure, V3.941 INK.wmul) */
   width(s) { const w = s.w || 2.4; if (s.hl || s.geo) return w; const P = s.p || []; if (!P.length) return w;
     const m = P.reduce((a, q) => a + (q[2] == null ? .5 : q[2]), 0) / P.length;
-    return Math.max(.8, w * (s.pr ? (s.wr ? s.wr[0] + (s.wr[1] - s.wr[0]) * m : .18 + 1.65 * m) : .4 + .9 * m) * .9); },
-  centre(s) { const P = s.p || [], br = new Set(s.br || []); return P.map((p, i) => (i === 0 || br.has(i) ? 'M' : 'L') + p[0] + ',' + p[1]).join('') + (s.closed ? 'Z' : ''); },
+    return Math.max(.8, w * INK.wmul(s, m)); },
+  centre(s) { const P = s.p || [], br = new Set(s.br || []); if (!s.geo) return INK.centreLine(s); return P.map((p, i) => (i === 0 || br.has(i) ? 'M' : 'L') + p[0] + ',' + p[1]).join('') + (s.closed ? 'Z' : ''); },
   pattern(s, w) { return s.dash === 'dot' ? `0.01 ${Math.max(2.2 * w, 4)}` : `${Math.max(3.2 * w, 6)} ${Math.max(2.2 * w, 4.5)}`; },
   /** set the style of every selected stroke (one undo step) */
   set(kind) { const sel = INK.sel; if (!sel || !sel.items.length) return; DB.beginGroup('ink');

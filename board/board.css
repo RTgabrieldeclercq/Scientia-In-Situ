@@ -1,0 +1,21 @@
+/* Scientia's whiteboard (V3.937): the lab's board page (rm/css/notebook-board.css and the rest, inlined unchanged before
+   this), minus what needs the lab around it. */
+.sis-board [data-wb-act="tool"][data-tool="paper"]{display:none!important}   /* ＋ From paper reads the lab's library */
+.sis-board .nbb-title{display:none}
+/* V3.941 — ◧'s tap mark (board/pen.js) is no pen to pick */
+.sis-board .wb-fan-item[data-pen="sis-probe"]{visibility:hidden}
+/* V3.942 — the lasso: its loop as it is drawn, the selection's box with corner handles, its bar */
+#sis-loop{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:60}
+#sis-loop path{fill:rgba(13,103,94,.06);stroke:#0d675e;stroke-width:1.5;stroke-dasharray:5 4}
+.sis-sel{position:fixed;z-index:60;border:1.5px dashed #0d675e;border-radius:4px;cursor:move;touch-action:none;box-sizing:border-box}
+.sis-sel > .sis-h{position:absolute;width:12px;height:12px;background:#fff;border:1.5px solid #0d675e;border-radius:3px;box-sizing:border-box}
+.sis-sel > .sis-h[data-h="nw"]{left:-7px;top:-7px;cursor:nwse-resize}.sis-sel > .sis-h[data-h="ne"]{right:-7px;top:-7px;cursor:nesw-resize}
+.sis-sel > .sis-h[data-h="sw"]{left:-7px;bottom:-7px;cursor:nesw-resize}.sis-sel > .sis-h[data-h="se"]{right:-7px;bottom:-7px;cursor:nwse-resize}
+.sis-selbar{position:absolute;left:0;top:calc(100% + 8px);display:flex;align-items:center;gap:4px;white-space:nowrap;background:#fff;border:1px solid #d9d5cc;border-radius:10px;padding:4px 6px;box-shadow:0 6px 18px -8px rgba(0,0,0,.35);font:500 12px/1.4 system-ui,sans-serif;color:#24211c;cursor:default}
+.sis-sel.up > .sis-selbar{top:auto;bottom:calc(100% + 8px)}
+.sis-selbar .n{color:#6b665d;padding:0 4px}
+.sis-selbar button{border:1px solid #d9d5cc;background:#fff;border-radius:7px;padding:2px 8px;font:inherit;color:inherit;cursor:pointer}
+.sis-selbar button:hover{border-color:#0d675e}.sis-selbar button.danger{color:#b42318}                                          /* the app's bar names the board */
+/* view=1: the board in its image cell — seen, not drawn on */
+.sis-view .nbb-bar,.sis-view .nbb-recs,.sis-view .wb-topbar,.sis-view .wb-pills,.sis-view .wb-viewdock,.sis-view .wb-toolbar,.sis-view .wb-pagesbar{display:none!important}
+.sis-view,.sis-view body{pointer-events:none;overflow:hidden}

@@ -1,0 +1,20 @@
+/* ---------- 14b · the Atlas (V3.952) ---------- */
+.atlas{display:flex;flex-direction:column;height:calc(100vh - 110px);min-height:420px;margin:-8px 0 0}
+.at-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0 10px;border-bottom:1px solid var(--rule)}
+.at-lens{max-width:240px}
+.at-chips,.at-acts{display:inline-flex;gap:4px;flex-wrap:wrap}
+.at-chip{border:1px solid var(--rule-2);background:transparent;color:var(--ink-3);border-radius:999px;padding:3px 9px;font:500 11.5px/1.2 var(--f-d);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.at-chip::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c,transparent);opacity:.35} .at-chip.act::before{display:none}
+.at-chip.on{color:var(--ink);border-color:var(--ink);background:var(--surface)} .at-chip.on::before{opacity:1}
+.at-q{width:min(280px,40vw)}
+.at-main{display:flex;flex:1;min-height:0}
+.at-stage{flex:1;min-width:0;position:relative;display:flex;flex-direction:column}
+.at-cv{display:block;width:100%;flex:1;background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--ink) 4%,var(--paper)),var(--paper) 70%);border-radius:10px;cursor:grab;touch-action:none}
+.at-foot{display:flex;align-items:center;gap:10px;height:36px;padding:0 6px;font-size:11px;color:var(--ink-3)} .at-foot .at-time{flex:0 0 220px;accent-color:var(--teal)}
+.at-panel{width:300px;flex:0 0 300px;border-left:1px solid var(--rule);padding:10px 12px;overflow:auto;font-size:12.5px}
+.at-ph b{display:block;font:600 15px/1.3 var(--f-d);margin-top:6px}
+.at-edges{margin-top:10px;display:flex;flex-direction:column;gap:3px}
+.at-edge{display:flex;gap:8px;align-items:baseline;padding:4px 6px;border-radius:6px;cursor:pointer} .at-edge:hover{background:var(--surface-2)}
+.at-edge i{width:8px;height:8px;border-radius:50%;flex:0 0 8px;align-self:center} .at-edge .s{color:var(--ink-3);font-family:var(--f-m);font-size:10.5px;white-space:nowrap}
+.at-from{margin-left:4px}
+@media (max-width:900px){.at-panel{display:none}}

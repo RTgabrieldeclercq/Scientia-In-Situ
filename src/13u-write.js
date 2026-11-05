@@ -115,6 +115,27 @@ const WRITE = {
       return { body: nb, caret: Math.max(0, caret) };
     });
   },
+  /** V3.946 — a list button (13zzf): every line the selection touches becomes that list (its own level kept); lines already in it leave it. */
+  setList(el, b, kind) {
+    return WRITE.apply(el, b, (body, sel) => {
+      const lines = []; let p = 0; body.text.split('\n').forEach(l => { lines.push({ a: p, l }); p += l.length + 1; });
+      const hit = lines.filter(x => x.a <= sel.to && x.a + x.l.length >= sel.from); if (!hit.length) return null;
+      const all = hit.every(x => { const m = WRITE.LINE.exec(x.l); return m && WRITE.kindOf(m[2]) === kind; });
+      let nb = body, caret = sel.from, shift = 0;
+      for (const x of hit) { const m = WRITE.LINE.exec(x.l), ind = m ? m[1] : /^((?: {4})*)/.exec(x.l)[1], old = m ? m[0].length : ind.length, nm = all ? '' : WRITE.markerFor(kind, WRITE.level(ind), 1), at = x.a + shift;
+        nb = ED.splice(nb, at, old, ind + nm); const d = ind.length + nm.length - old;
+        if (caret >= at + old) caret += d; else if (caret > at) caret = at + ind.length + nm.length; shift += d; }
+      return { body: nb, caret: Math.max(0, caret) };
+    });
+  },
+  /** The list the caret's line is in ('bul' · 'num' · 'box'), or null. */
+  listKindAt(el, b, sel) { const body = ED.read(el, M.block(b.id).body.marks), { line } = WRITE.lineAt(body.text, sel.from), m = WRITE.LINE.exec(line); return m ? WRITE.kindOf(m[2]) : null; },
+  /** Is the caret (or the whole selection) in this style? */
+  hasStyle(el, b, s, sel) {
+    if (sel.collapsed) return WRITE.fmtSpansAtCaret(el).some(x => x.classList.contains('f' + s));
+    const body = ED.read(el, M.block(b.id).body.marks), F = body.marks.filter(m => m.type === 'fmt' && m.s === s); let any = false;
+    for (let i = sel.from; i < sel.to; i++) { if (body.text[i] === '\n') continue; any = true; if (!F.some(m => m.from <= i && m.to > i)) return false; } return any;
+  },
   /** Click a ☐ to tick it. */
   toggleBox(el, b, e) {
     const pos = document.caretPositionFromPoint ? document.caretPositionFromPoint(e.clientX, e.clientY) : null, rng = !pos && document.caretRangeFromPoint ? document.caretRangeFromPoint(e.clientX, e.clientY) : null;
@@ -124,8 +145,8 @@ const WRITE = {
     const nb = ED.splice(body, at, 1, body.text[at] === '☐' ? '☑' : '☐'); M.saveBlockBody(cur, nb); ED.render(el, cur); el._save && el._save(); return true;
   },
 
-  /* ---------------- bold / italic / underline ---------------- */
-  STYLE: { b: 'bold', i: 'italic', u: 'underline' },
+  /* ---------------- bold / italic / underline (· strikethrough, V3.946, from the editor bar) ---------------- */
+  STYLE: { b: 'bold', i: 'italic', u: 'underline', s: 'strikethrough' },
   toggle(el, b, s) {
     const sel = ED.selection(el); if (!sel) return; if (sel.collapsed) return WRITE.typeStyle(el, b, s);
     const cur = M.block(b.id), body = ED.read(el, cur.body.marks), F = body.marks.filter(m => m.type === 'fmt' && m.s === s);
@@ -137,7 +158,7 @@ const WRITE = {
     M.saveBlockBody(cur, { text: body.text, marks }); ED.render(el, cur); ED.setCaret(el, sel.from, sel.to); el._save && el._save();
   },
   /** No words selected: the style switches on for what you type next, and off again with the same key or a ":" (typed plain). */
-  fmtSpansAtCaret(el) { const s = getSelection(); if (!s.rangeCount) return []; let n = s.anchorNode; n = n && (n.nodeType === 3 ? n.parentElement : n); const out = []; while (n && n !== el) { if (n.matches && n.matches('.fb,.fi,.fu')) out.push(n); n = n.parentElement; } return out; },
+  fmtSpansAtCaret(el) { const s = getSelection(); if (!s.rangeCount) return []; let n = s.anchorNode; n = n && (n.nodeType === 3 ? n.parentElement : n); const out = []; while (n && n !== el) { if (n.matches && n.matches('.fb,.fi,.fu,.fs')) out.push(n); n = n.parentElement; } return out; },
   atEndOf(span) { const s = getSelection(), r = document.createRange(); r.setStart(s.anchorNode, s.anchorOffset); r.setEnd(span, span.childNodes.length); return !r.toString().replace(/\u200B/g, ''); },
   /** Put the caret just after the outermost of these spans, on a zero-width space, so typing is plain again. */
   escape(spans) { const outer = spans[spans.length - 1]; const z = document.createTextNode('\u200B'); outer.after(z); const r = document.createRange(), s = getSelection(); r.setStart(z, 1); r.collapse(true); s.removeAllRanges(); s.addRange(r); },
@@ -149,7 +170,7 @@ const WRITE = {
     const r = s.getRangeAt(0); r.insertNode(node); const c = document.createRange(); c.setStart(inner, 1); c.collapse(true); s.removeAllRanges(); s.addRange(c);
   },
   typeStyle(el, b, s) {
-    const spans = WRITE.fmtSpansAtCaret(el).filter(x => WRITE.atEndOf(x)), on = spans.map(x => x.className.match(/\bf([biu])\b/)).filter(Boolean).map(m => m[1]);
+    const spans = WRITE.fmtSpansAtCaret(el).filter(x => WRITE.atEndOf(x)), on = spans.map(x => x.className.match(/\bf([bius])\b/)).filter(Boolean).map(m => m[1]);
     if (on.includes(s)) { WRITE.escape(spans); const keep = on.filter(x => x !== s); if (keep.length) WRITE.openStyles(el, b, keep); return; }
     if (spans.length) WRITE.escape(spans);
     WRITE.openStyles(el, b, [...new Set([...on, s])]);

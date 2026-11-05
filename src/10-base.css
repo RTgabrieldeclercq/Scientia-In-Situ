@@ -65,6 +65,8 @@ kbd{font-family:var(--f-m);font-size:10px;border:1px solid var(--rule-2);border-
 .ttlw{display:flex;align-items:baseline;gap:10px;min-width:0;flex:1 1 auto;overflow:hidden}
 #hd button,#timers{flex:none;white-space:nowrap}
 #ttl{flex:0 0 auto;font-size:14px;font-weight:600;letter-spacing:-.005em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:38vw;outline:0;border-radius:4px;padding:1px 5px;margin-left:-1px}
+#ttlmore{flex:none;align-self:center;width:26px;height:24px;margin-left:-6px;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--ink-2);font:600 15px/1 var(--f-b,system-ui);cursor:pointer;padding:0}
+#ttlmore:hover{border-color:var(--rule-2);background:var(--surface);color:var(--ink)} #ttlmore[hidden]{display:none}
 #ttl.ed{cursor:text} #ttl.ed:hover{background:color-mix(in srgb,var(--ink) 5%,transparent)} #ttl.ed:focus{background:var(--surface);box-shadow:0 0 0 1px var(--rule-2);text-overflow:clip}
 #meta{display:flex;align-items:baseline;gap:8px;font-family:var(--f-m);font-size:10.5px;color:var(--ink-3);white-space:nowrap;min-width:0;overflow:hidden;flex:1 1 0;mask-image:linear-gradient(to right,#000 85%,transparent)}
 #meta a{color:var(--ink-2)}

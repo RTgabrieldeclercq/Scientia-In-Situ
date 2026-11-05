@@ -7,12 +7,14 @@
    can carry a letter (A, B…), a caption and its own structure label
    (evidence, observation…); the whole panel can be one too, and its
    caption below is a normal text with terms, links and structures.
+   An empty image can be the lab's whiteboard instead, drawn on in the whole
+   window (13zzd); the pen also writes on the images themselves (13zzc).
    ========================================================================== */
 const FIG = {
   GAP: 4, PRESETS: [[1, 1], [1, 2], [1, 3], [1, 4], [2, 1], [2, 2], [2, 3], [3, 2], [3, 3], [4, 1]],
   cells(b) { const F = b.fig; const n = F.rows * F.cols; F.cells = F.cells || []; while (F.cells.length < n) F.cells.push({ id: uid('fc') }); return F.cells.slice(0, n); },
   letter: i => String.fromCharCode(65 + (i % 26)) + (i >= 26 ? Math.floor(i / 26) : ''),
-  aspect(c) { const m = c.media && MEDIA.get(c.media); if (!m || !m.w || !m.h) return 4 / 3; const k = c.crop || { x: 0, y: 0, w: 1, h: 1 }; return (k.w * m.w) / (k.h * m.h); },
+  aspect(c) { if (c.board && !c.media) { const e = BOARD.crop(c.board); return e ? clamp(e.w / e.h, .25, 4) : (c.board.w || 4) / (c.board.h || 3); } const m = c.media && MEDIA.get(c.media); if (!m || !m.w || !m.h) return 4 / 3; const k = c.crop || { x: 0, y: 0, w: 1, h: 1 }; return (k.w * m.w) / (k.h * m.h); },
   /** Sizes for every cell: a row's images share a height and fill the width exactly. */
   layout(b, W) {
     const F = b.fig, cells = FIG.cells(b), out = [];
@@ -22,7 +24,7 @@ const FIG = {
   },
   save(b) { b.modified = isoLocal(new Date()); FIG.syncText(b); DB.put('blocks', b); const d = M.doc(b.docId); d && M.touchDoc(d); },
   /** The searchable text: letters, captions and file names (the caption editor keeps its own text). */
-  syncText(b) { b.fig.index = FIG.cells(b).map((c, i) => { const m = c.media && MEDIA.get(c.media); return m ? `${FIG.letter(i)}: ${c.caption || ''} ${m.name || ''}`.trim() : ''; }).filter(Boolean).join(' · '); },
+  syncText(b) { b.fig.index = FIG.cells(b).map((c, i) => { const m = c.media && MEDIA.get(c.media); return m ? `${FIG.letter(i)}: ${c.caption || ''} ${m.name || ''}`.trim() : c.board ? `${FIG.letter(i)}: ${c.caption || ''} whiteboard`.trim() : ''; }).filter(Boolean).join(' · '); },
   create(d, p, rows, cols, files) {
     const b = M.addBlock(d.id, null, { kind: 'figure', label: 'Figure', x: Math.round(p.x / 14) * 14, y: Math.round(p.y / 14) * 14, w: 560, fig: { rows, cols, letters: true, cells: [] } });
     b.body = { text: '', marks: [] }; FIG.cells(b); DB.put('blocks', b); changed();
@@ -30,7 +32,7 @@ const FIG = {
   },
   async addFiles(b, files, at = 0) {
     const cells = FIG.cells(b); let k = at;
-    for (const f of files) { while (k < cells.length && cells[k].media) k++; if (k >= cells.length) { toast('The grid is full — change its layout to add more'); break; }
+    for (const f of files) { while (k < cells.length && (cells[k].media || cells[k].board)) k++; if (k >= cells.length) { toast('The grid is full — change its layout to add more'); break; }
       const rec = await MEDIA.add(f); if (!['image', 'gif', 'video'].includes(rec.kind)) { toast(rec.name + ' is not an image'); continue; } cells[k].media = rec.id; cells[k].crop = null; k++; }
     const cur = M.block(b.id); cur.fig = b.fig; FIG.save(cur); changed();
   },
@@ -58,24 +60,28 @@ const FIG = {
       for (let r = 0; r < F.rows; r++) {
         const row = h('div.fg-row', { style: { gap: FIG.GAP + 'px' } });
         L.filter(x => x.r === r).forEach(({ c, w, h: hh, i }) => {
-          const m = c.media && MEDIA.get(c.media), it = c.itemId && M.item(c.itemId);
-          const frame = h('div.fg-cell' + (m ? '' : '.empty') + (it ? '.lab' : ''), { style: { width: w + 'px', height: hh + 'px', '--kc': it ? `var(--k-${it.kind})` : null }, draggable: !ro && !!m, 'data-i': i,
-            title: ro ? '' : m ? 'Click to crop · drag onto another image to swap' : 'Add an image' });
+          const m = c.media && MEDIA.get(c.media), wb = !m && c.board, it = c.itemId && M.item(c.itemId);   // wb: a whiteboard in place of an image (13zzd)
+          const frame = h('div.fg-cell' + (m || wb ? '' : '.empty') + (wb ? '.wb' : '') + (it ? '.lab' : ''), { style: { width: w + 'px', height: hh + 'px', '--kc': it ? `var(--k-${it.kind})` : null }, draggable: !ro && !!(m || wb), 'data-i': i,
+            title: ro ? '' : m ? 'Click to crop · drag onto another image to swap' : wb ? 'Click to draw on the whiteboard — it fills the window' : 'Add an image' });
           if (m) { const k = c.crop || { x: 0, y: 0, w: 1, h: 1 }, iw = w / k.w, ih = hh / k.h; frame.append(MEDIA.el(m, { style: { position: 'absolute', width: iw + 'px', height: ih + 'px', left: -k.x * iw + 'px', top: -k.y * ih + 'px', maxWidth: 'none', pointerEvents: 'none' } })); }
-          else frame.append(h('span.fg-add', '+ image'));
-          if (F.letters !== false && m) frame.append(h('span.fg-letter', FIG.letter(i)));
+          else if (wb) frame.append(BOARD.preview(c.board));
+          else frame.append(h('div.fg-empty', h('span.fg-add', '+ image'), ro ? null : h('button.fg-wb', { title: 'A whiteboard instead of an image (the lab’s board) — it fills the window to draw on', on: { click: e => { e.stopPropagation(); BOARD.make(M.block(b.id), i); } } }, '✎ Whiteboard')));
+          if (F.letters !== false && (m || wb)) frame.append(h('span.fg-letter', FIG.letter(i)));
+          // V3.942 — a whiteboard crops to its drawing, like an image (a click still opens all of it); or shows the whole page
+          if (wb && !ro && !wb.lab) { const on = wb.crop !== false; frame.append(h('button.fg-wbcrop', { title: on ? 'Cropped to the drawing — show the whole page instead' : 'Crop to the drawing, like an image (the board stays whole: a click opens it)',
+            on: { click: e => { e.stopPropagation(); const cur = M.block(b.id), cc = FIG.cells(cur)[i]; if (!cc || !cc.board) return; if (on) cc.board.crop = false; else delete cc.board.crop; FIG.save(cur); changed(); } } }, on ? 'Whole page' : 'Crop to the drawing')); }
           if (it) frame.append(h('button.fg-kind' + (w < 96 ? '.dot' : ''), { title: 'Change or remove the label', on: { click: e => { e.stopPropagation(); if (ro) return; FIG.kindMenu(e, 'Image ' + FIG.letter(i), k => FIG.labelCell(M.block(b.id), FIG.cells(M.block(b.id))[i], i, k), it.kind, () => { const cur = M.block(b.id), cc = FIG.cells(cur)[i]; cc.itemId = null; FIG.save(cur); IX.rebuild(); changed(); }); } } }, kchip(it.kind)));
-          else if (m && !ro) frame.append(h('button.fg-kind.add', { title: 'Label this image as a structure', on: { click: e => { e.stopPropagation(); FIG.kindMenu(e, 'Image ' + FIG.letter(i) + ' is…', k => FIG.labelCell(M.block(b.id), FIG.cells(M.block(b.id))[i], i, k)); } } }, '+ label'));
+          else if ((m || wb) && !ro) frame.append(h('button.fg-kind.add', { title: 'Label this image as a structure', on: { click: e => { e.stopPropagation(); FIG.kindMenu(e, 'Image ' + FIG.letter(i) + ' is…', k => FIG.labelCell(M.block(b.id), FIG.cells(M.block(b.id))[i], i, k)); } } }, '+ label'));
           if (!ro) {
-            frame.addEventListener('click', e => { if (e.target.closest('button')) return; e.stopPropagation(); m ? FIG.cropDialog(M.block(b.id), i) : FIG.pick(b, i); });
+            frame.addEventListener('click', e => { if (e.target.closest('button')) return; e.stopPropagation(); m ? FIG.cropDialog(M.block(b.id), i) : wb ? BOARD.open(M.block(b.id), i) : FIG.pick(b, i); });
             frame.addEventListener('dragstart', e => { e.dataTransfer.setData('text/fig', b.id + ':' + i); e.dataTransfer.effectAllowed = 'move'; });
             frame.addEventListener('dragover', e => { if ([...e.dataTransfer.types].includes('text/fig') || [...e.dataTransfer.types].includes('Files')) { e.preventDefault(); frame.classList.add('over'); } });
             frame.addEventListener('dragleave', () => frame.classList.remove('over'));
             frame.addEventListener('drop', e => { e.preventDefault(); e.stopPropagation(); frame.classList.remove('over');
-              if (e.dataTransfer.files && e.dataTransfer.files.length) { const cur = M.block(b.id); FIG.cells(cur)[i].media = null; return FIG.addFiles(cur, [...e.dataTransfer.files], i); }
+              if (e.dataTransfer.files && e.dataTransfer.files.length) { const cur = M.block(b.id); FIG.cells(cur)[i].media = null; delete FIG.cells(cur)[i].board; return FIG.addFiles(cur, [...e.dataTransfer.files], i); }
               const [bid, j] = (e.dataTransfer.getData('text/fig') || '').split(':'); if (bid !== b.id || +j === i) return; const cur = M.block(b.id), cs = FIG.cells(cur), t = cs[+j]; cur.fig.cells[+j] = cs[i]; cur.fig.cells[i] = t; FIG.save(cur); changed(); });
           }
-          const cap = ro ? (c.caption ? h('div.fg-cap', c.caption) : null) : m ? h('input.fg-cap', { value: c.caption || '', title: c.caption || '', placeholder: FIG.letter(i) + ' caption', on: { pointerdown: e => e.stopPropagation(), keydown: e => { e.stopPropagation(); if (e.key === 'Enter') e.target.blur(); },
+          const cap = ro ? (c.caption ? h('div.fg-cap', c.caption) : null) : m || wb ? h('input.fg-cap', { value: c.caption || '', title: c.caption || '', placeholder: FIG.letter(i) + ' caption', on: { pointerdown: e => e.stopPropagation(), keydown: e => { e.stopPropagation(); if (e.key === 'Enter') e.target.blur(); },
             change: e => { const cur = M.block(b.id), cc = FIG.cells(cur)[i]; cc.caption = e.target.value.trim(); if (cc.itemId && M.item(cc.itemId)) M.setItem(M.item(cc.itemId), { text: cc.caption || 'Panel ' + FIG.letter(i) }); FIG.save(cur); } } }) : null;
           row.append(h('div.fg-col', { style: { width: w + 'px' } }, frame, cap));
         });
@@ -105,8 +111,8 @@ const FIG = {
     let sig = JSON.stringify(b.fig); const t = setInterval(() => { if (!ov.isConnected) return clearInterval(t); const cur = M.block(b.id), s = cur && JSON.stringify(cur.fig); if (s && s !== sig && !$('.ovl')) { sig = s; re(); } }, 600);
   },
   layoutMenu(b, e) {
-    const set = (r, c) => { const n = r * c, have = FIG.cells(b).filter(x => x.media); if (have.length > n && !confirm(`${have.length} images won't fit in ${r}×${c}; the last ${have.length - n} will be taken out of the panel (their files stay). Continue?`)) return;
-      const keep = [...have, ...FIG.cells(b).filter(x => !x.media)]; b.fig.rows = r; b.fig.cols = c; b.fig.cells = keep.slice(0, n); FIG.cells(b); FIG.save(b); changed(); };
+    const set = (r, c) => { const n = r * c, have = FIG.cells(b).filter(x => x.media || x.board); if (have.length > n && !confirm(`${have.length} images won't fit in ${r}×${c}; the last ${have.length - n} will be taken out of the panel (their files stay). Continue?`)) return;
+      const keep = [...have, ...FIG.cells(b).filter(x => !x.media && !x.board)]; b.fig.rows = r; b.fig.cols = c; b.fig.cells = keep.slice(0, n); FIG.cells(b); FIG.save(b); changed(); };
     ctxMenu(e.clientX, e.clientY + 8, [{ head: 'Panel layout (rows × columns)' }, ...FIG.PRESETS.map(([r, c]) => ({ label: (r === b.fig.rows && c === b.fig.cols ? '✓ ' : '') + r + ' × ' + c, run: () => set(r, c) })),
       { label: 'Custom…', run: async () => { const v = await askText('Rows × columns', 'e.g. 2x3', b.fig.rows + 'x' + b.fig.cols); const m = /^(\d+)\s*[x×*]\s*(\d+)$/.exec(v || ''); if (m && +m[1] > 0 && +m[2] > 0 && +m[1] * +m[2] <= 36) set(+m[1], +m[2]); else if (v) toast('Use rows×columns, up to 36 cells'); } },
       'sep', { label: (b.fig.letters !== false ? 'Hide' : 'Show') + ' panel letters', run: () => { b.fig.letters = b.fig.letters === false; FIG.save(b); changed(); } }]);

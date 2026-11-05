@@ -184,7 +184,7 @@ const TABLE = {
     setTimeout(() => { const box = wrap.closest('.box'); if (box) box._tbMove = move; show(); }, 0);
     // height: drag the bottom edge
     if (!ro) { const rz = h('div.tb-rz', { title: 'Drag to change the height' }); wrap.append(rz); rz.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); const z = pane && pane.paper ? pane.paper.view.z : 1, y0 = e.clientY, h0 = b.h || 360;
-      const mv = ev => { b.h = clamp(Math.round(h0 + (ev.clientY - y0) / z), 120, 2000); wrap.style.setProperty('--tbh', b.h + 'px'); pane && pane.drawWires && pane.drawWires(); };
+      const mv = ev => { b.h = Math.max(120, Math.round(h0 + (ev.clientY - y0) / z)); wrap.style.setProperty('--tbh', b.h + 'px'); pane && pane.drawWires && pane.drawWires(); };   // V3.942 — no largest height
       const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); const cur = M.block(b.id); cur.h = b.h; DB.put('blocks', cur); DB.beginGroup(); };
       addEventListener('pointermove', mv); addEventListener('pointerup', up); }); }
     return wrap;
@@ -232,7 +232,7 @@ const PLOT = {
       h('button.btn.xs', { title: 'Download as SVG', on: { click: e => { e.stopPropagation(); Exporter.download(Exporter.slug(b.label || 'plot') + '.svg', '<?xml version="1.0"?>\n' + svg.outerHTML.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"'), 'image/svg+xml'); } } }, '↓'));
     wrap.append(bar, svg);
     if (!ro) { const rz = h('div.tb-rz', { title: 'Drag to change the height' }); wrap.append(rz); rz.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); const z = pane && pane.paper ? pane.paper.view.z : 1, y0 = e.clientY, h0 = b.h || 320;
-      const mv = ev => { b.h = clamp(Math.round(h0 + (ev.clientY - y0) / z), 160, 1600); }, up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); const cur = M.block(b.id); cur.h = b.h; PLOT.save(cur); };
+      const mv = ev => { b.h = Math.max(160, Math.round(h0 + (ev.clientY - y0) / z)); }, up =() => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); const cur = M.block(b.id); cur.h = b.h; PLOT.save(cur); };
       addEventListener('pointermove', mv); addEventListener('pointerup', up); }); }
     return wrap;
   },

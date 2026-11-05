@@ -2,6 +2,9 @@
    07 · Library — ported from doi-lookup-demo (normaliser, sigil, APA rules,
    BibTeX/RIS/CSL parsers). Paste path works offline; DOI lookup is the
    one narrow, user-triggered outbound request, cached forever.
+   V3.958: the demo's journal tables in full (PLOS Computational Biology,
+   EMBO, JAMA, BMJ, npj…), and its test suite runs against this module
+   (scripts/tests/scientia-doi-lookup.test.mjs).
    ========================================================================== */
 const LIB = {
   CSL_ACCEPT: 'application/vnd.citationstyles.csl+json',
@@ -30,13 +33,22 @@ const LIB = {
       if (open === '{') { let depth = 1; while (i < body.length && depth > 0) { const c = body[i]; if (c === '{') depth++; else if (c === '}') { depth--; if (!depth) break; } val += c; i++; } }
       else if (open === '"') { while (i < body.length && body[i] !== '"') { val += body[i]; i++; } }
       else { while (i < body.length && !/[,\n}]/.test(body[i])) { val += body[i]; i++; } }
-      re.lastIndex = i + 1; fields[key] = val.replace(/[{}]/g, '').replace(/\s+/g, ' ').trim();
+      re.lastIndex = i + 1; fields[key] = LIB.tex(val).replace(/[{}]/g, '').replace(/\s+/g, ' ').trim();
     }
     const authors = (fields.author || '').split(/\s+and\s+/).filter(Boolean).map(a => { if (a.includes(',')) { const [f, g] = a.split(','); return { family: f.trim(), given: (g || '').trim() }; } const p = a.trim().split(/\s+/); return { family: p.pop() || '', given: p.join(' ') }; });
     const container = fields.journal || fields.booktitle || '';
     return { doi: fields.doi || '', cslType: head[1].toLowerCase(), title: fields.title || '', authors, container, publisher: fields.publisher || '', year: parseInt(fields.year, 10) || null,
       volume: fields.volume || '', issue: fields.number || fields.issue || '', page: (fields.pages || '').replace(/--/g, '-'), issn: fields.issn || '', url: fields.url || '', isPreprint: !container, csl: { _source: 'bibtex', fields } };
   },
+  /** V3.958 — BibTeX's accents as letters: Kort{\"u}m → Kortüm, \'{e} → é, \c{c} → ç, {\o} → ø, \ss → ß (the demo kept the
+      backslash: "Kort\"um"). */
+  TEXACC: { '"': '̈', "'": '́', '`': '̀', '^': '̂', '~': '̃', '=': '̄', '.': '̇', u: '̆', v: '̌', H: '̋', c: '̧', k: '̨', r: '̊' },
+  TEXSYM: { ss: 'ß', ae: 'æ', AE: 'Æ', oe: 'œ', OE: 'Œ', o: 'ø', O: 'Ø', aa: 'å', AA: 'Å', l: 'ł', L: 'Ł', i: 'ı', j: 'ȷ' },
+  tex: s => String(s || '')
+    .replace(/\\(["'`^~=.])(?:\{\s*([A-Za-z])\s*\}|\s*([A-Za-z]))/g, (m, a, x, y) => ((x || y) + LIB.TEXACC[a]).normalize('NFC'))
+    .replace(/\\([uvHckr])(?:\{\s*([A-Za-z])\s*\}|\s+([A-Za-z]))/g, (m, a, x, y) => ((x || y) + LIB.TEXACC[a]).normalize('NFC'))
+    .replace(/\\(ss|ae|AE|oe|OE|aa|AA|o|O|l|L|i|j)(?![A-Za-z])\s*(\{\})?/g, (m, w) => LIB.TEXSYM[w])
+    .replace(/\\([&%$#_])/g, '$1'),
   parseRis(src) {
     const f = {}, authors = [];
     src.split(/\r?\n/).forEach(line => { const m = line.match(/^([A-Z][A-Z0-9])\s+-\s*(.*)$/); if (!m) return; const [, tag, val] = m;
@@ -61,7 +73,7 @@ const LIB = {
   },
 
   /* ---------- sigil ---------- */
-  KNOWN: { 'proceedings of the national academy of sciences': 'PNAS', 'proceedings of the national academy of sciences of the united states of america': 'PNAS', 'plos one': 'PLOS', 'plos biology': 'PLOS',
+  KNOWN: { 'proceedings of the national academy of sciences': 'PNAS', 'proceedings of the national academy of sciences of the united states of america': 'PNAS', 'plos one': 'PLOS', 'plos biology': 'PLOS', 'plos computational biology': 'PLOS',
     'journal of biological chemistry': 'JBC', 'the journal of biological chemistry': 'JBC', 'journal of cell biology': 'JCB', 'the journal of cell biology': 'JCB', 'biophysical journal': 'BpJ', 'biochemistry': 'Bchm',
     'nature': 'Nature', 'science': 'Science', 'cell': 'Cell', 'nature methods': 'NatMe', 'nature communications': 'NatCo', 'molecular biology of the cell': 'MBoC', 'elife': 'eLife', 'scientific reports': 'SciRp', 'bioinformatics': 'Binf' },
   STOP: new Set(['of', 'the', 'and', 'for', 'in', 'on', 'a', 'an', 'de', 'des', 'la', 'le']),
@@ -94,7 +106,9 @@ const LIB = {
     return list.slice(0, 19).map(f).join(', ') + ', … ' + f(list[list.length - 1]);
   },
   sentenceCase(t) { if (!t) return ''; const fw = t.split(/\s+/)[0] || ''; if (/[A-Z]/.test(fw)) return t; if (!/^[a-z]/.test(t)) return t; return t.charAt(0).toUpperCase() + t.slice(1); },
-  JD: { 'plos one': 'PLOS One', 'plos biology': 'PLOS Biology', 'elife': 'eLife', 'journal of biological chemistry': 'Journal of Biological Chemistry', 'proceedings of the national academy of sciences': 'Proceedings of the National Academy of Sciences', 'acs nano': 'ACS Nano', 'mbio': 'mBio' },
+  JD: { 'plos one': 'PLOS One', 'plos biology': 'PLOS Biology', 'plos computational biology': 'PLOS Computational Biology', 'elife': 'eLife', 'embo journal': 'EMBO Journal', 'the embo journal': 'The EMBO Journal',
+    'journal of biological chemistry': 'Journal of Biological Chemistry', 'proceedings of the national academy of sciences': 'Proceedings of the National Academy of Sciences', 'acs nano': 'ACS Nano', 'jama': 'JAMA', 'bmj': 'BMJ', 'mbio': 'mBio',
+    'npj systems biology and applications': 'npj Systems Biology and Applications' },
   journal(j) { const k = String(j || '').toLowerCase().replace(/\s+/g, ' ').trim(); if (LIB.JD[k]) return LIB.JD[k];
     return String(j || '').replace(/\S+/g, (w, i) => /[A-Z]{2,}/.test(w) ? w : (i > 0 && LIB.STOP.has(w.toLowerCase()) ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1))); },
   apa(r) {

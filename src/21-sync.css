@@ -112,6 +112,9 @@ svg.ink-live path.ink-lasso{fill:color-mix(in srgb,var(--teal) 8%,transparent);s
 .m-ink{overflow-x:auto;max-width:100%}
 .box.w-ink > .port{opacity:0;pointer-events:none} .box.w-ink.sel > .port{opacity:1;pointer-events:auto}
 .box.w-ink > .rz{display:none}
+/* ink written on an image (13zzc): on top of it, glued to it; only the strokes take the pointer */
+.box.w-ink.on-img{z-index:5;pointer-events:none}
+.box.w-ink.on-img .ink-svg path{pointer-events:visiblePainted;cursor:grab}
 /* custom connections */
 .rel-own{width:100%;margin:2px 0 8px} .opt.rel-custom{border:1px solid var(--mag)} .opt.dim{opacity:.55}
 .cd-ownw{padding:6px 6px 2px} .cd-ownw .inp{width:100%;height:30px;font-size:12.5px} .cd-ownw.on .inp{border-color:var(--mag);box-shadow:0 0 0 2px color-mix(in srgb,var(--mag) 18%,transparent)}
@@ -329,6 +332,10 @@ path.ink-geo.ink-hl{opacity:.32}
 .box.q-box .ed::before{content:'❝ ';color:var(--ink-3);font-style:normal}
 .q-from{display:block;margin:2px 10px 8px;border:0;background:none;padding:0;color:var(--ink-3);font-size:11px;text-align:left;cursor:pointer}
 .q-from:hover{color:var(--teal)}
+/* a note written in an HTML page (13zze) */
+.box.hn-box{border-left:4px solid #e0b400}
+.mx-hint{padding:5px 14px;font-size:12px;background:#fff8c5;color:#3a3200;border-bottom:1px solid #e3cf5a}
+.embed-max.mx-picking iframe{outline:2px dashed #e0b400;outline-offset:-2px}
 .q-pick{position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:960;display:flex;gap:8px;align-items:center;padding:8px 12px;background:var(--surface);border:1px solid var(--teal);border-radius:12px;box-shadow:var(--shadow-lg);font-size:13px}
 body.q-picking .box.cmp{cursor:crosshair}
 body.q-picking .box.cmp:hover{outline:2px solid var(--teal);outline-offset:2px}
@@ -349,6 +356,10 @@ body.q-picking .box.cmp:hover{outline:2px solid var(--teal);outline-offset:2px}
 .q-hl{background:color-mix(in srgb,var(--hc,#F6D55C) 50%,transparent)}
 body:has(.embed-max) .pop,body:has(.embed-max) .modal-bg,body:has(.embed-max) .ovl{z-index:1300}.rd-penbar{z-index:1310}
 .q-hl.erasing{opacity:.25;outline:1px dashed #c33}
+/* V3.944 · 23d · a lab paper's highlights from RM, on its pages (an underline in RM's colour tells them from the note's quotes) and in the reader's panel */
+.rm-hl{position:absolute;border-radius:2px;mix-blend-mode:multiply;background:color-mix(in srgb,var(--hc,#facc15) 32%,transparent);box-shadow:inset 0 -2px 0 var(--hc,#facc15)}
+.rm-hl.flash{animation:rdflash .9s ease-in-out 2;outline:2px solid #e08a00}
+.mx-side>.rm-side{margin-top:14px;padding-bottom:14px;border-top:1px solid var(--rule)}
 /* ---------- 13zza · clip a figure or an equation onto the canvas ---------- */
 .clip-layer{position:absolute;z-index:3;pointer-events:none}
 .clip-hs{position:absolute;box-sizing:border-box;border:2px dashed color-mix(in srgb,var(--teal) 80%,transparent);border-radius:3px;background:color-mix(in srgb,var(--teal) 7%,transparent);animation:tin .12s}
@@ -363,6 +374,7 @@ body:has(.embed-max) .pop,body:has(.embed-max) .modal-bg,body:has(.embed-max) .o
 .clip-btn svg,.rd-open svg{display:block}
 .clip-flash{position:absolute;box-sizing:border-box;border:3px solid #e08a00;border-radius:3px;box-shadow:0 0 0 4px color-mix(in srgb,#e08a00 25%,transparent);animation:rdflash .9s ease-in-out 2;pointer-events:none}
 .box.clip-new{animation:clipnew 1.5s ease-out}
+.box.clip-float{z-index:5;box-shadow:0 14px 34px -8px rgba(36,33,28,.38),0 2px 6px rgba(36,33,28,.12)}   /* a clip lying on its paper until it is moved */
 @keyframes clipnew{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--teal) 70%,transparent)}100%{box-shadow:0 0 0 16px transparent}}
 .clip-hs.eq .clip-badge{top:auto;bottom:calc(100% + 3px);left:-2px}
 .clip-mq.kept{border-style:dashed}
@@ -401,6 +413,12 @@ body.rd-right .embed-max.rd-docked{grid-column:2;border-left:1px solid var(--rul
 .embed-max.rd-dock .pdf-pn{right:auto;left:50%;bottom:-19px;transform:translateX(-50%);font-size:10.5px;color:var(--ink-3)}
 .embed-max.rd-docked .mx-side{display:none;position:absolute;top:0;right:0;bottom:0;width:min(340px,88%);z-index:6;box-shadow:-12px 0 30px rgba(0,0,0,.16)}
 .embed-max.rd-docked.rd-side-on .mx-side{display:block}
+.embed.rd-away{display:flex;align-items:center;justify-content:center;box-sizing:border-box;border-radius:6px;background:color-mix(in srgb,var(--ink) 4%,var(--surface));border:1px dashed var(--rule-2)}
+.embed-max.rd-dock .dk-maxc > .em-frame{flex:1;width:100%;height:100%}
+/* V3.945 · 13zze · a page that fills the window keeps the note's ✎ pill: lifted over it, inside the page, alone (with the pen settings it opens) */
+.canvas-host.mx-pills > .lab-pills{z-index:1250;transform:translate(var(--mx-dx,0px),var(--mx-dy,0px))}
+.canvas-host.mx-pills > .lab-pills > .lab-pill:not(.lab-pill-hand){display:none}
+.canvas-host.mx-pills > .ink-bar{z-index:1250}
 .pdfw.rd-away{display:flex;align-items:center;justify-content:center;box-sizing:border-box;margin:4px 10px 10px;padding:0;border-radius:6px;background:color-mix(in srgb,var(--ink) 4%,var(--surface));border:1px dashed var(--rule-2)}
 .rd-away-in{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;color:var(--ink-3);padding:18px;font-size:12.5px}
 .rd-away-in b{font:600 16px/1.3 var(--f-d);color:var(--ink);max-width:92%}
@@ -408,6 +426,25 @@ body.rd-right .embed-max.rd-docked{grid-column:2;border-left:1px solid var(--rul
 /* 13zz2 · pen round three */
 body.ink-writing .box.w-ink{border-color:transparent!important;box-shadow:none!important;background:transparent!important}
 body.ink-writing .box.w-ink > .bh,body.ink-writing .box.w-ink > .chips,body.ink-writing .box.w-ink > .port{visibility:hidden}
+/* V3.942 — with the pen (any hand but pan) nothing on the paper answers the pen hovering over it: no frame, header, grip,
+   ⋯, port or tool shows up (Gabe: outlines only "when pan is on"). The lab's pills mark the note with its hand
+   (lab-mode §11: lab-pilled, lab-hand-move). A component being edited (selected, or its text focused) keeps its frame. */
+.canvas-host.lab-pilled:not(.lab-hand-move) .box:not(.w-ink):hover:not(.sel):not(:focus-within){border-color:var(--rule)}
+.canvas-host.lab-pilled:not(.lab-hand-move) .box.w-ink:hover,.canvas-host.lab-pilled:not(.lab-hand-move) .box.w-ink.sel{border-color:transparent}
+.canvas-host.lab-pilled:not(.lab-hand-move) .box.w-ink > .bh,.canvas-host.lab-pilled:not(.lab-hand-move) .box.w-ink > .chips,.canvas-host.lab-pilled:not(.lab-hand-move) .box.w-ink > .port{opacity:0!important;pointer-events:none!important}
+.canvas-host.lab-pilled:not(.lab-hand-move) .box:hover:not(.sel) .bmore,.canvas-host.lab-pilled:not(.lab-hand-move) .box:hover:not(.sel) .tk-chip.none,.canvas-host.lab-pilled:not(.lab-hand-move) .box:hover:not(.sel) .wk-btn:not(.on),
+.canvas-host.lab-pilled:not(.lab-hand-move) .box:not(.sel) .embed:hover .embed-tools,.canvas-host.lab-pilled:not(.lab-hand-move) .box .fg-cell:hover .port.fg-port,
+.canvas-host.lab-pilled:not(.lab-hand-move) .box:not(.sel) .fg-cell:hover .fg-kind.add,.canvas-host.lab-pilled:not(.lab-hand-move) .box:not(.sel) .fg-cell.wb:hover > .fg-wbcrop{opacity:0}
+.canvas-host.lab-pilled:not(.lab-hand-move) .box:hover > .rz.rz-corner{opacity:.7}
+body:not(.wiring) .canvas-host.lab-pilled:not(.lab-hand-move) .region:hover > .rg-port{opacity:0}
+/* V3.943 — Export ink labels: the page around a label, its ink, the crop box */
+.hx-cwrap{display:flex;justify-content:center;overflow:auto;max-height:70vh}
+.hx-cstage{position:relative;flex:none;overflow:hidden;border:1px solid var(--rule-2);background:#fff;cursor:crosshair;touch-action:none;user-select:none}
+.hx-cstage > img{pointer-events:none}
+.hx-cink{position:absolute;left:0;top:0;pointer-events:none}
+.hx-cbox{position:absolute;border:2px solid var(--teal);box-shadow:0 0 0 9999px rgba(0,0,0,.28);cursor:move;box-sizing:border-box}
+.hx-ch{position:absolute;width:12px;height:12px;background:#fff;border:2px solid var(--teal);border-radius:3px;box-sizing:border-box}
+.hx-ch[data-h="nw"]{left:-7px;top:-7px;cursor:nwse-resize}.hx-ch[data-h="ne"]{right:-7px;top:-7px;cursor:nesw-resize}.hx-ch[data-h="sw"]{left:-7px;bottom:-7px;cursor:nesw-resize}.hx-ch[data-h="se"]{right:-7px;bottom:-7px;cursor:nwse-resize}
 .box > .bh .blab:not(:focus),.box > .bh .stampbtn{cursor:grab}
 .il-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .il-item{border:1px solid var(--rule-2);border-radius:10px;padding:8px;cursor:pointer;background:var(--surface);position:relative}
@@ -474,13 +511,108 @@ body.viewer #brand { pointer-events: none; }
 .lx-steps code { font-size: 12px; }
 .lx-list { padding-left: 18px; font-size: 13px; display: grid; gap: 3px; }
 .lx-warn { padding: 8px 10px; border-radius: 6px; background: color-mix(in srgb, var(--warn, #c9a227) 16%, transparent); font-size: 13px; }
-/* cloud sync (13zs) */
-#clouddot .cl-ic { font-size: 15px; line-height: 1; }
-#clouddot.cl-ok .cl-ic { color: var(--good, #3a8a4a); } #clouddot.cl-pend .cl-ic { color: var(--accent, #4a6cf7); }
-#clouddot.cl-off .cl-ic { color: var(--bad, #c0392b); } #clouddot.cl-in .cl-ic { color: var(--muted); }
-.cl-state { padding: 8px 10px; border: 1px solid var(--rule); border-radius: 6px; margin: 8px 0; display: grid; gap: 4px; }
-.cl-steps { padding-left: 20px; display: grid; gap: 8px; font-size: 13.5px; line-height: 1.45; }
-.cl-steps code { font-size: 12px; word-break: break-all; }
-.cl-code { margin-top: 4px; } .cl-code pre { white-space: pre-wrap; font-size: 11.5px; background: color-mix(in srgb, var(--ink) 5%, transparent); padding: 8px; border-radius: 5px; }
-.cl-setup > summary, .cl-code > summary { cursor: pointer; font-weight: 600; margin: 6px 0; }
-.cl-link { white-space: pre-wrap; word-break: break-all; font-size: 11px; }
+/* literature reviews (15c) */
+.lr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-top: 14px; }
+.lr-card { border: 1px solid var(--rule-2); border-radius: 10px; padding: 10px 12px; background: var(--surface); cursor: pointer; display: flex; flex-direction: column; gap: 3px; min-height: 120px; }
+.lr-card:hover { border-color: var(--teal); }
+.lr-name { font-size: 14px; line-height: 1.3; font-weight: 600; }
+.lr-q { font-size: 13px; color: var(--ink-2); }
+.lr-ps { display: flex; flex-wrap: wrap; gap: 4px; margin-top: auto; padding-top: 6px; }
+.lr-ps a.pill { text-decoration: none; cursor: pointer; }
+.lr-bar { gap: 8px; align-items: center; }
+.lr-filter { max-width: 280px; }
+.lr-head textarea.hin { width: 100%; box-sizing: border-box; resize: vertical; font: inherit; }
+.lr-links { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.lr-links .lr-link { flex: 1 1 180px; width: auto; }
+.lr-chip { display: inline-flex; align-items: center; gap: 4px; }
+.lr-chip a { color: inherit; text-decoration: none; cursor: pointer; }
+.lr-x { border: 0; background: none; padding: 0 2px; cursor: pointer; color: var(--ink-3); font: inherit; }
+.lr-x:hover { color: var(--bad); }
+/* waits for the lab; lab inventory materials are fixed (23b) */
+.lab-wait { display: inline-block; margin: 4px 0 0; font-size: 11px; color: var(--ink-3); border: 1px dashed var(--rule-2); border-radius: 10px; padding: 0 7px; }
+.inv-line { margin-top: 6px; }
+.inv-ro .mc-log { display: none; }
+/* ✓ → My Week (23b) */
+.wk-btn { opacity: .45; }
+.box:hover .wk-btn, .wk-btn.on { opacity: 1; }
+.wk-btn.on { color: var(--teal); }
+.wk-btn.wait { color: var(--ink-2); text-decoration: underline dotted; }
+.wk-btn.bad { color: var(--bad); }
+.wk-pop { width: 340px; max-height: 60vh; overflow: auto; padding: 8px; }
+.wk-h { font-weight: 600; margin: 2px 4px 6px; }
+.wk-q { width: 100%; box-sizing: border-box; margin-bottom: 6px; }
+.wk-g { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 8px 4px 4px; }
+.wk-row { display: flex; gap: 8px; align-items: baseline; width: 100%; text-align: left; border: 0; background: none; padding: 5px 6px; border-radius: 6px; cursor: pointer; font: inherit; color: inherit; }
+.wk-row:hover:not(:disabled) { background: var(--surface-2, rgba(127,127,127,.1)); }
+.wk-row:disabled { opacity: .5; cursor: default; }
+.wk-t { flex: 1; }
+/* this computer and the lab (23c) */
+#pcbtn { margin-right: 6px; white-space: nowrap; }
+.pc-wiz { display: grid; gap: 12px; }
+.pc-step { display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; }
+.pc-n { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2, rgba(127,127,127,.15)); font-weight: 600; font-size: 13px; }
+.pc-err { color: var(--bad); font-size: 13px; }
+.pc-panel { display: grid; gap: 6px; }
+.pc-state b { font-weight: 600; }
+.pc-state.syncing b { color: var(--teal); }
+.pc-state.offline b, .pc-state.needs-choice b, .pc-state.key-refused b, .pc-state.error b { color: var(--bad); }
+.pc-offer { border: 1px solid var(--teal); border-radius: 10px; padding: 10px 12px; }
+.pc-choice { display: grid; gap: 6px; justify-items: start; }
+/* the lab layer on this computer: the ✓ is the app's own (23b, 23d) */
+.sis-desktop .lab-mw { display: none !important; }
+.pc-update { border: 1px solid var(--teal); border-radius: 10px; padding: 8px 12px; display: grid; gap: 6px; justify-items: start; }
+.pc-update.error { border-color: var(--bad); }
+.pc-reload { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 9999; display: flex; gap: 8px; align-items: center; padding: 8px 14px; border-radius: 10px; background: var(--surface); border: 1px solid var(--teal); box-shadow: 0 6px 24px rgba(0,0,0,.35); }
+/* ---------- 08b · the floating bar: the editor bar (13zzf), the lasso's bar and the Ctrl+Enter strip share its look (V3.946) ---------- */
+.fbar{position:fixed;z-index:160;display:flex;flex-wrap:wrap;gap:2px;align-items:center;box-sizing:border-box;padding:4px;background:var(--surface);border:1px solid var(--rule-2);border-radius:10px;box-shadow:var(--shadow-lg);animation:tin .12s}
+.fbar-b{width:28px;height:28px;flex:0 0 28px;display:grid;place-items:center;padding:0;border:0;border-radius:6px;background:transparent;color:var(--ink);cursor:pointer;font:600 13.5px/1 var(--f-d);letter-spacing:0}
+.fbar-b:hover{background:var(--surface-2)} .fbar-b.on{background:var(--ink);color:var(--paper)}
+.fbar-b.plus{border:1px dashed var(--rule-2);color:var(--ink-3);font-weight:500;font-size:16px} .fbar-b.plus:hover{color:var(--ink)}
+.fbar-b svg{width:17px;height:17px} .fbar-b .bI{font-style:italic;font-family:var(--f-b)} .fbar-b .bU{text-decoration:underline;text-underline-offset:2px} .fbar-b .bS{text-decoration:line-through} .fbar-b .bT{font-weight:800;-webkit-text-stroke:.4px currentColor} .fbar-b .bFx{font-style:italic;font-family:var(--f-b);font-size:13px} .fbar-b.eb-sym{font-weight:500;font-size:15px}
+.fbar-sep{width:1px;height:18px;flex:0 0 1px;background:var(--rule);margin:0 2px}
+.ed .fs{text-decoration:line-through}
+.pop.symp{width:360px;max-width:96vw;padding:8px} .symp-h{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;padding:2px 4px 4px} .symp-h b{font-size:13px}
+.sym-cat{font-family:var(--f-m);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);padding:8px 4px 3px}
+.sym-grid{display:grid;grid-template-columns:repeat(9,1fr);gap:2px}
+.sym{position:relative;height:32px;border:0;background:transparent;border-radius:6px;cursor:pointer;color:var(--ink);font:500 16px/1 var(--f-d);padding:0}
+.sym:hover{background:var(--surface-2)} .sym .st2{position:absolute;right:1px;top:0;font-size:10px;line-height:1;opacity:0;color:var(--ink-3);transition:opacity .1s} .sym:hover .st2,.sym.fav .st2{opacity:1} .sym.fav .st2{color:var(--warn)}
+.sym .qk{position:absolute;left:1px;top:1px;width:12px;height:12px;color:var(--ink-3);opacity:.55} .sym .qk.on{color:var(--teal);opacity:1} .sym .qk svg{width:12px;height:12px}
+.pop.ebmore{width:320px} .eb-more{display:flex;flex-direction:column;gap:2px} .eb-opt{display:flex;gap:8px;align-items:flex-start;text-align:left;border:0;background:transparent;border-radius:6px;padding:6px 8px;cursor:pointer;color:var(--ink);font:inherit} .eb-opt:hover{background:var(--surface-2)} .eb-opt .ck{width:16px;flex:0 0 16px;color:var(--teal);font-weight:700}
+.eb-fav{display:inline-flex;align-items:center;gap:4px;padding:2px 4px 2px 8px} .eb-fav .sy{font-size:15px} .eb-fav .qk,.eb-fav .x{border:0;background:transparent;cursor:pointer;color:var(--ink-3);width:20px;height:20px;display:grid;place-items:center;border-radius:4px;padding:0} .eb-fav .qk.on{color:var(--teal)} .eb-fav .qk svg{width:13px;height:13px} .eb-fav .x:hover,.eb-fav .qk:hover{background:var(--surface-2)}
+.ink-selbar{padding:4px 6px;gap:3px;border-radius:10px;box-shadow:var(--shadow-lg)} .ink-selbar .btn.xs{height:26px;border-radius:6px}
+.strip{background:var(--surface);color:var(--ink);border:1px solid var(--rule-2);border-radius:10px;padding:5px;box-shadow:var(--shadow-lg)} .strip-h{color:var(--ink-3)} .strip button{color:var(--ink);height:28px;border-radius:6px} .strip button:hover{background:var(--surface-2)} .strip button u{border-color:var(--rule-2);color:var(--ink-3)} .strip button i{box-shadow:0 0 0 1.5px var(--surface)} .strip-b.alt{border-top-color:var(--rule)}
+/* ---------- 11c · the navigation bar; 13zzg · the / menu in the text and @Name (V3.947) ---------- */
+.nav{position:fixed;left:0;right:0;bottom:0;height:24px;z-index:40;display:flex;align-items:center;gap:8px;padding:0 8px;box-sizing:border-box;background:var(--surface);border-top:1px solid var(--rule);font:11.5px/1 var(--f-m);color:var(--ink-3);transition:opacity .15s;cursor:text}
+.nav.asleep{opacity:.22} .nav:not(.asleep){opacity:1;box-shadow:0 -6px 18px -12px rgba(0,0,0,.35)}
+.nav-back{border:0;background:transparent;color:inherit;cursor:pointer;font-size:14px;line-height:1;padding:0 4px;border-radius:4px} .nav-back:hover{background:var(--surface-2)} .nav-back:disabled{opacity:.35;cursor:default}
+.nav-crumb{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:38vw;flex:0 1 auto}
+.nav-in{flex:1 1 160px;min-width:120px;border:0;background:transparent;color:var(--ink);font:12.5px/1 var(--f-m);outline:0;padding:0} .nav.asleep .nav-in{opacity:0;pointer-events:none}
+.nav-say{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:32vw;flex:0 1 auto}
+.nav-list{position:absolute;left:8px;bottom:26px;min-width:320px;max-width:min(720px,92vw);max-height:46vh;overflow:auto;background:var(--surface);border:1px solid var(--rule-2);border-radius:10px;box-shadow:var(--shadow-lg);padding:4px;display:none;cursor:default}
+.nav-list.on{display:block} .nav-row{display:flex;gap:10px;align-items:baseline;padding:5px 8px;border-radius:6px;cursor:pointer;font:12.5px/1.3 var(--f-d);color:var(--ink)} .nav-row.hi,.nav-row:hover{background:var(--surface-2)} .nav-row b{font-family:var(--f-m);font-weight:600;white-space:nowrap} .nav-row .s2{color:var(--ink-2,var(--ink));opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .nav-row .s{color:var(--ink-3);font-size:11px;margin-left:auto;white-space:nowrap}
+body.mobile .nav{display:none} body:has(.nav:not(.asleep)) #toasts{bottom:34px}
+.nav-help .sec-h{margin:16px 0 6px} .nav-helpg{display:grid;grid-template-columns:1fr;gap:3px} .nav-helpr{display:grid;grid-template-columns:minmax(180px,38%) 1fr;gap:10px;align-items:baseline;font-size:12.5px} .nav-helpr code{font-size:11.5px} .nav-helpr .s{color:var(--ink-3)}
+.slash-menu{position:fixed;z-index:165;min-width:260px;max-width:min(440px,94vw);background:var(--surface);border:1px solid var(--rule-2);border-radius:10px;box-shadow:var(--shadow-lg);padding:4px;animation:tin .12s}
+.sm-h{font-family:var(--f-m);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);padding:4px 8px 3px} .sm-f{font-size:10.5px;color:var(--ink-3);padding:4px 8px 2px;border-top:1px solid var(--rule);margin-top:3px}
+.sm-row{display:flex;gap:10px;align-items:baseline;padding:4px 8px;border-radius:6px;cursor:pointer;font-size:12.5px;color:var(--ink)} .sm-row.hi,.sm-row:hover{background:var(--surface-2)} .sm-row b{font-family:var(--f-m);font-weight:600;white-space:nowrap} .sm-row .s{color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .sm-row.muted{color:var(--ink-3);cursor:default}
+.ed .mn,.li .mn{display:inline-block;padding:0 5px;border-radius:9px;background:color-mix(in srgb,var(--teal) 14%,transparent);color:var(--ink);font-weight:600;line-height:1.35} .ed .mn[data-uid=""]{background:var(--surface-2)}
+.cmd-settings .li code{margin-right:10px;font-size:12px} .cmd-settings .li .s{display:block;font-size:11.5px;color:var(--ink-3)}
+/* ---------- 12d · Tidy by links, 13vb · fold reflow (V3.948): the boxes glide to their places ---------- */
+.tidying > .box{transition:left .26s ease,top .26s ease}
+/* ---------- 13zzh · hands (V3.949): the ink bar beside the ✎ pill glides; below 10 % the boxes are flat tiles ---------- */
+.canvas-host > .ink-bar{transition:left .2s ease,top .2s ease}
+.canvas-host.far .box > .ed,.canvas-host.far .box .embed,.canvas-host.far .box .pdfw,.canvas-host.far .box .dk{visibility:hidden}
+.canvas-host.far .box{min-height:48px;background:color-mix(in srgb,var(--ink) 6%,var(--surface))}
+.pen-settings .pill.ok{background:var(--ok);color:#fff}
+/* ---------- 13zu2 · the selection's bar (V3.950) ---------- */
+.ink-selbar .bulk-g{display:inline-flex;gap:3px;flex-wrap:wrap}
+/* ---------- 13zzi · component kinds (V3.951): the kind colours the edge and names the label ---------- */
+.box.cmp.kinded{border-left:3px solid var(--ck,var(--teal))} .box.cmp.kinded > .bh > .num{color:var(--ck,var(--teal));font-weight:700;letter-spacing:.06em}
+.ck-settings .pill{font-weight:600}
+/* ---------- 13zzj · the polish (V3.953): the sync dot, the hint's ×, big notes, the reader's chips ---------- */
+#hd .syncdot{width:26px;display:grid;place-items:center} #hd .syncdot i{width:10px;height:10px;border-radius:50%;background:var(--ink-3);box-shadow:0 0 0 2px color-mix(in srgb,var(--ink-3) 25%,transparent);transition:background .3s}
+#hd .syncdot[data-tone=green] i{background:var(--ok);box-shadow:0 0 0 2px color-mix(in srgb,var(--ok) 25%,transparent)} #hd .syncdot[data-tone=amber] i{background:var(--warn);box-shadow:0 0 0 2px color-mix(in srgb,var(--warn) 25%,transparent);animation:sdpulse 1.6s ease-in-out infinite} #hd .syncdot[data-tone=red] i{background:var(--bad);box-shadow:0 0 0 2px color-mix(in srgb,var(--bad) 25%,transparent)}
+@keyframes sdpulse{50%{opacity:.4}}
+.hint{position:relative} .hint .hint-x{position:absolute;right:-18px;top:-2px;border:0;background:transparent;color:inherit;cursor:pointer;font-size:14px;line-height:1;opacity:.6;padding:2px 4px} .hint .hint-x:hover{opacity:1}
+.canvas-host.big > .paper > .world > .box.cmp{content-visibility:auto;contain-intrinsic-size:auto 392px auto 160px}
+.mx-side .rd-chips{display:flex;gap:4px;padding:8px 12px 0} .mx-side.no-mine > .rd-ann:not(.rm-ann),.mx-side.no-mine > div > .rd-ann:not(.rm-ann){display:none} .mx-side.no-rm > .rm-side{display:none} .mx-side.no-notes .rd-note,.mx-side.no-notes .rd-ni{display:none}

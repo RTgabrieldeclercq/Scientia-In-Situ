@@ -3,9 +3,11 @@
    Point at a figure, table or display equation in a PDF (the card, the
    maximised view, or the paper read beside the note, 13zzb) and "＋ Figure 2"
    / "＋ Equation 3" appears on it: click it and it becomes an image panel
-   beside the PDF card, drawn again from the PDF at about 1600 px wide,
-   titled with its label, a figure's caption from the paper under it and
-   "from …, p. 4" to go back to the page. The scissors on the PDF's bar:
+   on top of the paper (over the place it came from, when the card shows
+   that page), floating there until you drag it where you want it; drawn
+   again from the PDF at about 1600 px wide, titled with its label, a
+   figure's caption from the paper under it and "from …, p. 4" to go back
+   to the page. The scissors on the PDF's bar:
    everything outlined, click one or drag a box round anything (one panel,
    a few lines); Esc or the scissors again ends it.
    Found by the lab site's detectors (rm/js/page-layout.js figures and tables
@@ -107,7 +109,7 @@ const CLIP = {
     const L = CLIP.layer(slot); if (!L) return; const key = (all ? 'all' : hit ? R.list.indexOf(hit) : '-') + ':' + R.list.length + ':' + L.style.width; if (L._k === key) return; L._k = key;
     L.replaceChildren(...R.list.filter(r => all || r === hit).map(r => { const s = CLIP.short(r), g = r.art || r;   // outlined: what the picture will hold
       return h('div.clip-hs' + (r.kind === 'equation' ? '.eq' : ''), { style: { left: g.x / R.W * 100 + '%', top: g.y / R.H * 100 + '%', width: g.w / R.W * 100 + '%', height: g.h / R.H * 100 + '%' } },
-        h('button.clip-badge.nopan', { title: r.kind === 'equation' ? 'Read it into an equation beside the paper (checked by you first)' : (r.label ? snippet(r.label, 160) + '\n' : '') + 'Put it on the canvas beside the paper', on: { click: e => { e.stopPropagation(); e.preventDefault(); CLIP.go(slot, R, r); } } }, '＋ ' + s)); }));
+        h('button.clip-badge.nopan', { title: r.kind === 'equation' ? 'Read it into an equation on top of the paper (checked by you first)' : (r.label ? snippet(r.label, 160) + '\n' : '') + 'Put it on the canvas, on top of the paper', on: { click: e => { e.stopPropagation(); e.preventDefault(); CLIP.go(slot, R, r); } } }, '＋ ' + s)); }));
   },
   clear(slot) { const L = slot && $(':scope > .clip-layer', slot); if (L && !CLIP.clipping(slot)) { L.replaceChildren(); L._k = ''; } },
   move(e) {
@@ -135,22 +137,24 @@ const CLIP = {
   drag(e, L) {
     $$('.clip-ask, .clip-mq.kept').forEach(x => x.remove());
     const slot = L.parentElement, q = L.getBoundingClientRect(), x0 = e.clientX - q.left, y0 = e.clientY - q.top, mq = h('div.clip-mq'); let box = null;
+    // the pointer is in screen pixels, the layer's own pixels are scaled by the canvas zoom (a card at 60% has 0.6 screen px each)
+    const k = L.offsetWidth / (q.width || 1), css = b => ({ left: b.x * k + 'px', top: b.y * k + 'px', width: b.w * k + 'px', height: b.h * k + 'px' });
     try { L.setPointerCapture(e.pointerId); } catch { }
     const mv = ev => { if (ev.pointerId !== e.pointerId) return; const x1 = clamp(ev.clientX - q.left, 0, q.width), y1 = clamp(ev.clientY - q.top, 0, q.height); box = { x: Math.min(x0, x1), y: Math.min(y0, y1), w: Math.abs(x1 - x0), h: Math.abs(y1 - y0) };
-      if (!mq.isConnected && (box.w > 4 || box.h > 4)) L.append(mq); Object.assign(mq.style, { left: box.x + 'px', top: box.y + 'px', width: box.w + 'px', height: box.h + 'px' }); };
+      if (!mq.isConnected && (box.w > 4 || box.h > 4)) L.append(mq); Object.assign(mq.style, css(box)); };
     const up = ev => { if (ev.pointerId !== e.pointerId) return; ['pointermove', 'pointerup', 'pointercancel'].forEach((t, i) => L.removeEventListener(t, i ? up : mv)); mq.remove();
       const m = CLIP.media(slot), n = CLIP.page(slot); if (!m || !n || ev.type === 'pointercancel') return;
       CLIP.regions(m, n).then(R => { if (!R.W) return;
-        if (box && box.w >= 10 && box.h >= 10) return CLIP.ask(L, box, { x: box.x / q.width * R.W, y: box.y / q.height * R.H, w: box.w / q.width * R.W, h: box.h / q.height * R.H, W: R.W, H: R.H });
+        if (box && box.w >= 10 && box.h >= 10) return CLIP.ask(L, { x: box.x * k, y: box.y * k, w: box.w * k, h: box.h * k }, { x: box.x / q.width * R.W, y: box.y / q.height * R.H, w: box.w / q.width * R.W, h: box.h / q.height * R.H, W: R.W, H: R.H });
         const hit = CLIP.at(slot, R, e.clientX, e.clientY); if (hit) CLIP.go(slot, R, hit); }); };
     L.addEventListener('pointermove', mv); L.addEventListener('pointerup', up); L.addEventListener('pointercancel', up);
   },
-  /** A drawn box: a picture of it, or an equation read from it (for one the detector missed). */
+  /** A drawn box (in the layer's own pixels): a picture of it, or an equation read from it (for one the detector missed). */
   ask(L, box, a) {
     $$('.clip-ask').forEach(x => x.remove()); const slot = L.parentElement, src = CLIP.srcOf(slot), n = CLIP.page(slot), keep = h('div.clip-mq.kept', { style: { left: box.x + 'px', top: box.y + 'px', width: box.w + 'px', height: box.h + 'px' } });
     const done = () => { bar.remove(); keep.remove(); }, b = (label, title, fn) => h('button.btn.xs', { title, on: { click: e => { e.stopPropagation(); done(); fn(); } } }, label);
     const below = box.y + box.h + 34 < L.offsetHeight, bar = h('div.clip-ask', { style: { left: box.x + 'px', top: (below ? box.y + box.h + 6 : Math.max(0, box.y - 34)) + 'px' } },
-      b('Picture', 'An image panel of this region beside the paper', () => CLIP.take(src, n, a, 'Clip', '')), b('Equation', 'Read it into an equation beside the paper (checked by you first)', () => CLIP.equation(src, n, a, 'Equation')), b('✕', 'Never mind', () => { }));
+      b('Picture', 'An image panel of this region, on top of the paper', () => CLIP.take(src, n, a, 'Clip', '')), b('Equation', 'Read it into an equation on top of the paper (checked by you first)', () => CLIP.equation(src, n, a, 'Equation')), b('✕', 'Never mind', () => { }));
     bar.addEventListener('pointerdown', e => e.stopPropagation()); L.append(keep, bar);
   },
 
@@ -173,17 +177,17 @@ const CLIP = {
   /** Set by the web build (rm/scientia/lab-mode.js): snip → Promise<LaTeX> through the lab's equationOcr, as the paper reader does. None on the desktop: you type it. */
   read: null,
   /** An equation, the way the lab's paper reader captures one: the snip read to LaTeX (CLIP.read), checked in the equation editor
-      against the picture, then an equation component beside the paper (its terms, calculator and register all work on it). */
+      against the picture, then an equation component on top of the paper (its terms, calculator and register all work on it). */
   async equation(srcId, n, r, label) {
     const src = M.block(srcId), m = src && MEDIA.get(src.media); if (!m || CLIP.busy) return; CLIP.busy = true; let snip;
     if (r.art) r = Object.assign({ W: r.W, H: r.H }, r.art);
     try { snip = await CLIP.snip(m, n, r); } catch (e) { return toast('Could not snip that: ' + (e.message || e)); } finally { CLIP.busy = false; }
-    const paper = src.label || (m.name || 'PDF').replace(/\.pdf$/i, ''), name = label || 'Equation';
+    const paper = src.label || (m.name || 'PDF').replace(/\.pdf$/i, ''), name = label || 'Equation', at = CLIP.spot(src, n, r, 392);   // where it was, before the editor covers it
     MATH.editor({ tex: '', display: true, title: name + ' · ' + paper + ', p. ' + n, onSave: tex => { if (!tex) return;
       try { DB.beginGroup('clip');
-        const b = EQ.create(M.doc(src.docId), CLIP.spot(src), { tex }); b.label = name;
+        const b = EQ.create(M.doc(src.docId), at, { tex }); b.label = name; CLIP.lift(b);
         b.clip = { src: src.id, media: m.id, page: n, rect: [r.x / r.W, r.y / r.H, r.w / r.W, r.h / r.H].map(v => +clamp(v, 0, 1).toFixed(4)), label: name, file: paper };
-        EQ.syncText(b); DB.put('blocks', b); M.wire(b.id, src.id, CLIP.REL, true); changed(); CLIP.fresh(b); toast(name + ' is on the canvas beside the paper');
+        EQ.syncText(b); DB.put('blocks', b); M.wire(b.id, src.id, CLIP.REL, true); changed(); CLIP.fresh(b); toast(name + ' is on top of the paper: drag it where you want it');
       } catch (e) { toast('Could not add the equation: ' + (e.message || e)); } } });   // never leave the editor stuck open
     const ed = [...$$('.meditor')].pop(), mf = ed && $('math-field', ed), ta = ed && $('.mtex', ed); if (!ed) return;
     const note = h('div.clip-ocr'); ed.prepend(h('div.clip-eqhead', h('img.clip-snip', { src: snip, alt: 'The equation in the paper' }), note));
@@ -191,7 +195,8 @@ const CLIP = {
     note.textContent = 'Reading the equation from the snip…'; note.classList.add('busy');
     CLIP.read(snip).then(tex => { if (!ed.isConnected) return; note.classList.remove('busy');
       if ((mf.value || '').trim()) { note.textContent = 'Read — but you had started typing, so your version is kept.'; return; }   // never over what you typed
-      mf.setValue(tex, { silenceNotifications: true }); if (ta) ta.value = tex; note.textContent = 'Read from the snip — check it against the picture, then Done.'; note.classList.add('ok');
+      mf.setValue(tex, { silenceNotifications: true }); if (ta) ta.value = tex; note.classList.add('ok');
+      note.textContent = 'Read from the snip — check it against the picture, then Done. Letters that are one name (like MESF) read as separate terms: select them and press One name.';
     }).catch(e => { if (!ed.isConnected) return; note.classList.remove('busy'); note.classList.add('bad'); note.textContent = 'Could not read it (' + (e.message || e) + ') — type it in.'; });
   },
   /** The page a paper is showing: the paper read beside the note, else its card (the page across the top third of its stage). */
@@ -216,24 +221,36 @@ const CLIP = {
   fresh(b) { setTimeout(() => { const pane = App.panes().find(p => p.docId === b.docId); if (pane && pane.reveal) pane.reveal(b.id); $$(`.box[data-id="${b.id}"]`).forEach(x => { x.classList.add('clip-new'); setTimeout(() => x.classList.remove('clip-new'), 1600); }); }, 80); },
   /** A figure's badge clips it; an equation's captures it. */
   go(slot, R, r) { const a = Object.assign({ W: R.W, H: R.H }, r), src = CLIP.srcOf(slot), n = CLIP.page(slot); return r.kind === 'equation' ? CLIP.equation(src, n, a, CLIP.short(r)) : CLIP.take(src, n, a, CLIP.short(r), CLIP.caption(r)); },
-  /** Right of the PDF card, below whatever is already in that column. */
-  spot(src) {
-    const x = (src.x || 0) + (src.w || 616) + 56, pane = App.panes().find(p => p.docId === src.docId); let y = src.y || 0;
-    DB.where('blocks', o => o.docId === src.docId && o.status === 'live' && o.id !== src.id && (o.x || 0) < x + 480 && (o.x || 0) + (o.w || 300) > x).forEach(o => {
-      const r = pane && pane.rectOf(o.id), bottom = (o.y || 0) + (r ? r.h : 160); if (bottom > y) y = bottom + 28; });
-    return { x, y };
+  /** Where a new clip goes, w wide: on top of the paper — over the place it came from when the card shows that page (a little
+      down and right, lifted off it), else over the part of the card in view, else (the paper read beside the note or maximised,
+      its card scrolled away) the middle of the note in view. You then drag it where you want it. */
+  spot(src, n, r, w) {
+    const panes = App.panes().filter(p => p.docId === src.docId && p.paper), over = (a, b) => a.right > b.left && a.left < b.right && a.bottom > b.top && a.top < b.bottom;
+    for (const pane of panes) {
+      const P = pane.paper, pr = P.rect(), box = $(`.box[data-id="${src.id}"]`, P.world); if (!box) continue;
+      const cv = r && r.W && $(`.pdf-slot[data-p="${n}"] > canvas.pdf-page, .pdf-one[data-p="${n}"] > canvas.pdf-page`, box);
+      if (cv) { const q = cv.getBoundingClientRect(), st = cv.closest('.pdf-stage'), sr = st ? st.getBoundingClientRect() : q, cx = q.left + r.x / r.W * q.width, cy = q.top + r.y / r.H * q.height;
+        if (cx >= Math.max(pr.left, sr.left) && cx < Math.min(pr.right, sr.right) && cy >= Math.max(pr.top, sr.top) && cy < Math.min(pr.bottom, sr.bottom)) { const p = P.toWorld(cx, cy); return { x: p.x + 14, y: p.y + 14 }; } }
+      const q = box.getBoundingClientRect(); if (over(q, pr)) { const p = P.toWorld((Math.max(q.left, pr.left) + Math.min(q.right, pr.right)) / 2, (Math.max(q.top, pr.top) + Math.min(q.bottom, pr.bottom)) / 2); return { x: p.x - w / 2, y: p.y - 100 }; }
+    }
+    const P = panes[0] && panes[0].paper; if (P) { const pr = P.rect(), p = P.toWorld(pr.left + pr.width / 2, pr.top + pr.height * .4); return { x: p.x - w / 2, y: p.y - 100 }; }
+    return { x: (src.x || 0) + 42, y: (src.y || 0) + 42 };
   },
+  /** A clip floats where it was put, over the paper — the canvas keeps its boxes apart (12-doc settle), but not this one until it
+      is moved (`float` = the spot it was put; once it is somewhere else it is an ordinary box again). */
+  lift(b) { b.float = { x: b.x, y: b.y }; },
+  floats: b => !!(b && b.float && b.float.x === b.x && b.float.y === b.y),
   async take(srcId, n, r, label, caption) {
     const src = M.block(srcId), m = src && MEDIA.get(src.media); if (!m || CLIP.busy) return; CLIP.busy = true;
     if (r.art) r = Object.assign({ W: r.W, H: r.H }, r.art);
     try {
       const blob = await CLIP.render(m, n, r), ext = blob.type === 'image/png' ? 'png' : 'webp', paper = src.label || (m.name || 'PDF').replace(/\.pdf$/i, '');
       DB.beginGroup('clip');
-      const rec = await MEDIA.add(new File([blob], `${label || 'Clip'} · ${paper} p${n}.${ext}`.replace(/[\\/:*?"<>|]+/g, '-'), { type: blob.type }));
-      const b = FIG.create(M.doc(src.docId), CLIP.spot(src), 1, 1); FIG.cells(b)[0].media = rec.id; b.fig.letters = false; b.label = label || 'Clip'; b.w = rec.w >= rec.h * .9 ? 476 : 336;
+      const rec = await MEDIA.add(new File([blob], `${label || 'Clip'} · ${paper} p${n}.${ext}`.replace(/[\\/:*?"<>|]+/g, '-'), { type: blob.type })), w = rec.w >= rec.h * .9 ? 476 : 336;
+      const b = FIG.create(M.doc(src.docId), CLIP.spot(src, n, r, w), 1, 1); FIG.cells(b)[0].media = rec.id; b.fig.letters = false; b.label = label || 'Clip'; b.w = w; CLIP.lift(b);
       b.clip = { src: src.id, media: m.id, page: n, rect: [r.x / r.W, r.y / r.H, r.w / r.W, r.h / r.H].map(v => +clamp(v, 0, 1).toFixed(4)), label: b.label, file: paper };
       M.saveBlockBody(b, { text: caption || '', marks: [] }); FIG.save(b); M.wire(b.id, src.id, CLIP.REL, true); changed(); CLIP.fresh(b);
-      toast(b.label + ' is on the canvas beside the paper');
+      toast(b.label + ' is on top of the paper: drag it where you want it');
     } catch (e) { toast('Could not clip that: ' + (e.message || e)); }
     finally { CLIP.busy = false; }
   },
@@ -271,8 +288,11 @@ const CLIP = {
   const dw = DocView.drawWires; DocView.drawWires = function () { const r = dw.apply(this, arguments); CLIP.mark(this); return r; };
   const rewire = debounce(() => App.panes().forEach(CLIP.mark), 90);
   document.addEventListener('scroll', e => { if (e.target.closest && e.target.closest('.pdf-stage')) rewire(); }, true);
-  // a clip says where it is from
+  // a clip says where it is from, and lies on top of the paper (lifted) until it is moved
   const bx = DocView.box; DocView.box = function (b, d, p) { const el = bx.apply(this, arguments); if (el && b && (b.kind === 'figure' || b.kind === 'eq') && b.clip) { const c = b.clip, src = M.block(c.src);
-      el.append(h('button.q-from.clip-from.nopan', { title: 'Show it in the paper', on: { click: ev => { ev.stopPropagation(); CLIP.show(M.block(b.id)); } } }, 'from ', h('b', c.file || (src && src.label) || 'the PDF'), ', p. ' + c.page, src && src.status === 'live' ? '' : ' (gone)')); }
+      el.append(h('button.q-from.clip-from.nopan', { title: 'Show it in the paper', on: { click: ev => { ev.stopPropagation(); CLIP.show(M.block(b.id)); } } }, 'from ', h('b', c.file || (src && src.label) || 'the PDF'), ', p. ' + c.page, src && src.status === 'live' ? '' : ' (gone)'));
+      if (CLIP.floats(b)) el.classList.add('clip-float'); }
     return el; };
+  // moved: an ordinary box again (the next drawing would say so too; this is at once, after the drop)
+  window.addEventListener('pointerup', () => requestAnimationFrame(() => $$('.box.clip-float').forEach(el => { if (!CLIP.floats(M.block(el.dataset.id))) el.classList.remove('clip-float'); })), true);
 }

@@ -48,17 +48,22 @@ const EDIT = {
     DB.all('canvases').forEach(c => { const n0 = c.nodes.length; c.nodes = c.nodes.filter(n => !(n.ref && ((n.ref.type === 'block' && set.has(n.ref.id)) || (n.ref.type === 'item' && itemIds.has(n.ref.id))))); if (c.nodes.length !== n0) { const keep = new Set(c.nodes.map(n => n.id)); c.edges = (c.edges || []).filter(e => keep.has(e.from) && keep.has(e.to)); DB.put('canvases', c); } });
     for (const id of set) { const b = M.block(id); if (!b) continue; let d = M.doc(b.docId); if (d) { d = Object.assign({}, d, { blockIds: d.blockIds.filter(x => x !== id) }); DB.put('documents', d); } DB.del('blocks', id); }
   },
+  /** V3.943 — a component goes at once: no question, no copy of the whole record first (Ctrl+Z is the way back — Gabe:
+      "should not freeze the screen or take much time, and not ask for confirmation"). Its box leaves the screen now; the
+      clean-up (structures, connections, links in other text) and the index follow a frame later. */
   deleteBlocks(ids, { quiet } = {}) {
     const why = EDIT.blocker(ids); if (why) { toast(why, 5000); return false; }
-    DB.beginGroup(); const fp = EDIT.footprint(ids); EDIT.purge(fp); DB.beginGroup(); IX.rebuild(); changed();
-    if (!quiet) toast('Deleted — Ctrl+Z (outside a text box) brings it back', 4000); return true;
+    ids.forEach(id => $$(`.box[data-id="${id}"]`).forEach(el => el.remove()));
+    App.panes().forEach(p => { if (p.sel && ids.includes(p.sel)) p.sel = null; p.drawWires && p.drawWires(); });
+    requestAnimationFrame(() => setTimeout(() => {
+      DB.beginGroup(); const fp = EDIT.footprint(ids); EDIT.purge(fp); DB.beginGroup(); IX.rebuild(); changed();
+      if (!quiet) { const bits = [fp.items.length ? plural(fp.items.length, 'structure') : null, fp.wires.length ? plural(fp.wires.length, 'connection') : null, fp.refs.length ? plural(fp.refs.length, 'pulled-in copy', 'pulled-in copies') : null].filter(Boolean);
+        toast('Deleted' + (bits.length ? ' with ' + bits.join(', ') : '') + ' — Ctrl+Z (outside a text box) brings it back', 4000); }
+    }, 0));
+    return true;
   },
-  /** Ask, saying what goes with it, then delete one component. */
-  confirmBlock(b) {
-    const fp = EDIT.footprint([b.id]), bits = [fp.items.length ? plural(fp.items.length, 'structure') : null, fp.wires.length ? plural(fp.wires.length, 'connection') : null, fp.lineage.length ? plural(fp.lineage.length, 'earlier wording') : null, fp.refs.length ? plural(fp.refs.length, 'pulled-in copy', 'pulled-in copies') + ' in other notes' : null].filter(Boolean);
-    if (!bits.length && !(b.body.text || '').trim() && b.kind === 'component') return EDIT.deleteBlocks([b.id], { quiet: true });
-    pickModal('Delete “' + snippet(M.blockName(b), 50) + '”?', bits.length ? 'Also removed: ' + bits.join(', ') + '. Ctrl+Z undoes it.' : 'Ctrl+Z undoes it.', [{ label: 'Delete component', danger: true, run: async () => { if (DISK.on) await DISK.keep('before-delete-component'); EDIT.deleteBlocks([b.id]); } }]);
-  },
+  /** Delete one component, at once (the name stays for its callers: the Delete key, the box menu). */
+  confirmBlock(b) { return EDIT.deleteBlocks([b.id], { quiet: !(b.body.text || '').trim() && b.kind === 'component' }); },
   deleteDoc(d) {
     const ids = DB.where('blocks', b => b.docId === d.id).map(b => b.id), why = EDIT.blocker(ids); if (why) { toast(why, 5000); return false; }
     DB.beginGroup(); EDIT.purge(EDIT.footprint(ids));

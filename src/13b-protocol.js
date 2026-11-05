@@ -28,7 +28,7 @@ const PROTO = {
   homeDoc: def => def.registered ? def.registered.docId : def.docId,
   /** Can the steps be changed here? Only in the protocol's own note (or where an unregistered one lives). */
   editableIn: (def, docId) => PROTO.homeDoc(def) === docId,
-  syncBody(def) { def.body = { text: [def.label, ...PROTO.live(def).map((s, i) => `${i + 1}. ${s.text}`)].join('\n'), marks: [] }; },
+  syncBody(def) { def.body = { text: [def.label, ...PROTO.live(def).map((s, i) => `${i + 1}. ${s.text}` + (s.sub && M.block(s.sub) ? ' → ' + M.block(s.sub).label : ''))].join('\n'), marks: [] }; },
   ancestors(def, stepId) { const out = [], seen = new Set(); const walk = (s, g) => (s.supersedes || []).forEach(id => { if (seen.has(id)) return; seen.add(id); const a = PROTO.step(def, id); if (a) { out.push(Object.assign({ gen: g }, a)); walk(a, g + 1); } }); const s = PROTO.step(def, stepId); if (s) walk(s, 1); return out; },
   /** Every observation ever made at this step: this wording and every earlier one, in every run. */
   observations(def, stepId, hostBlockId) {
@@ -59,13 +59,14 @@ const PROTO = {
     text = text.replace(/\s+\n/g, '\n').trim(); if (text === step.text) return;
     if (!def.registered || !PROTO.used(def, step)) { step.text = text; if (step.iter && step.iter.kind === 'add') step.iter.after = text; PROTO.syncBody(def); DB.put('blocks', def); changed(); return; }
     const now = isoLocal(new Date()), n = { id: uid('st'), text, created: now, status: 'live', supersedes: [step.id], supersededBy: [], iter: { at: now, kind: 'edit', before: step.text, after: text, links: [] } };
+    if (step.sub) n.sub = step.sub;   // a new wording keeps the protocol the step is done by
     step.status = 'superseded'; step.supersededBy = [n.id]; step.supersededAt = now;
     def.steps.splice(def.steps.indexOf(step) + 1, 0, n); PROTO.syncBody(def); DB.put('blocks', def); changed();
     setTimeout(() => PROTO.linkPrompt(def, n.id, anchor), 60);
   },
   splitStep(def, step, a, b2, anchor) {
     const now = isoLocal(new Date()), mk = t => ({ id: uid('st'), text: t, created: now, status: 'live', supersedes: [step.id], supersededBy: [], iter: { at: now, kind: 'split', before: step.text, after: t, links: [] } });
-    const n1 = mk(a), n2 = mk(b2); step.status = 'superseded'; step.supersededBy = [n1.id, n2.id]; step.supersededAt = now;
+    const n1 = mk(a), n2 = mk(b2); if (step.sub) n1.sub = step.sub; step.status = 'superseded'; step.supersededBy = [n1.id, n2.id]; step.supersededAt = now;
     def.steps.splice(def.steps.indexOf(step) + 1, 0, n1, n2); PROTO.syncBody(def); DB.put('blocks', def); changed();
     setTimeout(() => PROTO.linkPrompt(def, n1.id, anchor), 60);
   },
@@ -76,6 +77,67 @@ const PROTO = {
     PROTO.syncBody(def); DB.put('blocks', def); changed(); toast('Step retired — its observations stay on record in this protocol');
   },
   moveStep(def, step, dir) { const live = PROTO.live(def), i = live.indexOf(step), j = i + dir; if (j < 0 || j >= live.length) return; const other = live[j], a = def.steps.indexOf(step), b = def.steps.indexOf(other); def.steps[a] = other; def.steps[b] = step; PROTO.syncBody(def); DB.put('blocks', def); changed(); },
+  /* ---------------- Tab: the next step (a new one after the last), Shift+Tab: the previous ---------------- */
+  tabFrom(def, sid, dir) {
+    const now = (PROTO.step(def, sid) || {}).supersededBy || [], cur = now[now.length - 1] || sid, live = PROTO.live(def), i = live.findIndex(x => x.id === cur);
+    if (i < 0) return;
+    let to = live[i + dir];
+    if (!to && dir > 0) to = PROTO.insertStep(def, cur);
+    if (to) PROTO.focusStep(def.id, to.id);
+  },
+  /** In a run only temporary steps are written: Tab goes to the next one, and from the last step makes one. */
+  tabRun(run, sid, dir) {
+    const seq = PROTO.seq(run), i = seq.indexOf(sid), temp = run.temp || {};
+    for (let j = i + dir; j >= 0 && j < seq.length; j += dir) if (temp[seq[j]]) return PROTO.focusStep(run.id, seq[j]);
+    if (dir > 0 && i === seq.length - 1) PROTO.addTemp(run, sid, null);
+  },
+  focusStep(boxId, stepId) {
+    setTimeout(() => { const n = $(`.box[data-id="${boxId}"] .pstep[data-step="${stepId}"] .ptext.edit`) || $(`.pstep[data-step="${stepId}"] .ptext.edit`); if (!n) return;
+      n.focus(); const r = document.createRange(), S = getSelection(); r.selectNodeContents(n); r.collapse(false); S.removeAllRanges(); S.addRange(r); }, 80);
+  },
+  /* ---------------- a step done by following another protocol (step.sub = that protocol's id) ---------------- */
+  /** Does following `b` lead (through its steps' protocols) to `target`? */
+  reaches(b, target, seen = new Set()) { if (!b || seen.has(b.id)) return false; seen.add(b.id); return PROTO.live(b).some(s => s.sub && (s.sub === target || PROTO.reaches(M.block(s.sub), target, seen))); },
+  tie(def, s, subId) {
+    if (subId) s.sub = subId; else delete s.sub;
+    PROTO.syncBody(def); DB.put('blocks', def); changed();
+    toast(subId ? 'Step ' + PROTO.num(def, s.id) + ' is done by following “' + M.block(subId).label + '”' : 'Untied');
+  },
+  tieDialog(def, s) {
+    const skip = new Set([def.id, ...DB.where('blocks', b => b.kind === 'protocol' && PROTO.reaches(b, def.id)).map(b => b.id)]);
+    PROTO.pickProtocol('Step ' + PROTO.num(def, s.id) + ' is done by following…', df => PROTO.tie(def, s, df.id), skip);
+  },
+  _open: new Set(),
+  /** The run of a step's protocol started from this run's step, if any. */
+  subRunOf(host, sid) { return DB.where('blocks', r => r.kind === 'run' && r.status !== 'removed' && r.parentStep && r.parentStep.runId === host.id && r.parentStep.stepId === sid)[0] || null; },
+  runSub(host, sid, sub, pane) {
+    const R = pane && pane.rectOf ? pane.rectOf(host.id) : null, x = Math.round((R ? R.x : host.x || 0) / 14) * 14, y = Math.round(((R ? R.y + R.h : (host.y || 0) + 300) + 56) / 14) * 14;
+    const run = PROTO.newRun(sub, host.docId, x, y); run.parentStep = { runId: host.id, stepId: sid }; DB.put('blocks', run);
+    M.wire(host.id, run.id, 'needs', true); toast('“' + sub.label + '” runs below — checking off its last step checks this step');
+    return run;
+  },
+  /** A finished run of a step's protocol checks that step in the run it came from. */
+  parentCheck(run) {
+    const ps = run.parentStep, par = ps && M.block(ps.runId); if (!par || par.status === 'removed' || (par.checks || {})[ps.stepId]) return false;
+    if (!PROTO.activeSeq(run).every(id => (run.checks || {})[id])) return false;
+    setTimeout(() => { const p = M.block(ps.runId); if (p && !(p.checks || {})[ps.stepId]) { PROTO.check(p, ps.stepId); toast('Step ' + PROTO.numIn(p, ps.stepId) + ' checked — its protocol is done'); } }, 40); return true;
+  },
+  subRow(host, def, sid, sub, d, pane, ro, canRun) {
+    const key = host.id + ':' + sid, open = PROTO._open.has(key), run = canRun ? PROTO.subRunOf(host, sid) : null, all = run ? PROTO.activeSeq(run) : [];
+    return h('div.psub' + (open ? '.open' : ''),
+      h('div.psub-h',
+        h('button.psub-fold', { title: open ? 'Hide its steps' : 'Show its steps here', on: { click: e => { e.stopPropagation(); open ? PROTO._open.delete(key) : PROTO._open.add(key); changed(); } } }, open ? '▾' : '▸'),
+        h('a.psub-name', { title: 'Open that protocol · Alt+click: beside', on: { click: e => { e.stopPropagation(); App.jump(sub.id, e); } } }, '↳ ' + (sub.label || 'Protocol')),
+        h('span.psub-n', plural(PROTO.live(sub).length, 'step')),
+        run ? h('button.psub-run', { title: 'Its run in this note', on: { click: e => { e.stopPropagation(); App.jump(run.id, e); } } }, all.filter(id => (run.checks || {})[id]).length + '/' + all.length + ' ✓')
+          : canRun && !ro ? h('button.psub-run', { title: 'Start a run of it below this one — finishing it checks this step', on: { click: e => { e.stopPropagation(); PROTO.runSub(host, sid, sub, pane); } } }, '▶ Run it here') : null),
+      open ? PROTO.subList(sub, new Set([def.id, sub.id]), 1) : null);
+  },
+  subList(def, seen, depth) {
+    return h('ol.psub-steps', PROTO.live(def).map((s, i) => { const sub = s.sub && M.block(s.sub);
+      return h('li', h('span.psub-num', i + 1), h('span.psub-t', s.text || h('i.muted', 'empty step')),
+        sub ? h('div.psub-in', '↳ ', h('b', sub.label), seen.has(sub.id) || depth >= 3 ? null : PROTO.subList(sub, new Set([...seen, sub.id]), depth + 1)) : null); }));
+  },
   /** Link an iteration to what prompted it — anything in the app. What is already tied to this step comes first. */
   linkPrompt(def, stepId, anchor, onlyPicker) {
     const s = PROTO.step(def, stepId); if (!s || !s.iter) return;
@@ -99,8 +161,8 @@ const PROTO = {
           closePop(); s.iter.links.push({ type: v.t, id: v.x.id }); DB.put('blocks', def); changed(); toast('Linked — the reason is logged on step ' + n); } }),
       onlyPicker ? null : h('div.row', { style: { marginTop: '8px' } }, h('button.btn.sm', { on: { click: () => closePop() } }, 'No link'))]);
   },
-  pickProtocol(title, cb) {
-    const defs = DB.where('blocks', b => b.kind === 'protocol' && b.status !== 'removed' && (b.registered || b.localOnly)); if (!defs.length) return toast('No protocols yet');
+  pickProtocol(title, cb, skip) {
+    const defs = DB.where('blocks', b => b.kind === 'protocol' && b.status !== 'removed' && (b.registered || b.localOnly) && !(skip && skip.has(b.id))); if (!defs.length) return toast(skip ? 'No other protocols yet' : 'No protocols yet');
     const m = modal({ title, wide: true, actions: [{ label: 'Cancel' }], body: optionPicker({ placeholder: 'Search protocols…', sort: 'protocols',
       items: q => defs.filter(df => !q || (df.label + ' ' + df.body.text).toLowerCase().includes(q)),
       render: df => h('div', h('b', df.label), ' ', df.registered ? null : h('span.pill', 'kept in its note'), ' ', h('span.muted', plural(PROTO.live(df).length, 'step') + ' · ' + plural(PROTO.runsOf(df).length, 'run')), h('span.s', M.docPath(M.doc(df.docId)))),
@@ -151,11 +213,13 @@ const PROTO = {
   check(run, stepId) {
     run.checks = run.checks || {}; const s = TIMER.activeFor(run.docId), now = Date.now();
     if (run.checks[stepId]) { delete run.checks[stepId]; if (s) { s.steps = (s.steps || []).filter(x => !(x.blockId === run.id && x.stepId === stepId)); DB.put('sessions', s); } DB.put('blocks', run); changed(); return; }
-    if (!s) { run.checks[stepId] = { at: isoLocal(now) }; DB.put('blocks', run); changed(); if (PROTO.activeSeq(run).every(id => run.checks[id]) && PROTO.pending(run).length) setTimeout(() => PROTO.promoteDialog(run), 120); return; }
+    if (!s) { run.checks[stepId] = { at: isoLocal(now) }; DB.put('blocks', run); changed(); if (PROTO.activeSeq(run).every(id => run.checks[id]) && PROTO.pending(run).length) setTimeout(() => PROTO.promoteDialog(run), 120); PROTO.parentCheck(run); return; }
     const off = TIMER.elapsed(s, now), prev = s.steps.length ? s.steps[s.steps.length - 1].offsetMs : 0;
     const rec = { blockId: run.id, stepId, at: isoLocal(now), offsetMs: off, durMs: off - prev }; s.steps.push(rec); DB.put('sessions', s);
     run.checks[stepId] = { at: rec.at, sessionId: s.id, durMs: rec.durMs, offsetMs: off }; DB.put('blocks', run); PROTO._follow = run.id;
-    if (PROTO.activeSeq(run).every(id => run.checks[id])) { _suppress++; TIMER.stop(s); _suppress--; changed(); setTimeout(() => protocolSummary(s.id, PROTO.pending(run).length ? { label: `Update the protocol with ${plural(PROTO.pending(run).length, 'change')}…`, run: () => setTimeout(() => PROTO.promoteDialog(run), 60) } : null), 50); } else changed();
+    // a step's protocol finished: its step is checked in the run it came from, and the timer runs on for that one
+    if (PROTO.activeSeq(run).every(id => run.checks[id]) && PROTO.parentCheck(run)) changed();
+    else if (PROTO.activeSeq(run).every(id => run.checks[id])) { _suppress++; TIMER.stop(s); _suppress--; changed(); setTimeout(() => protocolSummary(s.id, PROTO.pending(run).length ? { label: `Update the protocol with ${plural(PROTO.pending(run).length, 'change')}…`, run: () => setTimeout(() => PROTO.promoteDialog(run), 60) } : null), 50); } else changed();
   },
   addObservation(host, def, stepId, kind, text) {
     const run = TIMER.runningFor(host.docId), extra = { step: { protocolId: def.id, stepId } };
@@ -184,6 +248,7 @@ const PROTO = {
     el.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); el._skip = true; save(); PROTO.addTemp(run, t.id, DV(el)); }
       if (e.key === 'Backspace' && !el.textContent) { e.preventDefault(); el._skip = true; PROTO.removeTemp(run, t.id); }
+      if (e.key === 'Tab' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); el._skip = true; save(); PROTO.tabRun(M.block(run.id) || run, t.id, e.shiftKey ? -1 : 1); setTimeout(() => { el._skip = false; }, 150); }
       if (e.key === 'Escape') el.blur(); e.stopPropagation();
     });
     el.addEventListener('blur', () => { if (!el._skip) save(); el._skip = false; });
@@ -364,6 +429,8 @@ const PROTO = {
           canEdit ? h('button.ib.pmenu', { title: 'Step', on: { click: e => { e.stopPropagation(); PROTO.stepMenu(def, s, e); } } }, '⋯')
             : isRun && !ro ? h('button.ib.pmenu', { title: 'This run only', on: { click: e => { e.stopPropagation(); PROTO.runStepMenu(b, def, sid, e); } } }, '⋯') : null),
         observable && !skip ? h('button.obsdot', { title: 'Add an observation at this step', on: { click: e => { e.stopPropagation(); PROTO.obsPopover(b, def, sid, e.currentTarget); } } }) : null);
+      const sub = !temp && s.sub && M.block(s.sub);
+      if (sub && sub.status !== 'removed') row.append(PROTO.subRow(b, def, sid, sub, d, pane, ro, runner && !skip));
       list.append(row);
     });
     wrap.append(list);
@@ -390,6 +457,7 @@ const PROTO = {
     el.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); const t = el.textContent; el._skip = true; PROTO.editStep(def, s, t, el); const ns = PROTO.insertStep(def, (PROTO.step(def, s.id).supersededBy || [])[0] || s.id); setTimeout(() => { const n = $(`.pstep[data-step="${ns.id}"] .ptext`); n && n.focus(); }, 80); }
       if (e.key === 'Backspace' && !el.textContent && PROTO.live(def).length > 1) { e.preventDefault(); el._skip = true; PROTO.removeStep(def, s, el); }
+      if (e.key === 'Tab' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); el._skip = true; PROTO.editStep(def, s, el.textContent, el); PROTO.tabFrom(def, s.id, e.shiftKey ? -1 : 1); setTimeout(() => { el._skip = false; }, 150); }
       if (e.key === 'Escape') el.blur();
       e.stopPropagation();
     });
@@ -403,6 +471,8 @@ const PROTO = {
       { label: 'Split into two…', sub: def.registered ? 'Logged as an iteration; both inherit its observations' : null, run: async () => { const t = await askText('Split step', 'Two steps, one per line', s.text + '\n', { multiline: true }); if (!t) return; const [a, b2] = t.split('\n').map(x => x.trim()).filter(Boolean); if (a && b2) PROTO.splitStep(def, s, a, b2, anchor); } },
       { label: 'Move up', run: () => PROTO.moveStep(def, s, -1) }, { label: 'Move down', run: () => PROTO.moveStep(def, s, 1) },
       PROTO.iterations(def, s.id).length ? { label: 'Link the latest iteration to…', run: () => PROTO.linkPrompt(def, s.id, anchor, true) } : null,
+      { label: s.sub && M.block(s.sub) ? 'Tie to a different protocol…' : 'Tie to another protocol…', sub: 'The step is done by following that protocol', run: () => PROTO.tieDialog(def, s) },
+      s.sub ? { label: 'Untie “' + snippet((M.block(s.sub) || {}).label || 'protocol', 30) + '”', run: () => PROTO.tie(def, s, null) } : null,
       { label: def.registered && PROTO.used(def, s) ? 'Retire step' : 'Remove step', danger: true, run: () => PROTO.removeStep(def, s, anchor) }]);
   },
   obsPopover(host, def, sid, anchor) {

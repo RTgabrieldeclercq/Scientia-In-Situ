@@ -179,3 +179,43 @@ const LASSO2 = {
   // the barrel button's right-click never opens the menu on the paper
   document.addEventListener('contextmenu', e => { if (e.pointerType === 'pen' && e.target.closest && e.target.closest('.paper')) { e.preventDefault(); e.stopPropagation(); } }, true);
 }
+
+/* V3.943 — Ctrl+click (⌘ on a Mac) a component to add it to the selection, or take it out: the lasso's own selection,
+   so drag any of them to move them all, Delete removes them all, the bar under them copies or duplicates, Esc lets go.
+   An ink component brings its strokes. A Ctrl+click on a link or a term in the text still follows it; a Ctrl+drag over
+   text still holds the text (13z). */
+LASSO2.toggleBox = function (pane, id) {
+  const b = M.block(id); if (!b) return;
+  let sel = INK.sel && INK.sel.docId === pane.docId ? INK.sel : null;
+  if (!sel) sel = { docId: pane.docId, items: [], boxes: [], pane };
+  sel.boxes = sel.boxes || []; sel.pane = pane;
+  if (b.kind === 'ink') { const has = sel.items.some(x => x.id === id); sel.items = sel.items.filter(x => x.id !== id); if (!has) (b.ink && b.ink.strokes || []).forEach((_, i) => sel.items.push({ id, i })); }
+  else { const i = sel.boxes.indexOf(id); if (i >= 0) sel.boxes.splice(i, 1); else sel.boxes.push(id); }
+  INK.clearSel(); if (sel.items.length || sel.boxes.length) { INK.sel = sel; INK.paintSel(); }
+};
+{
+  const SKIP = 'a,button,input,select,textarea,label,.port,.rz,.chips,.ln,.tm,.st,.ct,.mx,.pop,.ink-selbar,.ink-h,.lab-pills';
+  document.addEventListener('click', e => {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey || e.button !== 0) return;
+    const box = e.target.closest && e.target.closest('.paper .box'); if (!box || !box.dataset.id || box.dataset.id[0] === '_' || e.target.closest(SKIP)) return;
+    if (!getSelection().isCollapsed) return;   // a Ctrl+drag over text: the text selection is held instead (13z)
+    const pane = DV(box); if (!pane || !pane.docId || pane.travel) return;
+    e.preventDefault(); e.stopPropagation(); LASSO2.toggleBox(pane, box.dataset.id);
+  }, true);
+  // a drag on any selected component moves the whole selection
+  const dp = DocView.pointer; DocView.pointer = function (e) {
+    const sel = INK.sel, box = e.target.closest && e.target.closest('.box');
+    if (sel && box && sel.docId === this.docId && e.button === 0 && !e.ctrlKey && !e.metaKey && (sel.boxes || []).length + sel.items.length > 1
+      && ((sel.boxes || []).includes(box.dataset.id) || sel.items.some(x => x.id === box.dataset.id)) && !e.target.closest('.ed,input,textarea,select,button,a,label,.rz,.port,.chips,.ink-h')) {
+      e.preventDefault(); e.stopPropagation(); return LASSO2.move(this, this.paper, e, this.paper.toWorld(e.clientX, e.clientY));
+    }
+    return dp.call(this, e);
+  };
+  // Delete / Backspace (not while typing) removes everything selected
+  document.addEventListener('keydown', e => {
+    if (!INK.sel || e.ctrlKey || e.metaKey || e.altKey || (e.key !== 'Delete' && e.key !== 'Backspace')) return;
+    if (e.target.closest && e.target.closest('input,textarea,select,[contenteditable="true"]')) return;
+    if (!(INK.sel.boxes || []).length && !INK.sel.items.length) return;
+    e.preventDefault(); e.stopPropagation(); INK.deleteSel();
+  }, true);
+}

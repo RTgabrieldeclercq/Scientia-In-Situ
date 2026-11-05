@@ -160,7 +160,7 @@ const PAL = {
       { g: 'Tools', label: 'Recurring chores…', run: () => CHORES.manage() }, { g: 'Tools', label: 'Rescan data folders', run: () => DATA.rescanAll() },
       { g: 'Tools', label: (settings().labs || {}).canvas ? 'Turn off spatial canvases (lab)' : 'Turn on spatial canvases (lab)', run: () => CANVAS.toggleLab() },
       { g: 'Tools', label: 'Toggle light / dark', run: () => $('#themetoggle').click() }, { g: 'Tools', label: 'Focus mode', key: 'Ctrl+.', run: () => App.toggleFocus() },
-      { g: 'Tools', label: 'Export everything (JSON)', run: () => Exporter.json() }, window.SIS_TARGET === 'web' ? null : { g: 'Tools', label: 'Export for the lab website', run: () => LABX.export() }, { g: 'Tools', label: 'Undo', key: 'Ctrl+Z', run: () => App.undo() },
+      { g: 'Tools', label: 'Export everything (JSON)', run: () => Exporter.json() }, { g: 'Tools', label: 'Undo', key: 'Ctrl+Z', run: () => App.undo() },
     ].filter(Boolean);
   },
   fuzzy(q, s) { q = q.toLowerCase(); s = String(s).toLowerCase(); if (!q) return 1; if (s.includes(q)) return 100 - s.indexOf(q); let i = 0, score = 0, run = 0; for (const c of s) { if (c === q[i]) { i++; run++; score += run; } else run = 0; if (i === q.length) return score; } return 0; },

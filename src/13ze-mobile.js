@@ -132,7 +132,7 @@ const MOBILE = {
   },
   /** What the editor expects of a pane, for a single column. */
   pane(d) {
-    return { docId: d.id, paper: null, travel: null, sel: null, softRefresh() { }, renderInsp() { }, drawWires() { }, makeRoomBelow() { }, reveal() { }, select() { }, boxH: () => 120, settle: () => false,
+    return { docId: d.id, paper: null, travel: null, sel: null, softRefresh() { }, drawWires() { }, makeRoomBelow() { }, reveal() { }, select() { }, boxH: () => 120, settle: () => false,
       set focusAfterRender(v) { MOBILE.focusAfterRender = v; }, get focusAfterRender() { return MOBILE.focusAfterRender; },
       orderedEditors: () => $$('.m-note .ed'), boxMenu() { }, focusPending() { } };
   },

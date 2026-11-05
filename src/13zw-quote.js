@@ -69,7 +69,7 @@ const QUOTE = {
   paintMarks(srcId) {
     const src = M.block(srcId); if (!src) return; const Q = QUOTE.of(srcId);
     if (src.kind === 'pdf') $$(`.box[data-id="${srcId}"] .q-slot, .embed-max[data-src="${srcId}"] .q-slot`).forEach(sl => { const pg = +(sl.dataset.p || (M.block(srcId).cur || 0) + 1); let mk = $(':scope > .q-marks', sl); if (!mk) return; mk.replaceChildren(...Q.filter(q => q.quote.page === pg && q.quote.rects).flatMap(q => q.quote.rects.map(r => h('div.q-hl', { 'data-q': q.id, title: snippet(q.body.text, 120), style: { '--hc': QUOTE.col(q), left: r[0] * 100 + '%', top: r[1] * 100 + '%', width: r[2] * 100 + '%', height: r[3] * 100 + '%' } })))); });
-    if (src.kind === 'html') $$(`.box[data-id="${srcId}"] iframe, .embed-max iframe`).forEach(fr => { if (fr._qsrc === srcId && fr.contentWindow) fr.contentWindow.postMessage({ sis: 'mark', list: Q.map(q => ({ id: q.id, exact: q.quote.exact, prefix: q.quote.prefix, c: QUOTE.col(q) })) }, '*'); });
+    if (src.kind === 'html') $$(`.box[data-id="${srcId}"] iframe, .embed-max iframe`).forEach(fr => { if (fr._qsrc === srcId && fr.contentWindow) fr.contentWindow.postMessage({ sis: 'mark', list: Q.filter(q => q.quote.exact).map(q => ({ id: q.id, exact: q.quote.exact, prefix: q.quote.prefix, c: QUOTE.col(q) })) }, '*'); });
   },
   async textLayer(m, n, canvas, width) {
     const slot = canvas.parentNode; if (!slot || !window.pdfjsLib) return; $$(':scope > .textLayer, :scope > .q-marks', slot).forEach(x => x.remove());
@@ -126,7 +126,8 @@ P.postMessage({sis:'ready'},'*');})();<\/script>`,
     fr._qsrc = srcId;
     try { const txt = await (await fetch(MEDIA.url(rec))).text(), base = `<base href="${new URL(MEDIA.url(rec), location.href).href}">`;
       const html = /<head[^>]*>/i.test(txt) ? txt.replace(/<head[^>]*>/i, m => m + base) : base + txt;
-      fr.removeAttribute('src'); fr.srcdoc = /<\/body>/i.test(html) ? html.replace(/<\/body>/i, QUOTE.SCRIPT + '</body>') : html + QUOTE.SCRIPT; }
+      const add = QUOTE.SCRIPT + (QUOTE.more ? QUOTE.more(srcId) : '');   // + what the page was left at, and its notes (13zze)
+      fr.removeAttribute('src'); fr.srcdoc = /<\/body>/i.test(html) ? html.replace(/<\/body>/i, () => add + '</body>') : html + add; }
     catch { fr.src = MEDIA.url(rec); }
   },
 };

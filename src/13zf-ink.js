@@ -7,6 +7,8 @@
      pen     — writes ink straight onto the paper. Strokes written close
                together gather into one ink component (it moves, wires, joins
                regions, takes timers and structure labels like any component).
+               On an image panel's images it writes on top of them, and that
+               ink is glued to the image (13zzc).
                In a component's text the pen is the iPad's own Scribble.
    The ink bar (top left; ✎ Pen beside Timer) picks the pen, highlighter,
    eraser or lasso, the colour and the width. The lasso selects strokes to
@@ -31,22 +33,38 @@ const INK = {
   rect: b => ({ x: b.x || 0, y: b.y || 0, w: b.w || 60, h: b.inkH || 60 }),
   r1: v => Math.round(v * 10) / 10,
 
-  /* ---------- drawing a stroke as a filled outline (pressure, tapered ends) ---------- */
+  /* ---------- drawing a stroke: the whiteboard's way of writing (V3.941) ----------
+     A pen stroke is the lab whiteboard's own outline (whiteboard.js V3.727, built into vendor/wb-ink.js as WBINK): a
+     Catmull-Rom curve through every sample, its width smoothed along the line, round joins and ends, one filled outline —
+     written here as SVG path data by a path recorder. The width follows this pen's pressure feel (13zq). */
+  /** Width multiplier of a stroke at pressure p: the pressure feel's thinnest–thickest, or the whiteboard's own curve. */
+  wmul(s, p) { p = p == null ? .5 : p; return s.pr ? (s.wr ? s.wr[0] + (s.wr[1] - s.wr[0]) * p : .18 + 1.65 * p) : WBINK.pressF(p); },
+  /** A 2D-context stand-in: what the whiteboard's code draws on it comes out as SVG path data (rec.d). */
+  pathRec() {
+    const r = v => Math.round(v * 10) / 10, at = (x, y) => r(x) + ',' + r(y); let d = '', open = false;
+    return { get d() { return d; }, set fillStyle(v) { }, beginPath() { open = false; }, fill() { }, closePath() { d += 'Z'; open = false; },
+      moveTo(x, y) { d += 'M' + at(x, y); open = true; }, lineTo(x, y) { d += (open ? 'L' : 'M') + at(x, y); open = true; },
+      arc(cx, cy, rad, a0, a1, ccw) {   // a canvas arc: a line to its start, then ≤ 90° SVG arcs
+        const T = Math.PI * 2; let sw = ccw ? a0 - a1 : a1 - a0; sw = sw >= T ? T : ((sw % T) + T) % T;
+        d += (open ? 'L' : 'M') + at(cx + Math.cos(a0) * rad, cy + Math.sin(a0) * rad); open = true;
+        const n = Math.max(1, Math.ceil(sw / (Math.PI / 2) - 1e-9)), rr = r(rad);
+        for (let i = 1; i <= n && sw > 0; i++) { const a = a0 + (ccw ? -1 : 1) * sw * i / n; d += 'A' + rr + ',' + rr + ' 0 0,' + (ccw ? 0 : 1) + ' ' + at(cx + Math.cos(a) * rad, cy + Math.sin(a) * rad); } } };
+  },
+  /** The stroke's centre line, smoothed the whiteboard's way (the highlighter's band, a dashed line). */
+  centreLine(s) {
+    const pts = s.p; if (pts.length < 3) return 'M' + pts.map(p => p[0] + ',' + p[1]).join('L');
+    const f = WBINK.flattenStroke(pts.flatMap(q => [q[0], q[1], .5]), 1, 1, 0, 0), r = v => Math.round(v * 10) / 10;
+    return 'M' + f.xs.map((x, i) => r(x) + ',' + r(f.ys[i])).join('L');
+  },
   path(s) {
     const pts = s.p; if (!pts || !pts.length) return '';
-    if (s.hl) return 'M' + pts.map(p => p[0] + ',' + p[1]).join('L');
+    if (s.hl) return s.geo ? 'M' + pts.map(p => p[0] + ',' + p[1]).join('L') : INK.centreLine(s);
     if (s.geo) { const br = new Set(s.br || []); return pts.map((p, i) => (i === 0 || br.has(i) ? 'M' : 'L') + p[0] + ',' + p[1]).join('') + (s.closed ? 'Z' : ''); }
-    const w = s.w || 2.4, n = pts.length;
-    if (n < 2) { const [x, y] = pts[0], r = w * .55; return `M${x - r},${y}a${r},${r} 0 1,0 ${2 * r},0a${r},${r} 0 1,0 ${-2 * r},0z`; }
-    const L = [], R = [];
-    for (let i = 0; i < n; i++) {
-      const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)]; let dx = b[0] - a[0], dy = b[1] - a[1]; const len = Math.hypot(dx, dy) || 1; dx /= len; dy /= len;
-      const pr = pts[i][2] == null ? .5 : pts[i][2], taper = Math.min(1, (i + 1) / 4, (n - i) / 4), r = w / 2 * (s.pr ? (s.wr ? s.wr[0] + (s.wr[1] - s.wr[0]) * pr : .18 + 1.65 * pr) : .4 + .9 * pr) * (.55 + .45 * taper);
-      L.push([pts[i][0] - dy * r, pts[i][1] + dx * r]); R.push([pts[i][0] + dy * r, pts[i][1] - dx * r]);
-    }
-    const ring = [...L, ...R.reverse()], f = v => Math.round(v * 10) / 10; let d = `M${f(ring[0][0])},${f(ring[0][1])}`;
-    for (let i = 1; i < ring.length - 1; i++) { const p = ring[i], q = ring[i + 1]; d += `Q${f(p[0])},${f(p[1])} ${f((p[0] + q[0]) / 2)},${f((p[1] + q[1]) / 2)}`; }
-    return d + 'Z';
+    // each sample's width multiplier, carried into the whiteboard's pressF range (0.3–1.8) by one scale for the stroke
+    const w = s.w || 2.4, m = pts.map(q => INK.wmul(s, q[2])); let lo = 1e9, hi = .01; m.forEach(v => { if (v < lo) lo = v; if (v > hi) hi = v; }); lo = Math.max(.01, lo);
+    const k = s.pr ? Math.sqrt(lo * hi / .54) : 1;
+    const flat = pts.flatMap((q, i) => [q[0], q[1], s.pr ? (m[i] / k - .4) / 1.2 : (q[2] == null ? .5 : q[2])]);
+    const rec = INK.pathRec(); WBINK.fillStrokeOutline(rec, flat, '', w * k, 1, 0, 0); return rec.d;
   },
   /** "auto" ink (and the old near-black) follows the theme: black on light, white on dark. */
   col: c => !c || c === 'auto' || c === '#1d1d1b' ? 'var(--ink)' : c,
@@ -84,8 +102,10 @@ const INK = {
   },
   addStroke(pane, s) {
     const d = M.doc(pane.docId); if (!d) return; DB.beginGroup('ink');
-    let b = INK.target(pane, { x: s.p[0][0], y: s.p[0][1] });
-    if (!b) { _suppress++; b = M.addBlock(d.id, null, { kind: 'ink', label: '', x: s.p[0][0] - INK.PAD, y: s.p[0][1] - INK.PAD, w: 60, inkH: 60, ink: { strokes: [] } }); _suppress--; b.body = { text: '', marks: [] }; b._new = true; }
+    // written on an image: the ink is glued to it (it moves with it, 13zzc) and gathers only with ink on the same image
+    const img = INK.imageAt(pane, s.p[0][0], s.p[0][1]);
+    let b = INK.target(pane, { x: s.p[0][0], y: s.p[0][1] }); if (b && ((b.glue && b.glue.to) || null) !== img) b = null;
+    if (!b) { _suppress++; b = M.addBlock(d.id, null, { kind: 'ink', label: '', x: s.p[0][0] - INK.PAD, y: s.p[0][1] - INK.PAD, w: 60, inkH: 60, ink: { strokes: [] }, glue: img ? { to: img, dx: 0, dy: 0 } : undefined }); _suppress--; b.body = { text: '', marks: [] }; b._new = true; }
     b.ink = b.ink || { strokes: [] };
     b.ink.strokes.push(Object.assign({}, s, { p: s.p.map(p => [INK.r1(p[0] - b.x), INK.r1(p[1] - b.y), Math.round((p[2] == null ? .5 : p[2]) * 100) / 100]) }));
     INK.fit(b); INK._last = b.id; const isNew = b._new; delete b._new;
@@ -93,12 +113,16 @@ const INK = {
   },
 
   /* ---------- pen input on a note's paper ---------- */
-  interactive: t => t.closest('button,input,textarea,select,a,label,.port,.rz,.ed,[contenteditable="true"],.pop,.ink-bar,.bh,.chips,.wl,.region .rg-tab'),
+  interactive: t => t.closest('button,input,textarea,select,a,label,.port,.rz,.ed,[contenteditable="true"],.pop,.ink-bar,.bh,.chips,.wl,.region .rg-tab,.region .rg-port'),
+  /** The pen writes on the images of an image panel too (the ink goes on top, glued to it). */
+  onImage: (box, t) => box.classList.contains('w-figure') && !!(t.closest && t.closest('.fg-grid')),
+  /** The image panel at a point of the paper (the topmost), or null. */
+  imageAt(pane, x, y) { const el = $$(':scope > .box.w-figure', pane.paper.world).reverse().find(el => el.offsetWidth && x >= el.offsetLeft && x <= el.offsetLeft + el.offsetWidth && y >= el.offsetTop && y <= el.offsetTop + el.offsetHeight); return el ? el.dataset.id : null; },
   penDown(paper, e) {
     const host = paper.el.closest('.canvas-host'), pane = host && host._dv; if (!pane || !pane.docId || pane.travel || !M.doc(pane.docId)) return false;
     if (!INK.writing()) return false; // pen mode off: the pen pans the paper and moves components (13zz2)
     if (INK.interactive(e.target)) return false;
-    const box = e.target.closest('.box'); if (box && !box.classList.contains('w-ink')) return false;
+    const box = e.target.closest('.box'); if (box && !box.classList.contains('w-ink') && !INK.onImage(box, e.target)) return false;
     const wp = paper.toWorld(e.clientX, e.clientY);
     if (INK.sel && INK.sel.docId === pane.docId && INK.inSel(wp)) return INK.moveSel(pane, paper, e, wp), true;
     if (INK.sel) INK.clearSel();
@@ -268,17 +292,47 @@ const HWUI = {
   },
 };
 
+/* ---------- V3.941 · the palm ----------
+   A hand resting on the glass before or while the pen writes must not pan, zoom, undo or redo. One set of rules for a
+   note's paper (below), the two- and three-finger taps (13zm) and the whiteboard (board/pen.js, as window.SIS_PALM):
+   • a contact wider or taller than SIZE css px (where the screen reports its size) is a palm;
+   • while the pen is near the glass (hovering or writing, and QUIET ms after) touches are no gesture, and a pen coming
+     near ends a finger pan or pinch in progress;
+   • two or three fingers count only when every pair is at least GAP css px apart — a palm lands as contacts close
+     together. #touchlog in the address shows each contact's size and the gaps, to check a new screen. */
+const PALM = {
+  GAP: 70, SIZE: 90, QUIET: 600, penAt: -1e9,
+  size: e => Math.max(e.width || 0, e.height || 0, 2 * (e.radiusX || 0), 2 * (e.radiusY || 0)),
+  big: e => PALM.size(e) > PALM.SIZE,
+  penNear: () => performance.now() - PALM.penAt < PALM.QUIET,
+  /** a touch that is a palm by itself: its size, or the pen near the glass */
+  palm: e => PALM.big(e) || PALM.penNear(),
+  /** every pair of these [x, y] points at least GAP apart */
+  apart: pts => pts.every((p, i) => pts.every((q, j) => j <= i || Math.hypot(p[0] - q[0], p[1] - q[1]) >= PALM.GAP)),
+};
+window.SIS_PALM = PALM;
+['pointerdown', 'pointermove', 'pointerup'].forEach(t => addEventListener(t, e => { if (e.pointerType === 'pen') PALM.penAt = performance.now(); }, { capture: true, passive: true }));
+
 {
   /* fingers and pen on every paper */
   const mp = makePaper; makePaper = function (host, opts) {
-    const P = mp(host, opts), el = P.el, T = {};
+    const P = mp(host, opts), el = P.el, T = { touch: new Set(), palm: new Set() };
+    // V3.941 — the palm: what the fingers had started stops, and those touches count for nothing until they lift
+    T.drop = () => { clearTimeout(T.timer); T.pend = null; if (P.mode && (P.mode.k === 'pinch' || (P.mode.k === 'pan' && T.touch.size))) { P.stop(); P.mode = null; el.classList.remove('panning'); }
+      T.touch.forEach(id => { P.ptrs.delete(id); T.palm.add(id); }); T.touch.clear(); };
+    el.addEventListener('pointermove', e => { if (e.pointerType === 'pen' && T.touch.size) T.drop(); else if (T.palm.has(e.pointerId)) e.stopPropagation(); }, true);
+    const lift = e => { T.touch.delete(e.pointerId); if (T.palm.delete(e.pointerId)) e.stopPropagation(); };
+    el.addEventListener('pointerup', lift, true); el.addEventListener('pointercancel', lift, true);
     el.addEventListener('pointerdown', e => {
-      if (e.pointerType === 'pen' || (e.pointerType === 'mouse' && INK.mouse && e.button === 0)) { if (INK.penDown(P, e)) { e.preventDefault(); e.stopPropagation(); } return; }
+      if (e.pointerType === 'pen' || (e.pointerType === 'mouse' && INK.mouse && e.button === 0)) { if (e.pointerType === 'pen' && T.touch.size) T.drop(); if (INK.penDown(P, e)) { e.preventDefault(); e.stopPropagation(); } return; }
       if (e.pointerType !== 'touch') return;
       if (INK.drawing != null) { e.stopPropagation(); return; } // the palm while the pen writes
+      if (T.palm.size || PALM.palm(e)) { T.palm.add(e.pointerId); e.stopPropagation(); return; }   // V3.941 — a palm, or a hand with one already down
       if (e.target.closest('button,input,select,textarea,a,label,.pop,.ink-bar,.ink-selbar,.port,.rz,.embed-rz,.scrolly,.embed')) return;
       const ed = e.target.closest('[contenteditable="true"]'); if (ed && document.activeElement === ed) return; // a focused text: the finger selects and places the caret
-      e.stopPropagation(); P.ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      // V3.941 — a second contact close to a finger already down is the same hand: neither is a finger
+      if ([...T.touch].some(id => { const q = P.ptrs.get(id); return q && Math.hypot(q.x - e.clientX, q.y - e.clientY) < PALM.GAP; })) { T.drop(); T.palm.add(e.pointerId); e.stopPropagation(); return; }
+      e.stopPropagation(); P.ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); T.touch.add(e.pointerId);
       if (P.ptrs.size >= 2) { clearTimeout(T.timer); T.pend = null; P.stop(); const [p, q] = [...P.ptrs.values()]; P.mode = { k: 'pinch', d0: Math.hypot(p.x - q.x, p.y - q.y) || 1, z0: P.view.z }; return; }
       const box = e.target.closest('.box'); T.pend = { id: e.pointerId, x: e.clientX, y: e.clientY, e, box, ed };
       clearTimeout(T.timer); T.timer = setTimeout(() => { const pd = T.pend; if (!pd || !pd.box || pd.ed) return; const pane = host._dv; T.pend = null; if (pane && pane.pointer) { pd.box.classList.add('lifted'); pane.pointer(pd.e); const off = () => { pd.box.classList.remove('lifted'); removeEventListener('pointerup', off); }; addEventListener('pointerup', off); } }, 450);

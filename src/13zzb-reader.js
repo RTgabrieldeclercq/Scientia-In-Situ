@@ -11,6 +11,9 @@
    is over it; Esc never closes it. It belongs to its note: leave the note
    and it closes, come back and it is there again; Close forgets it.
    Meanwhile the card says "Reading beside", so the file is drawn once.
+   V3.945 — an HTML page reads beside the note too (the book on its card,
+   "◧ Beside" when maximised): the page itself, its highlights and notes,
+   ⇄, ⤢ and Close; its own tools (✎ Note, Export ink labels) come from 13zze.
    ========================================================================== */
 const RDOCK = {
   st: null, ZOOMS: [.6, .75, .9, 1, 1.15, 1.3, 1.5, 1.75, 2, 2.5],
@@ -19,26 +22,27 @@ const RDOCK = {
   phone: () => document.body.classList.contains('mobile'),
   stage: () => RDOCK.st && $('.pdf-stage', RDOCK.st.ov),
   save() { const st = RDOCK.st; if (st) _ls.set('rdock:' + st.docId, { id: st.id, side: st.side, zoom: st.zoom }); },
+  KINDS: { pdf: 1, html: 1 },
   open(b, o = {}) {
-    if (!b || b.kind !== 'pdf' || b.status !== 'live' || RDOCK.phone() || !MEDIA.get(b.media)) return;
+    if (!b || !RDOCK.KINDS[b.kind] || b.status !== 'live' || RDOCK.phone() || !MEDIA.get(b.media)) return;
     const was = RDOCK.saved(b.docId) || {}, same = was.id === b.id; RDOCK.close(true);
     const mx = $('.embed-max.dk-max:not(.rd-dock)'); if (mx) MXHL.close(mx);   // Gabe's maximised view gives way
-    const st = RDOCK.st = { id: b.id, docId: b.docId, side: o.side || (same && was.side) || 'left', zoom: (same && was.zoom) || 1, full: false, hover: false };
+    const pdf = b.kind === 'pdf', st = RDOCK.st = { id: b.id, docId: b.docId, kind: b.kind, side: o.side || (same && was.side) || 'left', zoom: (same && was.zoom) || 1, full: false, hover: false };
     const btn = (label, title, fn) => h('button.btn.xs', { title, on: { click: e => { e.stopPropagation(); fn(e); } } }, label);
     st.pg = h('span.rd-pg.mono', '…'); st.zl = h('button.btn.xs.rd-zl.mono', { title: 'Fit the width', on: { click: e => { e.stopPropagation(); RDOCK.zoom(1); } } }, '100%');
-    st.hl = btn('Highlights', 'Your highlights in this paper — click one to go there', () => st.ov.classList.toggle('rd-side-on'));
+    st.hl = btn('Highlights', 'Your highlights in this ' + (pdf ? 'paper' : 'page') + ' — click one to go there', () => st.ov.classList.toggle('rd-side-on'));
     st.fs = btn('⤢', 'Full screen (Esc comes back)', () => RDOCK.full());
-    const bar = h('div.em-bar.rd-bar', h('b.rd-ttl', { title: b.label || '' }, b.label || 'PDF'),
-      h('div.rd-grp', btn('‹', 'Previous page (←)', () => RDOCK.step(-1)), st.pg, btn('›', 'Next page (→)', () => RDOCK.step(1))),
-      h('div.rd-grp', btn('−', 'Smaller (Ctrl + scroll)', () => RDOCK.zoom(-1, true)), st.zl, btn('+', 'Larger (Ctrl + scroll)', () => RDOCK.zoom(1, true))),
-      CLIP.btn(b), st.hl, btn('⇄', 'Put it on the other side', () => RDOCK.swap()), st.fs,
-      h('button.btn.sm.rd-x', { title: 'Put the paper back in its card', on: { click: e => { e.stopPropagation(); RDOCK.close(); } } }, 'Close ✕'));
+    const bar = h('div.em-bar.rd-bar', h('b.rd-ttl', { title: b.label || '' }, b.label || (pdf ? 'PDF' : 'Page')),
+      pdf ? h('div.rd-grp', btn('‹', 'Previous page (←)', () => RDOCK.step(-1)), st.pg, btn('›', 'Next page (→)', () => RDOCK.step(1))) : null,
+      pdf ? h('div.rd-grp', btn('−', 'Smaller (Ctrl + scroll)', () => RDOCK.zoom(-1, true)), st.zl, btn('+', 'Larger (Ctrl + scroll)', () => RDOCK.zoom(1, true))) : null,
+      pdf ? CLIP.btn(b) : null, st.hl, btn('⇄', 'Put it on the other side', () => RDOCK.swap()), st.fs,
+      h('button.btn.sm.rd-x', { title: 'Put the ' + (pdf ? 'paper' : 'page') + ' back in its card', on: { click: e => { e.stopPropagation(); RDOCK.close(); } } }, 'Close ✕'));
     const ov = st.ov = h('div.embed-max.dk-max.rd-dock.rd-docked', bar, h('div.dk-maxc'));
     $('#app').append(ov); MXHL.open(ov, b.id);
     ov.addEventListener('pointerenter', () => { st.hover = true; }); ov.addEventListener('pointerleave', () => { st.hover = false; });
     ov.addEventListener('wheel', RDOCK.wheel, { passive: false }); ov.addEventListener('scroll', RDOCK.onScroll, true);
     RDOCK.save(); RDOCK.layout();
-    DOCS.repaint(b); $$(`.box[data-id="${b.id}"] > .bh > .bh-tools`).forEach(x => x.replaceChildren());   // the card says "Reading beside" (and drops its tools)
+    RDOCK.card(b); $$(`.box[data-id="${b.id}"] > .bh > .bh-tools`).forEach(x => x.replaceChildren());   // the card says "Reading beside" (and drops its tools)
     DOCS._max = { id: b.id, draw: RDOCK.draw }; RDOCK.draw();
     setTimeout(() => { QUOTE.paintMarks(b.id); App.panes().forEach(CLIP.mark); }, 700);
   },
@@ -47,12 +51,21 @@ const RDOCK = {
     if (!keep) _ls.set('rdock:' + st.docId, null);
     st.ov.remove(); if (DOCS._max && DOCS._max.id === st.id) DOCS._max = null;
     if (CLIP.on.has(st.id)) CLIP.toggle(st.id, false);
-    RDOCK.layout(); const b = M.block(st.id); if (b) DOCS.repaint(b);
+    RDOCK.layout(); const b = M.block(st.id); if (b) RDOCK.card(b);
     setTimeout(() => App.panes().forEach(CLIP.mark), 300);
   },
-  /** Gabe's maximised drawing (PDFW.full) at this zoom; the place in the paper is kept. */
+  /** The card on the paper drawn again: "Reading beside the note" while it is out, itself after (a PDF through DOCS). */
+  card(b) {
+    if (b.kind !== 'html') return DOCS.repaint(b);
+    $$(`.box[data-id="${b.id}"]`).forEach(box => { const old = box.querySelector(':scope > .embed'), pane = DV(box); if (old) old.replaceWith(WIDGETS.html.body(M.block(b.id), M.doc(b.docId), pane, !!(pane && pane.travel))); });
+  },
+  /** Gabe's maximised drawing (PDFW.full) at this zoom; the place in the paper is kept. An HTML page: the page, once
+      (put in again only when its file changes, so it keeps its place and what you did in it). */
   draw() {
     const st = RDOCK.st; if (!st) return; const b = M.block(st.id); if (!b || b.status !== 'live') return RDOCK.close();
+    if (b.kind === 'html') { const c = $('.dk-maxc', st.ov), rec = MEDIA.get(b.media); if (!rec) return RDOCK.close();
+      if (st.media !== b.media || !$('iframe', c)) { st.media = b.media; EMBED._maxId = b.id; c.replaceChildren(EMBED.frame(rec, 'em-frame')); }   // 13zw fills it as this page's (QUOTE.fill)
+      return RDOCK.count(); }
     const at = RDOCK.where(), body = WIDGETS.pdf.body(b, M.doc(b.docId), { maxView: true, paper: null, zoom: st.zoom }, false);
     body.classList.add('maxed'); $('.dk-maxc', st.ov).replaceChildren(body); st.zl.textContent = Math.round(st.zoom * 100) + '%'; RDOCK.count();
     if (at) { let n = 60; const go = () => { const s = RDOCK.stage(), sl = s && $(`.pdf-slot[data-p="${at.p}"]`, s); if (!sl) return --n > 0 && setTimeout(go, 50);
@@ -63,18 +76,18 @@ const RDOCK = {
   /** The page at the top of the reader, and how far down it the top is. */
   where() { const s = RDOCK.stage(); if (!s || !s.scrollTop) return null; const y = s.getBoundingClientRect().top, sl = $$('.pdf-slot', s).find(x => x.getBoundingClientRect().bottom > y + 1); return sl ? { p: +sl.dataset.p, f: (y - sl.getBoundingClientRect().top) / (sl.offsetHeight || 1) } : null; },
   page() { const s = RDOCK.stage(); if (!s) return 1; const y = s.getBoundingClientRect().top + s.clientHeight * .3, sl = $$('.pdf-slot', s).find(x => x.getBoundingClientRect().bottom > y); return sl ? +sl.dataset.p : ((M.block(RDOCK.st.id) || {}).cur || 0) + 1; },
-  onScroll() { const st = RDOCK.st; if (!st || st.raf) return; st.raf = requestAnimationFrame(() => { st.raf = 0; const b = M.block(st.id), n = (b && b.pages) || $$('.pdf-slot', st.ov).length || 0;
+  onScroll() { const st = RDOCK.st; if (!st || st.kind !== 'pdf' || st.raf) return; st.raf = requestAnimationFrame(() => { st.raf = 0; const b = M.block(st.id), n = (b && b.pages) || $$('.pdf-slot', st.ov).length || 0;
     st.pg.textContent = (b && b.view === 'page' ? (b.cur || 0) + 1 : RDOCK.page()) + ' / ' + (n || '…'); }); },
   step(d) {
-    const st = RDOCK.st, b = st && M.block(st.id); if (!b) return; if (b.view === 'page') return PDFW.go(b, (b.cur || 0) + d);
+    const st = RDOCK.st, b = st && M.block(st.id); if (!b || b.kind !== 'pdf') return; if (b.view === 'page') return PDFW.go(b, (b.cur || 0) + d);
     const s = RDOCK.stage(), sl = s && $(`.pdf-slot[data-p="${clamp(RDOCK.page() + d, 1, $$('.pdf-slot', s).length)}"]`, s); if (sl) s.scrollTo({ top: RDOCK.top(s, sl) - 12, behavior: 'smooth' });
   },
   zoom(v, step) {
-    const st = RDOCK.st; if (!st) return; let z = v;
+    const st = RDOCK.st; if (!st || st.kind !== 'pdf') return; let z = v;
     if (step) { const Z = RDOCK.ZOOMS, i = Z.findIndex(x => x >= st.zoom - 1e-3); z = Z[clamp((i < 0 ? Z.length - 1 : i) + v, 0, Z.length - 1)]; }
     if (Math.abs(z - st.zoom) < 1e-3) return; st.zoom = z; RDOCK.save(); RDOCK.draw();
   },
-  wheel(e) { const st = RDOCK.st; if (!st || !(e.ctrlKey || e.metaKey)) return; e.preventDefault(); st.wz = (st.wz || 0) + e.deltaY; clearTimeout(st.wt);
+  wheel(e) { const st = RDOCK.st; if (!st || st.kind !== 'pdf' || !(e.ctrlKey || e.metaKey)) return; e.preventDefault(); st.wz = (st.wz || 0) + e.deltaY; clearTimeout(st.wt);
     st.wt = setTimeout(() => { const d = st.wz; st.wz = 0; RDOCK.zoom(d < 0 ? Math.min(3, Math.ceil(-d / 80)) : -Math.min(3, Math.ceil(d / 80)), true); }, 140); },
   swap() { const st = RDOCK.st; if (!st) return; st.side = st.side === 'left' ? 'right' : 'left'; RDOCK.save(); RDOCK.layout(); },
   full() { const st = RDOCK.st; if (!st) return; st.full = !st.full; st.ov.classList.toggle('rd-docked', !st.full); st.fs.textContent = st.full ? '◧' : '⤢'; st.fs.title = st.full ? 'Back beside the note (Esc)' : 'Full screen (Esc comes back)'; RDOCK.layout(); RDOCK.draw(); },
@@ -96,9 +109,21 @@ const RDOCK = {
     if (b && b.kind === 'pdf' && !RDOCK.phone()) { const ov = [...$$('.embed-max.dk-max:not(.rd-dock)')].pop(), x = ov && [...$$('.em-bar button', ov)].find(z => /Close/.test(z.textContent)); if (x) x.before(h('button.btn.sm', { title: 'Read it beside the note — the paper in half the screen', on: { click: e => { e.stopPropagation(); RDOCK.open(M.block(b.id)); } } }, '◧ Beside')); }
     return r; };
   // while it is out, the card says so
+  const away = (cls, b, hgt, ro) => h('div.' + cls + '.rd-away', { style: { height: hgt + 'px' } }, h('div.rd-away-in', h('span.rd-away-ic', { html: RDOCK.BOOK }), h('b', b.label || (b.kind === 'pdf' ? 'PDF' : 'Page')), h('span', 'Reading beside the note'), ro ? null : h('button.btn.xs', { on: { click: e => { e.stopPropagation(); RDOCK.close(); } } }, 'Put it back here')));
   const wb = WIDGETS.pdf.body; WIDGETS.pdf.body = function (b, d, pane, ro) {
-    if (RDOCK.st && RDOCK.st.id === b.id && !(pane && pane.maxView)) return h('div.pdfw.rd-away', { style: { height: (b.h || 560) + 40 + 'px' } }, h('div.rd-away-in', h('span.rd-away-ic', { html: RDOCK.BOOK }), h('b', b.label || 'PDF'), h('span', 'Reading beside the note'), ro ? null : h('button.btn.xs', { on: { click: e => { e.stopPropagation(); RDOCK.close(); } } }, 'Put it back here')));
+    if (RDOCK.st && RDOCK.st.id === b.id && !(pane && pane.maxView)) return away('pdfw', b, (b.h || 560) + 40, ro);
     return wb.apply(this, arguments); };
+  // V3.945 — an HTML page: the book among its tools, "◧ Beside" when maximised, and the card while it is out
+  const hb = WIDGETS.html.body; WIDGETS.html.body = function (b, d, pane, ro) {
+    if (RDOCK.st && RDOCK.st.id === b.id) return away('embed', b, b.h || 400, ro);
+    const r = hb.apply(this, arguments), tools = r && $('.embed-tools', r);
+    if (tools && !RDOCK.phone()) { const bk = h('button.rd-open', { title: 'Read beside the note — the page in half the screen, the note in the other', html: RDOCK.BOOK, on: { click: e => { e.stopPropagation(); RDOCK.open(M.block(b.id)); } } });
+      tools.firstChild ? tools.firstChild.after(bk) : tools.append(bk); }   // after ⛶
+    return r; };
+  const em = EMBED.max; EMBED.max = function (b) { const r = em.apply(this, arguments);
+    if (b && b.kind === 'html' && !RDOCK.phone()) { const ov = [...$$('.embed-max:not(.rd-dock)')].pop(), x = ov && [...$$('.em-bar button', ov)].find(z => /Close/.test(z.textContent));
+      if (x) x.before(h('button.btn.sm', { title: 'Read it beside the note — the page in half the screen', on: { click: e => { e.stopPropagation(); x.click(); RDOCK.open(M.block(b.id)); } } }, '◧ Beside')); }
+    return r; };
   // "from …" on a quote, and "on the note" in the highlights list, stay with the paper beside
   const qg = QUOTE.goto; QUOTE.goto = function (q) { const st = RDOCK.st; if (st && q && q.quote && q.quote.src === st.id) return MXHL.goto(st.id, q); return qg.apply(this, arguments); };
   const mc = MXHL.close; MXHL.close = function (ov) { if (ov && ov.classList.contains('rd-dock')) { if (RDOCK.st && RDOCK.st.full) RDOCK.full(); return; } return mc.apply(this, arguments); };
@@ -110,7 +135,7 @@ const RDOCK = {
     const st = RDOCK.st; if (!st || $('.ovl') || e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.target && e.target.closest && e.target.closest('input,textarea,select,[contenteditable]:not([contenteditable="false"])')) return;
     if (e.key === 'Escape' && st.full) { e.preventDefault(); e.stopPropagation(); return RDOCK.full(); }
-    const d = !st.hover ? 0 : e.key === 'ArrowRight' || e.key === 'PageDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'PageUp' ? -1 : 0; if (!d) return;
+    const d = !st.hover || st.kind !== 'pdf' ? 0 : e.key === 'ArrowRight' || e.key === 'PageDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'PageUp' ? -1 : 0; if (!d) return;
     e.preventDefault(); e.stopPropagation(); RDOCK.step(d);
   }, true);
   // it belongs to its note: back when the note is, gone when it isn't

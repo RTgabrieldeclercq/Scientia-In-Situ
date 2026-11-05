@@ -26,10 +26,12 @@ const App = {
     }
     if (!view.title) App.setTitle(TABS.find(t => t[0] === (TABOF[r.name] || r.name)) ? TABS.find(t => t[0] === (TABOF[r.name] || r.name))[1] : '', null);
   },
-  /** Row one: the journal-entry-sized title and a small mono meta line. */
-  setTitle(text, meta, { editable, onEdit } = {}) {
+  /** Row one: the journal-entry-sized title and a small mono meta line. `more(e)`: ⋯ beside the title (a note's More — V3.941, it left the note's bottom bar). */
+  setTitle(text, meta, { editable, onEdit, more } = {}) {
     const t = $('#ttl'); t.textContent = text || ''; t.contentEditable = editable ? 'plaintext-only' : 'false'; if (editable && t.contentEditable !== 'plaintext-only') t.contentEditable = 'true';
     t._onEdit = onEdit || null; t.classList.toggle('ed', !!editable);
+    let mb = $('#ttlmore'); if (!mb) { mb = h('button#ttlmore', { type: 'button', title: 'More for this note', 'aria-label': 'More for this note', on: { click: e => { e.stopPropagation(); mb._more && mb._more(e); } } }, '⋯'); t.after(mb); }
+    mb._more = more || null; mb.hidden = !more;
     $('#meta').replaceChildren(...(Array.isArray(meta) ? meta : meta ? [meta] : []));
     document.title = (text ? text + ' · ' : '') + 'Scientia In Situ';
   },

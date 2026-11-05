@@ -2,7 +2,8 @@
    13zm · Pen and fingers, round two (Surface Pro + Slim Pen, iPad).
    • While the ink bar is on, the mouse arrow hides when the pen comes near
      the paper; a small dot of the pen's colour and width follows it instead.
-   • Two fingers tapped together = undo; three = redo (anywhere in the app).
+   • Two fingers tapped together = undo; three = redo (anywhere in the app) —
+     V3.941: fingers a clear gap apart, never a palm (13zf PALM).
    • Lasso strokes from two ink components → "Connect…" (pick or type the
      relation) or "Merge" (one ink component; their wires carry over).
    Pressure (the gauge ⇣ in the ink bar) is in 13zf: harder = thicker and darker.
@@ -43,26 +44,35 @@ const PEN2 = {
   // Windows turns a two-finger tap into a right-click and often cancels the touches instead of lifting them, so the tap is
   // read from pointer events and touch events together, a cancel is not counted as movement, and the right-click that
   // Windows makes from the tap is swallowed and taken as the undo itself. Each tap fires once.
+  // V3.941 — not the palm (13zf PALM): a contact the size of a palm, the pen near the glass, or two contacts closer than a
+  // finger's gap makes the tap nothing
   let G = null; const TAP = 650;
-  const start = () => { const now = performance.now(); if (!G || G.done || now - G.t0 > 400) G = { t0: now, ids: new Map(), max: 0, moved: false, done: false, fired: false, live: 0 }; return G; };
+  const start = () => { const now = performance.now(); if (!G || G.done || now - G.t0 > 400) G = { t0: now, ids: new Map(), max: 0, moved: false, done: false, fired: false, live: 0, palm: false, pts: [], tpts: [] }; return G; };
+  const spread = g => { const P = g.pts.length >= 2 ? g.pts : g.tpts; return P.length < 2 || PALM.apart(P); };
+  const real = g => !g.moved && !g.palm && !PALM.penNear() && spread(g);
   const fire = (g, n) => { if (g.fired) return; g.fired = true; PEN2.tapLog && PEN2.tapLog('fire ' + n);
     const a = document.activeElement; if (a && a.closest && a.closest('input,textarea')) return;
     if (n === 2) App.undo(); else if (n >= 3) App.redo(); };
   const finish = () => { const g = G; if (!g || g.done || g.ids.size || g.live) return; g.done = true; g.tEnd = performance.now();
-    if (!g.moved && g.tEnd - g.t0 <= TAP && g.max >= 2) fire(g, g.max); };
-  document.addEventListener('pointerdown', e => { if (e.pointerType !== 'touch') return; const g = start(); g.ids.set(e.pointerId, [e.clientX, e.clientY]); g.max = Math.max(g.max, g.ids.size); PEN2.tapLog && PEN2.tapLog('pdown ' + g.ids.size); }, true);
+    if (g.tEnd - g.t0 <= TAP && g.max >= 2) { if (real(g)) fire(g, g.max); else PEN2.tapLog && PEN2.tapLog('not a tap: ' + (g.moved ? 'moved' : g.palm ? 'palm' : !spread(g) ? 'fingers too close' : 'pen near')); } };
+  const gaps = P => P.slice(1).map((p, i) => Math.round(Math.hypot(p[0] - P[i][0], p[1] - P[i][1]))).join('/');
+  document.addEventListener('pointerdown', e => { if (e.pointerType !== 'touch') return; const g = start(); g.ids.set(e.pointerId, [e.clientX, e.clientY]); g.max = Math.max(g.max, g.ids.size);
+    if (PALM.palm(e)) g.palm = true; g.pts.push([e.clientX, e.clientY]);
+    PEN2.tapLog && PEN2.tapLog('pdown ' + g.ids.size + ' size ' + Math.round(PALM.size(e)) + (g.pts.length > 1 ? ' gap ' + gaps(g.pts) : '')); }, true);
   document.addEventListener('pointermove', e => { if (e.pointerType !== 'touch' || !G || !G.ids.has(e.pointerId)) return; const [x, y] = G.ids.get(e.pointerId); if (Math.hypot(e.clientX - x, e.clientY - y) > 18) G.moved = true; }, true);
   const lift = e => { if (e.pointerType !== 'touch' || !G || !G.ids.has(e.pointerId)) return; G.ids.delete(e.pointerId); PEN2.tapLog && PEN2.tapLog(e.type + ' ' + G.ids.size); finish(); };
   document.addEventListener('pointerup', lift, true); document.addEventListener('pointercancel', lift, true);
   // touch events: the same tap, counted by fingers on the glass (some Windows touch drivers report only these fully)
-  document.addEventListener('touchstart', e => { const g = start(); g.live = e.touches.length; g.max = Math.max(g.max, e.touches.length); PEN2.tapLog && PEN2.tapLog('tstart ' + e.touches.length); }, { capture: true, passive: true });
+  document.addEventListener('touchstart', e => { const g = start(); g.live = e.touches.length; g.max = Math.max(g.max, e.touches.length);
+    [...e.changedTouches].forEach(t => { if (PALM.big(t)) g.palm = true; g.tpts.push([t.clientX, t.clientY]); }); if (PALM.penNear()) g.palm = true;
+    PEN2.tapLog && PEN2.tapLog('tstart ' + e.touches.length); }, { capture: true, passive: true });
   const tEnd = e => { if (!G) return; G.live = e.touches.length; PEN2.tapLog && PEN2.tapLog(e.type + ' ' + e.touches.length); finish(); };
   document.addEventListener('touchend', tEnd, { capture: true, passive: true }); document.addEventListener('touchcancel', tEnd, { capture: true, passive: true });
   // the right-click Windows makes from a two-finger tap (or a finger press-and-hold) on the canvas: no menu there
   PEN2.touchMenu = e => { const g = G, now = performance.now(); if (!g || now - g.t0 > 1500) return false;
     if (!(e.target.closest && e.target.closest('.paper')) || e.target.closest('input,textarea,[contenteditable="true"]')) return false;
     PEN2.tapLog && PEN2.tapLog('menu max=' + g.max);
-    if (g.max >= 2 && !g.moved) fire(g, g.max);
+    if (g.max >= 2 && real(g)) fire(g, g.max);
     return g.max >= 2 || INK.shown; };
   document.addEventListener('contextmenu', e => { if (PEN2.touchMenu(e)) { e.preventDefault(); e.stopPropagation(); } }, true);
   // #touchlog in the address shows what the screen reports, for checking taps on a new device

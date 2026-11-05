@@ -27,7 +27,7 @@ const EMBED = {
     if (!ro) $('.embed-rz', wrap).addEventListener('pointerdown', e => {
       e.preventDefault(); e.stopPropagation(); const box = wrap.closest('.box'), z = pane.paper.view.z, x0 = e.clientX, y0 = e.clientY, w0 = box.offsetWidth, h0 = wrap.offsetHeight;
       document.body.classList.add('resizing');
-      const mv = ev => { b.w = clamp(Math.round(w0 + (ev.clientX - x0) / z), 280, 2400); b.h = clamp(Math.round(h0 + (ev.clientY - y0) / z), 120, 2400); box.style.width = b.w + 'px'; wrap.style.height = b.h + 'px'; pane.drawWires(); };
+      const mv = ev => { b.w = Math.max(280, Math.round(w0 + (ev.clientX - x0) / z)); b.h = Math.max(120, Math.round(h0 + (ev.clientY - y0) / z)); box.style.width = b.w + 'px'; wrap.style.height = b.h + 'px'; pane.drawWires(); };   // V3.942 — no largest size
       const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); document.body.classList.remove('resizing'); b.w = Math.round(b.w / 14) * 14; b.h = Math.round(b.h / 14) * 14; box.style.width = b.w + 'px'; wrap.style.height = b.h + 'px'; DB.put('blocks', b); DB.beginGroup(); pane.settle && pane.settle(); };
       addEventListener('pointermove', mv); addEventListener('pointerup', up);
     });

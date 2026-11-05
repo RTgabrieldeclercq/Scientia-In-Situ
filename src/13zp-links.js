@@ -41,6 +41,8 @@ const LINKS = {
   part: null,     // an end that is one image: { box, cell, other, otherCell, t }
   paneAt(x, y, skip) { for (const el of document.elementsFromPoint(x, y)) { if (skip && skip.contains(el)) continue; const host = el.closest('.canvas-host'); if (host && host._dv) return { pane: host._dv, el }; } return null; },
   boxAt(x, y, skip) { for (const el of document.elementsFromPoint(x, y)) { if (skip && (skip === el || skip.contains(el))) continue; const b = el.closest('.box.cmp'); if (b) return { box: b, cell: el.closest('.fg-cell') }; if (el.closest('.canvas-host')) return null; } return null; },
+  /** A region's title (or a folded region) under a screen point: its id (13v — a region connects like a component). */
+  regionAt(x, y) { for (const el of document.elementsFromPoint(x, y)) { const t = el.closest('.rg-tab, .region.folded'); if (t) return t.closest('.region').dataset.rg; if (el.closest('.box.cmp, .canvas-host')) return null; } return null; },
   cellMedia(boxEl, cellEl) { if (!cellEl) return null; const b = FIGOF(M.block(boxEl.dataset.id)), i = +cellEl.dataset.i; const c = b && b.fig && (b.fig.cells || [])[i]; return c && c.media || null; },
   /** The ink component nearest a point (world), within reach; skip = ids to leave out. */
   nearestInk(pane, x, y, reach = 170, skip = []) { let best = null, bd = 1e9;
@@ -68,7 +70,9 @@ const LINKS = {
       $$('.box.target').forEach(x => x.classList.remove('target')); $$('.canvas-host.droptarget').forEach(x => x.classList.remove('droptarget'));
       const over = LINKS.boxAt(ev.clientX, ev.clientY);
       if (elsewhere) { P.stopEdgePan(); at.el.closest('.canvas-host').classList.add('droptarget'); if (over) over.box.classList.add('target'); pane.drawWires(pane.geom(A(), { x: p.x - 1, y: p.y - 1, w: 2, h: 2 }).d); return; }
+      const rg = !over && !fromCell && LINKS.regionAt(ev.clientX, ev.clientY), rr = rg && rg !== fromId && pane.rectOf(rg);
       if (over && over.box.dataset.id !== fromId && ownHost.contains(over.box)) { over.box.classList.add('target'); const oc = LINKS.cellMedia(over.box, over.cell); pane.drawWires(pane.geom(A(), Object.assign(pane.partRect(over.box.dataset.id, oc), { id: over.box.dataset.id })).d); }
+      else if (rr) pane.drawWires(pane.geom(A(), Object.assign(rr, { id: rg })).d);
       else pane.drawWires(pane.geom(A(), { x: p.x - 1, y: p.y - 1, w: 2, h: 2 }).d);
       P.edgePan(ev); };
     const up = ev => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); P.stopEdgePan(); document.body.classList.remove('wiring');
@@ -81,6 +85,9 @@ const LINKS = {
         return LINKS.connect(pane, fromId, to, ev.clientX, ev.clientY + 12, (part || oc) ? Object.assign(part || {}, oc ? { other: to, otherCell: oc } : {}) : null); }
       if (other && other.docId && other.docId !== pane.docId) return LINKS.pickIn(fromId, other.docId, part); // crossed into another note: pick one of its components
       if (fromCell) return toast('Drop it on a component to connect this image');
+      // on a region's title: the region (a timer's wire tags it instead, 13za)
+      const rg = LINKS.regionAt(ev.clientX, ev.clientY), fb = M.block(fromId);
+      if (rg && rg !== fromId && !(fb && fb.kind === 'timer')) return LINKS.connect(pane, fromId, rg, ev.clientX, ev.clientY + 12);
       CHAINDROP.open(pane, fromId, ev); };
     addEventListener('pointermove', mv); addEventListener('pointerup', up);
   },

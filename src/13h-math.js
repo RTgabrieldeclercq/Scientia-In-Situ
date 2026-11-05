@@ -49,9 +49,20 @@ const MATH = {
     const cur = M.block(b.id), mk = cur && (cur.body.marks || []).find(m => m.id === markId); if (!mk) return;
     const ro = el.contentEditable === 'false';
     MATH.editor({ tex: mk.tex, display: mk.display, ro, title: 'Equation',
-      onSave: (tex, display) => ED.commit(el, b, bd => { const x = bd.marks.find(m => m.id === markId); if (x) { x.tex = tex; x.display = display; } return bd; }, mk.to),
-      onRemove: () => ED.commit(el, b, bd => { const x = bd.marks.find(m => m.id === markId); if (!x) return bd; const n = ED.splice(bd, x.from, 1, x.tex); n.marks = n.marks.filter(m => m.id !== markId); return n; }, mk.from) });
+      onSave: (tex, display) => ED.commit(el, b, bd => { const x = bd.marks.find(m => m.id === markId); if (x) { x.tex = tex; x.display = display; MATH.recordPut(x.eqId, tex); } return bd; }, mk.to),
+      onRemove: () => ED.commit(el, b, bd => { const x = bd.marks.find(m => m.id === markId); if (!x) return bd; const n = ED.splice(bd, x.from, 1, x.tex); n.marks = n.marks.filter(m => m.id !== markId); MATH.recordDrop(x.eqId); return n; }, mk.from) });
   },
+  /** V3.946 — an equation written from the editor bar (13zzf) is an equation component embedded in the text: the atom's
+      mark carries `eqId`, a registry record (13n `equations`) with the equation's terms, so it can be registered, inserted
+      elsewhere and wired to a calculator like an Equation box. Edits to the atom follow into the record; taking the
+      atom back to plain text drops a record nothing else uses. */
+  record(tex) {
+    const now = isoLocal(new Date()), rec = { id: uid('eq'), name: snippet(tex, 40), tex, vars: {}, inline: true, uses: 1, created: now, modified: now };
+    try { if (typeof EQ !== 'undefined') EQ.terms(tex).forEach(v => { rec.vars[v.k] = { name: '', unit: '' }; }); } catch { }
+    DB.put('equations', rec); return rec;
+  },
+  recordPut(eqId, tex) { const r = eqId && DB.get('equations', eqId); if (!r) return; r.tex = tex; if (r.inline) r.name = snippet(tex, 40); r.modified = isoLocal(new Date()); try { if (typeof EQ !== 'undefined') { const vars = {}; EQ.terms(tex).forEach(v => { vars[v.k] = (r.vars || {})[v.k] || { name: '', unit: '' }; }); r.vars = vars; } } catch { } DB.put('equations', r); },
+  recordDrop(eqId) { const r = eqId && DB.get('equations', eqId); if (r && r.inline && !DB.where('blocks', x => x.eqId === eqId).length) DB.del('equations', eqId); },
   /** The equation editor: a MathLive field, its LaTeX, display/inline, the symbol keyboard and the shortcut legend. */
   editor({ tex = '', display = false, ro = false, title = 'Equation', onSave, onRemove }) {
     if (!MATH.ok()) { askText(title + ' (LaTeX)', 'LaTeX', tex, { multiline: true }).then(t => { if (t != null && onSave) onSave(t.trim(), display); }); return; }
@@ -67,12 +78,25 @@ const MATH = {
     const legend = h('div.mlegend', MATH.SHORTCUTS.map(([k, v]) => h('div.mlg', h('kbd', k), h('span', v)))); legend.hidden = true;
     const help = h('button.wbtn.help', { title: 'Shortcuts', on: { click: () => { legend.hidden = !legend.hidden; help.classList.toggle('on', !legend.hidden); } } }, '?');
     const close = () => { try { window.mathVirtualKeyboard.hide(); } catch { } };
+    // letters that are one name (MESF, Re, kon) read as a product of single letters; selected and pressed, they become \mathrm{…},
+    // which the equation's terms read as one (13n) — nothing can tell the two apart on its own
+    const tip = h('div.tiny.muted', 'Type math directly — fractions with /, powers with ^, Greek by name (alpha, pi…). Ctrl+Enter or Done to finish.');
+    // only the letters of a name (Greek ones too) — never the = or the whole equation, which the field selects when it opens
+    const isName = s => /^[A-Za-z0-9]+$/.test(String(s || '').replace(/\\([A-Za-z]+)\s*/g, (m, c) => typeof TEX !== 'undefined' && TEX.GREEK[c] ? 'a' : '#').replace(/\s+/g, ''));
+    const notName = 'Select only the letters of the name (like MESF), not the = or other symbols, then press One name.';
+    const one = ro ? null : h('button.wbtn', { title: 'Letters that are one name (MESF, Re, kon): select them, then press this — the equation reads them as one term, not a product of letters', on: { pointerdown: e => e.preventDefault(), click: () => {
+      if (document.activeElement === src && src.selectionEnd > src.selectionStart) { const a = src.selectionStart, z = src.selectionEnd, s = src.value.slice(a, z).trim(); if (!isName(s)) { tip.textContent = notName; return; }
+        src.value = src.value.slice(0, a) + '\\mathrm{' + s + '}' + src.value.slice(z); mf.setValue(src.value, { silenceNotifications: true }); return; }
+      let sel = ''; try { if (!mf.selectionIsCollapsed) sel = mf.getValue(mf.selection, 'latex'); } catch { }
+      if (!sel) { tip.textContent = 'Select the letters that make one name first (drag across them in the equation), then press One name.'; try { mf.focus(); } catch { } return; }
+      if (!isName(sel)) { tip.textContent = notName; try { mf.focus(); } catch { } return; }
+      try { mf.insert('\\mathrm{' + sel.replace(/\s+/g, ' ').trim() + '}', { insertionMode: 'replaceSelection', selectionMode: 'after', format: 'latex' }); } catch { } src.value = mf.value; try { mf.focus(); } catch { } } } }, 'One name');
     const acts = ro ? [{ label: 'Close', run: close }] : [
       onRemove ? { label: 'Back to plain text', run: () => { close(); onRemove(); } } : null,
       { label: 'Cancel', run: close },
       { label: 'Done', pri: true, run: () => { close(); const t = (mf.value || '').trim(); if (onSave) onSave(t, disp); } }].filter(Boolean);
-    const m = modal({ title, wide: true, body: h('div.meditor', h('div.mtool', seg, h('span.spacer'), kb, help), mf, legend, h('label.f', h('span', 'LaTeX'), src),
-      h('div.tiny.muted', 'Type math directly — fractions with /, powers with ^, Greek by name (alpha, pi…). Ctrl+Enter or Done to finish.')), actions: acts, onClose: close });
+    const m = modal({ title, wide: true, body: h('div.meditor', h('div.mtool', seg, one, h('span.spacer'), kb, help), mf, legend, h('label.f', h('span', 'LaTeX'), src),
+      tip), actions: acts, onClose: close });
     // with something selected, the structure keys wrap it: select “eq”, press _ → a subscript of eq
     mf.addEventListener('keydown', e => {
       const t = e.altKey && !e.ctrlKey && !e.metaKey ? MATH.WRAP_ALT[e.code] : !e.ctrlKey && !e.metaKey && !e.altKey ? MATH.WRAP[e.key] : null; if (!t) return;
@@ -89,6 +113,7 @@ const MATH = {
     ['Select, then _', 'the selection becomes a subscript'], ['Select, then ^', 'the selection becomes a superscript'], ['Select, then /', 'the selection becomes a numerator'],
     ['Select, then ( [ { |', 'wrap the selection in brackets or bars'], ['Select, then Alt+R · Alt+N', 'square root · nth root of the selection'],
     ['Select, then Alt+B · Alt+H · Alt+V · Alt+D', 'bar · hat · vector · dot over it'], ['Select, then Alt+T', 'make it upright text'],
+    ['Select, then One name', 'letters that are one name (MESF, Re) become one term'],
     ['/', 'fraction — what you typed becomes the numerator'], ['^', 'superscript / power'], ['_', 'subscript'], ['Tab / Shift+Tab', 'next / previous placeholder'],
     ['→ ← ↑ ↓', 'move through the equation'], ['Space', 'leave a superscript or subscript'], ['\\', 'type a LaTeX command (\\frac, \\sum…) then Enter'],
     ['sqrt', '√'], ['nthroot', 'ⁿ√'], ['sum · prod · int', 'Σ · Π · ∫ with limits'], ['lim', 'limit'], ['alpha … omega', 'Greek letters (Alpha for capitals)'],
