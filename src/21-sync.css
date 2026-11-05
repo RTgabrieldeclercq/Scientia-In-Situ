@@ -620,8 +620,9 @@ body.mobile .nav{display:none} body:has(.nav:not(.asleep)) #toasts{bottom:34px}
 /* V3.959 — the edge pan's border: a line 48 px in from each edge of the note (it fades in as the pointer nears it); past it, the band to the edge is tinted as much as the note is panning */
 .paper > .edge-border{position:absolute;inset:0;pointer-events:none;z-index:6} .paper > .edge-border[hidden]{display:none}
 .edge-border > .eb-line{position:absolute;opacity:0;transition:opacity .1s;--ebc:color-mix(in srgb,var(--teal) 70%,transparent)}
-.edge-border > .eb-band{position:absolute;opacity:0;--ebt:color-mix(in srgb,var(--teal) 24%,transparent)}
-.eb-line.eb-l{left:var(--eb);top:0;bottom:0;border-left:1.5px dashed var(--ebc)} .eb-line.eb-r{right:var(--eb);top:0;bottom:0;border-right:1.5px dashed var(--ebc)}
-.eb-line.eb-t{top:var(--eb);left:0;right:0;border-top:1.5px dashed var(--ebc)} .eb-line.eb-b{bottom:var(--eb);left:0;right:0;border-bottom:1.5px dashed var(--ebc)}
+.edge-border > .eb-band{position:absolute;opacity:0;--ebt:color-mix(in srgb,var(--teal) 30%,transparent)}
+/* V3.960: the line is the note's edge itself, where the pan starts; the band inside it tints with the push */
+.eb-line.eb-l{left:0;top:0;bottom:0;border-left:2px dashed var(--ebc)} .eb-line.eb-r{right:0;top:0;bottom:0;border-right:2px dashed var(--ebc)}
+.eb-line.eb-t{top:0;left:0;right:0;border-top:2px dashed var(--ebc)} .eb-line.eb-b{bottom:0;left:0;right:0;border-bottom:2px dashed var(--ebc)}
 .eb-band.eb-l{left:0;top:0;bottom:0;width:var(--eb);background:linear-gradient(to right,var(--ebt),transparent)} .eb-band.eb-r{right:0;top:0;bottom:0;width:var(--eb);background:linear-gradient(to left,var(--ebt),transparent)}
 .eb-band.eb-t{top:0;left:0;right:0;height:var(--eb);background:linear-gradient(to bottom,var(--ebt),transparent)} .eb-band.eb-b{bottom:0;left:0;right:0;height:var(--eb);background:linear-gradient(to top,var(--ebt),transparent)}
