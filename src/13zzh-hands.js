@@ -6,9 +6,14 @@
      note was under it; leaving them returns to 100 % only if that switch
      changed it.
    • P = Move (pan), outside a text.
-   • Edge hover-pan: in Move, a mouse or a hovering pen within 48 px of the
-     window's edge pans the note — slow to start, faster the harder it is
-     pushed (2 + 22·e² px a frame), eased in over 150 ms. Not fingers.
+   • Edge hover-pan (V3.959): in Move, with a mouse or a hovering pen (not
+     fingers). The border is a line 48 px in from each edge of the note,
+     drawn as the pointer comes near it. Nothing moves before the pointer
+     reaches it. Past it the note pans that way: barely past, slowly; the
+     further the pointer goes toward the edge, the faster (30 → 2400 px/s,
+     rising with depth^2.6); held still, the speed holds; back inside the
+     line, it stops at once. Off the note's edge (a little, not onto a
+     control) it keeps the most speed.
    • Zoom reaches 1 % in notes; below 10 % the boxes are flat tiles.
    • The pen's button (on the computer that runs the app):
      pen-button/ScientiaPen.exe, assigned in Windows Settings → Pen as the
@@ -19,13 +24,13 @@
      the maximised views, the slash menu and the reader keep their own.
    ========================================================================== */
 const HANDS = {
-  ZONE: 48, last: null, before: null, autoBar: false, zoomBefore: null, guard: false, pan: { raf: 0, t0: 0, dx: 0, dy: 0, P: null },
+  BORDER: 48, NEAR: 40, VMIN: 30, VMAX: 2400, POW: 2.6, last: null, before: null, autoBar: false, zoomBefore: null, guard: false, pan: { raf: 0, at: 0, vx: 0, vy: 0, P: null },
   hand: () => INK.mouse ? (INK.tool === 'eraser' ? 'eraser' : INK.tool) : 'move',
   userAt: 0, recent: () => Date.now() - HANDS.userAt < 2000,
   pane: () => { const ps = App.panes ? App.panes() : []; return ps.includes(App.pane) ? App.pane : ps[0] || null; },
   /** Called after every ink-bar paint (the hand changed, or not). */
   follow() {
-    if (HANDS.guard) return; const h = HANDS.hand(); if (h === HANDS.last) return; const prev = HANDS.last; HANDS.last = h; if (prev && !/^(pen|hl)$/.test(prev)) HANDS.before = prev;
+    if (HANDS.guard) return; const h = HANDS.hand(); if (h === HANDS.last) return; const prev = HANDS.last; HANDS.last = h; if (prev && !/^(pen|hl)$/.test(prev)) HANDS.before = prev; if (h !== 'move') HANDS.quiet();
     const pane = HANDS.pane(), P = pane && pane.paper, pen = /^(pen|hl)$/.test(h), wasPen = /^(pen|hl)$/.test(prev || '');
     HANDS.guard = true;
     try {
@@ -37,18 +42,40 @@ const HANDS = {
       }
     } finally { HANDS.guard = false; }
   },
-  /* ---------- edge hover-pan ---------- */
+  /* ---------- edge hover-pan (V3.959) ---------- */
+  /** How fast past the border: depth 0 → VMIN, the full border → VMAX, rising ever faster between (px a second). */
+  speed: d => d <= 0 ? 0 : HANDS.VMIN + (HANDS.VMAX - HANDS.VMIN) * Math.pow(Math.min(1, d / HANDS.BORDER), HANDS.POW),
   hover(e) {
-    const host = e.target && e.target.closest && e.target.closest('.canvas-host'), pane = host && host._dv, P = pane && pane.paper;
-    if (!P || !e.isTrusted || e.pointerType === 'touch' || e.buttons || HANDS.hand() !== 'move' || $('.pop') || $('.ovl') || e.target.closest('.ink-bar,.nav,.embed-max,.fbar,.insp,.dock,.ctools,.slash-menu')) return HANDS.stopPan();
-    const r = P.rect(), Z = HANDS.ZONE, x = e.clientX - r.left, y = e.clientY - r.top; if (x < 0 || y < 0 || x > r.width || y > r.height) return HANDS.stopPan();
-    const ex = x < Z ? (Z - x) / Z : x > r.width - Z ? (x - (r.width - Z)) / Z : 0, ey = y < Z ? (Z - y) / Z : y > r.height - Z ? (y - (r.height - Z)) / Z : 0;
-    if (!ex && !ey) return HANDS.stopPan();
-    const sp = v => v ? 2 + 22 * v * v : 0, S = HANDS.pan; S.dx = (x < Z ? 1 : -1) * sp(ex); S.dy = (y < Z ? 1 : -1) * sp(ey); S.P = P;
-    if (!S.raf) { S.t0 = performance.now(); S.raf = requestAnimationFrame(HANDS.step); }
+    const S = HANDS.pan, B = HANDS.BORDER, t = e.target;
+    // the note being pushed stays the one pushed while the pointer is a little past its edge (over the header, the other pane…)
+    let P = null; if (S.P && S.P.el.isConnected) { const q = S.P.rect(); if (e.clientX > q.left - B && e.clientX < q.right + B && e.clientY > q.top - B && e.clientY < q.bottom + B) P = S.P; }
+    if (!P) { const host = t && t.closest && t.closest('.canvas-host'), pane = host && host._dv; P = pane && pane.paper; }
+    if (!P || !e.isTrusted || e.pointerType === 'touch' || e.buttons || HANDS.hand() !== 'move' || $('.pop') || $('.ovl') || (t.closest && t.closest('.ink-bar,.nav,.embed-max,.fbar,.insp,.dock,.ctools,.slash-menu'))) { HANDS.border(null); return HANDS.stopPan(); }
+    const r = P.rect(), x = e.clientX - r.left, y = e.clientY - r.top, w = r.width, hh = r.height, off = x < 0 || y < 0 || x > w || y > hh;
+    if (off && (P !== S.P || (t.closest && t.closest('button,a,input,select,textarea,label,[contenteditable="true"],[role="tab"]')))) { HANDS.border(null); return HANDS.stopPan(); }   // off the note: only a pan already going carries on, and never over a control
+    // how far past the border line on each axis (the nearer edge of each); beyond the edge it is the most
+    const lx = x < w / 2, ty = y < hh / 2, px = lx ? B - x : x - (w - B), py = ty ? B - y : y - (hh - B);
+    HANDS.border(P, { x, y, w, h: hh, lx, ty, px, py });
+    if (px <= 0 && py <= 0) return HANDS.stopPan();   // inside the line: nothing moves, and backing out stops at once
+    S.vx = (lx ? 1 : -1) * HANDS.speed(px); S.vy = (ty ? 1 : -1) * HANDS.speed(py); S.P = P;
+    if (!S.raf) { S.at = performance.now(); S.raf = requestAnimationFrame(HANDS.step); }
   },
-  step(t) { const S = HANDS.pan; if (!S.P || !S.P.el.isConnected) { S.raf = 0; S.P = null; return; } const k = Math.min(1, (t - S.t0) / 150); S.P.view.x += S.dx * k; S.P.view.y += S.dy * k; S.P.apply(); S.raf = requestAnimationFrame(HANDS.step); },
-  stopPan() { if (HANDS.pan.raf) cancelAnimationFrame(HANDS.pan.raf); HANDS.pan.raf = 0; HANDS.pan.P = null; },
+  step(t) { const S = HANDS.pan; if (!S.P || !S.P.el.isConnected) { S.raf = 0; S.P = null; return; }
+    const dt = Math.min(50, Math.max(0, t - S.at)) / 1000; S.at = t;   // by the clock, so a 120 Hz screen pans no faster than a 60 Hz one
+    S.P.view.x += S.vx * dt; S.P.view.y += S.vy * dt; S.P.apply(); S.raf = requestAnimationFrame(HANDS.step); },
+  stopPan() { const S = HANDS.pan; if (S.raf) cancelAnimationFrame(S.raf); S.raf = 0; S.vx = S.vy = 0; S.P = null; },
+  /** The border: its line on the near side(s) fades in over the last NEAR px before it; past it, the band to the edge tints
+      as much as the speed. border(null) hides it. */
+  border(P, g) {
+    const was = HANDS._bP; if (was && (!P || was !== P) && was._eb) was._eb.hidden = true; HANDS._bP = P || null; if (!P) return;
+    const B = HANDS.BORDER, N = HANDS.NEAR, S4 = ['l', 'r', 't', 'b']; let el = P._eb;
+    if (!el || !el.isConnected) { el = P._eb = h('div.edge-border'); el._p = {}; S4.forEach(s => { const line = h('i.eb-line.eb-' + s), band = h('b.eb-band.eb-' + s); el._p[s] = [line, band]; el.append(line, band); }); el.style.setProperty('--eb', B + 'px'); P.el.append(el); }
+    const near = d => d > 0 ? 1 : clamp(1 + d / N, 0, 1), deep = d => d > 0 ? Math.min(1, d / B) : 0, side = { l: g.lx ? g.px : -1e9, r: g.lx ? -1e9 : g.px, t: g.ty ? g.py : -1e9, b: g.ty ? -1e9 : g.py };
+    let any = false; for (const s of S4) { const n = near(side[s]); any = any || n > 0; el._p[s][0].style.opacity = n.toFixed(2); el._p[s][1].style.opacity = deep(side[s]).toFixed(2); }
+    el.hidden = !any;
+  },
+  /** The pointer has gone (out of the window, a press, the hand changed): no pan, no border. */
+  quiet() { HANDS.stopPan(); HANDS.border(null); },
   /* ---------- the pen's button (desktop) ---------- */
   seen: 0, presses: 0,
   async watchPen() {
@@ -84,8 +111,8 @@ const HANDS = {
       if ($('.pop')) { e.preventDefault(); e.stopPropagation(); return closePop(); } }
   }, true);
   // edge hover-pan
-  document.addEventListener('pointermove', e => { try { HANDS.hover(e); } catch (x) { HANDS.stopPan(); } }, true);
-  ['pointerdown', 'pointerleave', 'pointercancel', 'blur'].forEach(t => addEventListener(t, HANDS.stopPan, true)); document.documentElement.addEventListener('mouseleave', HANDS.stopPan);
+  document.addEventListener('pointermove', e => { try { HANDS.hover(e); } catch (x) { HANDS.quiet(); } }, true);
+  ['pointerdown', 'pointerleave', 'pointercancel', 'blur'].forEach(t => addEventListener(t, HANDS.quiet, true)); document.documentElement.addEventListener('mouseleave', HANDS.quiet);
   // zoom to 1 % in notes; flat tiles below 10 %
   const mp = makePaper; makePaper = function (host, opts) { const p = mp.apply(this, arguments); if (host && host.classList && host.classList.contains('canvas-host') && !(opts && opts.minZ != null)) p.o.minZ = .01; return p; };
   const ap = Paper.prototype.apply; Paper.prototype.apply = function () { const r = ap.apply(this, arguments); try { const host = this.el.closest('.canvas-host'); if (host) host.classList.toggle('far', this.view.z < .1); } catch (e) { } return r; };

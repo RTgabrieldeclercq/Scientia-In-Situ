@@ -616,3 +616,12 @@ body.mobile .nav{display:none} body:has(.nav:not(.asleep)) #toasts{bottom:34px}
 .hint{position:relative} .hint .hint-x{position:absolute;right:-18px;top:-2px;border:0;background:transparent;color:inherit;cursor:pointer;font-size:14px;line-height:1;opacity:.6;padding:2px 4px} .hint .hint-x:hover{opacity:1}
 .canvas-host.big > .paper > .world > .box.cmp{content-visibility:auto;contain-intrinsic-size:auto 392px auto 160px}
 .mx-side .rd-chips{display:flex;gap:4px;padding:8px 12px 0} .mx-side.no-mine > .rd-ann:not(.rm-ann),.mx-side.no-mine > div > .rd-ann:not(.rm-ann){display:none} .mx-side.no-rm > .rm-side{display:none} .mx-side.no-notes .rd-note,.mx-side.no-notes .rd-ni{display:none}
+
+/* V3.959 — the edge pan's border: a line 48 px in from each edge of the note (it fades in as the pointer nears it); past it, the band to the edge is tinted as much as the note is panning */
+.paper > .edge-border{position:absolute;inset:0;pointer-events:none;z-index:6} .paper > .edge-border[hidden]{display:none}
+.edge-border > .eb-line{position:absolute;opacity:0;transition:opacity .1s;--ebc:color-mix(in srgb,var(--teal) 70%,transparent)}
+.edge-border > .eb-band{position:absolute;opacity:0;--ebt:color-mix(in srgb,var(--teal) 24%,transparent)}
+.eb-line.eb-l{left:var(--eb);top:0;bottom:0;border-left:1.5px dashed var(--ebc)} .eb-line.eb-r{right:var(--eb);top:0;bottom:0;border-right:1.5px dashed var(--ebc)}
+.eb-line.eb-t{top:var(--eb);left:0;right:0;border-top:1.5px dashed var(--ebc)} .eb-line.eb-b{bottom:var(--eb);left:0;right:0;border-bottom:1.5px dashed var(--ebc)}
+.eb-band.eb-l{left:0;top:0;bottom:0;width:var(--eb);background:linear-gradient(to right,var(--ebt),transparent)} .eb-band.eb-r{right:0;top:0;bottom:0;width:var(--eb);background:linear-gradient(to left,var(--ebt),transparent)}
+.eb-band.eb-t{top:0;left:0;right:0;height:var(--eb);background:linear-gradient(to bottom,var(--ebt),transparent)} .eb-band.eb-b{bottom:0;left:0;right:0;height:var(--eb);background:linear-gradient(to top,var(--ebt),transparent)}
