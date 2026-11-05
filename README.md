@@ -15,6 +15,8 @@ The app as it stands in the McGhee Lab's repository on 5 Nov 2026 (`scientia/`, 
 
 **Build:** `python build.py` writes `scientia.html` and `board.html` (both git-ignored). **Test the DOI lookup:** `node tests/doi-lookup.test.mjs`.
 
+**On a computer where the lab's version is installed** (the McGhee Lab site's "Open on my computer", in `%LOCALAPPDATA%\ScientiaInSitu`, started at login): this copy uses the same port 8766 — so the same browser storage — and the same notebook-folder setting (`%APPDATA%\ScientiaInSitu\config.json`), and `launch.bat` stops whatever holds the port, the installed server included. Run only one of them at a time. To keep this copy apart, start it with its own port and settings, e.g. `set SIS_PORT=8767` and `set SIS_CONFIG=%APPDATA%\ScientiaInSitu\standalone.json` before `python serve.py` (a new port starts with empty browser storage; choose its notebook folder in Settings).
+
 ## Run it
 
 If you don't see recent changes, close any old server window and start `launch.bat` again. It now stops an older server still holding port 8766 and turns browser caching off. Hover the SiS logo to see the build. If this browser still holds the earlier demo data, the app offers to reload the new demo; the offer never wipes anything without asking.
