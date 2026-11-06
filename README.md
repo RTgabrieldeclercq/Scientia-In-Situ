@@ -2,9 +2,9 @@
 
 One file, `scientia.html`, holds the whole app: projects, themes, aims, notes, terms, wiring, the library, timers, weekly reviews and exports. Everything is loaded and saved in real time to IndexedDB in your browser.
 
-## This repository (5 Nov 2026)
+## This repository
 
-The app as it stands in the McGhee Lab's repository on 5 Nov 2026 (`scientia/`, through V3.958), **without the lab layer**: it runs on its own, on your computer, and talks to nothing but the computer that runs it, your paired phones and tablets, and — when you look up a DOI — doi.org.
+The app as it stands in the McGhee Lab's repository (`scientia/`), **without the lab layer**, kept in step with it by `sync/lab_sync.py`: `sync/state.json` says which of the lab's commits this copy carries. It runs on its own, on your computer, and talks to nothing but the computer that runs it, your paired phones and tablets, and — when you look up a DOI — doi.org.
 
 **Left out** (they belong to the lab's site, RM): the lab layer (`lab-mode.js`: RM's library, inventory, tasks and My Week, the Portfolio's assigned work, the canvas pills and Quick cast, the one recorder, sharing), the lab cloud and pairing this computer with it (`labsync.py`, `scientia_cloud.py`, Settings → The lab), the installer and updater the lab site hands out (`install/`, `service.py`, `open_local.py`), the ✓ that reports a component to My Week, Export for the lab website, the sync dot for the lab, presence and locks, and the @-list of lab members. A notebook that was synced with the lab opens here as it is: its records stay, and what only the lab could do simply doesn't happen.
 

@@ -1,7 +1,28 @@
 # Scientia In Situ — working on this repository
 
-Gabe's notebook app, standalone: the app as it stood in the McGhee Lab's repository on 5 Nov 2026 (`scientia/`, through
-V3.958), without the lab layer. README.md says what was left out and what was kept from the lab; MANUAL.md is how it is used.
+Gabe's notebook app, standalone: the McGhee Lab's `scientia/` without the lab layer, kept in step with it by
+`sync/lab_sync.py` (`sync/state.json` says which lab commit). README.md says what was left out and what was kept from the
+lab; MANUAL.md is how it is used.
+
+## Kept in step with the lab
+
+The app is written in the lab's repository (`McGheeLab/McGheeLabWebsite`, `scientia/`) and comes here by sync; only our own
+files (`CLAUDE.md`, `.gitignore`, `.gitattributes`, `sync/`) and the edits that take the lab out are made here.
+
+```bash
+python sync/lab_sync.py start --at <lab branch or commit>   # the lab's change since sync/state.json, as a three-way merge
+python sync/lab_sync.py finish                              # no markers or lab files left; build, tests, the app starting headless
+python sync/lab_sync.py push                                # this branch, and the cut on the `lab` branch
+python sync/lab_sync.py scan --all                          # any line in the app that looks like the lab's
+```
+
+- A **cut** is the lab's `scientia/` at one commit minus its own files (`DROP`), with the build line marked `standalone ·`
+  and the board page vendored. The `lab` branch holds one commit per cut; never merge it into `main`.
+- A **conflict** (diff3: ours `|||||||` the old cut `=======` the new cut) is where the lab changed a line we had changed: take
+  the lab's change and keep what we took out.
+- Each **lab-looking line** the lab adds is listed (the `MARKERS`, and the names the dropped files define): take it out, or
+  keep it when it is true here (`finish --ok` writes it to `sync/kept.txt`).
+- A sync is one branch and one pull request. Gabe's `scientia-push` skill (`~/.claude/skills/`) runs both repositories' side.
 
 ## Build and run
 
@@ -22,7 +43,7 @@ node tests/doi-lookup.test.mjs
 | `serve.py`, `sisync.py` | the desktop server: the notebook folder is the record; phones and tablets pair with this computer and sync through it |
 | `hwread.py`, `winink.py`, `sttread.py`, `slides.py` | handwriting, Windows ink recognition, Whisper transcription, PowerPoint → images (all on this computer) |
 | `board/` | the app's side of the whiteboard: `store.js` (a small Firestore stand-in; the board lives in the note), `pen.js` (the notebook's pen on the board), `board.css` |
-| `vendor/board/lab-board.html` | the McGhee Lab's board page with its engine inlined, unchanged, vendored on 5 Nov 2026; three placeholders take `board/` |
+| `vendor/board/lab-board.html` | the McGhee Lab's board page with its engine inlined, unchanged, made by each sync; three placeholders take `board/` |
 | `vendor/rm/` | the lab's recorder and speech-to-text scripts the board loads; `serve.py` serves exactly these three under `/rm/js/` |
 | `vendor/page-layout.js`, `vendor/page-regions.js` | the lab's figure and equation finders on a PDF page (copies) |
 | `vendor/wb-ink.js` | the whiteboard's stroke outline the notes' pen writes with (generated from the lab's `whiteboard.js`; a copy) |

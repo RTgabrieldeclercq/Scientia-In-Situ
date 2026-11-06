@@ -1,0 +1,17 @@
+{
+ "lab": {
+  "commit": "511dec009ee023c41124a152f3fbc1f056677405",
+  "subject": "V3.960: Scientia — the edge pan starts at the edge, and the mouse's movement past it speeds it up",
+  "date": "2026-11-05"
+ },
+ "cut": "291e62a4002b6fc97be3636023608e3e04d8c95b",
+ "names": [
+  "DESKLAB",
+  "LABSYNC",
+  "LABX",
+  "PFSYNC",
+  "PRESENCE",
+  "RMREAD",
+  "THISPC"
+ ]
+}
