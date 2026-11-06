@@ -12,7 +12,7 @@
    a few lines); Esc or the scissors again ends it.
    Found by the lab site's detectors (rm/js/page-layout.js figures and tables
    from the page's text and artwork; rm/js/page-regions.js equations — both
-   copied into vendor/ by scripts/scientia_build.py). Without them the box
+   copies in vendor/). Without them the box
    still works. A figure clip is an ordinary image panel with `clip`
    { src, media, page, rect (0–1 of the page), label, file }; an equation
    is captured the way the lab's paper reader does it — the snip read to
@@ -174,7 +174,7 @@ const CLIP = {
   },
   /** An equation's snip for reading: ~1000 px wide JPEG as a data URI (what the lab's equationOcr takes). */
   async snip(m, n, r) { const cv = await CLIP.canvas(m, n, r, 1000), u = cv.toDataURL('image/jpeg', .9); cv.width = cv.height = 0; return u; },
-  /** Set by the web build (rm/scientia/lab-mode.js): snip → Promise<LaTeX> through the lab's equationOcr, as the paper reader does. None on the desktop: you type it. */
+  /** snip → Promise<LaTeX>, where something can read an equation (the McGhee Lab's web build sets it). Unset here: you type it. */
   read: null,
   /** An equation, the way the lab's paper reader captures one: the snip read to LaTeX (CLIP.read), checked in the equation editor
       against the picture, then an equation component on top of the paper (its terms, calculator and register all work on it). */

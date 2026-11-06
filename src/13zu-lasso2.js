@@ -194,7 +194,7 @@ LASSO2.toggleBox = function (pane, id) {
   INK.clearSel(); if (sel.items.length || sel.boxes.length) { INK.sel = sel; INK.paintSel(); }
 };
 {
-  const SKIP = 'a,button,input,select,textarea,label,.port,.rz,.chips,.ln,.tm,.st,.ct,.mx,.pop,.ink-selbar,.ink-h,.lab-pills';
+  const SKIP = 'a,button,input,select,textarea,label,.port,.rz,.chips,.ln,.tm,.st,.ct,.mx,.pop,.ink-selbar,.ink-h';
   document.addEventListener('click', e => {
     if (!(e.ctrlKey || e.metaKey) || e.altKey || e.button !== 0) return;
     const box = e.target.closest && e.target.closest('.paper .box'); if (!box || !box.dataset.id || box.dataset.id[0] === '_' || e.target.closest(SKIP)) return;

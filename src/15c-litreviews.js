@@ -1,19 +1,16 @@
 /* ==========================================================================
    15c · Literature reviews. A review is a literature note outside any project
    that carries review { topic, projectIds }: a canvas of papers, quotes and
-   notes on one question, linked to every project it serves. The same record
-   the lab website's Lit reviews tab makes, so a review written here shows
-   there and back. Its own tab after Portfolio; its head box holds the topic
-   and the projects; reviews are not quick notes.
-   On the website the lab layer draws its own tab and head box over the same
-   data — this module then leaves the drawing to it (window.SIS_LAB).
+   notes on one question, linked to every project it serves (the same record
+   the McGhee Lab's site makes, so a notebook moved between them keeps its
+   reviews). Its own tab after Portfolio; its head box holds the topic and the
+   projects; reviews are not quick notes.
    ========================================================================== */
 const LITREV = {
   is: d => !!(d && !d.deleted && d.review && typeof d.review === 'object'),
   all: () => DB.where('documents', d => LITREV.is(d)).sort((a, b) => String(b.modified || '').localeCompare(String(a.modified || ''))),
   projects: d => LITREV.is(d) ? (d.review.projectIds || []).map(id => M.project(id)).filter(Boolean) : [],
   of: pid => LITREV.all().filter(d => (d.review.projectIds || []).includes(pid)),
-  lab: () => !!window.SIS_LAB,
   filter: '',
   stats(d) {
     const o = { papers: 0, quotes: 0, notes: 0 };
@@ -41,7 +38,7 @@ const LITREV = {
     const d = M.doc(docId), p = M.project(pid); if (!LITREV.is(d)) return;
     LITREV.set(docId, { projectIds: (d.review.projectIds || []).filter(x => x !== pid) }); toast(p ? 'No longer linked to ' + p.name : 'Unlinked');
   },
-  /** projects a review can be linked to: yours, then the ones RM assigned you (not the ones it took back) */
+  /** projects a review can be linked to: yours, then the ones the lab assigned you in a notebook that was synced with it (not the ones it took back) */
   linkable(d) {
     const have = new Set((d.review && d.review.projectIds) || []), byName = (a, b) => String(a.name || '').localeCompare(String(b.name || ''));
     const ps = DB.all('projects').filter(p => !have.has(p.id) && !p.deleted && p.status !== 'archived' && !(p.rm && p.rmAssigned === false));
@@ -111,7 +108,7 @@ VIEWS.litreviews = {
   const head = DocView.headBox;
   DocView.headBox = function (d) {
     const box = head.apply(this, arguments);
-    if (LITREV.is(d) && !LITREV.lab()) { const g = $('.hgrid', box); (g ? g.parentNode : box).insertBefore(LITREV.headFields(d, this.travel), g ? g.nextSibling : null); }
+    if (LITREV.is(d)) { const g = $('.hgrid', box); (g ? g.parentNode : box).insertBefore(LITREV.headFields(d, this.travel), g ? g.nextSibling : null); }
     return box;
   };
 }

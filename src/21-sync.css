@@ -356,10 +356,6 @@ body.q-picking .box.cmp:hover{outline:2px solid var(--teal);outline-offset:2px}
 .q-hl{background:color-mix(in srgb,var(--hc,#F6D55C) 50%,transparent)}
 body:has(.embed-max) .pop,body:has(.embed-max) .modal-bg,body:has(.embed-max) .ovl{z-index:1300}.rd-penbar{z-index:1310}
 .q-hl.erasing{opacity:.25;outline:1px dashed #c33}
-/* V3.944 · 23d · a lab paper's highlights from RM, on its pages (an underline in RM's colour tells them from the note's quotes) and in the reader's panel */
-.rm-hl{position:absolute;border-radius:2px;mix-blend-mode:multiply;background:color-mix(in srgb,var(--hc,#facc15) 32%,transparent);box-shadow:inset 0 -2px 0 var(--hc,#facc15)}
-.rm-hl.flash{animation:rdflash .9s ease-in-out 2;outline:2px solid #e08a00}
-.mx-side>.rm-side{margin-top:14px;padding-bottom:14px;border-top:1px solid var(--rule)}
 /* ---------- 13zza · clip a figure or an equation onto the canvas ---------- */
 .clip-layer{position:absolute;z-index:3;pointer-events:none}
 .clip-hs{position:absolute;box-sizing:border-box;border:2px dashed color-mix(in srgb,var(--teal) 80%,transparent);border-radius:3px;background:color-mix(in srgb,var(--teal) 7%,transparent);animation:tin .12s}
@@ -415,9 +411,7 @@ body.rd-right .embed-max.rd-docked{grid-column:2;border-left:1px solid var(--rul
 .embed-max.rd-docked.rd-side-on .mx-side{display:block}
 .embed.rd-away{display:flex;align-items:center;justify-content:center;box-sizing:border-box;border-radius:6px;background:color-mix(in srgb,var(--ink) 4%,var(--surface));border:1px dashed var(--rule-2)}
 .embed-max.rd-dock .dk-maxc > .em-frame{flex:1;width:100%;height:100%}
-/* V3.945 · 13zze · a page that fills the window keeps the note's ✎ pill: lifted over it, inside the page, alone (with the pen settings it opens) */
-.canvas-host.mx-pills > .lab-pills{z-index:1250;transform:translate(var(--mx-dx,0px),var(--mx-dy,0px))}
-.canvas-host.mx-pills > .lab-pills > .lab-pill:not(.lab-pill-hand){display:none}
+/* V3.945 · 13zze · a page that fills the window keeps the note's ink bar over it */
 .canvas-host.mx-pills > .ink-bar{z-index:1250}
 .pdfw.rd-away{display:flex;align-items:center;justify-content:center;box-sizing:border-box;margin:4px 10px 10px;padding:0;border-radius:6px;background:color-mix(in srgb,var(--ink) 4%,var(--surface));border:1px dashed var(--rule-2)}
 .rd-away-in{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;color:var(--ink-3);padding:18px;font-size:12.5px}
@@ -426,17 +420,6 @@ body.rd-right .embed-max.rd-docked{grid-column:2;border-left:1px solid var(--rul
 /* 13zz2 · pen round three */
 body.ink-writing .box.w-ink{border-color:transparent!important;box-shadow:none!important;background:transparent!important}
 body.ink-writing .box.w-ink > .bh,body.ink-writing .box.w-ink > .chips,body.ink-writing .box.w-ink > .port{visibility:hidden}
-/* V3.942 — with the pen (any hand but pan) nothing on the paper answers the pen hovering over it: no frame, header, grip,
-   ⋯, port or tool shows up (Gabe: outlines only "when pan is on"). The lab's pills mark the note with its hand
-   (lab-mode §11: lab-pilled, lab-hand-move). A component being edited (selected, or its text focused) keeps its frame. */
-.canvas-host.lab-pilled:not(.lab-hand-move) .box:not(.w-ink):hover:not(.sel):not(:focus-within){border-color:var(--rule)}
-.canvas-host.lab-pilled:not(.lab-hand-move) .box.w-ink:hover,.canvas-host.lab-pilled:not(.lab-hand-move) .box.w-ink.sel{border-color:transparent}
-.canvas-host.lab-pilled:not(.lab-hand-move) .box.w-ink > .bh,.canvas-host.lab-pilled:not(.lab-hand-move) .box.w-ink > .chips,.canvas-host.lab-pilled:not(.lab-hand-move) .box.w-ink > .port{opacity:0!important;pointer-events:none!important}
-.canvas-host.lab-pilled:not(.lab-hand-move) .box:hover:not(.sel) .bmore,.canvas-host.lab-pilled:not(.lab-hand-move) .box:hover:not(.sel) .tk-chip.none,.canvas-host.lab-pilled:not(.lab-hand-move) .box:hover:not(.sel) .wk-btn:not(.on),
-.canvas-host.lab-pilled:not(.lab-hand-move) .box:not(.sel) .embed:hover .embed-tools,.canvas-host.lab-pilled:not(.lab-hand-move) .box .fg-cell:hover .port.fg-port,
-.canvas-host.lab-pilled:not(.lab-hand-move) .box:not(.sel) .fg-cell:hover .fg-kind.add,.canvas-host.lab-pilled:not(.lab-hand-move) .box:not(.sel) .fg-cell.wb:hover > .fg-wbcrop{opacity:0}
-.canvas-host.lab-pilled:not(.lab-hand-move) .box:hover > .rz.rz-corner{opacity:.7}
-body:not(.wiring) .canvas-host.lab-pilled:not(.lab-hand-move) .region:hover > .rg-port{opacity:0}
 /* V3.943 — Export ink labels: the page around a label, its ink, the crop box */
 .hx-cwrap{display:flex;justify-content:center;overflow:auto;max-height:70vh}
 .hx-cstage{position:relative;flex:none;overflow:hidden;border:1px solid var(--rule-2);background:#fff;cursor:crosshair;touch-action:none;user-select:none}
@@ -505,12 +488,6 @@ body.viewer #brand { pointer-events: none; }
 .lg-pkh { font-size: 11px; font-weight: 600; color: var(--muted); }
 .lg-pk { display: flex; gap: 6px; align-items: center; font-size: 13px; cursor: pointer; }
 .libcard[draggable="true"] { cursor: grab; }
-/* export for the lab website (21c) */
-.lx h5 { margin: 14px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
-.lx-steps { padding-left: 20px; display: grid; gap: 8px; font-size: 13.5px; line-height: 1.45; }
-.lx-steps code { font-size: 12px; }
-.lx-list { padding-left: 18px; font-size: 13px; display: grid; gap: 3px; }
-.lx-warn { padding: 8px 10px; border-radius: 6px; background: color-mix(in srgb, var(--warn, #c9a227) 16%, transparent); font-size: 13px; }
 /* literature reviews (15c) */
 .lr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-top: 14px; }
 .lr-card { border: 1px solid var(--rule-2); border-radius: 10px; padding: 10px 12px; background: var(--surface); cursor: pointer; display: flex; flex-direction: column; gap: 3px; min-height: 120px; }
@@ -528,41 +505,6 @@ body.viewer #brand { pointer-events: none; }
 .lr-chip a { color: inherit; text-decoration: none; cursor: pointer; }
 .lr-x { border: 0; background: none; padding: 0 2px; cursor: pointer; color: var(--ink-3); font: inherit; }
 .lr-x:hover { color: var(--bad); }
-/* waits for the lab; lab inventory materials are fixed (23b) */
-.lab-wait { display: inline-block; margin: 4px 0 0; font-size: 11px; color: var(--ink-3); border: 1px dashed var(--rule-2); border-radius: 10px; padding: 0 7px; }
-.inv-line { margin-top: 6px; }
-.inv-ro .mc-log { display: none; }
-/* ✓ → My Week (23b) */
-.wk-btn { opacity: .45; }
-.box:hover .wk-btn, .wk-btn.on { opacity: 1; }
-.wk-btn.on { color: var(--teal); }
-.wk-btn.wait { color: var(--ink-2); text-decoration: underline dotted; }
-.wk-btn.bad { color: var(--bad); }
-.wk-pop { width: 340px; max-height: 60vh; overflow: auto; padding: 8px; }
-.wk-h { font-weight: 600; margin: 2px 4px 6px; }
-.wk-q { width: 100%; box-sizing: border-box; margin-bottom: 6px; }
-.wk-g { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 8px 4px 4px; }
-.wk-row { display: flex; gap: 8px; align-items: baseline; width: 100%; text-align: left; border: 0; background: none; padding: 5px 6px; border-radius: 6px; cursor: pointer; font: inherit; color: inherit; }
-.wk-row:hover:not(:disabled) { background: var(--surface-2, rgba(127,127,127,.1)); }
-.wk-row:disabled { opacity: .5; cursor: default; }
-.wk-t { flex: 1; }
-/* this computer and the lab (23c) */
-#pcbtn { margin-right: 6px; white-space: nowrap; }
-.pc-wiz { display: grid; gap: 12px; }
-.pc-step { display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; }
-.pc-n { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2, rgba(127,127,127,.15)); font-weight: 600; font-size: 13px; }
-.pc-err { color: var(--bad); font-size: 13px; }
-.pc-panel { display: grid; gap: 6px; }
-.pc-state b { font-weight: 600; }
-.pc-state.syncing b { color: var(--teal); }
-.pc-state.offline b, .pc-state.needs-choice b, .pc-state.key-refused b, .pc-state.error b { color: var(--bad); }
-.pc-offer { border: 1px solid var(--teal); border-radius: 10px; padding: 10px 12px; }
-.pc-choice { display: grid; gap: 6px; justify-items: start; }
-/* the lab layer on this computer: the ✓ is the app's own (23b, 23d) */
-.sis-desktop .lab-mw { display: none !important; }
-.pc-update { border: 1px solid var(--teal); border-radius: 10px; padding: 8px 12px; display: grid; gap: 6px; justify-items: start; }
-.pc-update.error { border-color: var(--bad); }
-.pc-reload { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 9999; display: flex; gap: 8px; align-items: center; padding: 8px 14px; border-radius: 10px; background: var(--surface); border: 1px solid var(--teal); box-shadow: 0 6px 24px rgba(0,0,0,.35); }
 /* ---------- 08b · the floating bar: the editor bar (13zzf), the lasso's bar and the Ctrl+Enter strip share its look (V3.946) ---------- */
 .fbar{position:fixed;z-index:160;display:flex;flex-wrap:wrap;gap:2px;align-items:center;box-sizing:border-box;padding:4px;background:var(--surface);border:1px solid var(--rule-2);border-radius:10px;box-shadow:var(--shadow-lg);animation:tin .12s}
 .fbar-b{width:28px;height:28px;flex:0 0 28px;display:grid;place-items:center;padding:0;border:0;border-radius:6px;background:transparent;color:var(--ink);cursor:pointer;font:600 13.5px/1 var(--f-d);letter-spacing:0}
@@ -599,7 +541,7 @@ body.mobile .nav{display:none} body:has(.nav:not(.asleep)) #toasts{bottom:34px}
 .cmd-settings .li code{margin-right:10px;font-size:12px} .cmd-settings .li .s{display:block;font-size:11.5px;color:var(--ink-3)}
 /* ---------- 12d · Tidy by links, 13vb · fold reflow (V3.948): the boxes glide to their places ---------- */
 .tidying > .box{transition:left .26s ease,top .26s ease}
-/* ---------- 13zzh · hands (V3.949): the ink bar beside the ✎ pill glides; below 10 % the boxes are flat tiles ---------- */
+/* ---------- 13zzh · hands (V3.949): below 10 % the boxes are flat tiles ---------- */
 .canvas-host > .ink-bar{transition:left .2s ease,top .2s ease}
 .canvas-host.far .box > .ed,.canvas-host.far .box .embed,.canvas-host.far .box .pdfw,.canvas-host.far .box .dk{visibility:hidden}
 .canvas-host.far .box{min-height:48px;background:color-mix(in srgb,var(--ink) 6%,var(--surface))}
@@ -609,13 +551,10 @@ body.mobile .nav{display:none} body:has(.nav:not(.asleep)) #toasts{bottom:34px}
 /* ---------- 13zzi · component kinds (V3.951): the kind colours the edge and names the label ---------- */
 .box.cmp.kinded{border-left:3px solid var(--ck,var(--teal))} .box.cmp.kinded > .bh > .num{color:var(--ck,var(--teal));font-weight:700;letter-spacing:.06em}
 .ck-settings .pill{font-weight:600}
-/* ---------- 13zzj · the polish (V3.953): the sync dot, the hint's ×, big notes, the reader's chips ---------- */
-#hd .syncdot{width:26px;display:grid;place-items:center} #hd .syncdot i{width:10px;height:10px;border-radius:50%;background:var(--ink-3);box-shadow:0 0 0 2px color-mix(in srgb,var(--ink-3) 25%,transparent);transition:background .3s}
-#hd .syncdot[data-tone=green] i{background:var(--ok);box-shadow:0 0 0 2px color-mix(in srgb,var(--ok) 25%,transparent)} #hd .syncdot[data-tone=amber] i{background:var(--warn);box-shadow:0 0 0 2px color-mix(in srgb,var(--warn) 25%,transparent);animation:sdpulse 1.6s ease-in-out infinite} #hd .syncdot[data-tone=red] i{background:var(--bad);box-shadow:0 0 0 2px color-mix(in srgb,var(--bad) 25%,transparent)}
-@keyframes sdpulse{50%{opacity:.4}}
+/* ---------- 13zzj · the polish (V3.953): the hint's ×, big notes, the reader's chips ---------- */
 .hint{position:relative} .hint .hint-x{position:absolute;right:-18px;top:-2px;border:0;background:transparent;color:inherit;cursor:pointer;font-size:14px;line-height:1;opacity:.6;padding:2px 4px} .hint .hint-x:hover{opacity:1}
 .canvas-host.big > .paper > .world > .box.cmp{content-visibility:auto;contain-intrinsic-size:auto 392px auto 160px}
-.mx-side .rd-chips{display:flex;gap:4px;padding:8px 12px 0} .mx-side.no-mine > .rd-ann:not(.rm-ann),.mx-side.no-mine > div > .rd-ann:not(.rm-ann){display:none} .mx-side.no-rm > .rm-side{display:none} .mx-side.no-notes .rd-note,.mx-side.no-notes .rd-ni{display:none}
+.mx-side .rd-chips{display:flex;gap:4px;padding:8px 12px 0} .mx-side.no-mine > .rd-ann:not(.rm-ann),.mx-side.no-mine > div > .rd-ann:not(.rm-ann){display:none} .mx-side.no-notes .rd-note,.mx-side.no-notes .rd-ni{display:none}
 
 /* V3.959 — the edge pan's border: a line 48 px in from each edge of the note (it fades in as the pointer nears it); past it, the band to the edge is tinted as much as the note is panning */
 .paper > .edge-border{position:absolute;inset:0;pointer-events:none;z-index:6} .paper > .edge-border[hidden]{display:none}

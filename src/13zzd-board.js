@@ -4,8 +4,8 @@
    empty cell): the Lab Notebook's own board (pen, highlighter, cards,
    regions, record and replay — rm/pages/notebook-board.html and the
    whiteboard.js engine, unchanged), built into this app as board.html
-   (scripts/scientia_build.py, V3.937), so it works on the desktop with no
-   network and on the website alike. The cell shows the board; click it and
+   (build.py, from vendor/board/lab-board.html), so it works with no
+   network. The cell shows the board; click it and
    it fills the window to draw on.
    cell.board = {id: 'wb…_me', title}. The board's documents (what the
    engine keeps in Firestore on the lab site) are kept in the `boards` store:
@@ -104,7 +104,7 @@ const BOARD = {
       return true;
     },
     async media(id, buf, name, type) {
-      name = String(name || 'file').replace(/\.(m4a|aac)$/i, '.mp4');   // a recording's minutes: the images folder and the lab cloud take .mp4, not .m4a
+      name = String(name || 'file').replace(/\.(m4a|aac)$/i, '.mp4');   // a recording's minutes: the images folder takes .mp4, not .m4a
       const rec = await MEDIA.add(new File([buf], name, { type: type || 'application/octet-stream' }), { quiet: true, extra: { board: id } });
       return { id: rec.id, url: MEDIA.url(rec) };
     },

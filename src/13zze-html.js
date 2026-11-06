@@ -156,19 +156,13 @@ P.postMessage({sis:'inkready'},'*');})();<\/script>`,
     return { sis: 'ink', on: INK.writing() && /^(pen|hl|eraser)$/.test(hand) && /^(pen|hl|eraser)$/.test(INK.tool), c: !c || c === 'auto' ? HTMLX.AUTO : c, w: INK.WIDTHS[INK.width] || 2.4, hl, erase: INK.tool === 'eraser', mouse: !!INK.mouse,
       palm: window.SIS_PALM ? [SIS_PALM.SIZE, SIS_PALM.QUIET] : [90, 600] };   // V3.945 — a finger scrolls the page while the pen writes; a palm does neither (13zf PALM)
   },
-  /** V3.945 — a page that fills the window (maximised, or beside the note at full screen) keeps the note's ✎ pill: that
-      note's pill (lab-mode §11) is lifted above the page, alone, and moved inside it if it would sit outside the page
-      (on the highlights panel); the pen settings it opens come too. Move to scroll and select; pen to write. */
+  /** V3.945 — a page that fills the window (maximised, or beside the note at full screen) keeps the note's ink bar
+      above it (.mx-pills on the note's canvas): Move to scroll and select; pen to write. */
   lift() {
     const ov = [...$$('.embed-max')].filter(x => !x.classList.contains('rd-docked')).pop(), b = ov && M.block(ov.dataset.src);
     const pane = b && b.kind === 'html' ? App.panes().find(p => p.docId === b.docId) || App.panes()[0] : null, host = pane && pane.host;
-    $$('.mx-pills').forEach(x => { if (x !== host) { x.classList.remove('mx-pills'); x.style.removeProperty('--mx-dx'); x.style.removeProperty('--mx-dy'); } });
-    if (!host) return;
-    host.classList.add('mx-pills'); host.style.setProperty('--mx-dx', '0px'); host.style.setProperty('--mx-dy', '0px');
-    const pill = $(':scope > .lab-pills > .lab-pill-hand', host), main = $('.mx-main', ov) || ov; if (!pill) return;
-    const r = pill.getBoundingClientRect(), m = main.getBoundingClientRect(), g = 12;
-    const dx = r.right > m.right - g ? m.right - g - r.right : r.left < m.left + g ? m.left + g - r.left : 0, dy = r.bottom > m.bottom - g ? m.bottom - g - r.bottom : r.top < m.top + g ? m.top + g - r.top : 0;
-    host.style.setProperty('--mx-dx', Math.round(dx) + 'px'); host.style.setProperty('--mx-dy', Math.round(dy) + 'px');
+    $$('.mx-pills').forEach(x => { if (x !== host) x.classList.remove('mx-pills'); });
+    if (host) host.classList.add('mx-pills');
   },
   inkMode() { const m = HTMLX.inkOn(); $$('iframe').forEach(fr => { const b = fr._qsrc && M.block(fr._qsrc); if (b && b.kind === 'html' && fr.contentWindow) fr.contentWindow.postMessage(m, '*'); }); },
   /** Strokes written close together are one ink label (in this session: each label's box on the page as it was written). */
@@ -296,12 +290,10 @@ QUOTE.more = HTMLX.more;
       st.hl.before(xs('✎ Note', 'Write a note in the page: click where it goes (or select text, then ✎ Note)', () => HTMLX._pick ? HTMLX._pick.off() : HTMLX.pick(ov, b.id)),
         xs('Export ink labels', 'The ink written on the page comes out: each ink label with a crop of the page under it, as an image panel connected to the page', () => HTMLX.exportInk(b.id))); }
     lift(); return r; };
-  // V3.945 — the ✎ pill over a page that fills the window: when one opens, goes, or changes size, or the pill is dropped
+  // V3.945 — the ink bar over a page that fills the window: when one opens or goes
   function lift() { cancelAnimationFrame(HTMLX._lr); HTMLX._lr = requestAnimationFrame(() => { try { HTMLX.lift(); } catch (e) { console.warn('[html pill]', e); } }); }
   ['full', 'close'].forEach(k => { const f = RDOCK[k]; RDOCK[k] = function () { const r = f.apply(this, arguments); lift(); return r; }; });
   new MutationObserver(lift).observe(document.body, { childList: true });
-  addEventListener('resize', lift);
-  document.addEventListener('pointerup', e => { if (e.target.closest && e.target.closest('.mx-pills > .lab-pills')) setTimeout(lift, 60); }, true);
   // ✎ Note on a selected passage
   const qm = QUOTE.menu; QUOTE.menu = function (sel, x, y) { const r = qm.call(QUOTE, sel, x, y), src = M.block(sel.src);
     if (src && src.kind === 'html' && sel.frame) { const pop = $('.pop.q-menu') || [...$$('.pop')].pop(), row = pop && $('.q-cols', pop);

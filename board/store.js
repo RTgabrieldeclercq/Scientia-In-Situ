@@ -1,6 +1,6 @@
 /* ==========================================================================
    Scientia's whiteboard (V3.937) — the lab's board page, on this computer.
-   board.html (built by scripts/scientia_build.py) is the Lab Notebook's board
+   board.html (built by build.py from vendor/board/lab-board.html) is the lab's board
    page (rm/pages/notebook-board.html) with the lab's own scripts inlined,
    unchanged: whiteboard.js, whiteboard-replay.js, notebook-board.js. They
    speak Firestore; this file, which runs first, is a small Firestore of its

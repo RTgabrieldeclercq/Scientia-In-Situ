@@ -1,0 +1,13 @@
+# Lines that look like the lab's and stay (sync/lab_sync.py): path<TAB>line. Remove a row to be asked again.
+README.md	**Left out** (they belong to the lab's site, RM): the lab layer (`lab-mode.js`: RM's library, inventory, tasks and My Week, the Portfolio's assigned work, the canvas pills and Quick cast, the one recorder, sharing), the lab cloud and pairing this computer with it (`labsync.py`, `scientia_cloud.py`, Settings → The lab), the installer and updater the lab site hands out (`install/`, `service.py`, `open_local.py`), the ✓ that reports a component to My Week, Export for the lab website, the sync dot for the lab, presence and locks, and the @-list of lab members. A notebook that was synced with the lab opens here as it is: its records stay, and what only the lab could do simply doesn't happen.
+board/store.js	so the website's boards on the same address (mcgheelab.com) keep theirs */
+src/02-schema.js	mwsteps:   { key: 'id',  doc: 'My Week steps from RM, mirrored by the lab hub (read-only): what a component’s ✓ reports onto, offline too' },
+src/09-editor.js	for (const m of cov.filter(m => m.type === 'person')) node = h('span.mn', { 'data-m': m.id, 'data-uid': m.uid || '', title: (m.name || '') + (m.uid ? ' · a lab member' : '') }, node);   // V3.947: @Name (13zzg)
+src/11b-commands.js	ALIAS: { rmpaper: 'paper', rmprotocol: 'protocol', rmaction: 'action', rmcollection: 'collection', 'material-new': 'newmaterial', 'equation-reg': 'registered', 'table-empty': 'emptytable', 'canvas-add': 'canvas', 'pull-barrier': 'barrier', 'pull-item': 'structure', 'pull-comp': 'component' },
+src/13zza-clip.js	Found by the lab site's detectors (rm/js/page-layout.js figures and tables
+src/13zzd-board.js	empty cell): the Lab Notebook's own board (pen, highlighter, cards,
+src/13zzd-board.js	engine keeps in Firestore on the lab site) are kept in the `boards` store:
+src/13zzi-kinds.js	if (c === 'material') return b.kind === 'matcard' || b.kind === 'matsheet' || !!b.inventoryId;
+src/13zzi-kinds.js	if (c === 'paper') return b.kind === 'rmpaper' || b.kind === 'pdf' || marks.some(m => m.type === 'cite');
+src/14b-atlas.js	if (b.kind === 'rmpaper' && b.paperId && M.lib(b.paperId)) { const r = M.lib(b.paperId); add(r.id, 'paper', r.title || 'Paper', { t: r.added, go: () => App.go('#/read/' + r.id) }); edge(b.id, r.id, 'paper', 'cite'); }
+src/15c-litreviews.js	const ps = DB.all('projects').filter(p => !have.has(p.id) && !p.deleted && p.status !== 'archived' && !(p.rm && p.rmAssigned === false));
