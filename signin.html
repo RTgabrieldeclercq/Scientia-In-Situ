@@ -1,0 +1,104 @@
+<!doctype html>
+<!-- The sign-in page access.py serves instead of the app while the notebook is locked and this browser has not signed in
+     (or the computer has not opened the notebook since it started). Self-contained: nothing of the notebook is on it. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1d1d1b">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<title>Scientia In Situ · Sign in</title>
+<style>
+:root{--paper:#E6E1D7;--surface:#F1EDE5;--ink:#24211C;--ink-2:#4D483F;--ink-3:#766F63;--rule-2:#BCB4A4;--bad:#A0331F;--ok:#22693D;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--paper:#171512;--surface:#211E1A;--ink:#ECE6DA;--ink-2:#BDB5A7;--ink-3:#8D8577;--rule-2:#4A443B;--bad:#F08B76;--ok:#6FCF8F;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;padding:20px 16px;background:var(--paper);color:var(--ink);font:15px/1.5 "Helvetica Neue",Arial,sans-serif}
+main{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--rule-2);border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:10px}
+.logo{width:44px;height:44px;border-radius:10px;background:var(--ink);color:var(--paper);display:grid;place-items:center;font-weight:800;font-size:14px}
+h1{margin:4px 0 0;font-size:20px}
+p{margin:0;font-size:14px;color:var(--ink-2)}
+form{display:flex;flex-direction:column;gap:10px}
+label{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--ink-3)}
+input{font:inherit;font-size:16px;color:var(--ink);background:var(--paper);border:1px solid var(--rule-2);border-radius:8px;padding:9px 10px}
+input:focus{outline:2px solid color-mix(in srgb,var(--ink) 40%,transparent);outline-offset:1px}
+button{font:inherit;height:40px;border-radius:8px;border:1px solid var(--ink);background:var(--ink);color:var(--paper);font-weight:600;cursor:pointer}
+button:disabled{opacity:.55;cursor:default}
+button.link{height:auto;border:0;background:none;color:var(--ink-3);font-weight:400;font-size:13px;text-decoration:underline;padding:0;align-self:flex-start}
+#msg{min-height:1.4em;color:var(--bad)} #msg.ok{color:var(--ok)}
+pre{white-space:pre-wrap;font-size:11.5px;max-height:180px;overflow:auto;margin:0}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <div class="logo">SiS</div>
+  <h1 id="h">Sign in</h1>
+  <p id="sub">This notebook is locked. Sign in with your ID and password.</p>
+  <div id="lib" hidden>
+    <p>This computer needs the encryption library before the notebook can be opened.</p>
+    <button id="inst">Install it</button>
+    <pre id="log"></pre>
+  </div>
+  <form id="f" autocomplete="on">
+    <label>ID <input id="id" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
+    <label id="pwl">Password <input id="pw" name="password" type="password" autocomplete="current-password"></label>
+    <div id="rec" hidden style="display:flex;flex-direction:column;gap:10px">
+      <label>Recovery key <input id="code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"></label>
+      <label>New password <input id="pw2" type="password" autocomplete="new-password"></label>
+      <label>New password again <input id="pw3" type="password" autocomplete="new-password"></label>
+    </div>
+    <button id="go" type="submit" style="margin-top:6px">Sign in</button>
+  </form>
+  <p id="msg" role="alert"></p>
+  <button class="link" id="forgot" type="button">Forgot your password?</button>
+</main>
+<script>
+const $ = s => document.querySelector(s), msg = (t, ok) => { $('#msg').textContent = t || ''; $('#msg').className = ok ? 'ok' : ''; };
+const ls = { get(k, d) { try { const v = localStorage.getItem('sis:' + k); return v == null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { localStorage.setItem('sis:' + k, JSON.stringify(v)); } catch { } } };
+const post = async (path, body) => { try { return await (await fetch('api/access/' + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })).json(); } catch { return { ok: false, error: 'Can’t reach the computer that runs the app' }; } };
+let st = {}, recovering = false;
+// a paired phone or tablet opens offline too: there the password of whoever signed in last is checked on the device (the app's 20b-access.js)
+async function remember(id, pw) {
+  if (st.local || !window.isSecureContext || !crypto.subtle) return;
+  const salt = crypto.getRandomValues(new Uint8Array(16)), it = 310000;
+  const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw.normalize('NFC')), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: it }, k, 256);
+  ls.set('lock', { id, salt: btoa(String.fromCharCode(...salt)), it, hash: btoa(String.fromCharCode(...new Uint8Array(bits))) });
+}
+async function status() {
+  try { st = await (await fetch('api/access/status', { cache: 'no-store' })).json(); } catch { msg('Can’t reach the computer that runs the app.'); return; }
+  if (!st.lock) { location.reload(); return; }
+  if (st.me && st.open) { location.reload(); return; }
+  if (st.me && !st.open) { $('#h').textContent = 'Open the notebook'; $('#sub').textContent = 'The computer was restarted or the notebook was locked. Your password opens it again.'; }
+  $('#id').value = $('#id').value || (st.me && st.me.id) || ls.get('lastId', '') || '';
+  $('#lib').hidden = !!st.crypto; $('#f').hidden = !st.crypto; $('#forgot').hidden = !st.crypto;
+  if (!st.crypto && !st.local) { $('#inst').hidden = true; $('#lib p').textContent = 'The computer that runs the app needs the encryption library first: open the app there.'; }
+  if (st.install) { $('#log').textContent = (st.install.log || []).join('\n'); $('#inst').disabled = st.install.state === 'installing'; if (st.install.state === 'installing') setTimeout(status, 1500); if (st.install.state === 'error') msg('The install did not work (see above).'); }
+  (($('#id').value && st.crypto) ? $('#pw') : $('#id')).focus();
+}
+$('#inst').onclick = async () => { $('#inst').disabled = true; await post('install', {}); setTimeout(status, 800); };
+$('#forgot').onclick = () => {
+  recovering = !recovering; $('#rec').hidden = !recovering; $('#pwl').hidden = recovering;
+  $('#forgot').textContent = recovering ? 'Back to signing in' : 'Forgot your password?';
+  $('#go').textContent = recovering ? 'Set the new password' : 'Sign in';
+  $('#sub').textContent = recovering ? 'The recovery key was shown once, when the notebook was locked. With it you choose a new password for your ID.' : 'This notebook is locked. Sign in with your ID and password.';
+  msg('');
+};
+$('#f').onsubmit = async e => {
+  e.preventDefault(); const id = $('#id').value.trim(); let j, pw;
+  if (recovering) {
+    pw = $('#pw2').value; if (pw !== $('#pw3').value) return msg('The two new passwords differ.');
+    $('#go').disabled = true; msg('Checking…', true); j = await post('recover', { id, code: $('#code').value, password: pw });
+  } else {
+    pw = $('#pw').value; $('#go').disabled = true; msg('Opening…', true); j = await post('signin', { id, password: pw });
+  }
+  $('#go').disabled = false;
+  if (!j.ok) { msg(j.error || 'Not signed in.'); return; }
+  ls.set('lastId', j.me.id); try { await remember(j.me.id, pw); } catch { }
+  msg('Signed in — opening…', true); location.reload();
+};
+status();
+</script>
+</body>
+</html>

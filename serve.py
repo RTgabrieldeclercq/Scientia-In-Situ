@@ -34,11 +34,11 @@ def stamp(): return time.strftime('%Y-%m-%d_%H%M%S')
 def atomic(path, data):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = path + '.part'
-    with open(tmp, 'wb') as f: f.write(data)
+    with open(tmp, 'wb') as f: f.write(ACCESS.seal(path, data))   # sealed in a locked notebook (access.py)
     os.replace(tmp, path)
 def load_json(path, default=None):
     try:
-        with open(path, encoding='utf-8') as f: return json.load(f)
+        with open(path, 'rb') as f: return json.loads(ACCESS.unseal(f.read()))
     except Exception: return default
 def records(obj):
     try: return sum(v for k, v in (obj.get('counts') or {}).items() if k not in ('journal', 'settings', 'profiles'))
@@ -46,7 +46,7 @@ def records(obj):
 
 def notebook():
     p = (load_json(CONFIG, {}) or {}).get('notebook')
-    return p if p and os.path.isdir(p) else None
+    return p if p and os.path.isdir(p) and ACCESS.opens(p) else None   # a locked notebook: none until someone signs in
 def nb(*parts):
     root = notebook()
     return os.path.join(root, *parts) if root else None
@@ -62,13 +62,14 @@ def meta():
     return None
 def set_notebook(path, media=None):
     path = os.path.abspath(os.path.expanduser(path))
+    ACCESS.may_switch(path)
     os.makedirs(path, exist_ok=True)
     for sub in ('.scientia', os.path.join('.scientia', 'daily'), os.path.join('.scientia', 'kept'), 'images', 'recordings'): os.makedirs(os.path.join(path, sub), exist_ok=True)
     # bring over the images your notes use that so far lived next to the app (copied, never moved)
     for f in (media or []):
         f = os.path.basename(str(f))
         src, dst = os.path.join(APP_IMAGES, f), os.path.join(path, 'images', f)
-        if os.path.isfile(src) and not os.path.exists(dst): shutil.copy2(src, dst)
+        if os.path.isfile(src) and not os.path.exists(dst): ACCESS.copy_in(src, dst, path)
     cfg = load_json(CONFIG, {}) or {}; cfg['notebook'] = path; cfg.setdefault('recent', []);
     cfg['recent'] = [path] + [x for x in cfg['recent'] if x != path][:7]
     atomic(CONFIG, json.dumps(cfg, indent=1).encode('utf-8'))
@@ -84,6 +85,8 @@ def info():
     return {'ok': True, 'path': notebook(), 'record': meta(), 'config': CONFIG, 'recent': (load_json(CONFIG, {}) or {}).get('recent', [])}
 
 sys.path.insert(0, ROOT)
+from access import Access
+ACCESS = Access(os.path.dirname(CONFIG), lambda: (load_json(CONFIG, {}) or {}).get('notebook'), ROOT)
 from sisync import Sync
 from hwread import Reader
 import slides as SLIDES
@@ -98,6 +101,7 @@ except Exception as e:
     RAWM = None; RAWM_ERR = 'raw mouse input is unavailable: %s' % e
 STT = Transcriber(rec_dir)
 SYNC = Sync(nb, atomic, lambda p, d=None: load_json(p, d) if p else d, os.path.dirname(CONFIG))
+ACCESS.attach(SYNC, STT, SLIDES)   # what they write into a locked notebook is sealed too
 
 # ---------------- other devices: what this computer can be reached at ----------------
 def tailscale_exe():
@@ -187,6 +191,9 @@ class H(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
         self.send_header('Cache-Control', 'no-store, must-revalidate')
         super().end_headers()
+    def send_head(self):
+        f = ACCESS.serve(self)   # a sealed image or recording, sent as it was
+        return super().send_head() if f is False else f
     def log_message(self, *a): pass
     def is_local(self):
         a = self.client_address[0]
@@ -276,6 +283,7 @@ class H(http.server.SimpleHTTPRequestHandler):
         return self._text(open(os.path.join(d, name), encoding='utf-8').read(), 'application/json; charset=utf-8')
     def do_GET(self):
         u = urlparse(self.path); p = u.path; q = parse_qs(u.query)
+        if ACCESS.route(self, p, False): return   # the lock: its own calls, the sign-in page, or a refusal
         if p.startswith('/rm/js/') and self.is_local(): return self.board_script(p)
         if p == '/api/macros' and self.is_local(): return self.macros(q)
         if p == '/api/pen-button' and self.is_local(): return self.pen_button(q)
@@ -328,6 +336,7 @@ class H(http.server.SimpleHTTPRequestHandler):
 
     def do_POST(self):
         u = urlparse(self.path); q = parse_qs(u.query)
+        if ACCESS.route(self, u.path, True): return
         if not self.gate(u.path, True): return
         if u.path == '/api/sync/push':
             if not SYNC.ensure(): return self._json(409, {'ok': False, 'error': 'no notebook folder'})
@@ -401,13 +410,12 @@ class H(http.server.SimpleHTTPRequestHandler):
         if n <= 0 or n > 2 * 1024 ** 3: return self._json(400, {'ok': False, 'error': 'bad size'})
         d = images_dir(); os.makedirs(d, exist_ok=True)
         path = os.path.join(d, f'{mid}.{ext}')
-        with open(path + '.part', 'wb') as f:
+        with ACCESS.create(path) as f:   # sealed in a locked notebook
             left = n
             while left > 0:
                 chunk = self.rfile.read(min(left, 1 << 20))
                 if not chunk: break
                 f.write(chunk); left -= len(chunk)
-        os.replace(path + '.part', path)
         return self._json(200, {'ok': True, 'path': f'images/{mid}.{ext}'})
 
     def recording(self, q):
@@ -418,8 +426,7 @@ class H(http.server.SimpleHTTPRequestHandler):
         if not raw: return self._json(400, {'ok': False, 'error': 'empty recording'})
         d = rec_dir(); name = f'{base}.{ext}'; k = 2
         while os.path.exists(os.path.join(d, name)): name = f'{base} ({k}).{ext}'; k += 1
-        with open(os.path.join(d, name + '.part'), 'wb') as f: f.write(raw)
-        os.replace(os.path.join(d, name + '.part'), os.path.join(d, name))
+        atomic(os.path.join(d, name), raw)
         job = STT.add(name, (q.get('lang') or [''])[0] or None) if (q.get('transcribe') or ['1'])[0] == '1' else {}
         return self._json(200, {'ok': True, 'file': name, 'path': 'recordings/' + name, 'bytes': len(raw), 'job': job, 'folder': d})
 
@@ -471,7 +478,7 @@ class Server(http.server.ThreadingHTTPServer):
 srv = Server(('', PORT), H)
 if not os.environ.get('SIS_NOBROWSER'): threading.Timer(0.6, lambda: webbrowser.open(f'http://localhost:{PORT}/scientia.html')).start()
 print(f'Scientia In Situ on http://localhost:{PORT}/scientia.html  (close this window to stop)')
-print(f'Notebook folder: {notebook() or "not chosen yet — Settings → Notebook folder"}')
+print(f'Notebook folder: {notebook() or ACCESS.closed() or "not chosen yet — Settings → Notebook folder"}')
 print('Other devices: Settings → Devices (phones and tablets pair with this computer)')
 SYNC.ensure()
 srv.serve_forever()

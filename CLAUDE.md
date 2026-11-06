@@ -7,7 +7,8 @@ lab; MANUAL.md is how it is used.
 ## Kept in step with the lab
 
 The app is written in the lab's repository (`McGheeLab/McGheeLabWebsite`, `scientia/`) and comes here by sync; only our own
-files (`CLAUDE.md`, `.gitignore`, `.gitattributes`, `sync/`) and the edits that take the lab out are made here.
+files (`CLAUDE.md`, `.gitignore`, `.gitattributes`, `sync/`, and the lock below), the edits that take the lab out, and the
+lock's hooks are made here.
 
 ```bash
 python sync/lab_sync.py start --at <lab branch or commit>   # the lab's change since sync/state.json, as a three-way merge
@@ -30,7 +31,27 @@ python sync/lab_sync.py scan --all                          # any line in the ap
 python build.py             # src/ + vendor/ + fonts.css → scientia.html; vendor/board/lab-board.html + board/ → board.html
 python serve.py             # or launch.bat: http://localhost:8766/scientia.html (SIS_PORT, SIS_CONFIG, SIS_NOBROWSER for tests)
 node tests/doi-lookup.test.mjs
+node tests/access.test.mjs  # the lock end to end, on a copy of the app in a temp folder (needs `cryptography`)
 ```
+
+## The notebook's lock (ours alone)
+
+Gabe asked for it in this repository only (6 Nov 2026): a locked notebook opens only for the people in its
+`.scientia/access.json` (each their own ID and password), and serve.py keeps `.scientia/`, `images/` and `recordings/`
+encrypted, so a copied folder or app is no use without a password. README.md → "Locking the notebook" is how it is used.
+
+- `access.py` is the lock: the notebook key wrapped per person (scrypt) and under a recovery key; files sealed as 1 MiB
+  AES-GCM chunks (`SiSLock1`), `ops.jsonl` line by line; sessions (`sis_ses` cookie, hashed in `sessions.json` next to the
+  config); `/api/access/*`; making the lock and taking it off in place. `signin.html` is the page served instead of the app.
+- **Hooks in the lab's files** (keep them through every sync): serve.py — `atomic`/`load_json` seal and unseal, `notebook()`
+  is `None` while closed, `set_notebook` asks `may_switch` and `copy_in`, `send_head` serves sealed files, `do_GET`/`do_POST`
+  ask `ACCESS.route` first, `media()`/`recording()` write through the lock, `ACCESS.attach(SYNC, STT, SLIDES)`; sisync.py —
+  `read_lines`/`append_line`. `attach()` wraps sttread (`_atomic`, `decode`, `Transcriber.job`) and `slides.convert`, and
+  stops the server if one of them is gone.
+- `src/20b-access.js` (+ `.css`): Settings → Access, the sign-in card on a 423, the offline password on a paired device, no
+  Markdown mirror or folder snapshots while locked.
+- `tests/access.test.mjs` runs in `lab_sync.py finish`: a sync that breaks a hook fails there. Never write plain text into
+  a locked notebook's sealed parts, or next to the app while a lock exists: `Access.seal`/`create` refuse (`Locked`).
 
 `scientia.html` and `board.html` are build outputs (git-ignored). **Edit `src/` (and `board/`), never a built file.**
 `build.py` refuses to write the app when `node --check` fails on the joined JavaScript.
@@ -41,6 +62,7 @@ node tests/doi-lookup.test.mjs
 |---|---|
 | `src/*.js`, `src/*.css`, `src/shell.html` | the app, joined in filename order into one classic script: top-level `const`s are the app's globals (`App`, `DB`, `M`, `IX`, `LIB`, `INK`, `SYNC`…); a later file extends an earlier one by wrapping its functions |
 | `serve.py`, `sisync.py` | the desktop server: the notebook folder is the record; phones and tablets pair with this computer and sync through it |
+| `access.py`, `signin.html`, `src/20b-access.*` | the notebook's lock (ours, not the lab's): above |
 | `hwread.py`, `winink.py`, `sttread.py`, `slides.py` | handwriting, Windows ink recognition, Whisper transcription, PowerPoint → images (all on this computer) |
 | `board/` | the app's side of the whiteboard: `store.js` (a small Firestore stand-in; the board lives in the note), `pen.js` (the notebook's pen on the board), `board.css` |
 | `vendor/board/lab-board.html` | the McGhee Lab's board page with its engine inlined, unchanged, made by each sync; three placeholders take `board/` |
