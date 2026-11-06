@@ -64,9 +64,7 @@ const CANVASX = {
     const g = await CANVASX.gather(d);
     const data = { v: 1, docId: d.id, title: d.title, at: isoLocal(new Date()), build: BUILD, stores: g.stores, files: g.files, outside: g.outside, refs: g.refs, cites: g.cites };
     const js = JSON.stringify(data).replace(/</g, '\\u003c').replace(/[\u2028\u2029]/g, c => '\\u' + c.charCodeAt(0).toString(16));
-    // the lab's web build carries its layer (the target flag, the cloud shim, lab mode): the export runs on its own, without them
-    const web = [/<!--sis-desktop-->[\s\S]*?<!--\/sis-desktop-->\s*/g, /<script>window\.SIS_TARGET = 'web';<\/script>\s*/g, new RegExp('<script src="(?:cloud' + '-sync|lab-mode)\\.js[^"]*"><\/script>\\s*', 'g')];
-    const html = web.reduce((s, rx) => s.replace(rx, ''), src).replace(/<link rel="manifest"[^>]*>\s*/, '').replace(/<title>[^<]*<\/title>/, `<title>${esc(d.title)} · Scientia In Situ</title>`)
+    const html = src.replace(/<link rel="manifest"[^>]*>\s*/, '').replace(/<title>[^<]*<\/title>/, `<title>${esc(d.title)} · Scientia In Situ</title>`)
       .replace('<head>', `<head>\n<script>window.SIS_EXPORT = ${js};</script>`);
     Exporter.download(Exporter.slug(d.title || 'note') + '.html', html);
     toast(`Canvas exported · ${(html.length / 1048576).toFixed(1)} MB` + (g.missing.length ? ` · ${plural(g.missing.length, 'file')} couldn’t be read: ` + g.missing.slice(0, 3).join(', ') : ''), 4500);
