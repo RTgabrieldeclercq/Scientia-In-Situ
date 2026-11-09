@@ -2,7 +2,7 @@
    01 · Utilities — DOM builder, ids, dates, formatting
    ========================================================================== */
 'use strict';
-const BUILD = '2026-11-05 · standalone · the edge pan starts at the edge and speeds up as the mouse keeps going past it', DEMO_V = 2;
+const BUILD = '2026-11-09 · standalone · snip a figure out of an HTML page; /collection in the Atlas; paste pictures, files and components', DEMO_V = 2;
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

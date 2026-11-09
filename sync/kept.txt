@@ -4,6 +4,7 @@ board/store.js	so the website's boards on the same address (mcgheelab.com) keep 
 src/02-schema.js	mwsteps:   { key: 'id',  doc: 'My Week steps from RM, mirrored by the lab hub (read-only): what a component’s ✓ reports onto, offline too' },
 src/09-editor.js	for (const m of cov.filter(m => m.type === 'person')) node = h('span.mn', { 'data-m': m.id, 'data-uid': m.uid || '', title: (m.name || '') + (m.uid ? ' · a lab member' : '') }, node);   // V3.947: @Name (13zzg)
 src/11b-commands.js	ALIAS: { rmpaper: 'paper', rmprotocol: 'protocol', rmaction: 'action', rmcollection: 'collection', 'material-new': 'newmaterial', 'equation-reg': 'registered', 'table-empty': 'emptytable', 'canvas-add': 'canvas', 'pull-barrier': 'barrier', 'pull-item': 'structure', 'pull-comp': 'component' },
+src/11b-commands.js	ALIAS: { rmpaper: 'paper', rmprotocol: 'protocol', rmaction: 'action', rmcollection: 'labcollection', 'material-new': 'newmaterial', 'equation-reg': 'registered', 'table-empty': 'emptytable', 'canvas-add': 'canvas', 'pull-barrier': 'barrier', 'pull-item': 'structure', 'pull-comp': 'component' },
 src/13zza-clip.js	Found by the lab site's detectors (rm/js/page-layout.js figures and tables
 src/13zzd-board.js	empty cell): the Lab Notebook's own board (pen, highlighter, cards,
 src/13zzd-board.js	engine keeps in Firestore on the lab site) are kept in the `boards` store:
