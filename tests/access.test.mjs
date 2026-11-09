@@ -4,7 +4,8 @@
  * copy, an image, a recording and its transcript, a Markdown mirror and a file of the user's own. The lock is made, and
  * then: nothing secret is left readable in the folder, nothing is served without a sign-in, everything is served as it
  * was with one, and what the server writes afterwards (media, changes, recordings, transcripts, slides) is sealed too;
- * Lock now, a restart, people, passwords, the recovery key, too many tries; and the lock taken off again.
+ * Lock now, a restart; the administrator letting people in and out, and what the others cannot do; passwords, the
+ * recovery key, too many tries; and the lock taken off again.
  * Run: node tests/access.test.mjs   (needs Python with the `cryptography` package)
  */
 import { spawn, spawnSync } from 'node:child_process';
@@ -163,21 +164,48 @@ try {
   yes('… then the sealed record loads, with the change made before', st2.stores.projects.map(p => p.name).sort().join() === 'Another Secret,Secret project', JSON.stringify(st2.stores.projects));
 
   // ---------------- people, passwords, the recovery key ----------------
-  eq('an owner adds someone', (await call('POST', '/api/access/people/add', { cookie: gabe, json: { id: 'alex', name: 'Alex', role: 'member', password: 'alex pass 1' } })).body.ok, true);
-  eq('the people', (await call('GET', '/api/access/people', { cookie: gabe })).body.people.map(p => p.id + ':' + p.role).join(), 'gabe:owner,alex:member');
+  // ---- the administrator lets people in and out; they only use the notebook
+  eq('the one who locked it is the administrator', made.body.me.role, 'admin');
+  eq('the administrator lets someone in', (await call('POST', '/api/access/people/add', { cookie: gabe, json: { id: 'alex', name: 'Alex', password: 'alex pass 1' } })).body.ok, true);
+  eq('… asked to make them an administrator, still not one', (await call('POST', '/api/access/people/add', { cookie: gabe, json: { id: 'sam', name: 'Sam', role: 'owner', password: 'sam pass 12' } })).body.ok, true);
+  eq('the people', (await call('GET', '/api/access/people', { cookie: gabe })).body.people.map(p => p.id + ':' + p.role).join(), 'gabe:admin,alex:member,sam:member');
   eq('… not without a sign-in', (await call('GET', '/api/access/people')).status, 423);
   eq('… not twice', (await call('POST', '/api/access/people/add', { cookie: gabe, json: { id: 'Alex', name: 'Alex', password: 'alex pass 2' } })).body.ok, false);
   let alex = (await call('POST', '/api/access/signin', { json: { id: 'alex', password: 'alex pass 1' } })).cookie;
   yes('they sign in with their own password', alex);
-  eq('a member cannot add people', (await call('POST', '/api/access/people/add', { cookie: alex, json: { id: 'eve', name: 'Eve', password: 'eve pass 12' } })).status, 403);
-  eq('they change their password', (await call('POST', '/api/access/password', { cookie: alex, json: { old: 'alex pass 1', password: 'alex pass 9' } })).body.ok, true);
+  eq('… and use the notebook', (await call('GET', '/api/sync/state', { cookie: alex })).status, 200);
+  eq('… as a member', (await call('GET', '/api/access/status', { cookie: alex })).body.me.role, 'member');
+  const no = async (label, method, p, json) => eq('they cannot ' + label, (await call(method, p, { cookie: alex, json })).status, 403);
+  await no('see who has access', 'GET', '/api/access/people');
+  await no('let anyone in', 'POST', '/api/access/people/add', { id: 'eve', name: 'Eve', password: 'eve pass 12' });
+  await no('remove the administrator', 'POST', '/api/access/people/remove', { id: 'gabe' });
+  await no('remove themselves', 'POST', '/api/access/people/remove', { id: 'alex' });
+  await no('remove someone else', 'POST', '/api/access/people/remove', { id: 'sam' });
+  await no('set someone’s password', 'POST', '/api/access/people/password', { id: 'gabe', password: 'taken over 1' });
+  await no('make a recovery key', 'POST', '/api/access/recovery', { password: 'alex pass 1' });
+  await no('Lock now (signing everyone out)', 'POST', '/api/access/lock', {});
+  await no('take the lock off', 'POST', '/api/access/remove', { password: 'alex pass 1' });
+  await no('make a pairing code', 'POST', '/api/pair/new', {});
+  await no('approve a device', 'POST', '/api/pair/decide', { req: 'x', ok: true });
+  await no('list the paired devices', 'GET', '/api/devices');
+  await no('remove a paired device', 'POST', '/api/devices/remove', { id: 'x' });
+  await no('switch the notebook folder', 'POST', '/api/notebook', { path: path.join(T, 'other') });
+  eq('… the notebook stays open for the administrator', (await call('GET', '/api/sync/state', { cookie: gabe })).status, 200);
+  eq('… and still lists everyone', (await call('GET', '/api/access/people', { cookie: gabe })).body.people.length, 3);
+  eq('they change their own password', (await call('POST', '/api/access/password', { cookie: alex, json: { old: 'alex pass 1', password: 'alex pass 9' } })).body.ok, true);
   eq('… the old one stops working', (await call('POST', '/api/access/signin', { json: { id: 'alex', password: 'alex pass 1' } })).body.ok, false);
   alex = (await call('POST', '/api/access/signin', { json: { id: 'alex', password: 'alex pass 9' } })).cookie;
   yes('… the new one works', alex);
+  eq('the administrator gives them a new password', (await call('POST', '/api/access/people/password', { cookie: gabe, json: { id: 'alex', password: 'from gabe 1' } })).body.ok, true);
+  eq('… which signs them out', (await call('GET', '/api/sync/state', { cookie: alex })).status, 423);
+  eq('… their own stops working', (await call('POST', '/api/access/signin', { json: { id: 'alex', password: 'alex pass 9' } })).body.ok, false);
+  alex = (await call('POST', '/api/access/signin', { json: { id: 'alex', password: 'from gabe 1' } })).cookie;
+  yes('… the new one works', alex);
+  eq('the administrator’s own password is not reset this way', (await call('POST', '/api/access/people/password', { cookie: gabe, json: { id: 'gabe', password: 'whatever 12' } })).body.ok, false);
   eq('removing them', (await call('POST', '/api/access/people/remove', { cookie: gabe, json: { id: 'alex' } })).body.ok, true);
   eq('… ends their session', (await call('GET', '/api/sync/state', { cookie: alex })).status, 423);
-  eq('… and their sign-in', (await call('POST', '/api/access/signin', { json: { id: 'alex', password: 'alex pass 9' } })).body.ok, false);
-  eq('the last owner cannot be removed', (await call('POST', '/api/access/people/remove', { cookie: gabe, json: { id: 'gabe' } })).body.ok, false);
+  eq('… and their sign-in', (await call('POST', '/api/access/signin', { json: { id: 'alex', password: 'from gabe 1' } })).body.ok, false);
+  eq('the administrator cannot be removed', (await call('POST', '/api/access/people/remove', { cookie: gabe, json: { id: 'gabe' } })).body.ok, false);
   eq('a wrong recovery key does nothing', (await call('POST', '/api/access/recover', { json: { id: 'gabe', code: 'AAAAA-AAAAA-AAAAA-AAAAA-AAAAA', password: 'brand new 1' } })).body.ok, false);
   const rc = await call('POST', '/api/access/recover', { json: { id: 'gabe', code: made.body.recovery.toLowerCase(), password: 'brand new 1' } });
   yes('the recovery key sets a new password (typed in any case)', rc.body.ok && rc.cookie);

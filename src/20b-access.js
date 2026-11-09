@@ -2,8 +2,10 @@
    20b · The notebook's lock — this repository's own (access.py; the lab's
    scientia/ has none). A locked notebook opens only for the people in its
    access list, each with their own username and password, and serve.py keeps its
-   folder encrypted. Here: Settings → Access (making the lock, people,
-   passwords, the recovery key, Lock now); the sign-in that comes back when
+   folder encrypted. Whoever locks it is its administrator, the only one who
+   lets people in or out; the others only use it. Here: Settings → Access
+   (making the lock, people, passwords, the recovery key, Lock now; for the
+   others, signing out and their own password); the sign-in that comes back when
    the computer locks the notebook or a session ends (a request answered 423
    waits for it, then goes again); the password a paired device asks before
    it opens offline; and no plain copies of a locked notebook (the Markdown
@@ -97,31 +99,38 @@ const ACCESS = {
       return [h('p.serif', { style: { marginTop: 0, fontSize: '14.5px' } }, 'Not locked: anyone who can open this app here, or copy its folders, can read the notebook. Locked, it opens only for the people you add, each with their own username and password, and its folder is encrypted, so a copy of it, or of the app, is of no use without one of those passwords.'),
         h('div.row', h('button.btn.pri', { on: { click: () => ACCESS.setupDialog() } }, st.crypto ? 'Lock this notebook…' : 'Install the encryption library, then lock…')), jobLine];
     }
-    const me = st.me || {}, owner = me.role === 'owner', people = h('div.dv-list');
-    if (owner) ACCESS.drawPeople(people, me);
+    const me = st.me || {}, signout = h('button.btn.sm', { on: { click: async () => { await ACCESS.post('signout'); location.reload(); } } }, 'Sign out');
+    const mine = h('button.btn.sm', { on: { click: () => ACCESS.passwordDialog() } }, 'Change my password…');
+    if (!ACCESS.admin()) return [   // someone let in: they use the notebook, and decide nothing about who gets in
+      h('div.callout', h('b.h', 'Locked'), 'Signed in as ', h('b', me.name || me.id || '—'), ` (${me.id || '?'}). You can open and use this notebook. Who has access, paired devices and the notebook folder are up to its administrator.`),
+      h('div.row', { style: { gap: '6px', marginTop: '8px', flexWrap: 'wrap' } }, signout, mine)];
+    const people = h('div.dv-list'); ACCESS.drawPeople(people, me);
     return [
-      h('div.callout', h('b.h', 'Locked'), 'Signed in as ', h('b', me.name || me.id || '—'), ` (${me.id || '?'} · ${owner ? 'owner' : 'member'}). The folder’s record, images and recordings are encrypted; the app opens only after a sign-in.`),
+      h('div.callout', h('b.h', 'Locked'), 'Signed in as ', h('b', me.name || me.id || '—'), ` (${me.id || '?'} · administrator). Only the people below open the notebook, and only you let people in or out. The folder’s record, images and recordings are encrypted.`),
       jobLine,
       h('div.row', { style: { gap: '6px', marginTop: '8px', flexWrap: 'wrap' } },
-        h('button.btn.sm', { title: 'Everyone signs in again; the notebook stays closed until someone does', on: { click: async () => { await ACCESS.post('lock'); location.reload(); } } }, 'Lock now'),
-        h('button.btn.sm', { on: { click: async () => { await ACCESS.post('signout'); location.reload(); } } }, 'Sign out'),
-        h('button.btn.sm', { on: { click: () => ACCESS.passwordDialog() } }, 'Change my password…')),
-      owner ? [h('h4.dv-h', 'People'), people, h('div.row', { style: { gap: '6px', flexWrap: 'wrap' } },
+        h('button.btn.sm', { title: 'Everyone signs in again; the notebook stays closed until someone does', on: { click: async () => { await ACCESS.post('lock'); location.reload(); } } }, 'Lock now'), signout, mine),
+      h('h4.dv-h', 'People'), people, h('div.row', { style: { gap: '6px', flexWrap: 'wrap' } },
         h('button.btn.sm.pri', { on: { click: () => ACCESS.addDialog(() => ACCESS.drawPeople(people, me)) } }, '+ Add a person…'),
         h('button.btn.sm', { on: { click: () => ACCESS.recoveryDialog() } }, 'New recovery key…'),
-        SYNC.local ? h('button.btn.sm.ghost', { on: { click: () => ACCESS.removeDialog(draw) } }, 'Take the lock off…') : null)] : null,
+        SYNC.local ? h('button.btn.sm.ghost', { on: { click: () => ACCESS.removeDialog(draw) } }, 'Take the lock off…') : null),
       h('details.dv-more', h('summary', 'Good to know'), h('ul.tiny',
+        h('li', 'The people you add open and use the notebook, nothing more: they don’t see this list, can’t add or remove anyone, pair or remove devices, switch the notebook folder, or Lock now. They can change their own password.'),
         h('li', 'Encrypted in the notebook folder: the record and its daily and kept copies (.scientia/), images/, recordings/ and their transcripts. Other files you keep there stay as they are. There is no Markdown copy for Obsidian: it would be plain text.'),
-        h('li', 'Each time the app starts on this computer, someone signs in to open the notebook. A sign-in lasts 14 days on a browser, unless you sign out or press Lock now.'),
-        h('li', 'Phones and tablets sign in as well. Opened offline, they ask the password of whoever signed in there last.'),
+        h('li', 'Each time the app starts on this computer, someone signs in to open the notebook. A sign-in lasts 14 days on a browser, unless they sign out, you remove them or give them a new password, or you press Lock now.'),
+        h('li', 'Phones and tablets sign in as well, after you pair them here (Devices). Opened offline, they ask the password of whoever signed in there last.'),
         h('li', 'Removing someone stops them signing in. A copy of the folder they took while they had access still opens with their old password.'),
-        h('li', 'Without a password or the recovery key, nobody can open the notebook. Keep the recovery key away from this computer.'),
+        h('li', 'Without a password or the recovery key, nobody can open the notebook. Keep the recovery key away from this computer: with it, a new password can be set for any username, yours included.'),
         h('li', 'This browser keeps its own working copy (its storage on this computer, not part of the folder), which is not encrypted.')))];
   },
+  admin: () => (((ACCESS.st || {}).me) || {}).role === 'admin',
   async drawPeople(box, me) {
     let ps = []; try { ps = (await (await fetch('api/access/people', { cache: 'no-store' })).json()).people || []; } catch { }
-    box.replaceChildren(...ps.map(p => h('div.dv-dev', h('span', h('b', p.name), h('span.muted.tiny', ` · ${p.id} · ${p.role} · added ${fmtDay(p.created)}`)), h('span.spacer'),
-      p.id === me.id ? h('span.tiny.muted', 'you') : h('button.btn.xs.danger', { on: { click: () => pickModal('Remove ' + p.name + '?', 'They can no longer sign in, here or on a device. A copy of the folder they took while they had access still opens with their old password.', [{ label: 'Remove ' + p.name, danger: true, run: async () => { const j = await ACCESS.post('people/remove', { id: p.id }); if (!j.ok) toast(j.error); ACCESS.drawPeople(box, me); } }]) } }, 'Remove'))));
+    const redraw = () => ACCESS.drawPeople(box, me);
+    box.replaceChildren(...ps.map(p => h('div.dv-dev', h('span', h('b', p.name), h('span.muted.tiny', ` · ${p.id} · ${p.role === 'admin' ? 'administrator' : 'can use the notebook'} · added ${fmtDay(p.created)}`)), h('span.spacer'),
+      p.role === 'admin' ? h('span.tiny.muted', p.id === me.id ? 'you' : '') : [
+        h('button.btn.xs', { on: { click: () => ACCESS.resetDialog(p, redraw) } }, 'New password…'),
+        h('button.btn.xs.danger', { on: { click: () => pickModal('Remove ' + p.name + '?', 'They can no longer sign in, here or on a device, and are signed out now. A copy of the folder they took while they had access still opens with their old password.', [{ label: 'Remove ' + p.name, danger: true, run: async () => { const j = await ACCESS.post('people/remove', { id: p.id }); if (!j.ok) toast(j.error); redraw(); } }]) } }, 'Remove')])));
   },
   fields(spec) {
     const f = {}, els = spec.map(([k, label, type, ac]) => { const i = h('input.inp', { type: type || 'text', autocomplete: ac || 'off', autocapitalize: 'none', spellcheck: 'false', on: { input: e => f[k] = e.target.value } }); return h('label.f', h('span', label), i); });
@@ -131,7 +140,7 @@ const ACCESS = {
     if (!(ACCESS.st || {}).crypto) return ACCESS.install();
     const { f, els } = ACCESS.fields([['id', 'Your username (what you sign in with)', 'text', 'username'], ['name', 'Your name'], ['pw', 'Password (8 characters or more)', 'password', 'new-password'], ['pw2', 'Password again', 'password', 'new-password']]);
     modal({ title: 'Lock this notebook', wide: true, body: h('div',
-      h('p.serif', { style: { marginTop: 0 } }, 'You become its owner: you add and remove the people who can open it, each with their own username and password.'),
+      h('p.serif', { style: { marginTop: 0 } }, 'You become its administrator: the only one who lets people in or out. The people you add get a username and password to open and use the notebook, nothing more.'),
       h('ul.tiny', h('li', 'The record and its copies, images/, recordings/ and their transcripts are encrypted in place. Each file is checked before it replaces the plain one.'),
         h('li', 'The Markdown copy for Obsidian is removed and no longer written: it is plain text.'),
         h('li', 'Images, recordings and kept copies the app still holds in its own folder move into the notebook, encrypted.'),
@@ -162,14 +171,22 @@ const ACCESS = {
   },
   addDialog(then) {
     const { f, els } = ACCESS.fields([['id', 'Their username (what they sign in with)'], ['name', 'Their name'], ['pw', 'A password for them (8 characters or more)', 'password', 'new-password'], ['pw2', 'Password again', 'password', 'new-password']]);
-    const role = h('select.inp', h('option', { value: 'member' }, 'Member: opens and uses the notebook'), h('option', { value: 'owner' }, 'Owner: also adds and removes people'));
-    modal({ title: 'Add a person', body: h('div', h('div.grid2', els, h('label.f', h('span', 'Role'), role)),
-      h('p.tiny.muted', 'Give them their username and password yourself. Once signed in, they change the password in Settings → Access.')),
+    modal({ title: 'Add a person', body: h('div', h('div.grid2', els),
+      h('p.tiny.muted', 'They open and use the notebook, nothing more. Give them their username and password yourself; they can change the password once signed in.')),
       actions: [{ label: 'Cancel' }, { label: 'Add', pri: true, run: async () => {
         if (f.pw !== f.pw2) { toast('The two passwords differ'); return false; }
-        const j = await ACCESS.post('people/add', { id: f.id, name: f.name, role: role.value, password: f.pw });
+        const j = await ACCESS.post('people/add', { id: f.id, name: f.name, password: f.pw });
         if (!j.ok) { toast(j.error || 'Not added', 4000); return false; }
         toast((f.name || f.id) + ' can sign in now'); then(); } }] });
+  },
+  resetDialog(p, then) {
+    const { f, els } = ACCESS.fields([['pw', 'Their new password (8 characters or more)', 'password', 'new-password'], ['pw2', 'Password again', 'password', 'new-password']]);
+    modal({ title: 'New password for ' + p.name, body: h('div', h('p.serif', { style: { marginTop: 0 } }, 'Their old password stops working, and they are signed out everywhere. Tell them the new one yourself.'), els),
+      actions: [{ label: 'Cancel' }, { label: 'Set it', pri: true, run: async () => {
+        if (f.pw !== f.pw2) { toast('The two passwords differ'); return false; }
+        const j = await ACCESS.post('people/password', { id: p.id, password: f.pw });
+        if (!j.ok) { toast(j.error || 'Not changed', 4000); return false; }
+        toast('New password set for ' + p.name); then(); } }] });
   },
   passwordDialog() {
     const { f, els } = ACCESS.fields([['old', 'Current password', 'password', 'current-password'], ['pw', 'New password (8 characters or more)', 'password', 'new-password'], ['pw2', 'New password again', 'password', 'new-password']]);
@@ -218,6 +235,10 @@ const ACCESS = {
     if (s && s.folder && s.folder.lock && !s.folder.open && !(await ACCESS.card({ title: 'This notebook is locked', text: 'Sign in to it to open it here.', folder: path }))) return;
     return connect.apply(this, arguments);
   };
+  // pairing and removing devices on the computer: the administrator's (the server refuses it to anyone else)
+  const ds = DEVICES.settings; DEVICES.settings = function () {
+    return SYNC.local && ACCESS.locked() && !ACCESS.admin() ? h('p.tiny.muted', 'Phones and tablets are paired here by the administrator.') : ds.apply(this, arguments);
+  };
   // a locked notebook makes no plain copies: no Markdown mirror, no snapshots to a folder
   const vs = VAULT.sync; VAULT.sync = function () { return ACCESS.locked() ? Promise.resolve() : vs.apply(VAULT, arguments); };
   const bs = BACKUP.snapshot; BACKUP.snapshot = function () {
@@ -232,6 +253,10 @@ const ACCESS = {
         const w = document.createTreeWalker(out.querySelector('.nbcard') || out, NodeFilter.SHOW_TEXT);
         for (let t; (t = w.nextNode());) if (t.data.includes('one Markdown file per component for Obsidian')) { t.data = ', all of it encrypted (the notebook is locked: there is no Markdown copy). Launch any copy of the app, sign in, and it reloads from here.'; break; }
         const ob = [...out.querySelectorAll('.nbcard a.btn')].find(a => a.textContent === 'Open in Obsidian'); if (ob) ob.remove();
+      }
+      if (ACCESS.locked() && !ACCESS.admin()) {   // which folder the notebook is: the administrator's (the server refuses it too)
+        const row = out.querySelector('.nbcard input.inp'); if (row && row.closest('.row')) row.closest('.row').replaceWith(h('p.tiny.muted', 'Only the administrator changes the notebook folder.'));
+        const rec = [...out.querySelectorAll('.nbcard div.tiny.muted')].find(x => x.textContent.startsWith('Recent: ')); if (rec) rec.remove();
       }
     } catch (e) { console.warn('[access]', e); }
     return out; }; }, 0);

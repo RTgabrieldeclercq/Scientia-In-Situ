@@ -82,7 +82,7 @@ $('#forgot').onclick = () => {
   recovering = !recovering; $('#rec').hidden = !recovering; $('#pwl').hidden = recovering;
   $('#forgot').textContent = recovering ? 'Back to signing in' : 'Forgot your password?';
   $('#go').textContent = recovering ? 'Set the new password' : 'Sign in';
-  $('#sub').textContent = recovering ? 'The recovery key was shown once, when the notebook was locked. With it you choose a new password for your username.' : 'This notebook is locked. Sign in with your username and password.';
+  $('#sub').textContent = recovering ? 'Only the administrator has the recovery key (shown once, when the notebook was locked). If you are not the administrator, ask them for a new password.' : 'This notebook is locked. Sign in with your username and password.';
   msg('');
 };
 $('#f').onsubmit = async e => {

@@ -1,6 +1,8 @@
 """The notebook's lock (used by serve.py). This repository's own: the lab's scientia/ has no such thing.
 
-A locked notebook opens only for the people in its access list, each with their own username and password, and what it holds is
+A locked notebook opens only for the people in its access list, each with their own username and password. Whoever locks it
+is its administrator, the one person who lets others in or out (and pairs devices, switches the notebook folder, locks it
+for everyone, takes the lock off); everyone else only opens and uses the notebook. What it holds is
 encrypted on disk, so a copy of the folder, or of the app, is of no use on another computer without one of the passwords:
   .scientia/    the record, its daily and kept copies, the changes since (ops.jsonl), conflicts, the sync state
   images/       images, PDFs, videos, slides and pages you add
@@ -23,6 +25,8 @@ SEALED = ('.scientia', 'images', 'recordings')
 SESSION_DAYS = 14
 FREE = {'/sw.js', '/manifest.webmanifest', '/icon.svg'}             # nothing of the notebook: served to anyone
 LOCAL_FREE = {'/api/pen-button', '/api/edge-push'}                  # the pen's button helper and the edge pan (this computer)
+# who and what gets in (paired devices, the notebook folder; POST /api/notebook too): the administrator's alone
+ADMIN_ONLY = {'/api/pair/new', '/api/pair/decide', '/api/pair/pending', '/api/devices', '/api/devices/remove', '/api/devices/rename', '/api/tailscale/serve', '/api/notebook/browse'}
 ICONS = re.compile(r'/icons/icon-[a-z0-9-]+\.png')
 CODE = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'   # the recovery key's letters (no I, L, O, U)
 
@@ -417,7 +421,7 @@ class Access:
         self._sweep(root, True, self._move_in)
 
     def setup(self, pid, name, password):
-        """The lock made: the notebook key, the first person (the owner), the recovery key; then the folder sealed."""
+        """The lock made: the notebook key, the administrator (who makes it), the recovery key; then the folder sealed."""
         root = self.configured()
         if not root or not os.path.isdir(root): raise ValueError('Choose a notebook folder first')
         if self.root(): raise ValueError('This notebook is locked already')
@@ -426,7 +430,7 @@ class Access:
         key, code = os.urandom(32), ''.join(secrets.choice(CODE) for _ in range(25))
         n = os.urandom(12)
         acc = {'app': 'Scientia In Situ', 'lock': 1, 'uid': secrets.token_hex(8), 'created': now(), 'check': b64e(n + aes(key).encrypt(n, b'Scientia In Situ', b'check')),
-               'people': [self._person(pid, name, 'owner', password, key)], 'recovery': wrap(norm_code(code), key, b'recovery')}
+               'people': [self._person(pid, name, 'admin', password, key)], 'recovery': wrap(norm_code(code), key, b'recovery')}
         with self.mx:
             hold = self.sync.lock if self.sync else contextlib.nullcontext()
             with hold:
@@ -466,7 +470,10 @@ class Access:
         return dict({'id': pid, 'name': (str(name or '').strip() or pid)[:60], 'role': role, 'created': now()}, **wrap(password, key, b'person:' + pid.encode('utf-8')))
 
     @staticmethod
-    def public(p): return {k: p.get(k) for k in ('id', 'name', 'role', 'created')}
+    def admin(p): return bool(p) and p.get('role') in ('admin', 'owner')   # 'owner': the first version's word for it
+
+    @classmethod
+    def public(cls, p): return dict({k: p.get(k) for k in ('id', 'name', 'created')}, role='admin' if cls.admin(p) else 'member')
 
     def _key_of(self, acc, pid, password):
         p = next((x for x in acc.get('people', []) if x['id'] == norm_id(pid)), None)
@@ -477,18 +484,30 @@ class Access:
         except Exception: return None, None
         return p, key
 
-    def add(self, pid, name, role, password):
+    def add(self, pid, name, password):
+        """Someone the administrator lets in: they open and use the notebook, nothing more."""
         with self.mx:
             acc = self.read(); pid, password = self._check_new(pid, password)
             if any(x['id'] == pid for x in acc['people']): raise ValueError('Someone has that username already')
-            acc['people'].append(self._person(pid, name, 'owner' if role == 'owner' else 'member', password, self.key)); self.write(acc)
+            acc['people'].append(self._person(pid, name, 'member', password, self.key)); self.write(acc)
+
+    def _member(self, acc, pid):
+        p = next((x for x in acc['people'] if x['id'] == norm_id(pid)), None)
+        if not p: raise ValueError('Nobody has that username')
+        if self.admin(p): raise ValueError('That is the administrator')
+        return p
 
     def remove(self, pid):
+        """Someone let out: their sign-ins end at once. The administrator is never removed."""
         with self.mx:
-            acc = self.read(); pid = norm_id(pid)
-            left = [x for x in acc['people'] if x['id'] != pid]
-            if not any(x['role'] == 'owner' for x in left): raise ValueError('The notebook needs an owner: add another one first')
-            acc['people'] = left; self.write(acc); self._drop_sessions(lambda s: s.get('id') == pid)
+            acc = self.read(); p = self._member(acc, pid)
+            acc['people'] = [x for x in acc['people'] if x is not p]; self.write(acc); self._drop_sessions(lambda s: s.get('id') == p['id'])
+
+    def reset(self, pid, password):
+        """The administrator gives someone a new password (they forgot theirs): their sign-ins end."""
+        with self.mx:
+            acc = self.read(); p = self._member(acc, pid); _, password = self._check_new(p['id'], password)
+            p.update(wrap(password, self.key, b'person:' + p['id'].encode('utf-8'))); self.write(acc); self._drop_sessions(lambda s: s.get('id') == p['id'])
 
     def password(self, pid, old, new):
         with self.mx:
@@ -636,8 +655,11 @@ class Access:
         if not self.locked(): return False
         if not post and (p in FREE or ICONS.fullmatch(p)): return False
         if h.is_local() and (p in LOCAL_FREE or p.startswith('/rm/js/')): return False
-        if self.who(h) and self.is_open():
+        me = self.who(h)
+        if me and self.is_open():
             if post and p == '/api/vault': self._send(h, 409, {'ok': False, 'error': 'A locked notebook keeps no Markdown copy'}); return True
+            if not self.admin(me) and (p in ADMIN_ONLY or (post and p == '/api/notebook')):
+                self._send(h, 403, {'ok': False, 'error': 'Only the administrator can do that'}); return True
             return False
         if p.startswith('/api/'): self._send(h, 423, {'ok': False, 'locked': True, 'error': 'Sign in to open the notebook'})
         elif not post and (p == '/' or p.endswith('.html')): self._page(h)
@@ -665,6 +687,7 @@ class Access:
                 return self._send(h, 200, st)
             if p == '/api/access/people' and not post:
                 if not (me and is_open): return self._send(h, 423, {'ok': False, 'locked': True, 'error': 'Sign in to open the notebook'})
+                if not self.admin(me): return self._send(h, 403, {'ok': False, 'error': 'Only the administrator can do that'})
                 return self._send(h, 200, {'ok': True, 'people': [self.public(x) for x in acc['people']]})
             if not post: return self._send(h, 404, {'ok': False})
             if p == '/api/access/signin':
@@ -684,11 +707,13 @@ class Access:
                 person, code = self.setup(obj.get('id'), obj.get('name'), obj.get('password'))
                 return self._send(h, 200, {'ok': True, 'me': self.public(person), 'recovery': code}, self._new_session(person, self.read(), ua))
             if not (me and is_open): return self._send(h, 423, {'ok': False, 'locked': True, 'error': 'Sign in to open the notebook'})
-            if p == '/api/access/lock': self.lock_now(); return self._send(h, 200, {'ok': True}, '')
             if p == '/api/access/password': self.password(me['id'], obj.get('old'), obj.get('password')); return self._send(h, 200, {'ok': True})
-            if me['role'] != 'owner': return self._send(h, 403, {'ok': False, 'error': 'Only an owner of the notebook can do that'})
-            if p == '/api/access/people/add': self.add(obj.get('id'), obj.get('name'), obj.get('role'), obj.get('password')); return self._send(h, 200, {'ok': True})
+            # everything else here decides who gets in: the administrator's alone
+            if not self.admin(me): return self._send(h, 403, {'ok': False, 'error': 'Only the administrator can do that'})
+            if p == '/api/access/lock': self.lock_now(); return self._send(h, 200, {'ok': True}, '')
+            if p == '/api/access/people/add': self.add(obj.get('id'), obj.get('name'), obj.get('password')); return self._send(h, 200, {'ok': True})
             if p == '/api/access/people/remove': self.remove(obj.get('id')); return self._send(h, 200, {'ok': True})
+            if p == '/api/access/people/password': self.reset(obj.get('id'), obj.get('password')); return self._send(h, 200, {'ok': True})
             if p == '/api/access/recovery': return self._send(h, 200, {'ok': True, 'recovery': self.new_recovery(me['id'], obj.get('password'))})
             if p == '/api/access/remove':
                 if not h.is_local(): return self._send(h, 403, {'ok': False, 'error': 'only on the computer that runs the app'})
