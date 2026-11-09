@@ -167,6 +167,7 @@ const ATLAS = {
     ['view', 'Live views', 'views', b => b.kind === 'view'],
     ['notecard', 'Note cards', 'notecards noteref', b => b.kind === 'noteref'],
     ['pulled', 'Pulled-in components', 'pullin pull-in pullins ref refs', b => b.kind === 'ref'],
+    ['iteration', 'Iterations (each version)', 'iterations iterate version versions', b => typeof ITER !== 'undefined' && ITER.v(b) > 0],
   ],
   CKNOWN: new Set(['component', 'html', 'pdf', 'figure', 'table', 'plot', 'eq', 'deck', 'rec', 'ink', 'protocol', 'run', 'task', 'matcard', 'plate', 'timer', 'calc', 'view', 'noteref', 'ref']),
   CCOL: ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6', '#e34948'],

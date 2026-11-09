@@ -9,7 +9,9 @@
      its caption from the page under it, "from <file>" to go back to it.
      The scissors (the card's tools, the maximised page's bar, beside): every
      figure outlined, click one or drag a box round anything (Picture or
-     Equation); Esc or the scissors again ends it.
+     Equation); Esc or the scissors again ends it. V3.962: on the card the
+     scissors are "Snip figure" in its header, outside the page; a snip ends
+     clip mode, and one from the maximised page brings you back to the note.
    • What a figure is: an SVG, a canvas, a picture, a video, a table or a
      <figure>, at least 72 × 56 (a table under 2400 px tall), with the box
      around it that holds it and nothing else of its size — its heading, its
@@ -131,6 +133,8 @@ P.postMessage({sis:'snipready'},'*');})();<\/script>`,
     const el = h(cls + (HSNIP.on.has(b.id) ? '.on' : ''), { type: 'button', 'data-for': b.id, title: 'Snip a figure — every figure outlined: click one, or drag a box round anything (Esc ends)', on: { click: e => { e.stopPropagation(); e.preventDefault(); HSNIP.toggle(b.id); } } });
     el.innerHTML = CLIP.ICON + (text ? ' ' + text : ''); return el;
   },
+  /** V3.962: a snip ends clip mode; from the maximised page it brings you back to the note, where the snip is. */
+  after(src, fr) { HSNIP.toggle(src.id, false); const ov = fr && fr.closest('.embed-max'); if (ov && !ov.classList.contains('rd-docked')) MXHL.close(ov); },
   toggle(id, on) { on = on == null ? !HSNIP.on.has(id) : on; on ? HSNIP.on.add(id) : HSNIP.on.delete(id); $$(`.hs-btn[data-for="${id}"]`).forEach(b => b.classList.toggle('on', on)); HSNIP.set(id); },
   /** The picture: the page's copy drawn by html2canvas — the element alone (o.target), or the part under a box (o.rect, page px). */
   async canvas(fr, o, px) {
@@ -159,7 +163,7 @@ P.postMessage({sis:'snipready'},'*');})();<\/script>`,
       DB.beginGroup('clip');
       const rec = await MEDIA.add(new File([blob], `${clip.label} · ${clip.file}.${ext}`.replace(/[\\/:*?"<>|]+/g, '-'), { type: blob.type })), w = rec.w >= rec.h * .9 ? 476 : 336;
       const b = FIG.create(M.doc(src.docId), HSNIP.spot(src, fr, client, w), 1, 1); FIG.cells(b)[0].media = rec.id; b.fig.letters = false; b.label = clip.label; b.w = w; CLIP.lift(b); b.clip = clip;
-      M.saveBlockBody(b, { text: caption || '', marks: [] }); FIG.save(b); M.wire(b.id, src.id, CLIP.REL, true); changed(); CLIP.fresh(b);
+      M.saveBlockBody(b, { text: caption || '', marks: [] }); FIG.save(b); M.wire(b.id, src.id, CLIP.REL, true); changed(); HSNIP.after(src, fr); CLIP.fresh(b);
       $$('#toasts > *').forEach(t => t.remove()); toast(b.label + ' is on top of the page: drag it where you want it');
     } catch (e) { $$('#toasts > *').forEach(t => t.remove()); toast('Could not snip that: ' + (e.message || e)); }
     finally { HSNIP.busy = false; }
@@ -168,8 +172,8 @@ P.postMessage({sis:'snipready'},'*');})();<\/script>`,
   async equation(src, fr, o, page, client, label, tex) {
     if (HSNIP.busy) return; let snip = null;
     if (!tex) { HSNIP.busy = true; try { const cv = await HSNIP.canvas(fr, o, 1000); snip = cv.toDataURL('image/jpeg', .9); cv.width = cv.height = 0; } catch (e) { return toast('Could not snip that: ' + (e.message || e)); } finally { HSNIP.busy = false; } }
-    const clip = HSNIP.clipOf(src, o, page, label || 'Equation');
-    CLIP.eqEdit(src, { snip, tex, at: HSNIP.spot(src, fr, client, 392), name: clip.label, title: clip.label + ' · ' + clip.file, clip, ready: tex ? 'The page’s own LaTeX — check it, then Done.' : '' });
+    const clip = HSNIP.clipOf(src, o, page, label || 'Equation'); HSNIP.toggle(src.id, false);
+    CLIP.eqEdit(src, { snip, tex, at: HSNIP.spot(src, fr, client, 392), name: clip.label, title: clip.label + ' · ' + clip.file, clip, ready: tex ? 'The page’s own LaTeX — check it, then Done.' : '', done: () => HSNIP.after(src, fr) });
   },
   /** Back to where a clip came from: the page maximised or beside the note if either shows it, else its card. */
   show(fig) {
@@ -190,8 +194,9 @@ QUOTE.more = (more => srcId => (more ? more(srcId) : '') + HSNIP.SCRIPT)(QUOTE.m
       return f.kind === 'equation' ? HSNIP.equation(src, fr, o, d.page, d.client, f.name, f.tex) : HSNIP.picture(src, fr, o, d.page, d.client, label, f.cap); }
     if (d.sis === 'snipbox' && d.rect) { const o = d.target ? { target: d.target, crop: d.crop, size: d.size, rect: d.rect } : { rect: d.rect }; return d.as === 'equation' ? HSNIP.equation(src, fr, o, d.page, d.client, 'Equation', '') : HSNIP.picture(src, fr, o, d.page, d.client, 'Clip', ''); }
   });
-  // the scissors: the card's tools, the maximised page's bar, the bar of the page read beside the note
-  const eb = EMBED.body; EMBED.body = function (b, d, pane, ro) { const w = eb.apply(this, arguments), t = !ro && w && $('.embed-tools', w); if (t) { const s = HSNIP.btn(b); t.firstElementChild ? t.firstElementChild.after(s) : t.append(s); } return w; };   // after ⛶ (the first is the dark one)
+  // the scissors: "Snip figure" in the card's header (13zg docks the card's bar there, V3.962), the maximised page's bar, the bar of the page read beside the note
+  SLIM.BARS.html = '.hs-bar';
+  const eb = WIDGETS.html.body; WIDGETS.html.body = function (b, d, pane, ro) { const w = eb.apply(this, arguments); if (!ro && w && w.classList && w.classList.contains('embed') && HSNIP.editable(b, null)) w.append(h('div.hs-bar', HSNIP.btn(b, 'button.btn.xs.clip-btn.hs-btn', 'Snip figure'))); return w; };   // the card's body (V3.961 wrapped EMBED.body, which the card does not call)
   const em = EMBED.max; EMBED.max = function (b) { const r = em.apply(this, arguments), ov = [...$$('.embed-max')].pop(), bar = ov && $(':scope > .em-bar', ov);
     if (bar && HSNIP.editable(M.block(b.id), null)) { const at = [...bar.children].find(x => /Export ink labels/.test(x.textContent)) || $('a.btn', bar); const s = HSNIP.btn(b, 'button.btn.sm.clip-btn.hs-btn', 'Snip'); at ? at.after(s) : bar.append(s); }
     return r; };
