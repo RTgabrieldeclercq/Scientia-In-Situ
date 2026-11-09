@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "a5756f495b8c52b452e6dd5a725e2cffc5021594",
-  "subject": "V3.961: Scientia — snip figures out of HTML pages, /collection in the Atlas, paste from outside and between notes",
+  "commit": "2685d21fb8ca959e985c536b9696e369a4655f63",
+  "subject": "V3.962: Scientia — menus keep out of each other's way, \"Snip figure\" on the HTML card, Iteration",
   "date": "2026-11-09"
  },
- "cut": "6c94993b7b576bfa9371c9b67ea0e9e94cda2239",
+ "cut": "f8040b910f6021993640d7970cbe0b380d751e4d",
  "names": [
   "DESKLAB",
   "LABSYNC",

@@ -17,3 +17,12 @@
 .sp-l{stroke:var(--sc);stroke-width:2;fill:none;stroke-linecap:round} .sp-a{fill:var(--sc);opacity:.1}
 .sp-d{fill:var(--sc);stroke:var(--surface);stroke-width:2;cursor:pointer;transition:r .12s} .sp-d:hover{r:6.5}
 .canvas-host.far .story-plot{visibility:hidden}
+/* V3.962 · 13zzo · iterations: the version in the header (a click lists them), how it improved under it, as an image panel's caption */
+.iter-v{flex:none;border:0;border-radius:9px;padding:0 7px;margin:0 2px;height:16px;font:600 10px/16px var(--f-m);letter-spacing:.04em;background:var(--it,#0e7490);color:#fff;cursor:pointer}
+.iter-v:hover{filter:brightness(1.12)}
+.iter-why{border-top:1px dashed var(--rule);padding:5px 14px 8px 13px;cursor:text}
+.iter-why .iw-l{display:flex;gap:6px;align-items:baseline;font:600 10px var(--f-m);letter-spacing:.07em;text-transform:uppercase;color:var(--it,#0e7490);margin-bottom:1px;cursor:default}
+.iter-why .iw-from{font-weight:500;letter-spacing:0;text-transform:none;color:var(--ink-3);cursor:pointer} .iter-why .iw-from:hover{color:var(--ink)}
+.iter-ed{font-family:var(--f-b);font-size:14px;line-height:1.5;color:var(--ink);outline:0;min-height:1.5em;white-space:pre-wrap;overflow-wrap:anywhere}
+.iter-ed:empty::before{content:attr(data-ph);color:var(--ink-3);font-style:italic;pointer-events:none}
+.box.folded > .iter-why{display:none}
