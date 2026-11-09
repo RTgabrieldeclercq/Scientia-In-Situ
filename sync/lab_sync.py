@@ -33,8 +33,9 @@ DROP = {
 DROP_DIRS = ('install/',)                                      # the installer the lab site hands out
 # lab files outside scientia/ that come too, and where they go here
 MAP = {'scripts/tests/scientia-doi-lookup.test.mjs': 'tests/doi-lookup.test.mjs'}
-# ours alone: never in a cut, so a sync never touches them
-OURS = ('.gitattributes', '.gitignore', 'CLAUDE.md', 'sync/')
+# ours alone: never in a cut, so a sync never touches them (the notebook's lock among them; its hooks in serve.py and sisync.py
+# are our edits, carried like the others: CLAUDE.md lists them)
+OURS = ('.gitattributes', '.gitignore', 'CLAUDE.md', 'sync/', 'access.py', 'signin.html', 'src/20b-access.js', 'src/20b-access.css', 'tests/access.test.mjs')
 # the lab's code kept on purpose, as copies (they run offline here)
 COPIES = ('vendor/board/lab-board.html', 'vendor/rm/', 'vendor/page-layout.js', 'vendor/page-regions.js', 'vendor/wb-ink.js')
 # not scanned: the copies, the other libraries and the fonts (minified, base64)

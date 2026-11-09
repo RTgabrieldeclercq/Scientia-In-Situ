@@ -1,0 +1,5 @@
+/* 20b · the notebook's lock (20b-access.js): the sign-in over the app, the offline sign-in, the recovery key */
+html body .ovl.ac-ovl{z-index:2000;align-items:center}
+.ac-ovl .dv-card{box-shadow:var(--shadow-lg)}
+.ac-screen{position:fixed;inset:0;z-index:2000}
+.ac-code{font:600 18px var(--f-m);letter-spacing:.06em;padding:12px 14px;margin:10px 0 8px;border:1px dashed var(--rule-2);border-radius:8px;background:var(--paper);text-align:center;user-select:all;word-break:break-all}

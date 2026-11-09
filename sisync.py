@@ -24,6 +24,15 @@ def iso_local():
     return time.strftime('%Y-%m-%dT%H:%M:%S')
 
 
+def read_lines(path):
+    """ops.jsonl, line by line (serve.py's lock, access.py, puts its own in place of these two)."""
+    with open(path, encoding='utf-8') as f: return f.read().splitlines()
+
+
+def append_line(path, line):
+    with open(path, 'a', encoding='utf-8') as f: f.write(line + '\n')
+
+
 def scalar_list(v):
     return isinstance(v, list) and all(isinstance(x, (str, int, float)) for x in v)
 
@@ -79,13 +88,12 @@ class Sync:
         # changes made after the last write of record.json
         opsf = self.nb('.scientia', 'ops.jsonl')
         if opsf and os.path.exists(opsf):
-            with open(opsf, encoding='utf-8') as f:
-                for line in f:
-                    try: op = json.loads(line)
-                    except Exception: continue
-                    if op.get('sid') != self.sid or op.get('seq', 0) <= self.seq: continue
-                    self._apply_raw(op['store'], op['id'], op.get('rec'), op.get('del'))
-                    self.seq = op['seq']; self.ops.append(op); self.ver[(op['store'], op['id'])] = (op['seq'], op.get('dev'))
+            for line in read_lines(opsf):
+                try: op = json.loads(line)
+                except Exception: continue
+                if op.get('sid') != self.sid or op.get('seq', 0) <= self.seq: continue
+                self._apply_raw(op['store'], op['id'], op.get('rec'), op.get('del'))
+                self.seq = op['seq']; self.ops.append(op); self.ver[(op['store'], op['id'])] = (op['seq'], op.get('dev'))
         self.conflicts = self.load_json(self.nb('.scientia', 'conflicts.json'), None) or []
         self.atomic(self.nb('.scientia', 'sync.json'), json.dumps({'sid': self.sid}).encode())
 
@@ -156,8 +164,7 @@ class Sync:
         self.jseq += 1
         self.stores.setdefault('journal', {})[self.jseq] = {'seq': self.jseq, 'ts': op['ts'], 'store': store, 'id': rid, 'op': 'delete' if delete else ('put' if cur is not None else 'create'), 'prev': cur, 'group': 0, 'device': name}
         opsf = self.nb('.scientia', 'ops.jsonl')
-        if opsf:
-            with open(opsf, 'a', encoding='utf-8') as f: f.write(json.dumps(op) + '\n')
+        if opsf: append_line(opsf, json.dumps(op))
         return op
 
     def _conflict(self, kind, store, rid, fields, theirs, mine, dev, name):
