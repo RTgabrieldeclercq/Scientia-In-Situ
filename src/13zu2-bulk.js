@@ -15,6 +15,17 @@
      an HTML page pasted on a canvas is a quote wired to the file; anything
      else pasted on a canvas is a new component. Inside a text, paste is
      plain text as before. Move to… leaves a stub with a link (my #8).
+   • V3.961 (Gabe): copy and paste reach outside the notebook and between
+     notes. Ctrl+C with components selected (the lasso, Ctrl+click, or the
+     one clicked) and nothing highlighted copies them; pasted in another note
+     they are pulled in (references, where they sit relative to each other;
+     Ctrl+Shift+V: copies instead), in their own note they are copied. From
+     outside: a picture (a screenshot, an image copied from a page) becomes
+     an image panel — several, one panel — and a PDF, an HTML page, a
+     spreadsheet or slides copied in the Explorer becomes that component,
+     made by its own + Insert code; text becomes a component. Files pasted
+     while writing in a component go under it. A rich copy (Word, a web page)
+     brings a picture of itself too: its text wins.
    ========================================================================== */
 const BULK = {
   multi: null,
@@ -55,23 +66,86 @@ const BULK = {
 };
 /* ---------- copy and paste ---------- */
 const CLIPX = {
-  TYPE: 'application/x-scientia+json', last: null, at: null,
+  TYPE: 'application/x-scientia+json', last: null, at: null, armed: 0, shiftAt: 0,
   norm: s => String(s || '').replace(/\s+/g, ' ').trim(),
+  /** V3.961 — Ctrl+C on components (the lasso's, Ctrl+click's, or the one clicked) with no text highlighted: the clip is made and the
+      copy event is let through (cancelling beforecopy enables it with nothing selected), where the clipboard gets their text and, as
+      our own type, which they are; if no copy event comes, their text alone. */
+  keyCopy(e) {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || (e.key || '').toLowerCase() !== 'c' || $('.ovl') || $('.pop')) return;
+    const t = e.target, s = getSelection(); if (t && t.closest && t.closest('input,textarea,select,math-field')) return; if (s && s.rangeCount && !s.isCollapsed) return;
+    let sel = INK.sel && (INK.sel.items.length || LASSO2.boxes().length) ? INK.sel : null;
+    if (!sel) { const pane = App.panes().includes(App.pane) ? App.pane : null, b = pane && pane.sel && M.block(pane.sel); if (!b || b.status !== 'live' || pane.travel) return;
+      sel = { docId: pane.docId, items: b.kind === 'ink' ? ((b.ink && b.ink.strokes) || []).map((_, i) => ({ id: b.id, i })) : [], boxes: b.kind === 'ink' ? [] : [b.id], pane }; }
+    const keep = INK.sel; INK.sel = sel; let n; try { n = LASSO2.copy({ sys: false }); } finally { INK.sel = keep; } if (!n) return;
+    CLIPX.armed = Date.now(); setTimeout(() => { if (!CLIPX.armed) return; CLIPX.armed = 0; const C = LASSO2.clip; try { navigator.clipboard && navigator.clipboard.writeText((C && C.text) || '​').catch(() => { }); } catch { } }, 150);
+  },
   copy(e) {
+    if (CLIPX.armed && Date.now() - CLIPX.armed < 1000 && e.clipboardData) { const C = LASSO2.clip; CLIPX.armed = 0; e.clipboardData.setData('text/plain', (C && C.text) || '​');
+      if (C) e.clipboardData.setData(CLIPX.TYPE, JSON.stringify({ kind: 'boxes', docId: C.docId, ids: (C.refs || []).map(r => r.id) })); e.preventDefault(); return; }
     const s = getSelection(); if (!s.rangeCount || s.isCollapsed || !e.clipboardData) return; const n = s.anchorNode.nodeType === 3 ? s.anchorNode.parentElement : s.anchorNode; if (!n || !n.closest) return;
     const ed = n.closest('.ed'), box = ed && ed.closest('.box.cmp[data-id]');
     if (box && ed.contentEditable === 'true') { const b = M.block(box.dataset.id), sel = ED.selection(ed); if (!b || !sel) return; const text = s.toString(); e.clipboardData.setData('text/plain', text); e.clipboardData.setData(CLIPX.TYPE, JSON.stringify({ kind: 'text', blockId: b.id, docId: b.docId, from: sel.from, to: sel.to, text })); e.preventDefault(); return; }
     if (n.closest('.q-slot')) { const q = QUOTE.pdfSel(); if (q) CLIPX.last = { kind: 'quote', sel: q, text: q.exact, at: Date.now() }; }
   },
   paste(e) {
-    const t = e.target; if (t && t.closest && t.closest('input,textarea,[contenteditable="true"],[contenteditable="plaintext-only"],math-field')) return; if ($('.ovl') || $('.pop')) return;
-    const pane = CMD.ctx().pane; if (!pane || pane.travel || !pane.paper) return; const d = M.doc(pane.docId); if (!d) return;
-    const raw = e.clipboardData && e.clipboardData.getData(CLIPX.TYPE), text = e.clipboardData && e.clipboardData.getData('text/plain'); if (!raw && !text) return; e.preventDefault();
+    const t = e.target, cd = e.clipboardData; if (!cd) return;
+    const files = CLIPX.files(cd), raw = cd.getData(CLIPX.TYPE), text = cd.getData('text/plain'), rich = cd.getData('text/html');
+    const useFiles = files.length > 0 && !((text || '').trim() && files.every(f => CLIPX.sort(f) === 'image') && (rich || raw));   // Word, a web page: a picture of the copy comes with its text
+    if (t && t.closest && t.closest('input,textarea,[contenteditable="true"],[contenteditable="plaintext-only"],math-field')) {   // in a text: text is the editor's; files go under the component
+      const box = useFiles && !$('.ovl') && !$('.pop') && t.closest('.box.cmp[data-id]'), bp = box && DV(box), b = box && M.block(box.dataset.id); if (!bp || bp.travel || !b) return;
+      e.preventDefault(); e.stopPropagation(); return CLIPX.addFiles(M.doc(b.docId), { x: b.x || 0, y: (b.y || 0) + bp.boxH(b.id) + 28 }, files); }
+    if ($('.ovl') || $('.pop')) return;
+    const A = CLIPX.at, pane = A && Date.now() - A.t < 60000 && App.panes().includes(A.pane) ? A.pane : CMD.ctx().pane; if (!pane || pane.travel || !pane.paper) return; const d = M.doc(pane.docId); if (!d) return;
+    if (!raw && !text && !useFiles) return; e.preventDefault();
     const at = CLIPX.spot(pane); let j = null; try { j = raw && JSON.parse(raw); } catch (x) { }
+    const C = CLIPX.copied(j, text); if (C) return CLIPX.pull(pane, at, C, Date.now() - CLIPX.shiftAt < 1500);
+    if (useFiles) return CLIPX.addFiles(d, at, files);
     if (j && j.kind === 'text' && M.block(j.blockId)) { const src = M.block(j.blockId); if (src.docId !== d.id && src.status === 'live') { M.addBlock(d.id, null, { kind: 'ref', refItemId: null, refBlockId: src.id, x: at.x, y: at.y, w: 392 }); changed(); toast('Pulled in from ' + ((M.doc(src.docId) || {}).title || 'its note')); return; } return CLIPX.component(d, at, j.text, src, j); }
     const L = CLIPX.last; if (L && L.kind === 'quote' && text && CLIPX.norm(L.text) === CLIPX.norm(text) && M.block(L.sel.src)) return CLIPX.quote(d, at, L.sel);
     if (text) CLIPX.component(d, at, text.replace(/\r/g, ''), null, null);
   },
+  /** The components a copy holds: our own type (which they are), else the text the copy wrote; the clip when it is that copy. */
+  copied(j, text) {
+    const C = typeof LASSO2 !== 'undefined' ? LASSO2.clip : null, same = C && C.refs && j && Array.isArray(j.ids) && C.refs.length === j.ids.length && C.refs.every((r, i) => r.id === j.ids[i]);
+    if (j && j.kind === 'boxes' && Array.isArray(j.ids)) { if (same) return C; const B = j.ids.map(M.block).filter(b => b && b.status === 'live'); if (!B.length) return null;
+      return { strokes: [], boxes: B.filter(b => !['protocol', 'run', 'timer', 'rec'].includes(b.kind)).map(b => JSON.parse(JSON.stringify(b))), refs: B.map(b => ({ id: b.id, x: b.x || 0, y: b.y || 0 })), docId: j.docId || B[0].docId, x0: Math.min(...B.map(b => b.x || 0)), y0: Math.min(...B.map(b => b.y || 0)), text: '' }; }
+    if (j || !C || text == null) return null;
+    return text === (C.text || '​') || (C.text && CLIPX.norm(text) === CLIPX.norm(C.text)) ? C : null;
+  },
+  /** Copied components into this note: from another note they are pulled in (a reference each, as they sat; strokes are copied), from
+      this one — or with Ctrl+Shift+V — they are copied. */
+  pull(pane, at, C, copies) {
+    const d = M.doc(pane.docId); if (!d) return; const from = M.doc(C.docId), keep = LASSO2.clip;
+    if (copies || C.docId === d.id) { LASSO2.clip = C; LASSO2.drop(pane, at.x, at.y); if (keep !== C && keep) LASSO2.clip = keep; toast(C.docId === d.id ? 'Pasted — copies of them' : 'Pasted as copies'); return; }
+    if (C.strokes.length) { LASSO2.clip = Object.assign({}, C, { boxes: [] }); LASSO2.drop(pane, at.x, at.y); LASSO2.clip = keep; } else DB.beginGroup('pull');
+    const dx = at.x - C.x0, dy = at.y - C.y0; let n = 0, here = 0;
+    (C.refs || []).forEach(r => { const src = M.block(r.id), to = src && (src.kind === 'ref' ? M.block(src.refBlockId) : src); if (!to || to.status !== 'live' || src.status !== 'live') return; if (to.docId === d.id) { here++; return; }
+      M.addBlock(d.id, null, { kind: 'ref', refItemId: src.kind === 'ref' ? src.refItemId || null : null, refBlockId: to.id, x: Math.round((r.x + dx) / 14) * 14, y: Math.round((r.y + dy) / 14) * 14, w: 392 }); n++; });
+    M.touchDoc(d); IX.rebuild(); changed();
+    toast(n ? `Pulled in ${plural(n, 'component')} from “${(from && from.title) || 'their note'}”` + (here ? ` (${here} already here)` : '') + ' · Ctrl+Shift+V pastes copies instead' : here ? 'They are in this note already' : C.strokes.length ? 'Pasted the strokes' : 'Nothing to pull in: they were removed');
+  },
+  /** Files on the clipboard: a screenshot, an image copied from a page, files copied in the Explorer or the Finder. */
+  files(cd) { let F = []; try { F = [...(cd.items || [])].filter(i => i.kind === 'file').map(i => i.getAsFile()).filter(Boolean); } catch (x) { } if (!F.length) try { F = [...(cd.files || [])]; } catch (x) { } return F; },
+  sort(f) { const n = String(f.name || '').toLowerCase(), t = String(f.type || '').toLowerCase(), x = (n.match(/\.([a-z0-9]+)$/) || [])[1] || '';
+    if (t === 'application/pdf' || x === 'pdf') return 'pdf'; if (t === 'text/html' || x === 'html' || x === 'htm') return 'html';
+    if (t.startsWith('image/') || t.startsWith('video/') || /^(png|jpe?g|gif|webp|bmp|avif|mp4|webm|mov|m4v)$/.test(x)) return 'image';
+    if (/^(xlsx|xlsm|xls|ods|csv|tsv)$/.test(x) || /spreadsheet|ms-excel|text\/csv|tab-separated/.test(t)) return 'sheet'; if (/^(pptx|ppt|pptm|ppsx|odp)$/.test(x)) return 'deck'; return null; },
+  /** Each file as what it is, made by its own + Insert code: images (and videos) together in one image panel, a PDF, an HTML page, a table, slides. */
+  addFiles(d, at, files) {
+    const by = { image: [], pdf: [], html: [], sheet: [], deck: [] }, skip = []; files.forEach(f => { const k = CLIPX.sort(f); if (k) by[k].push(f); else skip.push(f.name || 'a file'); });
+    if (skip.length) toast('Can’t paste ' + skip.join(', ') + ': pictures, PDFs, HTML pages, spreadsheets and slides can be pasted', 4500);
+    let p = { x: at.x, y: at.y }; const next = () => { const q = p; p = { x: p.x + 42, y: p.y + 42 }; return q; }; DB.beginGroup('paste');
+    if (by.image.length) { const n = by.image.length, cols = n <= 4 ? n : 3, b = FIG.create(d, next(), Math.ceil(n / cols), cols, by.image.map(CLIPX.named)); b.fig.letters = n > 1; DB.put('blocks', b); toast(n > 1 ? plural(n, 'picture') + ' pasted as one image panel' : 'Pasted as an image panel'); }
+    by.pdf.forEach(f => CLIPX.through([f], () => PDFW.insert(d, next()))); by.html.forEach(f => CLIPX.through([f], () => EMBED.insert(d, next())));
+    by.sheet.forEach(f => CLIPX.through([f], () => TABLE.insert(d, next()))); by.deck.forEach(f => CLIPX.through([f], () => DECK.insert(d, next())));
+  },
+  /** A screenshot is "image.png": it gets the day and time instead. */
+  named(f) { if (f.name && !/^image\.(png|jpe?g|gif|webp|bmp)$/i.test(f.name)) return f; const ext = String((f.type || 'image/png').split('/')[1] || 'png').replace('jpeg', 'jpg').replace(/\W.*$/, ''), now = new Date();
+    return new File([f], 'Pasted ' + localDate(now) + ' ' + fmtTime(now).replace(/:/g, '.') + '.' + ext, { type: f.type || 'image/png' }); },
+  /** An insert run with these files standing in for the file dialog it opens (PLATE.pickFiles), so a pasted file is made exactly as an inserted one. */
+  through(files, run) { const pf = PLATE.pickFiles, stand = (cb, multiple) => { PLATE.pickFiles = pf; cb(multiple === false ? files.slice(0, 1) : files); }; PLATE.pickFiles = stand;
+    try { return run(); } finally { setTimeout(() => { if (PLATE.pickFiles === stand) PLATE.pickFiles = pf; }, 1500); } },
   spot(pane) { const A = CLIPX.at; if (A && A.pane === pane && Date.now() - A.t < 60000) return { x: Math.round(A.x / 14) * 14, y: Math.round(A.y / 14) * 14 }; const r = pane.paper.rect(), c = pane.paper.toWorld(r.left + r.width / 2, r.top + r.height / 2); return { x: Math.round((c.x - 196) / 14) * 14, y: Math.round((c.y - 60) / 14) * 14 }; },
   /** A new component; from a component of this note, its structures, terms and styles over the copied range come along. */
   component(d, at, text, src, j) {
@@ -111,4 +185,7 @@ const CLIPX = {
   addEventListener('message', e => { const d = e.data; if (!d || d.sis !== 'sel' || !d.text) return; const fr = [...document.querySelectorAll('iframe')].find(f => f.contentWindow === e.source); if (fr && fr._qsrc) CLIPX.last = { kind: 'quote', sel: { src: fr._qsrc, exact: d.text, prefix: d.prefix || '', suffix: d.suffix || '' }, text: d.text, at: Date.now() }; });
   document.addEventListener('copy', e => { try { CLIPX.copy(e); } catch (x) { } }, true);
   document.addEventListener('paste', e => { try { CLIPX.paste(e); } catch (x) { console.warn('[paste]', x); } }, true);
+  // V3.961 — Ctrl+C on components; beforecopy cancelled makes the copy event come with nothing selected; Ctrl+Shift+V pastes copies
+  document.addEventListener('keydown', e => { try { CLIPX.keyCopy(e); } catch (x) { console.warn('[copy]', x); } if ((e.ctrlKey || e.metaKey) && (e.key || '').toLowerCase() === 'v') CLIPX.shiftAt = e.shiftKey ? Date.now() : 0; }, true);
+  document.addEventListener('beforecopy', e => { if (CLIPX.armed && Date.now() - CLIPX.armed < 1000) e.preventDefault(); }, true);
 }
