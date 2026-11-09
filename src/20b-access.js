@@ -1,7 +1,7 @@
 /* ==========================================================================
    20b · The notebook's lock — this repository's own (access.py; the lab's
    scientia/ has none). A locked notebook opens only for the people in its
-   access list, each with their own ID and password, and serve.py keeps its
+   access list, each with their own username and password, and serve.py keeps its
    folder encrypted. Here: Settings → Access (making the lock, people,
    passwords, the recovery key, Lock now); the sign-in that comes back when
    the computer locks the notebook or a session ends (a request answered 423
@@ -48,7 +48,7 @@ const ACCESS = {
       };
       [idIn, pwIn].forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') go(); }));
       const ov = h('div.ovl.ac-ovl', h('div.dv-card', h('div.dv-logo', 'SiS'), h('h2', title), h('p', text),
-        h('label.f', h('span', 'ID'), idIn), h('label.f', h('span', 'Password'), pwIn), h('button.btn.pri', { on: { click: go } }, 'Sign in'),
+        h('label.f', h('span', 'Username'), idIn), h('label.f', h('span', 'Password'), pwIn), h('button.btn.pri', { on: { click: go } }, 'Sign in'),
         folder ? h('button.btn.ghost', { on: { click: () => done(false) } }, 'Cancel') : null, msg));
       document.body.append(ov); setTimeout(() => (idIn.value ? pwIn : idIn).focus(), 30);
     });
@@ -94,7 +94,7 @@ const ACCESS = {
     if (!st.lock) {
       if (!SYNC.local) return [h('p.serif.muted', { style: { marginTop: 0 } }, 'Not locked. A lock is made on the computer that runs the app.'), jobLine];
       if (!st.notebook) return [h('p.tiny.muted', 'Choose a notebook folder first (above): the lock belongs to the folder.')];
-      return [h('p.serif', { style: { marginTop: 0, fontSize: '14.5px' } }, 'Not locked: anyone who can open this app here, or copy its folders, can read the notebook. Locked, it opens only for the people you add, each with their own ID and password, and its folder is encrypted, so a copy of it, or of the app, is of no use without one of those passwords.'),
+      return [h('p.serif', { style: { marginTop: 0, fontSize: '14.5px' } }, 'Not locked: anyone who can open this app here, or copy its folders, can read the notebook. Locked, it opens only for the people you add, each with their own username and password, and its folder is encrypted, so a copy of it, or of the app, is of no use without one of those passwords.'),
         h('div.row', h('button.btn.pri', { on: { click: () => ACCESS.setupDialog() } }, st.crypto ? 'Lock this notebook…' : 'Install the encryption library, then lock…')), jobLine];
     }
     const me = st.me || {}, owner = me.role === 'owner', people = h('div.dv-list');
@@ -129,9 +129,9 @@ const ACCESS = {
   },
   setupDialog() {
     if (!(ACCESS.st || {}).crypto) return ACCESS.install();
-    const { f, els } = ACCESS.fields([['id', 'Your ID (what you sign in with)', 'text', 'username'], ['name', 'Your name'], ['pw', 'Password (8 characters or more)', 'password', 'new-password'], ['pw2', 'Password again', 'password', 'new-password']]);
+    const { f, els } = ACCESS.fields([['id', 'Your username (what you sign in with)', 'text', 'username'], ['name', 'Your name'], ['pw', 'Password (8 characters or more)', 'password', 'new-password'], ['pw2', 'Password again', 'password', 'new-password']]);
     modal({ title: 'Lock this notebook', wide: true, body: h('div',
-      h('p.serif', { style: { marginTop: 0 } }, 'You become its owner: you add and remove the people who can open it, each with their own ID and password.'),
+      h('p.serif', { style: { marginTop: 0 } }, 'You become its owner: you add and remove the people who can open it, each with their own username and password.'),
       h('ul.tiny', h('li', 'The record and its copies, images/, recordings/ and their transcripts are encrypted in place. Each file is checked before it replaces the plain one.'),
         h('li', 'The Markdown copy for Obsidian is removed and no longer written: it is plain text.'),
         h('li', 'Images, recordings and kept copies the app still holds in its own folder move into the notebook, encrypted.'),
@@ -147,7 +147,7 @@ const ACCESS = {
   showCode(code, first) {
     modal({ title: 'Your recovery key', body: h('div',
       h('p.serif', { style: { marginTop: 0 } }, first ? 'The notebook is locked; its folder is being encrypted (Settings → Access shows how far). ' : '',
-        'With this key, anyone can choose a new password for any ID in this notebook. Without it, a forgotten password cannot be replaced. Write it down and keep it away from this computer: it is shown only now.'),
+        'With this key, anyone can choose a new password for any username in this notebook. Without it, a forgotten password cannot be replaced. Write it down and keep it away from this computer: it is shown only now.'),
       h('div.ac-code', code), h('button.btn.sm', { on: { click: () => { navigator.clipboard && navigator.clipboard.writeText(code); toast('Copied'); } } }, 'Copy')),
       actions: [{ label: 'I have kept it', pri: true }] });
   },
@@ -161,10 +161,10 @@ const ACCESS = {
     poll();
   },
   addDialog(then) {
-    const { f, els } = ACCESS.fields([['id', 'Their ID (what they sign in with)'], ['name', 'Their name'], ['pw', 'A password for them (8 characters or more)', 'password', 'new-password'], ['pw2', 'Password again', 'password', 'new-password']]);
+    const { f, els } = ACCESS.fields([['id', 'Their username (what they sign in with)'], ['name', 'Their name'], ['pw', 'A password for them (8 characters or more)', 'password', 'new-password'], ['pw2', 'Password again', 'password', 'new-password']]);
     const role = h('select.inp', h('option', { value: 'member' }, 'Member: opens and uses the notebook'), h('option', { value: 'owner' }, 'Owner: also adds and removes people'));
     modal({ title: 'Add a person', body: h('div', h('div.grid2', els, h('label.f', h('span', 'Role'), role)),
-      h('p.tiny.muted', 'Give them their ID and password yourself. Once signed in, they change the password in Settings → Access.')),
+      h('p.tiny.muted', 'Give them their username and password yourself. Once signed in, they change the password in Settings → Access.')),
       actions: [{ label: 'Cancel' }, { label: 'Add', pri: true, run: async () => {
         if (f.pw !== f.pw2) { toast('The two passwords differ'); return false; }
         const j = await ACCESS.post('people/add', { id: f.id, name: f.name, role: role.value, password: f.pw });

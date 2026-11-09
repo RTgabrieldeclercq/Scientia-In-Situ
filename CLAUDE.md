@@ -37,7 +37,7 @@ node tests/access.test.mjs  # the lock end to end, on a copy of the app in a tem
 ## The notebook's lock (ours alone)
 
 Gabe asked for it in this repository only (6 Nov 2026): a locked notebook opens only for the people in its
-`.scientia/access.json` (each their own ID and password), and serve.py keeps `.scientia/`, `images/` and `recordings/`
+`.scientia/access.json` (each their own username and password), and serve.py keeps `.scientia/`, `images/` and `recordings/`
 encrypted, so a copied folder or app is no use without a password. README.md → "Locking the notebook" is how it is used.
 
 - `access.py` is the lock: the notebook key wrapped per person (scrypt) and under a recovery key; files sealed as 1 MiB

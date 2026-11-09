@@ -1,6 +1,6 @@
 """The notebook's lock (used by serve.py). This repository's own: the lab's scientia/ has no such thing.
 
-A locked notebook opens only for the people in its access list, each with their own ID and password, and what it holds is
+A locked notebook opens only for the people in its access list, each with their own username and password, and what it holds is
 encrypted on disk, so a copy of the folder, or of the app, is of no use on another computer without one of the passwords:
   .scientia/    the record, its daily and kept copies, the changes since (ops.jsonl), conflicts, the sync state
   images/       images, PDFs, videos, slides and pages you add
@@ -458,7 +458,7 @@ class Access:
     # ---------------- people ----------------
     def _check_new(self, pid, password):
         pid, password = norm_id(pid), norm_pw(password)
-        if not 2 <= len(pid) <= 40 or any(unicodedata.category(c)[0] in 'CZ' and c != ' ' for c in pid): raise ValueError('An ID is 2 to 40 letters, numbers or signs')
+        if not 2 <= len(pid) <= 40 or any(unicodedata.category(c)[0] in 'CZ' and c != ' ' for c in pid): raise ValueError('A username is 2 to 40 letters, numbers or signs')
         if len(password) < 8: raise ValueError('A password is at least 8 characters')
         return pid, password
 
@@ -480,7 +480,7 @@ class Access:
     def add(self, pid, name, role, password):
         with self.mx:
             acc = self.read(); pid, password = self._check_new(pid, password)
-            if any(x['id'] == pid for x in acc['people']): raise ValueError('Someone has that ID already')
+            if any(x['id'] == pid for x in acc['people']): raise ValueError('Someone has that username already')
             acc['people'].append(self._person(pid, name, 'owner' if role == 'owner' else 'member', password, self.key)); self.write(acc)
 
     def remove(self, pid):
@@ -529,7 +529,7 @@ class Access:
             acc = self.read(folder)
             if not acc: raise ValueError('This notebook is not locked')
             p, key = self._key_of(acc, pid, password)
-            if not p: self._failed(ip); raise ValueError('That ID and password do not open this notebook')
+            if not p: self._failed(ip); raise ValueError('That username and password do not open this notebook')
             self.fails.pop(ip, None); self._open_with(key, acc)
             return p, self._new_session(p, acc, ua)
 
@@ -543,7 +543,7 @@ class Access:
             key = unwrap(norm_code(code), acc['recovery'], b'recovery')
             p = next((x for x in acc['people'] if x['id'] == norm_id(pid)), None)
             if not key: self._failed(ip); raise ValueError('That recovery key does not open this notebook')
-            if not p: raise ValueError('Nobody has that ID')
+            if not p: raise ValueError('Nobody has that username')
             _, password = self._check_new(pid, password)
             p.update(wrap(password, key, b'person:' + p['id'].encode('utf-8'))); self.write(acc)
             self.fails.pop(ip, None); self._open_with(key, acc)

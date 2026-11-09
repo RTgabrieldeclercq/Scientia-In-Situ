@@ -34,14 +34,14 @@ pre{white-space:pre-wrap;font-size:11.5px;max-height:180px;overflow:auto;margin:
 <main>
   <div class="logo">SiS</div>
   <h1 id="h">Sign in</h1>
-  <p id="sub">This notebook is locked. Sign in with your ID and password.</p>
+  <p id="sub">This notebook is locked. Sign in with your username and password.</p>
   <div id="lib" hidden>
     <p>This computer needs the encryption library before the notebook can be opened.</p>
     <button id="inst">Install it</button>
     <pre id="log"></pre>
   </div>
   <form id="f" autocomplete="on">
-    <label>ID <input id="id" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
+    <label>Username <input id="id" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
     <label id="pwl">Password <input id="pw" name="password" type="password" autocomplete="current-password"></label>
     <div id="rec" hidden style="display:flex;flex-direction:column;gap:10px">
       <label>Recovery key <input id="code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"></label>
@@ -82,7 +82,7 @@ $('#forgot').onclick = () => {
   recovering = !recovering; $('#rec').hidden = !recovering; $('#pwl').hidden = recovering;
   $('#forgot').textContent = recovering ? 'Back to signing in' : 'Forgot your password?';
   $('#go').textContent = recovering ? 'Set the new password' : 'Sign in';
-  $('#sub').textContent = recovering ? 'The recovery key was shown once, when the notebook was locked. With it you choose a new password for your ID.' : 'This notebook is locked. Sign in with your ID and password.';
+  $('#sub').textContent = recovering ? 'The recovery key was shown once, when the notebook was locked. With it you choose a new password for your username.' : 'This notebook is locked. Sign in with your username and password.';
   msg('');
 };
 $('#f').onsubmit = async e => {

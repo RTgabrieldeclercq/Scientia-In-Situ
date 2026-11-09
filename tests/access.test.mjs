@@ -83,7 +83,7 @@ try {
   eq('the lock is made', made.body.ok, true);
   yes('a recovery key, in five groups', /^[0-9A-Z]{5}(-[0-9A-Z]{5}){4}$/.test(made.body.recovery), made.body.recovery);
   yes('the owner is signed in', made.cookie);
-  eq('the ID is kept in lower case', made.body.me.id, 'gabe');
+  eq('the username is kept in lower case', made.body.me.id, 'gabe');
   let gabe = made.cookie;
   const job = await jobDone(gabe);
   eq('the folder is encrypted', job && job.state, 'done');
