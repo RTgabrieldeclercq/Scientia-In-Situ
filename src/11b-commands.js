@@ -19,7 +19,7 @@
    ========================================================================== */
 const CMD = {
   list: [], by: {},
-  ALIAS: { rmpaper: 'paper', rmprotocol: 'protocol', rmaction: 'action', rmcollection: 'collection', 'material-new': 'newmaterial', 'equation-reg': 'registered', 'table-empty': 'emptytable', 'canvas-add': 'canvas', 'pull-barrier': 'barrier', 'pull-item': 'structure', 'pull-comp': 'component' },
+  ALIAS: { rmpaper: 'paper', rmprotocol: 'protocol', rmaction: 'action', rmcollection: 'labcollection', 'material-new': 'newmaterial', 'equation-reg': 'registered', 'table-empty': 'emptytable', 'canvas-add': 'canvas', 'pull-barrier': 'barrier', 'pull-item': 'structure', 'pull-comp': 'component' },
   add(c) { c.args = c.args || []; c.scope = c.scope || 'both'; c.group = c.group || 'Notebook'; CMD.list = CMD.list.filter(x => x.slash !== c.slash); CMD.list.push(c); CMD.by[c.slash] = c; (c.alias || []).forEach(a => { CMD.by[a] = c; }); return c; },
   /** The + Insert rows as commands (read when asked, because the rows arrive from every module and from the lab layer). */
   inserts() { return (typeof INSERTS === 'undefined' ? [] : INSERTS).map(x => ({ slash: CMD.ALIAS[x.id] || x.id, alias: ['insert-' + x.id], label: typeof x.label === 'function' ? 'Insert: ' + x.id : 'Insert: ' + String(x.label).replace(/…$/, ''), sub: typeof x.sub === 'string' ? x.sub : '', group: 'Insert', insert: x, args: [{ name: 'pick', kind: 'text', optional: true, rest: true, ask: 'What to pick in its picker' }], scope: 'both', run: (A, ctx) => CMD.insert(x, A.pick, ctx) })); },
@@ -45,8 +45,8 @@ const CMD = {
   },
   async resolve(c, args, ctx) {
     const given = Array.isArray(args) ? args.slice() : null, obj = !given && args && typeof args === 'object' ? args : {}, out = { _pick: obj._pick || null };
-    for (const a of c.args) { const K = CMD.KINDS[a.kind] || CMD.KINDS.text; let v = given ? (a.rest ? given.splice(0).join(' ') : given.shift()) : obj[a.name];
-      if (v == null || v === '') { if (a.optional) { out[a.name] = null; continue; } v = await K.ask(a, ctx); if (v == null || v === '') return null; }
+    for (const a of c.args) { const K = CMD.KINDS[a.kind] || CMD.KINDS.text; let v = given ? (a.many ? given.splice(0) : a.rest ? given.splice(0).join(' ') : given.shift()) : obj[a.name];
+      if (v == null || v === '' || (Array.isArray(v) && !v.length)) { if (a.optional) { out[a.name] = null; continue; } v = await K.ask(a, ctx); if (v == null || v === '') return null; }
       const r = await K.resolve(v, a, ctx); if (r == null) return null; out[a.name] = r; }
     return out;
   },
@@ -87,6 +87,16 @@ CMD.KINDS = {
   term: CMD.ent(() => DB.all('terms'), t => t.label, t => (M.project(t.projectId) || {}).name || ''),
   paper: CMD.ent(() => DB.all('library'), r => r.title || r.url || 'Untitled', r => LIB.shortRef ? LIB.shortRef(r) : ''),
   material: CMD.ent(() => DB.where('documents', d => d.type === 'resource' && !d.deleted), d => d.title || 'Material', d => M.docPath(d)),
+  /** V3.961 — the types of component /collection takes (14b ATLAS.items): the list leaves out the ones already on the line (p: the bar's parse). */
+  collect: {
+    list(q, ctx, a, p) { if (typeof ATLAS === 'undefined') return []; const w = String(q || '').trim().toLowerCase(), n = ATLAS.counts(), have = new Set((p ? p.toks.slice(0, p.argIndex) : []).map(t => (ATLAS.itemFor(t) || {}).id).filter(Boolean));
+      return ATLAS.items().filter(x => !have.has(x.id)).map(x => ({ x, s: !w ? 1 : x.token.startsWith(w) ? 4 : x.also.some(y => y.startsWith(w)) ? 3 : x.label.toLowerCase().includes(w) ? 2 : 0 })).filter(r => r.s > 0).sort((a, b) => b.s - a.s)
+        .map(r => ({ label: r.x.token, sub: r.x.label + ' · ' + (n.get(r.x.id) || 0), v: r.x.token })); },
+    resolve(v) { if (typeof ATLAS === 'undefined') return null; const ids = [], bad = [];
+      (Array.isArray(v) ? v : [v]).flatMap(t => String(t).split(/[\s,]+/)).filter(Boolean).forEach(t => { const it = ATLAS.itemFor(t); if (!it) bad.push(t); else if (!ids.includes(it.id)) ids.push(it.id); });
+      if (bad.length) toast('No such kind of component: ' + bad.join(', ') + ' — type /collection and a space for the list'); return ids.length ? ids : bad.length ? null : []; },
+    ask: () => Promise.resolve([]),
+  },
 };
 /** Yes or no, as a promise. */
 function askYes(title, text) { return new Promise(res => { let v = false; modal({ title, body: h('p.serif', { style: { marginTop: 0 } }, text), actions: [{ label: 'No' }, { label: 'Yes', pri: true, run: () => { v = true; } }], onClose: () => res(v) }); }); }
@@ -177,6 +187,7 @@ CMD.hand = m => { const map = { erase: 'eraser', hl: 'hl', pen: 'pen', lasso: 'l
   C('beside', 'Read a PDF or an HTML page beside the note', [A('component', 'component')], (A_, ctx) => { const b = A_.component; if (typeof RDOCK === 'undefined' || !RDOCK.KINDS[b.kind]) throw new Error('only a PDF or an HTML page reads beside the note'); if (!ctx.doc || b.docId !== ctx.doc.id) { App.go('#/doc/' + b.docId); setTimeout(() => RDOCK.open(M.block(b.id)), 600); } else RDOCK.open(b); return 'Beside: ' + M.blockName(b); }, { group: 'Go' });
   C('find', 'Search the notebook (the Atlas, with the words lit)', [A('text', 'text', { optional: true, rest: true, ask: 'Search for' })], A_ => { Search.q = A_.text || ''; Search.open(); }, { alias: ['search', 'atlas'], group: 'Find', sub: 'Ctrl+K' });
   C('quick', 'The quick search (the list)', [A('text', 'text', { optional: true, rest: true, ask: 'Search for' })], A_ => { Search.q = A_.text || ''; Search.open({ quick: true }); }, { group: 'Find', sub: 'Ctrl+Shift+K' });
+  C('collection', 'The Atlas with just these kinds of component', [A('kinds', 'collect', { optional: true, many: true, rest: true, ask: 'Which kinds of component?' })], A_ => { if (!A_.kinds || !A_.kinds.length) { if (typeof NAV === 'undefined') throw new Error('name them: /collection html image pdf'); setTimeout(() => NAV.wake('/collection '), 0); return 'Pick the kinds: click them, or type them'; } ATLAS.collect(A_.kinds); return 'Collection · ' + A_.kinds.map(id => (ATLAS.item(id) || {}).label).join(' · '); }, { alias: ['collect'], group: 'Find', sub: 'html image pdf table equation… — a space after it lists them all' });
   C('lens', 'A term’s lens', [A('term', 'term')], A_ => { App.go('#/lens/' + A_.term.id); return A_.term.label; }, { group: 'Find', scope: 'canvas' });
   /* in the text (13zzg SLASH.text does them, at the caret of the component being written in) */
   const T = (slash, label, o = {}) => C(slash, label, [], (A_, ctx) => { if (!ctx.el || typeof SLASH === 'undefined') throw new Error('type /' + slash + ' in a component'); return SLASH.text(slash, ctx); }, Object.assign({ group: 'Text', scope: 'text' }, o));

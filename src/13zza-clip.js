@@ -20,6 +20,8 @@
    equation editor — and becomes an equation component with the same
    `clip`. Each is wired to the paper ("clipped from"), and a paper's wires
    to its clips and quotes stay faint except those from the page it shows.
+   V3.961: an HTML page is snipped the same way (13zzm); its clips carry
+   `clip.kind` 'html' and come back here to say where they are from.
    ========================================================================== */
 const CLIP = {
   reg: new Map(), on: new Set(), cur: null, busy: false, REL: 'c:clipped from',
@@ -183,15 +185,21 @@ const CLIP = {
     if (r.art) r = Object.assign({ W: r.W, H: r.H }, r.art);
     try { snip = await CLIP.snip(m, n, r); } catch (e) { return toast('Could not snip that: ' + (e.message || e)); } finally { CLIP.busy = false; }
     const paper = src.label || (m.name || 'PDF').replace(/\.pdf$/i, ''), name = label || 'Equation', at = CLIP.spot(src, n, r, 392);   // where it was, before the editor covers it
-    MATH.editor({ tex: '', display: true, title: name + ' · ' + paper + ', p. ' + n, onSave: tex => { if (!tex) return;
+    CLIP.eqEdit(src, { snip, at, name, title: name + ' · ' + paper + ', p. ' + n, clip: { src: src.id, media: m.id, page: n, rect: [r.x / r.W, r.y / r.H, r.w / r.W, r.h / r.H].map(v => +clamp(v, 0, 1).toFixed(4)), label: name, file: paper } });
+  },
+  /** V3.961 (shared with an HTML page's snip, 13zzm): the equation editor over a snip (or LaTeX already read), and on Done an
+      equation component at `at`, lifted on top of what it came from, carrying `clip` and wired to it. */
+  eqEdit(src, { snip, tex = '', at, name, title, clip, ready = '' }) {
+    const from = clip && clip.kind === 'html' ? 'page' : 'paper';
+    MATH.editor({ tex, display: true, title, onSave: tex => { if (!tex) return;
       try { DB.beginGroup('clip');
-        const b = EQ.create(M.doc(src.docId), at, { tex }); b.label = name; CLIP.lift(b);
-        b.clip = { src: src.id, media: m.id, page: n, rect: [r.x / r.W, r.y / r.H, r.w / r.W, r.h / r.H].map(v => +clamp(v, 0, 1).toFixed(4)), label: name, file: paper };
-        EQ.syncText(b); DB.put('blocks', b); M.wire(b.id, src.id, CLIP.REL, true); changed(); CLIP.fresh(b); toast(name + ' is on top of the paper: drag it where you want it');
+        const b = EQ.create(M.doc(src.docId), at, { tex }); b.label = name; CLIP.lift(b); b.clip = clip;
+        EQ.syncText(b); DB.put('blocks', b); M.wire(b.id, src.id, CLIP.REL, true); changed(); CLIP.fresh(b); toast(name + ' is on top of the ' + from + ': drag it where you want it');
       } catch (e) { toast('Could not add the equation: ' + (e.message || e)); } } });   // never leave the editor stuck open
     const ed = [...$$('.meditor')].pop(), mf = ed && $('math-field', ed), ta = ed && $('.mtex', ed); if (!ed) return;
-    const note = h('div.clip-ocr'); ed.prepend(h('div.clip-eqhead', h('img.clip-snip', { src: snip, alt: 'The equation in the paper' }), note));
-    if (!CLIP.read || !mf) { note.textContent = 'Type it in, checking it against the snip above.'; return; }
+    const note = h('div.clip-ocr'); ed.prepend(h('div.clip-eqhead', snip ? h('img.clip-snip', { src: snip, alt: 'The equation in the ' + from }) : null, note));
+    if (ready) { note.textContent = ready; note.classList.add('ok'); return; }
+    if (!CLIP.read || !mf || !snip) { note.textContent = 'Type it in, checking it against the snip above.'; return; }
     note.textContent = 'Reading the equation from the snip…'; note.classList.add('busy');
     CLIP.read(snip).then(tex => { if (!ed.isConnected) return; note.classList.remove('busy');
       if ((mf.value || '').trim()) { note.textContent = 'Read — but you had started typing, so your version is kept.'; return; }   // never over what you typed
@@ -256,7 +264,8 @@ const CLIP = {
   },
   /** Back to where a clip came from: the paper beside the note or maximised if either holds it, else the card. */
   show(fig) {
-    const c = fig && fig.clip, src = c && M.block(c.src); if (!src || src.status !== 'live') return toast('The PDF it came from is gone');
+    const c = fig && fig.clip, src = c && M.block(c.src); if (c && c.kind === 'html' && typeof HSNIP !== 'undefined') return HSNIP.show(fig);   // V3.961: from an HTML page
+    if (!src || src.status !== 'live') return toast('The PDF it came from is gone');
     const host = $(`.embed-max[data-src="${src.id}"]`); if (host) return CLIP.scrollTo(host, src, c);
     App.jump(src.id, null); setTimeout(() => { const box = $(`.box[data-id="${src.id}"]`); if (box) CLIP.scrollTo(box, M.block(src.id), c); }, 380);
   },
@@ -290,7 +299,7 @@ const CLIP = {
   document.addEventListener('scroll', e => { if (e.target.closest && e.target.closest('.pdf-stage')) rewire(); }, true);
   // a clip says where it is from, and lies on top of the paper (lifted) until it is moved
   const bx = DocView.box; DocView.box = function (b, d, p) { const el = bx.apply(this, arguments); if (el && b && (b.kind === 'figure' || b.kind === 'eq') && b.clip) { const c = b.clip, src = M.block(c.src);
-      el.append(h('button.q-from.clip-from.nopan', { title: 'Show it in the paper', on: { click: ev => { ev.stopPropagation(); CLIP.show(M.block(b.id)); } } }, 'from ', h('b', c.file || (src && src.label) || 'the PDF'), ', p. ' + c.page, src && src.status === 'live' ? '' : ' (gone)'));
+      el.append(h('button.q-from.clip-from.nopan', { title: c.kind === 'html' ? 'Show it in the page' : 'Show it in the paper', on: { click: ev => { ev.stopPropagation(); CLIP.show(M.block(b.id)); } } }, 'from ', h('b', c.file || (src && src.label) || (c.kind === 'html' ? 'the page' : 'the PDF')), c.page ? ', p. ' + c.page : '', src && src.status === 'live' ? '' : ' (gone)'));
       if (CLIP.floats(b)) el.classList.add('clip-float'); }
     return el; };
   // moved: an ordinary box again (the next drawing would say so too; this is at once, after the drop)

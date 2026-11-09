@@ -18,3 +18,9 @@
 .at-edge i{width:8px;height:8px;border-radius:50%;flex:0 0 8px;align-self:center} .at-edge .s{color:var(--ink-3);font-family:var(--f-m);font-size:10.5px;white-space:nowrap}
 .at-from{margin-left:4px}
 @media (max-width:900px){.at-panel{display:none}}
+/* V3.961 · /collection: the row over the map — each type in its colour with its count, × to take it out */
+.at-coll{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid var(--rule)}
+.at-coll-h{font:600 12px/1.2 var(--f-d);margin-right:2px}
+.at-cc{padding-right:4px} .at-cn{font-family:var(--f-m);font-size:10.5px;color:var(--ink-3)}
+.at-cx{border:0;background:transparent;color:var(--ink-3);cursor:pointer;font-size:13px;line-height:1;padding:0 3px;border-radius:50%} .at-cx:hover{color:var(--bad);background:var(--surface-2)}
+.at-coll-cmd{margin-left:auto;font-family:var(--f-m)}

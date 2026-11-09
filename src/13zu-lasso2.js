@@ -98,13 +98,14 @@ const LASSO2 = {
   toggleHl() { const S = INK.selStrokes(); if (!S.length) return; const toHl = S.some(({ s }) => !s.hl); DB.beginGroup('ink');
     S.forEach(({ s }) => { if (toHl) { s.hl = true; s.w = 14; delete s.pr; delete s.o; } else { delete s.hl; s.w = INK.WIDTHS[INK.width] || 2.4; } });
     new Set(INK.sel.items.map(x => x.id)).forEach(id => { const b = M.block(id); INK.fit(b); DB.put('blocks', b); }); LASSO2.keep(INK.sel); toast(toHl ? 'Now highlighter strokes' : 'Now pen strokes'); },
-  copy() {
-    if (!INK.sel) return; const strokes = INK.selStrokes().map(({ b, s }) => ({ s: JSON.parse(JSON.stringify(s)), x: b.x, y: b.y })), boxes = LASSO2.boxes().filter(b => !['protocol', 'run', 'timer', 'rec'].includes(b.kind)).map(b => JSON.parse(JSON.stringify(b)));
-    let x0 = 1e9, y0 = 1e9; strokes.forEach(({ s, x, y }) => s.p.forEach(p => { x0 = Math.min(x0, x + p[0]); y0 = Math.min(y0, y + p[1]); })); boxes.forEach(b => { x0 = Math.min(x0, b.x || 0); y0 = Math.min(y0, b.y || 0); });
-    const text = boxes.map(b => (b.body && b.body.text) || '').filter(Boolean).join('\n\n');
-    LASSO2.clip = { strokes, boxes, at: Date.now(), x0, y0, text }; LASSO2.lastText = null;
-    try { navigator.clipboard && navigator.clipboard.writeText(text || '​').catch(() => { }); } catch { }
-    const n = strokes.length + boxes.length; toast(`Copied ${[strokes.length ? plural(strokes.length, 'stroke') : '', boxes.length ? plural(boxes.length, 'component') : ''].filter(Boolean).join(' and ')} — hold the pen button and tap to paste`, 3200); return n;
+  /** The selection into the clip; o.sys false: the system clipboard is written by the copy event instead (13zu2 CLIPX, V3.961). */
+  copy(o = {}) {
+    if (!INK.sel) return; const all = LASSO2.boxes(), strokes = INK.selStrokes().map(({ b, s }) => ({ s: JSON.parse(JSON.stringify(s)), x: b.x, y: b.y })), boxes = all.filter(b => !['protocol', 'run', 'timer', 'rec'].includes(b.kind)).map(b => JSON.parse(JSON.stringify(b)));
+    let x0 = 1e9, y0 = 1e9; strokes.forEach(({ s, x, y }) => s.p.forEach(p => { x0 = Math.min(x0, x + p[0]); y0 = Math.min(y0, y + p[1]); })); all.forEach(b => { x0 = Math.min(x0, b.x || 0); y0 = Math.min(y0, b.y || 0); });
+    const text = all.map(b => (b.body && b.body.text) || '').filter(Boolean).join('\n\n');
+    LASSO2.clip = { strokes, boxes, refs: all.map(b => ({ id: b.id, x: b.x || 0, y: b.y || 0 })), docId: INK.sel.docId, at: Date.now(), x0, y0, text }; LASSO2.lastText = null;
+    if (o.sys !== false) try { navigator.clipboard && navigator.clipboard.writeText(text || '​').catch(() => { }); } catch { }
+    const n = strokes.length + all.length; toast(`Copied ${[strokes.length ? plural(strokes.length, 'stroke') : '', all.length ? plural(all.length, 'component') : ''].filter(Boolean).join(' and ')} — Ctrl+V in another note pulls ${all.length > 1 ? 'them' : 'it'} in; the pen button and a tap pastes`, 3200); return n;
   },
   /** Put the clip down with its top-left at (x, y) in pane's note; returns the new selection. */
   drop(pane, x, y) {
@@ -123,7 +124,7 @@ const LASSO2 = {
     const wp = paper.toWorld(ev.clientX, ev.clientY), C = LASSO2.clip;
     let sys = null; try { sys = navigator.clipboard && navigator.clipboard.readText ? await navigator.clipboard.readText() : null; } catch { }
     const mine = C && (sys == null || sys === (C.text || '​') || (LASSO2.lastText && LASSO2.lastText.at < C.at && sys === LASSO2.lastText.text));
-    if (mine && C && (C.strokes.length || C.boxes.length)) { LASSO2.drop(pane, wp.x, wp.y); toast('Pasted'); return; }
+    if (mine && C && (C.strokes.length || C.boxes.length || (C.refs || []).length)) { if (typeof CLIPX !== 'undefined' && C.docId && C.docId !== pane.docId) return CLIPX.pull(pane, wp, C, false); LASSO2.drop(pane, wp.x, wp.y); toast('Pasted'); return; }
     const text = (sys != null && sys !== '​' ? sys : LASSO2.lastText && LASSO2.lastText.text) || ''; if (!text.trim()) return toast('Nothing copied yet — select with the pen button held, then Copy');
     // tapped inside a component's text: insert there
     const ed = document.elementsFromPoint(ev.clientX, ev.clientY).map(x => x.closest && x.closest('.box .ed[contenteditable="true"]')).find(Boolean);
@@ -173,8 +174,7 @@ const LASSO2 = {
   const bar = INK.bar; INK.bar = function (pane) { const r = bar.call(this, pane); const el = pane && pane.host && $('.ink-bar', pane.host);
     if (el) { $$('.ink-w', el).forEach((b, k) => b.addEventListener('click', () => { if (INK.sel) LASSO2.setWidth(k); })); $$('.ink-c', el).forEach((b, k) => b.addEventListener('click', () => { if (INK.sel && INK.sel.items.length) INK.recolor(k); })); }
     return r; };
-  // Ctrl+C copies the selection; text copied in the app is remembered for the pen's paste
-  document.addEventListener('keydown', e => { if (!INK.sel || !(e.ctrlKey || e.metaKey) || (e.key || '').toLowerCase() !== 'c') return; if (e.target.closest && e.target.closest('input,textarea,[contenteditable="true"]') && !getSelection().isCollapsed) return; e.preventDefault(); LASSO2.copy(); }, true);
+  // text copied in the app is remembered for the pen's paste (Ctrl+C on components: 13zu2 CLIPX.keyCopy)
   document.addEventListener('copy', () => { const t = String(getSelection() || ''); if (t.trim()) LASSO2.lastText = { text: t, at: Date.now() }; }, true);
   // the barrel button's right-click never opens the menu on the paper
   document.addEventListener('contextmenu', e => { if (e.pointerType === 'pen' && e.target.closest && e.target.closest('.paper')) { e.preventDefault(); e.stopPropagation(); } }, true);

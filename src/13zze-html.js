@@ -101,8 +101,12 @@ if(document.readyState==='complete')setTimeout(start,0);else window.addEventList
   /** The page's side: in ink mode the pen (and the mouse, when it draws) writes here, before the quote script's pen; each
       stroke is pinned to the element it starts on (path + fraction, as the notes are) and drawn over the page in one SVG
       layer. Asked, it sends a frozen copy of itself (its HTML as it is now: canvases as pictures, the values typed, no
-      scripts, no ink) for the app to draw — a sandboxed page cannot draw itself (html2canvas needs a frame it can reach). */
+      scripts, no ink) for the app to draw — a sandboxed page cannot draw itself (html2canvas needs a frame it can reach).
+      V3.961: each SVG element carries the styles it was drawn with (SVP; html2canvas draws an SVG as a picture of it, which
+      keeps no stylesheet), boxes scrolled sideways or down say how far (data-sis-sx / -sy), and the element asked for
+      (`mark`, a path) is marked data-sis-snip — the snip (13zzm) draws that element alone, without those in `hide`. */
   INKSCRIPT: `<script>(function(){var P=window.parent,NS='http://www.w3.org/2000/svg',ON=false,M={},INKS=[],cur=null,svg=null,live=null,gone={},eat=false,TS=null,penAt=0;
+var SVP=['fill','fill-opacity','fill-rule','stroke','stroke-width','stroke-opacity','stroke-dasharray','stroke-dashoffset','stroke-linecap','stroke-linejoin','stroke-miterlimit','opacity','visibility','display','color','stop-color','stop-opacity','font-family','font-size','font-weight','font-style','text-anchor','dominant-baseline','letter-spacing','word-spacing','paint-order','text-decoration','white-space'];
 function kids(p){return [].filter.call(p.children,function(c){return !(c.tagName==='MARK'&&c.classList.contains('sis-q'));});}
 function pathOf(el){var a=[];while(el&&el.parentElement&&el!==document.body){a.unshift(kids(el.parentElement).indexOf(el));el=el.parentElement;}return a.join('/');}
 function byPath(s){var el=document.body;if(!s)return el;var a=String(s).split('/');for(var i=0;i<a.length&&el;i++)el=kids(el)[+a[i]];return el||null;}
@@ -135,9 +139,12 @@ else if(d.sis==='inks'){INKS=d.list||[];gone={};if(live){live.remove();live=null
 else if(d.sis==='inkbox'){var L={},A={};[].forEach.call(layer().querySelectorAll('path[data-id]'),function(p){var b=p.getBBox(),m=p.transform.baseVal.consolidate(),tx=m?m.matrix.e:0,ty=m?m.matrix.f:0,l=p.getAttribute('data-l'),r=L[l]||[1e9,1e9,-1e9,-1e9],w=+(p.getAttribute('stroke-width')||0)/2;L[l]=[Math.min(r[0],b.x+tx-w),Math.min(r[1],b.y+ty-w),Math.max(r[2],b.x+b.width+tx+w),Math.max(r[3],b.y+b.height+ty+w)];A[p.getAttribute('data-id')]=[tx,ty];});
 P.postMessage({sis:'inkbox',tag:d.tag,labels:L,anchors:A,page:[Math.max(document.documentElement.scrollWidth,innerWidth),Math.max(document.documentElement.scrollHeight,innerHeight)]},'*');}
 else if(d.sis==='freeze'){var c=document.documentElement.cloneNode(true),src=document.querySelectorAll('canvas'),dst=c.querySelectorAll('canvas'),fi=document.querySelectorAll('input,textarea,select'),fo=c.querySelectorAll('input,textarea,select');
+var A0=document.documentElement.querySelectorAll('*'),B0=c.querySelectorAll('*'),T=d.mark!=null?byPath(d.mark):null,HD=(d.hide||[]).map(byPath).filter(function(x){return x&&x!==document.body;}),nsv=0;
+for(var q=0;q<A0.length&&q<B0.length;q++){var a0=A0[q],b0=B0[q];if(a0===T)b0.setAttribute('data-sis-snip','');if(HD.indexOf(a0)>=0)b0.setAttribute('data-sis-hide','');if(a0.scrollLeft||a0.scrollTop){b0.setAttribute('data-sis-sx',a0.scrollLeft);b0.setAttribute('data-sis-sy',a0.scrollTop);}
+if(a0 instanceof SVGElement&&nsv<40000&&(!T||T.contains(a0))&&!(a0.closest&&a0.closest('.sis-ink,.sis-snip'))){nsv++;var cs0=getComputedStyle(a0),st0='';for(var k0=0;k0<SVP.length;k0++){var v0=cs0.getPropertyValue(SVP[k0]);if(v0)st0+=SVP[k0]+':'+v0+';';}b0.setAttribute('style',(b0.getAttribute('style')||'')+';'+st0);}}
 for(var i=0;i<src.length&&i<dst.length;i++){try{var R=src[i].getBoundingClientRect(),im=document.createElement('img');im.src=src[i].toDataURL();im.setAttribute('style',(src[i].getAttribute('style')||'')+';width:'+R.width+'px;height:'+R.height+'px');dst[i].replaceWith(im);}catch(x){}}
 for(var j=0;j<fi.length&&j<fo.length;j++){var a=fi[j],b=fo[j],y=(a.type||'').toLowerCase();if(y==='checkbox'||y==='radio'){if(a.checked)b.setAttribute('checked','');else b.removeAttribute('checked');}else if(a.tagName==='TEXTAREA')b.textContent=a.value;else if(a.tagName==='SELECT'){[].forEach.call(b.options,function(o,k){if(a.options[k]&&a.options[k].selected)o.setAttribute('selected','');else o.removeAttribute('selected');});}else b.setAttribute('value',a.value);}
-[].forEach.call(c.querySelectorAll('script,.sis-ink,.sis-note,iframe'),function(x){x.remove();});
+[].forEach.call(c.querySelectorAll('script,.sis-ink,.sis-note,.sis-snip,iframe'),function(x){x.remove();});
 P.postMessage({sis:'frozen',tag:d.tag,html:'<!doctype html>'+c.outerHTML,w:document.documentElement.clientWidth||innerWidth,h:Math.max(document.documentElement.scrollHeight,innerHeight)},'*');}});
 window.addEventListener('resize',function(){if(INKS.length)paint();});
 function watch(){if(window.ResizeObserver&&document.body)new ResizeObserver(function(){if(INKS.length)paint();}).observe(document.body);}
@@ -185,18 +192,29 @@ P.postMessage({sis:'inkready'},'*');})();<\/script>`,
   ask(fr, msg, ms = 30000) { const tag = uid('t'); return new Promise((res, rej) => { HTMLX.wait.set(tag, res); fr.contentWindow.postMessage(Object.assign({ tag }, msg), '*'); setTimeout(() => { if (HTMLX.wait.delete(tag)) rej(new Error('the page did not answer')); }, ms); }); },
   h2c: () => { const el = document.getElementById('wk-html2canvas'); return el ? el.textContent : ''; },
   /** A frozen page drawn into a picture: in a hidden frame of this app where no script can run (sandbox without
-      allow-scripts), as wide as the page was shown, cut to rect [x, y, w, h] at twice the size. */
-  async render(fz, rect) {
+      allow-scripts), as wide as the page was shown, cut to rect [x, y, w, h] at twice the size. V3.961: after its fonts
+      (2.5 s at most), with its boxes scrolled as they were; o = { mark: the element marked in the freeze alone, on the
+      background it sits on; scale; canvas: the canvas rather than a PNG }. */
+  async render(fz, rect, o = {}) {
     if (!window.html2canvas) { const code = HTMLX.h2c(); if (!code) throw new Error('the page drawer is missing from this build'); (0, eval)(code); }
     const fr = h('iframe', { sandbox: 'allow-same-origin', 'aria-hidden': 'true', style: { position: 'fixed', left: '-20000px', top: '0', width: fz.w + 'px', height: fz.h + 'px', border: '0', visibility: 'hidden' } });
     document.body.append(fr);
     try {
       await new Promise(res => { fr.onload = res; fr.srcdoc = fz.html; setTimeout(res, 5000); }); await new Promise(r => setTimeout(r, 250));
       const doc = fr.contentDocument; if (!doc) throw new Error('the copy could not be opened');
-      const cv = await window.html2canvas(doc.documentElement, { x: rect[0], y: rect[1], width: rect[2], height: rect[3], scale: 2, backgroundColor: '#ffffff', logging: false, useCORS: true, scrollX: 0, scrollY: 0, windowWidth: fz.w, windowHeight: fz.h });
-      return cv.toDataURL('image/png');
+      try { await Promise.race([doc.fonts && doc.fonts.ready, new Promise(r => setTimeout(r, 2500))]); } catch { }
+      $$('[data-sis-sx]', doc).forEach(el => { el.scrollLeft = +el.getAttribute('data-sis-sx') || 0; el.scrollTop = +el.getAttribute('data-sis-sy') || 0; });
+      const el = o.mark ? doc.querySelector('[data-sis-snip]') : null; if (o.mark && !el) throw new Error('that part of the page is not in its copy');
+      $$('[data-sis-hide]', doc).forEach(x => { x.style.display = 'none'; });   // a panel's heading and caption: the clip's label and text
+      const cv = el ? await window.html2canvas(el, { scale: o.scale || 2, backgroundColor: HTMLX.bg(el), logging: false, useCORS: true })
+        : await window.html2canvas(doc.documentElement, { x: rect[0], y: rect[1], width: rect[2], height: rect[3], scale: o.scale || 2, backgroundColor: '#ffffff', logging: false, useCORS: true, scrollX: 0, scrollY: 0, windowWidth: fz.w, windowHeight: fz.h });
+      return o.canvas ? cv : cv.toDataURL('image/png');
     } finally { fr.remove(); }
   },
+  /** The colour an element sits on: its own background, else the nearest one behind it (mostly opaque), else white. */
+  bg(el) { const x = HTMLX._px || (HTMLX._px = h('canvas', { width: 1, height: 1 }).getContext('2d', { willReadFrequently: true }));
+    for (let n = el; n && n.nodeType === 1; n = n.parentElement) { x.clearRect(0, 0, 1, 1); x.fillStyle = 'rgba(0,0,0,0)'; x.fillStyle = n.ownerDocument.defaultView.getComputedStyle(n).backgroundColor; x.fillRect(0, 0, 1, 1);   // any colour syntax (color-mix, oklch…) read as pixels
+      const d = x.getImageData(0, 0, 1, 1).data; if (d[3] > 128) return `rgb(${d[0]},${d[1]},${d[2]})`; } return '#ffffff'; },
   /** ⋯ → Export ink labels: each label, cropped from the page with the ink on it, as an image panel connected to the page. */
   async exportInk(srcId) {
     const b = M.block(srcId); if (!b || !HTMLX.inks(b).length) return toast('No ink in this page yet — write on it with the pen');
