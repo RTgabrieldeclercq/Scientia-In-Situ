@@ -189,12 +189,12 @@ const CLIP = {
   },
   /** V3.961 (shared with an HTML page's snip, 13zzm): the equation editor over a snip (or LaTeX already read), and on Done an
       equation component at `at`, lifted on top of what it came from, carrying `clip` and wired to it. */
-  eqEdit(src, { snip, tex = '', at, name, title, clip, ready = '' }) {
+  eqEdit(src, { snip, tex = '', at, name, title, clip, ready = '', done }) {
     const from = clip && clip.kind === 'html' ? 'page' : 'paper';
     MATH.editor({ tex, display: true, title, onSave: tex => { if (!tex) return;
       try { DB.beginGroup('clip');
         const b = EQ.create(M.doc(src.docId), at, { tex }); b.label = name; CLIP.lift(b); b.clip = clip;
-        EQ.syncText(b); DB.put('blocks', b); M.wire(b.id, src.id, CLIP.REL, true); changed(); CLIP.fresh(b); toast(name + ' is on top of the ' + from + ': drag it where you want it');
+        EQ.syncText(b); DB.put('blocks', b); M.wire(b.id, src.id, CLIP.REL, true); changed(); if (done) done(b); CLIP.fresh(b); toast(name + ' is on top of the ' + from + ': drag it where you want it');
       } catch (e) { toast('Could not add the equation: ' + (e.message || e)); } } });   // never leave the editor stuck open
     const ed = [...$$('.meditor')].pop(), mf = ed && $('math-field', ed), ta = ed && $('.mtex', ed); if (!ed) return;
     const note = h('div.clip-ocr'); ed.prepend(h('div.clip-eqhead', snip ? h('img.clip-snip', { src: snip, alt: 'The equation in the ' + from }) : null, note));
