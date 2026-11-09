@@ -29,7 +29,7 @@ python sync/lab_sync.py scan --all                          # any line in the ap
 
 ```bash
 python build.py             # src/ + vendor/ + fonts.css → scientia.html; vendor/board/lab-board.html + board/ → board.html
-python serve.py             # or launch.bat: http://localhost:8766/scientia.html (SIS_PORT, SIS_CONFIG, SIS_NOBROWSER for tests)
+python serve.py             # or launch.bat (builds first, then serves): http://localhost:8766/scientia.html (SIS_PORT, SIS_CONFIG, SIS_NOBROWSER for tests)
 node tests/doi-lookup.test.mjs
 node tests/access.test.mjs  # the lock end to end, on a copy of the app in a temp folder (needs `cryptography`)
 ```

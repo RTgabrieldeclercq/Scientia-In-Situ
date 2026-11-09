@@ -23,7 +23,7 @@ The app as it stands in the McGhee Lab's repository (`scientia/`), **without the
 
 If you don't see recent changes, close any old server window and start `launch.bat` again. It now stops an older server still holding port 8766 and turns browser caching off. Hover the SiS logo to see the build. If this browser still holds the earlier demo data, the app offers to reload the new demo; the offer never wipes anything without asking.
 
-Double-click `launch.bat` (needs Python). It serves the folder at `http://localhost:8766/scientia.html` and opens it.
+Double-click `launch.bat` (needs Python). It builds the app from `src/` (so a fresh clone or a `git pull` opens the current code), then serves the folder at `http://localhost:8766/scientia.html` and opens it.
 Keep the port fixed: storage belongs to the origin, so another port means another, empty database.
 Opening the file directly (`file://`) works, but then storage can't be made persistent, DOI lookup fails and folder snapshots are unavailable.
 
