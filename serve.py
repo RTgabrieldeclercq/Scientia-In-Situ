@@ -102,6 +102,10 @@ except Exception as e:
 STT = Transcriber(rec_dir)
 SYNC = Sync(nb, atomic, lambda p, d=None: load_json(p, d) if p else d, os.path.dirname(CONFIG))
 ACCESS.attach(SYNC, STT, SLIDES)   # what they write into a locked notebook is sealed too
+# V3.964: a notebook whose files are sealed by a lock this copy cannot open is not ours to touch — not even to sync: read
+# as empty, it would look like a wiped notebook to every device.
+SEALED = 'This notebook is locked: its files are sealed. Sign in to it, or take its lock off, before it can be used.'
+def sealed(): return SYNC.ensure() and SYNC.sealed
 
 # ---------------- other devices: what this computer can be reached at ----------------
 def tailscale_exe():
@@ -293,6 +297,7 @@ class H(http.server.SimpleHTTPRequestHandler):
         if p == '/sw.js': return self._text(SW, 'text/javascript')
         if p == '/manifest.webmanifest': return self._text(MANIFEST, 'application/manifest+json')
         if p == '/icon.svg': return self._text(ICON, 'image/svg+xml')
+        if p.startswith('/api/sync/') and sealed(): return self._json(423, {'ok': False, 'sealed': True, 'error': SEALED})
         if p == '/api/sync/hello':
             w = self.who(); on = SYNC.ensure()
             return self._json(200, {'ok': True, 'auth': bool(w), 'local': bool(w and w.get('local')), 'device': (w or {}).get('name'), 'deviceId': (w or {}).get('id'),
@@ -338,6 +343,7 @@ class H(http.server.SimpleHTTPRequestHandler):
         u = urlparse(self.path); q = parse_qs(u.query)
         if ACCESS.route(self, u.path, True): return
         if not self.gate(u.path, True): return
+        if (u.path.startswith('/api/sync/') or u.path in ('/api/snapshot', '/api/vault')) and sealed(): return self._json(423, {'ok': False, 'sealed': True, 'error': SEALED})
         if u.path == '/api/sync/push':
             if not SYNC.ensure(): return self._json(409, {'ok': False, 'error': 'no notebook folder'})
             _, obj = self._obj(512 * 1024 ** 2); obj = obj or {}; w = self.who() or {}
@@ -471,11 +477,20 @@ class H(http.server.SimpleHTTPRequestHandler):
         return self._json(200, {'ok': True, 'wrote': wrote, 'removed': removed})
 
 class Server(http.server.ThreadingHTTPServer):
+    # V3.964: one Scientia per port. Windows let a second copy bind over a listening one (SO_REUSEADDR), and then every
+    # connection went to one of them at random — the tablet, the browser and a phone each talking to a different app.
+    allow_reuse_address = False
+    def server_bind(self):
+        if os.name == 'nt': self.socket.setsockopt(socket.SOL_SOCKET, getattr(socket, 'SO_EXCLUSIVEADDRUSE', -5), 1)
+        super().server_bind()
     def handle_error(self, request, client_address):
         if isinstance(sys.exc_info()[1], (ConnectionAbortedError, ConnectionResetError, BrokenPipeError)): return
         super().handle_error(request, client_address)
 
-srv = Server(('', PORT), H)
+try: srv = Server(('', PORT), H)
+except OSError as e:
+    print(f'Port {PORT} is already in use: another Scientia In Situ is running on this computer (the installed app, or a launch.bat window). Quit it first — two copies cannot share a notebook. ({e})')
+    sys.exit(3)
 if not os.environ.get('SIS_NOBROWSER'): threading.Timer(0.6, lambda: webbrowser.open(f'http://localhost:{PORT}/scientia.html')).start()
 print(f'Scientia In Situ on http://localhost:{PORT}/scientia.html  (close this window to stop)')
 print(f'Notebook folder: {notebook() or ACCESS.closed() or "not chosen yet — Settings → Notebook folder"}')
