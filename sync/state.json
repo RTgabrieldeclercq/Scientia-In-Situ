@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "8bbfc48c1e99e3fa3f8221102458b9f21e44a6da",
-  "subject": "V3.966: Scientia — the Atlas in 3D: nests, with terms and papers orbiting the nest they belong to",
+  "commit": "9ec908cbd29c80c267e236dc6f9e782902037f59",
+  "subject": "V3.967: Scientia — Iteration as a deck, a Troubleshooting kind, the Synthesis at the end of an experiment",
   "date": "2026-11-10"
  },
- "cut": "c53b0bcde9ee15cc582562c27cb6c9678faf208a",
+ "cut": "0f1b20f52154bfcb4f22207f07ed6016fd952efb",
  "names": [
   "DESKLAB",
   "LABSYNC",
