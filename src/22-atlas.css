@@ -24,3 +24,26 @@
 .at-cc{padding-right:4px} .at-cn{font-family:var(--f-m);font-size:10.5px;color:var(--ink-3)}
 .at-cx{border:0;background:transparent;color:var(--ink-3);cursor:pointer;font-size:13px;line-height:1;padding:0 3px;border-radius:50%} .at-cx:hover{color:var(--bad);background:var(--surface-2)}
 .at-coll-cmd{margin-left:auto;font-family:var(--f-m)}
+/* V3.963 · 14c note terms: a term that lives in one note, its map drawn by the Atlas */
+.nterm{display:flex;flex-direction:column;gap:6px;padding:2px 0}
+.nt-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.nt-name{flex:1 1 180px;font:600 15px/1.3 var(--f-d)}
+.nt-seg button:disabled{opacity:.4;cursor:not-allowed}
+.nt-tools{display:inline-flex;gap:4px}
+.nt-forms{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.nt-form{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--rule-2);border-radius:999px;padding:1px 4px 1px 9px;font:500 12px/1.4 var(--f-d);background:var(--surface)}
+.nt-fx{border:0;background:transparent;color:var(--ink-3);cursor:pointer;font-size:13px;line-height:1;padding:0 3px;border-radius:50%} .nt-fx:hover{color:var(--bad);background:var(--surface-2)}
+.nt-add{flex:1 1 160px;min-width:140px;padding:3px 8px;font-size:12px}
+.nt-say.stale{color:var(--warn,#b7791f)}
+.nt-empty{border:1px dashed var(--rule-2);border-radius:10px;padding:28px 16px;text-align:center;color:var(--ink-3);font-size:12.5px}
+.nt-stage{display:flex;border:1px solid var(--rule);border-radius:10px;overflow:hidden;background:var(--paper)}
+.nt-map{flex:1;min-width:0;display:flex;flex-direction:column}
+.nt-crumb{display:flex;align-items:center;gap:4px;padding:4px 8px;border-bottom:1px solid var(--rule);font-size:11.5px;min-height:26px}
+.nt-cb{border:0;background:transparent;font:500 12px/1.3 var(--f-d);color:var(--ink-3);cursor:pointer;padding:2px 4px;border-radius:5px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .nt-cb.on{color:var(--ink)} button.nt-cb:hover{background:var(--surface-2)}
+.nt-cv{display:block;width:100%;background:radial-gradient(circle at 50% 45%,color-mix(in srgb,var(--ink) 4%,var(--paper)),var(--paper) 70%);cursor:grab;touch-action:none}
+.nt-panel{width:220px;flex:0 0 220px;border-left:1px solid var(--rule);padding:8px 10px;overflow:auto;font-size:12px}
+.nt-stage.big{flex:1;border:0;border-radius:0} .nt-stage.big .nt-panel{width:320px;flex-basis:320px;font-size:12.5px}
+.nt-snip{margin-top:8px;font:13px/1.45 var(--f-s,serif);color:var(--ink-2)} .nt-snip mark{background:color-mix(in srgb,#90BE6D 45%,transparent);color:inherit;border-radius:2px;padding:0 1px}
+.nt-max{position:fixed;inset:0;z-index:1200;display:flex;flex-direction:column;background:var(--paper);animation:tin .15s}
+::highlight(nterm){text-decoration:underline dotted #5a9a3a 2px;text-underline-offset:3px}
+.nt-hint{white-space:nowrap;cursor:help}

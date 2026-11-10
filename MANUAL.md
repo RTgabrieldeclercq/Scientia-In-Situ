@@ -282,6 +282,16 @@ The same strip has three more keys: `/` reuses an existing structure, **W** mark
   - click a box's header to open that note.
 - A component inside a **region** gives its term "secondary sources": the region's other components, shown as a dashed card.
 
+### Terms in one note
+- **+ Insert → Term in this note…** (or `/noteterm`) makes a term that lives in this note only. Type how it is written; add its other forms on the component (**+ another way it is written**, Enter). Forms follow the same rules as a term's other forms: with capitals they match only with those capitals.
+- **Where it comes from:** **Theme**, **Project** or **Notebook** — the note's own theme or project, or everything. A scope the note doesn't have is greyed out.
+- **⟳ Fetch** pulls every component there that uses one of the forms and draws them as a small Atlas in the component: the term in the middle, its components around it, the notes they sit in, and the terms and papers those components carry.
+  - It is a snapshot. Nothing changes it but another **Fetch**: a component that starts using the term later is not on the map until you fetch. When you change the words or the scope, the component says so and **Fetch** lights up.
+  - At most the 150 components that use it most are on the map; the line under the scopes says how many there were.
+- **Diving in:** click a dot to focus it (a component's words, with the form lit, are in the side panel, with **Open** and **Pull in here**). Double-click a note (or click it in the side panel) to dive into it; the line above the map says where you are and takes you back. Double-click a component to open it. Drag to pan, drag a dot to move it, wheel to zoom. **⤢** opens the map on the whole window (Esc comes back).
+- **↺ Reload** brings the map back to how the last Fetch left it: no dive, no focus, every dot where it was. So does opening the note again.
+- It is not one of the notebook's terms: it marks nothing anywhere. Only this note shows its forms, underlined in dots while it is there.
+
 ---
 
 ## 8. Connections, regions and linking
@@ -409,6 +419,7 @@ Open it with the ＋ **Quick cast** → **⋯** (everything that can go in this 
 | **Material… / New material…** | A material card (§15). |
 | **A note…** | A note card (§8). |
 | **Pull in…** | Unresolved barriers, any structure or any component from elsewhere. |
+| **Term in this note…** | A term that lives in this note, pulled from its theme, its project or the notebook as a small Atlas (§7). |
 
 ### Working with plates
 - **Select wells:** drag across them, click a row or column header, Shift+click one well, or Shift+drag to add a range.
@@ -556,10 +567,16 @@ Open it with the ＋ **Quick cast** → **⋯** (everything that can go in this 
 ## 14. Library, papers and the reader
 
 ### Adding references
-- **DOI lookup** (cached), or paste **BibTeX / RIS / CSL-JSON** offline.
+- **DOI lookup** (cached), or paste **BibTeX / RIS / CSL-JSON** offline. On the lab's Library (the website and the installed app) both are on the page too.
 - Citation display (title, author–year or numbered) is set per note.
 - **+ PDF** attaches a paper's PDF; **📄 Read** opens it in the reader.
 - **Authors are terms.** Every author of a paper in the library becomes a term of its own kind (a person, with their papers), and their name is marked in your text like any term, so Terms shows where they come up.
+
+### Shelves and foci
+- **A focus** is a set of papers (a paper can be in several); **a shelf** holds foci. For example, the focus *R-PE Photobleaching Kinetics* on the shelf *Confocal Optics*. (They were called library themes and groups; nothing in them changed.)
+- The tree left of the list: **All papers**, **In no focus**, a shelf (every paper in its foci) or one focus filters the list. **+ Shelf**, **+ Focus**, and each one's ⋯ (rename, move to a shelf, delete) are there.
+- On a paper, its foci show as chips; **＋ Focus** puts it in one or makes a new one. Papers can also be dragged onto a focus in the tree.
+- **Import from RM** (the lab's Library) brings your RM groups and the lab's shared ones: each becomes a focus, on the shelf **My RM groups** or **Lab groups**. Move them to other shelves afterwards; an import again brings them up to date where you put them. RM's smart groups are saved searches, so they stay in RM.
 
 ### Highlighting
 - **The reader's panel** has chips: **Mine** (this note's highlights), **RM** (the lab's, on a lab paper), **Notes** (the notes written under highlights). Switch any off to see the rest.
@@ -577,6 +594,11 @@ Open it with the ＋ **Quick cast** → **⋯** (everything that can go in this 
 - **Enter / Shift+Enter** step through text matches.
 - Searching a term also finds its other forms.
 - **All papers** searches every PDF in the library.
+
+### The lab's Library: Pull and Push
+- **The lab's papers** come from RM and are listed first; **In your notebook** lists the papers you added (by DOI or a pasted citation, here or on your computer).
+- **Pull into my notebook** (a lab paper with a PDF in RM) downloads its PDF into your notebook. **Read here** then opens it in this app's reader, with your own highlights, on the website and offline on your computer. **Read in RM** still opens RM's reader.
+- **Push to RM** sends one of your papers to the lab's library now, with its PDF when it has one (attach it with **+ PDF**). Your papers also go up on their own with the next sync, without their PDF; **Send the PDF to RM** sends the PDF afterwards, when RM has none of that paper. A paper RM already has (same DOI, or same title and year) is not added twice.
 
 ### The lab's papers on the desktop
 - **Read** on a lab paper (the paper card, one of its highlights, the card's ⋯ menu, a collection, or the paper's page in the Library) opens it in this app's reader, beside the note. On the website it opens in RM's reader instead.
