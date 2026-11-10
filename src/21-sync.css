@@ -633,3 +633,5 @@ body.mobile .nav{display:none} body:has(.nav:not(.asleep)) #toasts{bottom:34px}
 /* V3.962 · 13zzn · what floats over the paper keeps out of its own way: the text editor bar gives way to a menu or the selection's bar over it; the selection's bar is one row */
 .fbar.ebar.yield{visibility:hidden;pointer-events:none}
 .ink-selbar{width:max-content}
+/* V3.965 · quiet: nobody is at the app (13zzp) — what only moves for the eye stands still; the first touch starts it again */
+body.quiet .tchip.run i,body.quiet .regdot,body.quiet .rt-bar span.c,body.quiet #focusframe .ff-dot,body.quiet .td-dot,body.quiet .rc-dot,body.quiet #hd .syncdot i{animation-play-state:paused}

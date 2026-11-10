@@ -204,7 +204,7 @@ button.pnum.chk{cursor:pointer} button.pnum.chk:hover{background:var(--teal-soft
 .pfoot{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;padding-top:7px;border-top:1px solid var(--rule);font-size:11px;color:var(--ink-3)}
 .regdot{position:absolute;top:-46px;right:-6px;width:13px;height:13px;border-radius:50%;padding:0;border:0;cursor:pointer;background:var(--light);box-shadow:0 0 0 3px color-mix(in srgb,var(--light) 28%,transparent),0 0 12px 2px color-mix(in srgb,var(--light) 60%,transparent);animation:regpulse 2.8s ease-in-out infinite;z-index:3}
 .regdot:hover{animation-play-state:paused;opacity:1;transform:scale(1.15)}
-@keyframes regpulse{0%,100%{opacity:.28;box-shadow:0 0 0 1px color-mix(in srgb,var(--light) 20%,transparent),0 0 2px 0 color-mix(in srgb,var(--light) 30%,transparent)}50%{opacity:1;box-shadow:0 0 0 3px color-mix(in srgb,var(--light) 30%,transparent),0 0 14px 3px color-mix(in srgb,var(--light) 65%,transparent)}}
+@keyframes regpulse{0%,100%{opacity:.3}50%{opacity:1}}   /* V3.965: opacity only — the glow stays as it is */
 @media (prefers-reduced-motion:reduce){.regdot{animation:none;opacity:1}}
 .kpick{border:1px solid color-mix(in srgb,var(--kc) 45%,transparent);color:var(--kc);background:transparent;border-radius:10px;font-size:11px;padding:0 8px;line-height:19px;cursor:pointer}
 .kpick.on{background:var(--kc);color:var(--surface)}

@@ -43,8 +43,8 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { applyKindCSS(); App.refresh(); });
   window.addEventListener('hashchange', () => { closePop(); hideHover(); App._mounted = false; App.refresh(); });
   App.refresh();
-  setInterval(App.tick, 1000);
-  setInterval(() => { TIMER.heartbeat(); IX.buildDays(); }, 60000);
+  setInterval(() => { if (TIMER.runningAll().length) App.tick(); }, 1000);                 // V3.965: nothing to count up without a running timer
+  setInterval(() => { TIMER.heartbeat(); if (IX.daysStale()) IX.buildDays(); }, 60000);   // V3.965: the day index only after a change, or a new day
   setTimeout(() => TIMER.checkOnLoad(), 400);
   MEDIA.flush(); DATA.watch();
   FOCUS.init(); REM.init(); DISK.lock(); if (DISK.on && !DISK.paused) setTimeout(async () => { await DISK.snapshot('launch'); await VAULT.sync(); }, 1500);

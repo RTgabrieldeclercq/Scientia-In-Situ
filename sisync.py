@@ -94,6 +94,12 @@ class Sync:
         self.conflicts = self.load_json(self.nb('.scientia', 'conflicts.json'), None) or []
         self.atomic(self.nb('.scientia', 'sync.json'), json.dumps({'sid': self.sid}).encode())
 
+    JOURNAL_KEEP = 4000   # V3.965: the undo history kept in record.json — each entry holds the previous record whole, and it never shrank (25 MB on Gabe's computer)
+    def _trim_journal(self):
+        j = self.stores.get('journal') or {}
+        if len(j) <= self.JOURNAL_KEEP: return
+        for k in sorted(j, key=lambda x: int(x) if str(x).lstrip('-').isdigit() else 0)[:-self.JOURNAL_KEEP]: j.pop(k, None)
+
     def _set_record(self, rec):
         self.stores = {}
         for n, rows in (rec.get('stores') or {}).items():
@@ -102,6 +108,7 @@ class Sync:
         self.seq = self.min_seq = int(rec.get('syncSeq') or 0)
         self.jseq = max([int(x) for x in self.stores.get('journal', {}).keys() if isinstance(x, (int, float))] or [0])
         self.has_record = True; self.saved_at = rec.get('savedAt')
+        self._trim_journal()
 
     def _apply_raw(self, store, rid, rec, delete):
         s = self.stores.setdefault(store, {})
@@ -160,6 +167,7 @@ class Sync:
         if len(self.ops) > MAX_OPS: self.ops = self.ops[-MAX_OPS:]; self.min_seq = self.ops[0]['seq'] - 1
         self.jseq += 1
         self.stores.setdefault('journal', {})[self.jseq] = {'seq': self.jseq, 'ts': op['ts'], 'store': store, 'id': rid, 'op': 'delete' if delete else ('put' if cur is not None else 'create'), 'prev': cur, 'group': 0, 'device': name}
+        if self.jseq % 200 == 0: self._trim_journal()
         opsf = self.nb('.scientia', 'ops.jsonl')
         if opsf:
             with open(opsf, 'a', encoding='utf-8') as f: f.write(json.dumps(op) + '\n')

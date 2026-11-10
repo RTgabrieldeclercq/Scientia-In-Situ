@@ -457,7 +457,7 @@ class H(http.server.SimpleHTTPRequestHandler):
         if p == '/api/sync/pull':
             if not SYNC.ensure(): return self._json(409, {'ok': False, 'error': 'no notebook folder'})
             g = lambda k, d='': (q.get(k) or [d])[0]
-            if g('conn') and g('conn') != LABSYNC.local_conn(): APP_SEEN[0] = time.time()
+            if g('conn') and g('conn') != LABSYNC.local_conn() and g('active', '1') != '0': APP_SEEN[0] = time.time()   # V3.965: a quiet window (13zzp) does not keep the bridge fast
             return self._json(200, SYNC.pull(g('conn'), int(g('since', '0') or 0), g('sid'), float(g('wait', '0') or 0), int(g('c', '-1') or -1)))
         if p == '/api/sync/conflicts': SYNC.ensure(); return self._json(200, {'ok': True, 'conflicts': SYNC.conflicts})
         if p == '/api/pair/status':
@@ -701,4 +701,4 @@ print(f'Notebook folder: {notebook() or "not chosen yet — Settings → Noteboo
 print('Other devices: Settings → Devices (phones and tablets pair with this computer)')
 SYNC.ensure()
 LABSYNC.start()   # V3.928: in step with the lab cloud for as long as this server runs
-srv.serve_forever()
+srv.serve_forever(poll_interval=2.0)   # V3.965: the stop check every 2 s, not twice a second
