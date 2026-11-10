@@ -35,7 +35,7 @@ const STORES = {
   templates: { key: 'id',  doc: 'Note templates per type', idx: ['type'] },
   verdicts:  { key: 'id',  doc: 'Accepted/dismissed suggested links' },
   inklib:    { key: 'id',  doc: 'Saved ink (the ink library): strokes to place again anywhere' },
-  libsets:   { key: 'id',  doc: 'Library themes and groups: {kind: theme | group, name, themeId, paperIds} — a paper can be in several groups' },
+  libsets:   { key: 'id',  doc: 'Paper shelves and foci (V3.963; were library themes and groups): {kind: theme (a shelf) | group (a focus), name, themeId (its shelf), paperIds} — a paper can be in several foci' },
   mwsteps:   { key: 'id',  doc: 'My Week steps from RM, mirrored by the lab hub (read-only): what a component’s ✓ reports onto, offline too' },
   boards:    { key: 'id',  doc: 'Whiteboards in image panels (the lab’s board, 13zzd): the board’s documents (strokes, cards, recordings) by path; a large board continues in rows <id>~1, ~2…' },
   journal:   { key: 'seq', auto: true, doc: 'Append-only change log with previous values (undo, time travel)' },

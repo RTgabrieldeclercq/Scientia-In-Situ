@@ -1,6 +1,7 @@
 const LibraryView = {
   q: '',
-  render() {
+  /** The two ways to add a paper (by DOI, a pasted citation); the lab's Library uses them too (V3.963). */
+  adders() {
     const doi = h('input.inp.mono', { placeholder: '10.1371/journal.pone.0132737 or https://doi.org/…', style: { flex: '1 1 320px' } });
     const status = h('div.tiny.mono.muted', { style: { minHeight: '18px', marginTop: '6px' } });
     const look = async () => {
@@ -10,16 +11,19 @@ const LibraryView = {
     };
     doi.addEventListener('keydown', e => { if (e.key === 'Enter') look(); });
     const paste = h('textarea.inp', { rows: 3, placeholder: '@article{…}  ·  TY  - JOUR …  ·  {"DOI": …}', style: { width: '100%', fontFamily: 'var(--f-m)', fontSize: '12px' } });
+    return h('div.grid2', h('div.card.flat', h('h3.lab', { style: { marginTop: 0 } }, 'Add by DOI · one request, cached forever'), h('div.row', doi, h('button.btn.pri', { on: { click: look } }, 'Look up')), status),
+      h('div.card.flat', h('h3.lab', { style: { marginTop: 0 } }, 'Paste a citation · works offline'), paste, h('div.row', { style: { marginTop: '8px' } }, h('button.btn', { on: { click: () => { try { const r = LIB.parseAny(paste.value); LIB.add(r); paste.value = ''; toast('Added · ' + LIB.shortRef(r)); } catch (e) { toast(String(e.message || e)); } } } }, 'Parse & add'),
+        h('button.btn.ghost', { on: { click: () => LibraryView.addDialog('') } }, 'Add a link…'))));
+  },
+  render() {
     const q = h('input.inp', { placeholder: 'Filter by author, year, journal, title…', value: LibraryView.q, style: { width: '100%' }, on: { input: debounce(e => { LibraryView.q = e.target.value; draw(); }, 120) } });
     const list = h('div.list');
     const draw = () => { const rs = LIB.search(LibraryView.q).filter(r => LGROUP.keep(r)); list.replaceChildren(...(rs.length ? rs.map(LibraryView.card) : [h('div.empty', 'Nothing matches')])); };
     draw();
     App.setTitle('Library', [h('span', plural(DB.all('library').length, 'entry', 'entries') + ' · global — owned by no project')]);
     return h('div.page', h('div.eyebrow', 'Global'), h('h1.title', 'Library'),
-      h('p.stand', 'Papers and links, owned by no project and citable from all of them. Each entry keeps its full CSL-JSON, so a citation can render as its title, author–year or a number without touching the notes it sits in.'),
-      h('div.grid2', h('div.card.flat', h('h3.lab', { style: { marginTop: 0 } }, 'Add by DOI · one request, cached forever'), h('div.row', doi, h('button.btn.pri', { on: { click: look } }, 'Look up')), status),
-        h('div.card.flat', h('h3.lab', { style: { marginTop: 0 } }, 'Paste a citation · works offline'), paste, h('div.row', { style: { marginTop: '8px' } }, h('button.btn', { on: { click: () => { try { const r = LIB.parseAny(paste.value); LIB.add(r); paste.value = ''; toast('Added · ' + LIB.shortRef(r)); } catch (e) { toast(String(e.message || e)); } } } }, 'Parse & add'),
-          h('button.btn.ghost', { on: { click: () => LibraryView.addDialog('') } }, 'Add a link…')))),
+      h('p.stand', 'Papers and links, owned by no project and citable from all of them. Each entry keeps its full CSL-JSON, so a citation can render as its title, author–year or a number without touching the notes it sits in. Shelves hold foci, foci hold papers.'),
+      LibraryView.adders(),
       h('div.sec'), h('div.lib-wrap', LGROUP.side(), h('div.lib-main', h('div.sec-h', h('h2', LGROUP.selLabel() || 'Entries'), h('span.k', DB.all('library').filter(r => LGROUP.keep(r)).length), LGROUP.sel ? h('button.btn.xs.ghost', { on: { click: () => LGROUP.select(null) } }, 'Show all') : null), q, h('div', { style: { height: '10px' } }), list)));
   },
   card(r) {

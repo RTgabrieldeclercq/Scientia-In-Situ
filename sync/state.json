@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "2685d21fb8ca959e985c536b9696e369a4655f63",
-  "subject": "V3.962: Scientia — menus keep out of each other's way, \"Snip figure\" on the HTML card, Iteration",
+  "commit": "cdbe26cc532a02dcc5c82fb30603917d1668b456",
+  "subject": "V3.963: Scientia — terms in one note, the lab's Library adds / pulls / pushes papers, paper shelves and foci",
   "date": "2026-11-09"
  },
- "cut": "f8040b910f6021993640d7970cbe0b380d751e4d",
+ "cut": "ec2d26485cb4c0e8f86dca6ff1865923d1d7fb32",
  "names": [
   "DESKLAB",
   "LABSYNC",
