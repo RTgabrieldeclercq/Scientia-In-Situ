@@ -61,7 +61,13 @@ const DISK = {
   },
   async browse() { const r = await fetch('api/notebook/browse', { method: 'POST' }); const j = await r.json(); if (!j.ok) { toast(j.error || 'No folder dialog'); return null; } return j.path; },
   /** Called on every write: the record and the Markdown follow a few seconds later. */
-  touch() { if (!DISK.on || DISK.paused) return; clearTimeout(DISK._t); DISK._t = setTimeout(async () => { await DISK.snapshot(); await VAULT.sync(); }, 3000); },
+  /** V3.965: stores the Markdown mirror never shows — a change there writes nothing to it. */
+  VAULT_SKIP: new Set(['sessions', 'timers', 'settings', 'profiles', 'journal', 'blobs', 'datasets']),
+  touch(store) { if (!DISK.on || DISK.paused) return; if (!DISK.VAULT_SKIP.has(store)) DISK._vault = true; clearTimeout(DISK._t);
+    // V3.965: with sync on, the computer already holds every change as it is made (SYNC.push) — the whole record is not sent
+    // again after each edit (it was: 25 MB serialised here, parsed there, the old file copied to kept/, the new one written)
+    const synced = typeof SYNC !== 'undefined' && SYNC.on && SYNC.local;
+    DISK._t = setTimeout(async () => { if (!synced) await DISK.snapshot(); if (DISK._vault) { DISK._vault = false; await VAULT.sync(); } }, synced ? 8000 : 3000); },
   /** Only one tab saves into the notebook. */
   lock() { try { if (!navigator.locks) return; navigator.locks.request('scientia-notebook', { ifAvailable: true }, l => { if (!l) { DISK.paused = true; DISK.error = 'Another tab of the app is open — this one does not save to the notebook'; setTimeout(() => toast(DISK.error), 800); return; } return new Promise(() => { }); }); } catch { } },
 };

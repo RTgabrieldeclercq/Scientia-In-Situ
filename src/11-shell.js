@@ -84,8 +84,9 @@ const App = {
         h('button.ib', { title: 'Stop — records the session', on: { click: () => TIMER.stop(s) } }, '■')); }),
       act.length > 1 ? h('span.multi-n', { title: 'Two timers running: overlap counts once' }, '⧉') : null);
   },
-  tick() { $$('[data-stepsess]').forEach(el => { const s = M.session(el.dataset.stepsess); if (s) el.textContent = fmtDur(TIMER.elapsed(s) - (+el.dataset.off || 0), true); });
-    $$('[data-sess]').forEach(el => { const s = M.session(el.dataset.sess); if (s) el.textContent = fmtDur(TIMER.elapsed(s), true); }); },
+  tick() { const put = (el, t) => { if (el.textContent !== t) el.textContent = t; };   // V3.965: no write when the second has not changed
+    $$('[data-stepsess]').forEach(el => { const s = M.session(el.dataset.stepsess); if (s) put(el, fmtDur(TIMER.elapsed(s) - (+el.dataset.off || 0), true)); });
+    $$('[data-sess]').forEach(el => { const s = M.session(el.dataset.sess); if (s) put(el, fmtDur(TIMER.elapsed(s), true)); }); },
 
   /* ---------------- new note (templates: one → automatic, several → choose) ---------------- */
   newDoc(pre = {}) {
