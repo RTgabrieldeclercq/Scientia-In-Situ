@@ -128,6 +128,10 @@ except Exception as e:
     RAWM = None; RAWM_ERR = 'raw mouse input is unavailable: %s' % e
 STT = Transcriber(rec_dir)
 SYNC = Sync(nb, atomic, lambda p, d=None: load_json(p, d) if p else d, os.path.dirname(CONFIG))
+# V3.964: a notebook whose files are sealed by Scientia In Situ's own lock (the private app) is not ours to touch — not even to
+# sync: read as empty, it would look like a wiped notebook to every device and to the lab cloud.
+SEALED = 'This notebook is locked by Scientia In Situ (the private app): its files are sealed. Open it with that app, or take its lock off there, before the lab app can use it.'
+def sealed(): return SYNC.ensure() and SYNC.sealed
 
 # ---------------- other devices: what this computer can be reached at ----------------
 def tailscale_exe():
@@ -294,7 +298,9 @@ class H(http.server.SimpleHTTPRequestHandler):
         if p == '/api/lab/status':
             if not self.is_local(): return self._json(403, {'ok': False})
             off = OFFER if OFFER and time.time() < OFFER.get('until', 0) else None
-            return self._json(200, dict(LABSYNC.snapshot(), ok=True, notebook=notebook(), offer={'account': off['account'], 'from': off['origin']} if off else None, update=update_info()))
+            d = dict(LABSYNC.snapshot(), ok=True, notebook=notebook(), offer={'account': off['account'], 'from': off['origin']} if off else None, update=update_info())
+            if sealed(): d.update(state='sealed', message=SEALED, sealed=True)
+            return self._json(200, d)
         return None
     def lab_post(self, p):
         if p == '/api/lab/offer':   # the lab site, signed in, hands over a pairing code; nothing happens until the person confirms here
@@ -436,6 +442,7 @@ class H(http.server.SimpleHTTPRequestHandler):
         if p == '/sw.js': return self._text(SW, 'text/javascript')
         if p == '/manifest.webmanifest': return self._text(MANIFEST, 'application/manifest+json')
         if p == '/icon.svg': return self._text(ICON, 'image/svg+xml')
+        if p.startswith('/api/sync/') and sealed(): return self._json(423, {'ok': False, 'sealed': True, 'error': SEALED})
         if p == '/api/sync/hello':
             w = self.who(); on = SYNC.ensure()
             return self._json(200, {'ok': True, 'auth': bool(w), 'local': bool(w and w.get('local')), 'device': (w or {}).get('name'), 'deviceId': (w or {}).get('id'),
@@ -485,6 +492,7 @@ class H(http.server.SimpleHTTPRequestHandler):
         if u.path == '/api/rec/part' and self.gate(u.path, True): return self.rec_part(q)
         if u.path == '/api/rec/compose' and self.gate(u.path, True): return self.rec_compose(q)
         if not self.gate(u.path, True): return
+        if (u.path.startswith('/api/sync/') or u.path in ('/api/snapshot', '/api/vault')) and sealed(): return self._json(423, {'ok': False, 'sealed': True, 'error': SEALED})
         if u.path == '/api/sync/push':
             if not SYNC.ensure(): return self._json(409, {'ok': False, 'error': 'no notebook folder'})
             _, obj = self._obj(512 * 1024 ** 2); obj = obj or {}; w = self.who() or {}
@@ -673,11 +681,20 @@ def _local_state():
 LABSYNC = labsync.LabSync(PORT, CLOUD_CFG, lambda: time.time() - APP_SEEN[0] < 45, _local_state, HUB_CONN)
 
 class Server(http.server.ThreadingHTTPServer):
+    # V3.964: one Scientia per port. Windows let a second copy bind over a listening one (SO_REUSEADDR), and then every
+    # connection went to one of them at random — the tablet, the browser and the lab site each talking to a different app.
+    allow_reuse_address = False
+    def server_bind(self):
+        if os.name == 'nt': self.socket.setsockopt(socket.SOL_SOCKET, getattr(socket, 'SO_EXCLUSIVEADDRUSE', -5), 1)
+        super().server_bind()
     def handle_error(self, request, client_address):
         if isinstance(sys.exc_info()[1], (ConnectionAbortedError, ConnectionResetError, BrokenPipeError)): return
         super().handle_error(request, client_address)
 
-srv = Server(('', PORT), H)
+try: srv = Server(('', PORT), H)
+except OSError as e:
+    print(f'Port {PORT} is already in use: another Scientia In Situ is running on this computer (the installed app, or a launch.bat window). Quit it first — two copies cannot share a notebook. ({e})')
+    sys.exit(3)
 if not os.environ.get('SIS_NOBROWSER'): threading.Timer(0.6, lambda: webbrowser.open(f'http://localhost:{PORT}/scientia.html')).start()
 print(f'Scientia In Situ on http://localhost:{PORT}/scientia.html  (close this window to stop)')
 print(f'Notebook folder: {notebook() or "not chosen yet — Settings → Notebook folder"}')

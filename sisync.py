@@ -55,7 +55,7 @@ class Sync:
         self.lock = threading.RLock(); self.cv = threading.Condition(self.lock)
         self.root = None; self.stores = {}; self.meta = {}; self.sid = None; self.seq = 0; self.min_seq = 0
         self.ops = []; self.ver = {}; self.conflicts = []; self.jseq = 0; self.timer = None; self.last_daily = 0
-        self.has_record = False; self.saved_at = None
+        self.has_record = False; self.saved_at = None; self.sealed = False
         self.dev = self.load_json(self.devfile, None) or {'devices': [], 'codes': [], 'requests': []}
         self._seen_save = 0
 
@@ -68,11 +68,16 @@ class Sync:
 
     def load(self, root):
         self.root = root; self.stores = {}; self.meta = {}; self.ops = []; self.ver = {}; self.conflicts = []
-        self.seq = self.min_seq = self.jseq = 0; self.has_record = False; self.saved_at = None
+        self.seq = self.min_seq = self.jseq = 0; self.has_record = False; self.saved_at = None; self.sealed = False
         if not root: self.sid = None; return
         sj = self.load_json(self.nb('.scientia', 'sync.json'), None) or {}
         self.sid = sj.get('sid') or secrets.token_hex(6)
         rec = self.load_json(self.nb('.scientia', 'record.json'), None)
+        if rec is None:   # V3.964: sealed by the private app's lock (its own copy unseals it before this point) — never read as empty, never written
+            try:
+                with open(self.nb('.scientia', 'record.json'), 'rb') as f: self.sealed = f.read(8) == b'SiSLock1'
+            except OSError: pass
+            if self.sealed: return
         if isinstance(rec, dict) and isinstance(rec.get('stores'), dict):
             self._set_record(rec)
             if rec.get('sid') and rec.get('sid') != self.sid: self.sid = rec['sid']
@@ -129,7 +134,7 @@ class Sync:
 
     def save_now(self):
         with self.lock:
-            if not self.root: return None
+            if not self.root or self.sealed: return None
             data = self.export(); raw = json.dumps(data).encode('utf-8')
             self.atomic(self.nb('.scientia', 'record.json'), raw)
             m = {'savedAt': data['savedAt'], 'epoch': data.get('epoch'), 'records': self.records(), 'counts': data['counts'], 'build': data.get('build'), 'syncSeq': self.seq, 'sid': self.sid}
