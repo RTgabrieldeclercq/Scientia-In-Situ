@@ -84,7 +84,7 @@ const DEFAULT_PROFILES = [
   { type: 'experiment', label: 'Experiment', noun: 'Step',    scope: 'theme',   ordered: true,  steps: true,  bindsTo: 'protocol', headerFields: [{ key: 'sample', label: 'Sample' }, { key: 'conditions', label: 'Conditions' }], stage: 'Run', next: 'analysis' },
   { type: 'analysis',   label: 'Analysis',   noun: 'Pass',    scope: 'theme',   ordered: true,  steps: false, bindsTo: null,       headerFields: [{ key: 'dataset', label: 'Dataset' }, { key: 'code', label: 'Code version' }], stage: 'Analysis', next: 'reflection' },
   { type: 'planning',   label: 'Planning',   noun: 'Option',  scope: 'theme',   ordered: false, steps: false, bindsTo: null,       headerFields: [], stage: 'Planning', next: 'experiment' },
-  { type: 'reflection', label: 'Reflection', noun: 'Point',   scope: 'theme',   ordered: false, steps: false, bindsTo: null,       headerFields: [], stage: 'Reflection', next: null },
+  { type: 'reflection', label: 'Synthesis',  noun: 'Point',   scope: 'theme',   ordered: false, steps: false, bindsTo: null,       headerFields: [], stage: 'Synthesis', next: null },   // V3.967: Reflection became Synthesis (13zzr)
   { type: 'resource',   label: 'Resource',   noun: 'Record',  scope: 'project', ordered: false, steps: false, bindsTo: null,       headerFields: [{ key: 'kind', label: 'Kind', options: ['cell line', 'antibody', 'gel batch', 'instrument', 'plasmid', 'chemical', 'other'] }, { key: 'lot', label: 'Lot / batch' }, { key: 'passage', label: 'Passage' }, { key: 'conc', label: 'Concentration' }, { key: 'supplier', label: 'Supplier · cat. no.' }, { key: 'location', label: 'Location' }] },
   { type: 'day',        label: 'Day',        noun: 'Entry',   scope: 'global',  ordered: false, steps: false, bindsTo: null,       headerFields: [], system: true },
   { type: 'meeting',    label: 'Meeting',    noun: 'Item',    scope: 'theme',   ordered: true,  steps: false, bindsTo: null,       headerFields: [{ key: 'attendees', label: 'Attendees' }] },
@@ -94,7 +94,7 @@ const DEFAULT_PROFILES = [
   { type: 'review',     label: 'Review',     noun: 'Lane',    scope: 'global',  ordered: true,  steps: false, bindsTo: null,       headerFields: [{ key: 'week', label: 'Week' }], system: true },
 ];
 let PROFILES = DEFAULT_PROFILES, PROFILE = Object.fromEntries(DEFAULT_PROFILES.map(p => [p.type, p]));
-function loadProfiles() { const rows = DB.all('profiles'); PROFILES = rows.length ? DEFAULT_PROFILES.map(d => { const r = rows.find(r => r.type === d.type); if (!r) return d; const m = Object.assign({}, d, r); if (m.stage == null && d.stage) m.stage = d.stage; if (m.next === undefined && d.next !== undefined) m.next = d.next; return m; }).concat(rows.filter(r => !DEFAULT_PROFILES.some(d => d.type === r.type))) : DEFAULT_PROFILES; PROFILE = Object.fromEntries(PROFILES.map(p => [p.type, p])); }
+function loadProfiles() { const rows = DB.all('profiles'); PROFILES = rows.length ? DEFAULT_PROFILES.map(d => { const r = rows.find(r => r.type === d.type); if (!r) return d; const m = Object.assign({}, d, r); if (d.type === 'reflection') { if (m.label === 'Reflection') m.label = d.label; if (m.stage === 'Reflection') m.stage = d.stage; }   /* V3.967: a profile row saved with the old name takes the new one */ if (m.stage == null && d.stage) m.stage = d.stage; if (m.next === undefined && d.next !== undefined) m.next = d.next; return m; }).concat(rows.filter(r => !DEFAULT_PROFILES.some(d => d.type === r.type))) : DEFAULT_PROFILES; PROFILE = Object.fromEntries(PROFILES.map(p => [p.type, p])); }
 const prof = t => PROFILE[t] || { type: t, label: t, noun: 'Block', scope: 'theme', ordered: false, steps: false, headerFields: [] };
 const userProfiles = () => PROFILES.filter(p => !p.system);
 
@@ -104,7 +104,7 @@ const STANDARD_TEMPLATES = {
   experiment: [['Aim of this run', ''], ['Setup', ''], ['Run', ''], ['Observe', ''], ['Outcome', '']],
   analysis:   [['Input data', ''], ['Method', ''], ['Pass 1', ''], ['Result', '']],
   planning:   [['Context', ''], ['Option A', ''], ['Option B', ''], ['Decision', '']],
-  reflection: [['What the run showed', ''], ['What went wrong', ''], ['What to change next time', '']],
+  reflection: [['Summary', ''], ['What to change next time', '']],   // V3.967: the Synthesis gathers the experiment's claims, evidence, results… on its own (13zzr)
   meeting:    [['Attendees', ''], ['First topic', ''], ['Second topic', ''], ['Actions', '']],
   seminar:    [['Speaker & topic', ''], ['Key point', ''], ['Relevance to my work', '']],
   literature: [['Citation', ''], ['Main claim', ''], ['Methods worth stealing', ''], ['Doubts', '']],
