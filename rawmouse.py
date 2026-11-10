@@ -54,7 +54,8 @@ if sys.platform == 'win32':
             ('GetMessageW', [ctypes.POINTER(W.MSG), W.HWND, W.UINT, W.UINT], W.BOOL),
             ('DispatchMessageW', [ctypes.POINTER(W.MSG)], LRESULT),
             ('PostMessageW', [W.HWND, W.UINT, W.WPARAM, W.LPARAM], W.BOOL),
-            ('SetTimer', [W.HWND, ctypes.c_size_t, W.UINT, ctypes.c_void_p], ctypes.c_size_t)):
+            ('SetTimer', [W.HWND, ctypes.c_size_t, W.UINT, ctypes.c_void_p], ctypes.c_size_t),
+            ('KillTimer', [W.HWND, ctypes.c_size_t], W.BOOL)):
         f = getattr(_u, name); f.argtypes = args; f.restype = res
     _k.GetModuleHandleW.argtypes = [W.LPCWSTR]; _k.GetModuleHandleW.restype = W.HMODULE
 
@@ -91,9 +92,9 @@ class RawMouse:
                     with self.lock: self.x += ri.mouse.lLastX; self.y += ri.mouse.lLastY
             except Exception: pass
             return _u.DefWindowProcW(hwnd, msg, wp, lp)   # Windows frees the input here
-        if msg == WM_APP: self._listen(True); return 0
+        if msg == WM_APP: self._listen(True); _u.SetTimer(self.hwnd, 1, 1000, None); return 0
         if msg == WM_TIMER:
-            if self.on and time.time() - self.asked > IDLE: self._listen(False)
+            if self.on and time.time() - self.asked > IDLE: self._listen(False); _u.KillTimer(self.hwnd, 1)   # V3.965: no wake-up a second while nobody pans
             return 0
         return _u.DefWindowProcW(hwnd, msg, wp, lp)
 

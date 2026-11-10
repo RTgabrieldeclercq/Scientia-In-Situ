@@ -63,7 +63,7 @@ const SYNC = {
     if (SYNC._pulling) return; SYNC._pulling = true; let wait = 2000;
     while (SYNC.on) {
       try {
-        const r = await fetch(`api/sync/pull?conn=${SYNC.conn}&since=${SYNC.seq}&sid=${encodeURIComponent(SYNC.sid || '')}&wait=${document.hidden ? 20 : 25}&c=${SYNC.conflicts}`, { cache: 'no-store' });
+        const r = await fetch(`api/sync/pull?conn=${SYNC.conn}&since=${SYNC.seq}&sid=${encodeURIComponent(SYNC.sid || '')}&wait=${document.hidden ? 20 : 25}&c=${SYNC.conflicts}&active=${typeof QUIET !== 'undefined' && QUIET.is() ? 0 : 1}`, { cache: 'no-store' });
         if (r.status === 401) { SYNC.unpaired(); break; }
         const j = await r.json();
         if (j.reset) { await SYNC.reset(); break; }

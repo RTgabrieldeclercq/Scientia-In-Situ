@@ -496,4 +496,4 @@ print(f'Scientia In Situ on http://localhost:{PORT}/scientia.html  (close this w
 print(f'Notebook folder: {notebook() or ACCESS.closed() or "not chosen yet — Settings → Notebook folder"}')
 print('Other devices: Settings → Devices (phones and tablets pair with this computer)')
 SYNC.ensure()
-srv.serve_forever()
+srv.serve_forever(poll_interval=2.0)   # V3.965: the stop check every 2 s, not twice a second

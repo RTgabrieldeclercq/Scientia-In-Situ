@@ -74,5 +74,5 @@ const TERMSCAN = {
     pop.call(ED, termId, x, y, b, markId);
     const opEl = [...$$('.pop.menu .op')].find(o => /Unmark here/.test(o.textContent)); if (opEl) opEl.addEventListener('mousedown', () => { const blk = M.block(b.id), mk = blk && (blk.body.marks || []).find(m => m.id === markId); if (mk) TERMSCAN.forget(blk, mk); }, true);
   };
-  setInterval(() => TERMSCAN.sweep(), 60000);
+  setInterval(() => { if (DB.revOf.blocks === TERMSCAN._rev) return; TERMSCAN._rev = DB.revOf.blocks; TERMSCAN.sweep(); }, 60000);   // V3.965: only after a block changed
 }

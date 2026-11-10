@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "a9eb8d24cefd3ba1b62e4a4083d424acbb117480",
-  "subject": "V3.964: Scientia — one copy per port, a sealed notebook refused, a device keeps its notes, the hub gets room",
+  "commit": "f65842f9650a4af85436c71a8bff7df9c85b5b06",
+  "subject": "V3.965: Scientia at rest — no whole-record snapshot after each edit, quiet mode, sweeps only after a change",
   "date": "2026-11-09"
  },
- "cut": "01971ed260e018a09b3f6c5d47d3b70a1d2f0a4f",
+ "cut": "1808f588703eebaf39f59f76bba17f1aaca1f167",
  "names": [
   "DESKLAB",
   "LABSYNC",
