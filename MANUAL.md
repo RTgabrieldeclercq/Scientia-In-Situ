@@ -56,7 +56,7 @@ This manual covers everything the notebook can do, from first launch to the pen 
 |---|---|
 | **Project** | A fundable, publishable whole (e.g. "Traction Force–ELISA"). |
 | **Theme** | A line of attack inside a project. **Aims** sit on themes, with weighted milestones. |
-| **Note** | One session of work. A note has a **type**, such as Planning, Experiment (Run), Analysis, Reflection, Meeting, Reading, Resource (material), Day or Review. Types are editable in Settings. |
+| **Note** | One session of work. A note has a **type**, such as Planning, Experiment (Run), Analysis, Synthesis, Meeting, Reading, Resource (material), Day or Review. Types are editable in Settings. |
 | **Component** | A box on a note's paper: text, a widget, ink… Everything you write is a component. |
 | **Structure** | A marked phrase inside a component with a *kind*: claim, evidence, barrier… (§6). |
 | **Term** | A word or phrase you track across all notes (§7). |
@@ -331,10 +331,12 @@ A **Story** is a kind of component for telling — a talk, a paper's thread, a l
 ### Iterations
 An **Iteration** is the next version of a component: Run 2 of a report, the figure redone, the hypothesis reworded.
 - **Make one:** the component's ⋯ → **New iteration**, or Iteration in the kind label's list (double-click it), or `/iteration` with the component selected.
-- **What you get:** a blank component of the same type and kind, beside it on the right, wired from it with **next version**. It has the same size and label: an image panel keeps its grid, a table starts empty. An HTML page, a PDF or slides ask for the new version's file, and that file keeps its own name.
+- **What you get:** a blank component of the same type and kind, **on the deck**: the versions stack at one spot, the newest on top, the older ones peeking out beneath. It has the same size and label: an image panel keeps its grid, a table starts empty. An HTML page, a PDF or slides ask for the new version's file, and that file keeps its own name.
+- **The deck:** the strip under the header says which version is on top ("v2 of 3"). **Swipe it** left or right, press **‹ ›**, click a dot, or press **← →** with the card selected, to go through the versions; **+** on the strip makes the next. Moving any card moves the deck. The version tag's menu offers **Spread out** (every version beside the one before, wired **next version**) and **Stack as a deck** to bring them back.
 - **How it improved:** under the new version, like an image panel's caption, is the question "How did v2 improve on v1?"; the caret waits there. What you write is kept with that version.
 - **Which version:** each version shows **v1**, **v2**, **v3**… in its header. Click it to list every version, with how each improved, to go to one, or to make the next.
 - `/collection iteration` shows every version in the Atlas.
+- **Troubleshooting** is a component kind made for this: set it on an empty component and it starts with **Problem / Tried / Outcome**; each attempt is a new version on the deck ("attempt 2 of 3", **+** for the next). It resolves a barrier and leads to a resolution, a decision or a method.
 
 ### Several at once
 Select components with the lasso or Ctrl+click and their bar offers, besides Copy, Duplicate and Delete. The bar is one row and sits where it covers no other component: under them, else beside them, else above. A Ctrl+click on a component's text selects it without leaving the caret there.
@@ -367,12 +369,19 @@ Select components with the lasso or Ctrl+click and their bar offers, besides Cop
 
 ### Experiment stages
 **+ Experiment** asks for a project, theme, name and date, then creates the **Planning** note.
-- **Next: Run** (bottom right of the canvas) creates the next stage: **Planning → Run → Analysis → Reflection**.
+- **Next: Run** (bottom right of the canvas) creates the next stage: **Planning → Run → Analysis → Synthesis**.
   - Once a stage exists, the button reads **Open …** instead.
   - Ctrl+click opens the stage beside the current note.
 - The note's header shows the stage strip; click a stage to go there.
 - **Run a protocol** (at creation) lays that protocol out in the Run note.
-- **Iterate:** Next from a finished Reflection, or the ▾ menu, makes "…, run N", linked to its parent.
+- **Iterate:** Next from a finished Synthesis, or the ▾ menu, makes "…, run N", linked to its parent.
+
+### Synthesis
+The last stage of an experiment is its **Synthesis**: one note in the project that holds what the experiment established. The process lives in Planning, Run and Analysis; the Synthesis gathers it.
+- **Gathered on its own** when the note is made (Next from the Analysis): every **claim, evidence, result, takeaway, barrier and resolution** of the experiment's notes is pulled in as a reference, in a column per kind under a heading; what each stage's note "adds up to" comes along as a component. Nothing is copied: a reference points at the original and follows it.
+- **⟲ Gather** (the dock) pulls in what the notes have gained since.
+- **☰ The rest** (the dock) opens a scrollable panel of every other component of the experiment, by stage, each with **Pull in**, so you can bring anything else across. Then build and rearrange the note as you like.
+- A Reflection note made before is a Synthesis too: open it and press ⟲ Gather.
 
 ### Protocols
 A protocol is one box, with its steps on a rail.

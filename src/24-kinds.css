@@ -26,3 +26,15 @@
 .iter-ed{font-family:var(--f-b);font-size:14px;line-height:1.5;color:var(--ink);outline:0;min-height:1.5em;white-space:pre-wrap;overflow-wrap:anywhere}
 .iter-ed:empty::before{content:attr(data-ph);color:var(--ink-3);font-style:italic;pointer-events:none}
 .box.folded > .iter-why{display:none}
+/* V3.967 · 13zzq the deck: the versions stacked, a strip to go through them */
+.iter-deck{display:flex;align-items:center;gap:6px;padding:3px 10px 4px;border-bottom:1px dashed var(--rule);font:600 10px/16px var(--f-m);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);cursor:grab;user-select:none;touch-action:pan-y}
+.iter-deck button{border:0;background:transparent;color:var(--ink-2);font:600 14px/16px var(--f-d);cursor:pointer;padding:0 5px;border-radius:5px} .iter-deck button:hover{background:var(--surface-2)} .iter-deck button:disabled{opacity:.3;cursor:default}
+.iter-deck .id-new{font-size:13px;color:var(--it,#0e7490)} .iter-deck .id-dots{display:inline-flex;gap:4px;margin:0 2px} .iter-deck .id-dots i{width:6px;height:6px;border-radius:50%;background:var(--rule-2);cursor:pointer} .iter-deck .id-dots i.on{background:var(--it,#0e7490)}
+.iter-deck .id-l{flex:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.box.deck-under{pointer-events:none;overflow:hidden;opacity:.82;box-shadow:0 1px 2px rgba(0,0,0,.1)} .box.deck-under > *:not(.bh){visibility:hidden} .box.deck-under > .bh{opacity:.55}
+.box.deck-top{box-shadow:var(--shadow)} .box.folded > .iter-deck{display:none} .box.deck-hid{display:none}
+/* V3.967 · 13zzr the rest of the experiment, in a Synthesis note */
+.synth-rest{position:absolute;right:12px;top:56px;bottom:64px;width:340px;z-index:60;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--rule-2);border-radius:10px;box-shadow:var(--shadow-lg);overflow:hidden;animation:tin .15s}
+.synth-rest .sr-h{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--rule);font:600 12.5px var(--f-d)} .synth-rest .sr-h .x{margin-left:auto;border:0;background:transparent;cursor:pointer;font-size:16px;color:var(--ink-3)}
+.synth-rest .sr-b{overflow:auto;padding:6px 8px;flex:1} .synth-rest h4{font:600 10.5px var(--f-m);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin:8px 2px 4px}
+.synth-rest .sr-row{display:flex;gap:8px;align-items:flex-start;padding:6px;border-radius:7px} .synth-rest .sr-row:hover{background:var(--surface-2)} .synth-rest .sr-row .t{flex:1;min-width:0;font-size:12.5px} .synth-rest .sr-row .t b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .synth-rest .sr-row .t span{color:var(--ink-3);font-size:11.5px}
