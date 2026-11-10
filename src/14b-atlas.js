@@ -95,15 +95,20 @@ const ATLAS = {
   hit(px, py) { const G = ATLAS.G; if (!G) return null; let best = null, bd = 14 * 14; G.nodes.forEach(v => { const dx = ATLAS.sx(v) - px, dy = ATLAS.sy(v) - py, d = dx * dx + dy * dy; if (d < bd) { bd = d; best = v; } }); return best; },
   shortest(a, b) { const G = ATLAS.G, prev = new Map([[a, null]]), q = [a]; while (q.length) { const x = q.shift(); if (x === b) break; (G.adj.get(x) || []).forEach(y => { if (!prev.has(y)) { prev.set(y, x); q.push(y); } }); } if (!prev.has(b)) return []; const out = []; for (let x = b; x != null; x = prev.get(x)) out.unshift(x); return out; },
   /* ---------- the view ---------- */
-  render() {
+  /** The bar over the map: the lens, + Lens, the kind chips, the search, Quick, the action chips, "for <note>" (V3.966: 14d builds its page on it too). */
+  bar() {
     const S = ATLAS.st, projects = DB.all('projects'), lensSel = h('select.inp.at-lens', { on: { change: e => { S.lens = e.target.value; ATLAS.rebuild(); } } }, h('option', { value: 'all', selected: S.lens === 'all' }, 'The whole notebook'), projects.map(p => h('option', { value: p.id, selected: S.lens === p.id }, p.name)), ATLAS.lenses().map(l => h('option', { value: 'set:' + l.id, selected: S.lens === 'set:' + l.id }, l.name + ' (' + l.docs.length + ' notes)')));
     const chips = h('div.at-chips', Object.keys(ATLAS.KINDL).map(k => h('button.at-chip' + (S.kinds[k] ? '.on' : ''), { style: { '--c': ATLAS.KINDC[k] }, on: { click: e => { S.kinds[k] = S.kinds[k] ? 0 : 1; e.currentTarget.classList.toggle('on', !!S.kinds[k]); ATLAS.rebuild(); } } }, ATLAS.KINDL[k])), h('button.at-chip' + (S.days ? '.on' : ''), { title: 'Day notes and reviews too', on: { click: e => { S.days = !S.days; e.currentTarget.classList.toggle('on', S.days); ATLAS.rebuild(); } } }, 'Days'));
     const q = h('input.inp.at-q', { type: 'search', placeholder: 'Light up the words…', value: S.q, on: { input: debounce(e => { S.q = e.target.value; ATLAS.search(); }, 120), keydown: e => { e.stopPropagation(); if (e.key === 'Enter') { const first = ATLAS.lit && [...ATLAS.lit][0]; if (first) ATLAS.focusOn(first); } } } });
     const actions = h('div.at-acts', [['open', 'Open'], ['refnote', 'Reference the note'], ['refcmp', 'Reference the component'], ['pull', 'Pull in'], ['connect', 'Connect']].map(([id, l]) => h('button.at-chip.act' + (S.action === id ? '.on' : ''), { on: { click: e => { S.action = id; [...e.currentTarget.parentNode.children].forEach(x => x.classList.toggle('on', x === e.currentTarget)); } } }, l)));
-    const fromEl = h('span.tiny.muted.at-from'); const bar = h('div.at-bar', lensSel, h('button.btn.xs', { title: 'A lens of the notes you pick', on: { click: () => ATLAS.newLens() } }, '+ Lens'), chips, h('span.spacer'), q, h('button.btn.xs', { title: 'The quick search: the list (Ctrl+Shift+K)', on: { click: () => Search.open({ quick: true }) } }, 'Quick'), actions, fromEl);
+    const fromEl = h('span.tiny.muted.at-from'); ATLAS.fromEl = fromEl;
+    return h('div.at-bar', lensSel, h('button.btn.xs', { title: 'A lens of the notes you pick', on: { click: () => ATLAS.newLens() } }, '+ Lens'), chips, h('span.spacer'), q, h('button.btn.xs', { title: 'The quick search: the list (Ctrl+Shift+K)', on: { click: () => Search.open({ quick: true }) } }, 'Quick'), actions, fromEl);
+  },
+  render() {
+    const S = ATLAS.st, bar = ATLAS.bar();
     const cv = h('canvas.at-cv'), panel = h('aside.at-panel'), slider = h('input.at-time', { type: 'range', min: 0, max: 1000, value: Math.round(S.time * 1000), title: 'The map growing by date', on: { input: e => { S.time = +e.target.value / 1000; ATLAS.draw(); } } });
     const stage = h('div.at-stage', cv, h('div.at-foot', h('span.tiny.muted.at-n'), slider, h('span.tiny.muted', 'hover: neighbours · click: focus · double-click: open · Shift+click: the path · drag: pan · wheel: zoom')));
-    const view = h('div.atlas', bar, ATLAS.collRow(), h('div.at-main', stage, panel)); ATLAS.view = view; ATLAS.cv = cv; ATLAS.ctx = cv.getContext('2d'); ATLAS.panel = panel; ATLAS.nEl = $('.at-n', stage); ATLAS.fromEl = fromEl;
+    const view = h('div.atlas', bar, ATLAS.collRow(), h('div.at-main', stage, panel)); ATLAS.view = view; ATLAS.cv = cv; ATLAS.ctx = cv.getContext('2d'); ATLAS.panel = panel; ATLAS.nEl = $('.at-n', stage);
     ATLAS.wire(cv); setTimeout(() => { ATLAS.size(); ATLAS.rebuild(); ATLAS.search(); ATLAS.sayFrom(); }, 0);
     new ResizeObserver(() => { ATLAS.size(); ATLAS.draw(); }).observe(stage);
     App.setTitle('Atlas', [h('span', S.only ? 'a collection' : 'the notebook as one map')]);
