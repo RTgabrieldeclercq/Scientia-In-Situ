@@ -274,22 +274,29 @@ The same strip has three more keys: `/` reuses an existing structure, **W** mark
   - Forms with capitals match only with those capitals, plus an optional plural s.
   - Other forms match any case.
   - Hovering a mark shows which form was written.
-- **The term lens** (click a term) shows every component that uses it, as full boxes:
+- **The term lens** (click a term) opens as **Nests**, the Atlas's shape:
+  - the term is the outer sphere; its themes are inside it (a linked project's notes get a sphere of their own), each theme holds its notes, and each note holds the components that use the term as dots;
+  - the other terms, people and papers those components carry orbit the note they belong to;
+  - the connections between the components are drawn in the lens's inks with arrows: explicit, pulled in, via other components (dotted), suggested (dashed);
+  - click a theme or a note to fly into it, the space around to fly back out; the crumbs at the top are the levels. Drag turns it, the wheel comes closer;
+  - click a dot for its card: its words, its connections (a suggested one asks you to accept or dismiss it) and **Open**. Double-click a component to open it;
+  - hovering an insight in the side panel lights its components on the map;
+  - three scales: project, theme, experiment (one note, so the map opens in it).
+- **Chain**, beside Nests in the lens bar, shows every component as a full box instead:
   - lanes by theme or note, columns by day;
-  - three scales: project, theme, experiment;
   - inferred chains: claim → barrier → resolution → result;
   - terms that share a box are pulled in, in their own colours (toggle them in the side panel);
-  - click a box's header to open that note.
+  - click a box's header to open that note. **Export chain** writes this board.
 - A component inside a **region** gives its term "secondary sources": the region's other components, shown as a dashed card.
 
 ### Terms in one note
 - **+ Insert → Term in this note…** (or `/noteterm`) makes a term that lives in this note only. Type how it is written; add its other forms on the component (**+ another way it is written**, Enter). Forms follow the same rules as a term's other forms: with capitals they match only with those capitals.
 - **Where it comes from:** **Theme**, **Project** or **Notebook** — the note's own theme or project, or everything. A scope the note doesn't have is greyed out.
-- **⟳ Fetch** pulls every component there that uses one of the forms and draws them as a small Atlas in the component: the term in the middle, its components around it, the notes they sit in, and the terms and papers those components carry.
+- **⟳ Fetch** pulls every component there that uses one of the forms and draws them as a small Atlas in the component, in the Atlas's nests: the term is the outer sphere, its themes are inside it (its projects, when it comes from the whole notebook), the notes inside those with the components that use it as dots, and the terms and papers those components carry orbit the note they belong to. With one theme the map opens in it.
   - It is a snapshot. Nothing changes it but another **Fetch**: a component that starts using the term later is not on the map until you fetch. When you change the words or the scope, the component says so and **Fetch** lights up.
   - At most the 150 components that use it most are on the map; the line under the scopes says how many there were.
-- **Diving in:** click a dot to focus it (a component's words, with the form lit, are in the side panel, with **Open** and **Pull in here**). Double-click a note (or click it in the side panel) to dive into it; the line above the map says where you are and takes you back. Double-click a component to open it. Drag to pan, drag a dot to move it, wheel to zoom. **⤢** opens the map on the whole window (Esc comes back).
-- **↺ Reload** brings the map back to how the last Fetch left it: no dive, no focus, every dot where it was. So does opening the note again.
+- **Flying in:** click a theme or a note to fly into it (or click a note in the side panel), the space around to fly back out; the crumbs at the top say where you are and take you back. Click a dot to focus it (a component's words, with the form lit, are in the side panel, with **Open** and **Pull in here**). Double-click a component to open it. Drag turns the map, the wheel comes closer. **⤢** opens the map on the whole window (Esc comes back); a note you fly into there is where the map in the component is too.
+- **↺ Reload** brings the map back to how the last Fetch left it: on the term, nothing focused, the camera as it was. So does opening the note again.
 - It is not one of the notebook's terms: it marks nothing anywhere. Only this note shows its forms, underlined in dots while it is there.
 
 ---
@@ -428,7 +435,7 @@ Open it with the ＋ **Quick cast** → **⋯** (everything that can go in this 
 | **Material… / New material…** | A material card (§15). |
 | **A note…** | A note card (§8). |
 | **Pull in…** | Unresolved barriers, any structure or any component from elsewhere. |
-| **Term in this note…** | A term that lives in this note, pulled from its theme, its project or the notebook as a small Atlas (§7). |
+| **Term in this note…** | A term that lives in this note, pulled from its theme, its project or the notebook as a small Atlas of nests (§7). |
 
 ### Working with plates
 - **Select wells:** drag across them, click a row or column header, Shift+click one well, or Shift+drag to add a range.

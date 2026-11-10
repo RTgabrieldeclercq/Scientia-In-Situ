@@ -3,23 +3,25 @@
    the ways it is written (its forms, smart case as on the Terms page) and
    choose where it comes from: the note's theme, its project or the whole
    notebook. Fetch pulls every component there that uses one of the forms
-   and draws them as a small Atlas inside the component — the term in the
-   middle, the components around it, the notes they sit in, and the terms
-   and papers those components carry — with the Atlas's own layout and
-   drawing. What it shows is a snapshot kept on the component: nothing
-   changes it but another Fetch. Click a node to focus it (its words in the
-   side panel), double-click a note to dive into it, a component to open
-   it; Reload brings the map back to how the last Fetch left it; ⤢ opens it
-   on the whole window. It is not one of the notebook's terms: it marks
-   nothing anywhere, and only this note underlines its forms.
+   and draws them as a small Atlas inside the component. Since V3.969 it
+   is the Atlas's nests (14d): the term is the outer sphere, its themes (its
+   projects, from the whole notebook) inside, the notes inside those with
+   the components that use it as dots, and the terms and papers those
+   components carry orbiting the note they belong to. What it shows is a
+   snapshot kept on the component: nothing changes it but another Fetch.
+   Click a note to fly into it, a dot to focus it (its words in the side
+   panel), the space around to fly back out; double-click a component to
+   open it; Reload brings the map back to how the last Fetch left it; ⤢
+   opens it on the whole window. It is not one of the notebook's terms: it
+   marks nothing anywhere, and only this note underlines its forms.
    ========================================================================== */
 const NTERM = {
   MAXC: 150, MAXT: 24, MAXP: 24, H: 360,
   SCOPES: [['theme', 'Theme'], ['project', 'Project'], ['notebook', 'Notebook']],
-  views: new Map(),   // block id → { dive, focus, moved } — the view, kept across redraws; Reload and a new Fetch clear it
+  views: new Map(),   // block id → { nest, focus } — the nest the maps are in and the node picked, kept across redraws; Reload and a new Fetch clear it
   insts: new Map(),   // block id → the maps on screen (the box's, the whole window's)
   forms: T => [...new Set([T.name, ...(T.forms || [])].map(f => String(f || '').trim()).filter(f => f.length >= 2))],
-  view: id => NTERM.views.get(id) || NTERM.views.set(id, { dive: null, focus: null, moved: {} }).get(id),
+  view: id => NTERM.views.get(id) || NTERM.views.set(id, { nest: null, focus: null }).get(id),
   /** The notes a scope covers, seen from note d (null when the note has no such scope). */
   scope(d, scope) {
     const live = x => !x.deleted && !x.archived;
@@ -29,11 +31,6 @@ const NTERM = {
   },
   why: scope => scope === 'theme' ? 'This note is in no theme' : 'This note is in no project',
   firstScope: d => NTERM.scope(d, 'theme') ? 'theme' : NTERM.scope(d, 'project') ? 'project' : 'notebook',
-  /** Run fn with ATLAS's drawing state swapped for this map's, so its layout, drawing and picking run here unchanged. */
-  as(I, fn) {
-    const K = ['G', 'cv', 'ctx', 'T', 'alpha', 'st', 'lit'], keep = K.map(k => ATLAS[k]); K.forEach(k => { ATLAS[k] = I[k]; });
-    try { return fn(); } finally { K.forEach((k, i) => { I[k] = ATLAS[k]; ATLAS[k] = keep[i]; }); }
-  },
   /** The words around a match: { t, at: [from, to] } within t. */
   cut(text, a, z) {
     const s = Math.max(0, a - 70), e = Math.min(text.length, z + 110), cl = t => t.split(OBJ).join('').replace(/\s+/g, ' ');
@@ -71,23 +68,13 @@ const NTERM = {
     [[terms, NTERM.MAXT, 'term', 'mentions'], [papers, NTERM.MAXP, 'cite', 'cites']].forEach(([map, max, kind, rel]) =>
       [...map.entries()].sort((p, q) => q[1].n - p[1].n).slice(0, max).forEach(([id, o]) => { add(id, { kind: o.kind, label: o.label }); [...new Set(o.from)].forEach(f => E.push([f, id, kind, rel])); }));
     DB.all('wires').forEach(w => { if (N.has(w.from) && N.has(w.to) && N.get(w.from).kind === 'cmp' && N.get(w.to).kind === 'cmp') E.push([w.from, w.to, 'wire', (REL[w.rel] || { label: w.rel }).label]); });
-    const nodes = [...N.values()], G = NTERM.graph(nodes, E);
-    // the layout, settled once here and kept: the map always opens as this Fetch left it
-    G.nodes.forEach((v, i) => { const a = i * 2.399, r = 30 + 26 * Math.sqrt(i + 1); v.x = Math.cos(a) * r; v.y = Math.sin(a) * r; v.vx = v.vy = 0; });
-    const t0 = G.byId.get('T'); t0.x = t0.y = 0; t0.pin = true;
-    NTERM.as({ G, alpha: 1, cv: null, ctx: null, T: { x: 0, y: 0, s: 1 }, st: ATLAS.st, lit: null }, () => { for (let i = 0; i < 260; i++) ATLAS.tick(); });
-    nodes.forEach(v => { v.x = Math.round(v.x); v.y = Math.round(v.y); delete v.vx; delete v.vy; delete v.pin; delete v.deg; });
+    const nodes = [...N.values()];   // V3.969: no layout kept — the nests are laid out from the graph each time, the same way
     T.snap = { at: isoLocal(new Date()), scope: T.scope, scopeName: sc.name, forms, total: hits.length, notes: nodes.filter(v => v.kind === 'note').length, nodes, edges: E };
     NTERM.views.delete(b.id); NTERM.save(b);
     if (!quiet) toast(hits.length ? 'Fetched · ' + plural(hits.length, 'component') + ' in ' + plural(T.snap.notes, 'note') : 'Nothing in ' + sc.name + ' uses it yet');
   },
-  /** An ATLAS graph from stored nodes and edges ([a, b, kind, rel]). */
-  graph(nodes, E) {
-    const byId = new Map(nodes.map(v => [v.id, v])), edges = E.filter(e => byId.has(e[0]) && byId.has(e[1])).map(e => ({ a: e[0], b: e[1], kind: e[2], rel: e[3] }));
-    nodes.forEach(v => { v.deg = 0; }); edges.forEach(e => { byId.get(e.a).deg++; byId.get(e.b).deg++; });
-    const adj = new Map(nodes.map(v => [v.id, []])); edges.forEach(e => { adj.get(e.a).push(e.b); adj.get(e.b).push(e.a); });
-    return { nodes, edges, byId, adj, t0: 0, t1: 0 };
-  },
+  /** The graph from stored nodes (copies: the snapshot stays as it was fetched) and edges ([a, b, kind, rel]). */
+  graph(nodes, E) { return NEST.graph(nodes.map(v => Object.assign({}, v)), E.map(e => ({ a: e[0], b: e[1], kind: e[2], rel: e[3] }))); },
   save(b) {
     const T = b.nterm, f = NTERM.forms(T).filter(x => x !== T.name);
     b.label = T.name; b.body = { text: 'Term in this note: ' + T.name + (f.length ? ' (also ' + f.join(', ') + ')' : ''), marks: [] };
@@ -115,61 +102,47 @@ const NTERM = {
     wrap.append(s ? NTERM.stage(b, false) : h('div.nt-empty', ro ? 'Not fetched.' : 'Type the ways it is written, choose where to pull it from, then Fetch.'));
     return wrap;
   },
-  /** The map and its side panel; big: on the whole window. */
+  /** The map and its side panel; big: on the whole window. Each map is a NEST map of its own; the pick and the nest are the block's view. */
   stage(b, big) {
-    const cv = h('canvas.nt-cv'), panel = h('aside.nt-panel.scrolly'), crumb = h('div.nt-crumb');
-    const st = h('div.nt-stage.nopan.scrolly' + (big ? '.big' : ''), { style: big ? null : { height: NTERM.H + 'px' } }, h('div.nt-map', crumb, cv), panel);
-    const I = { b: b.id, big, el: st, cv, ctx: cv.getContext('2d'), panel, crumb, T: { x: 0, y: 0, s: 1 }, alpha: 0, st: { focus: null, hover: null, path: [], time: 1, only: null }, lit: null, G: null };
+    const panel = h('aside.nt-panel.scrolly'), map = h('div.nt-map', { title: 'Click a note: fly in · click outside: fly out · click a dot: its words · drag: turn · wheel: closer · double-click a component: open it' });
+    const st = h('div.nt-stage.nopan.scrolly' + (big ? '.big' : ''), { style: big ? null : { height: NTERM.H + 'px' } }, map, panel);
+    const I = NEST.make({ center: 'T', links: true, sel: { focus: null, path: [], time: 1 },
+      pick: (I, id) => NTERM.focus(I.b, id), panel: I => NTERM.panel(I),
+      moved: (I, n) => { NTERM.view(I.b).nest = n.id; if (I.panel) NTERM.panel(I); },
+      open: (I, hv) => { const v = hv.o.v; if (hv.kind === 'nest') { if (hv.o.kind === 'note') NTERM.dive(I.b, hv.o.id); return; } if (!v) return;
+        if (v.kind === 'cmp') return NTERM.open(v.id); if ((v.kind === 'term' || v.kind === 'person') && M.term(v.id)) return App.go('#/lens/' + v.id); if (v.kind === 'paper' && M.lib(v.id)) App.go('#/read/' + v.id); } });
+    Object.assign(I, { b: b.id, big, el: st, panel });
     const L = NTERM.insts.get(b.id) || NTERM.insts.set(b.id, new Set()).get(b.id); L.forEach(x => { if (!x.el.isConnected || x.big === big) L.delete(x); }); L.add(I);
-    NTERM.wire(I);
-    const go = () => { if (!st.isConnected) return; NTERM.size(I); NTERM.build(I); };
-    setTimeout(go, 0); new ResizeObserver(() => { if (!I.G) return; NTERM.size(I); NTERM.as(I, () => ATLAS.fit()); NTERM.draw(I); }).observe(st);
+    NEST.mount(I, map, 0);
+    setTimeout(() => { if (!st.isConnected) return; NEST.size(I); NTERM.build(I); }, 0);
     return st;
   },
-  size(I) { const p = I.cv.parentNode, w = Math.max(100, p.clientWidth), ht = Math.max(100, p.clientHeight - I.crumb.offsetHeight); I.cv.width = w; I.cv.height = ht; I.cv.style.height = ht + 'px'; },
-  /** The graph the map shows: the snapshot, or the note dived into; nodes where the snapshot (or your drag) put them. */
+  /** The snapshot on the map: the term the outer sphere, its themes (its projects, from the whole notebook), the notes, the dots. */
   build(I) {
-    const b = M.block(I.b), s = b && b.nterm && b.nterm.snap; if (!s) return;
-    const V = NTERM.view(I.b), all = s.nodes.map(v => Object.assign({}, v, V.moved[v.id] || {}));
-    let nodes = all, E = s.edges;
-    if (V.dive && all.some(v => v.id === V.dive)) {
-      const cmps = new Set(all.filter(v => v.kind === 'cmp' && v.doc === V.dive).map(v => v.id)), keep = new Set(['T', V.dive, ...cmps]);
-      E.forEach(e => { if (cmps.has(e[0]) && (e[2] === 'term' || e[2] === 'cite')) keep.add(e[1]); });
-      nodes = all.filter(v => keep.has(v.id)); E = E.filter(e => keep.has(e[0]) && keep.has(e[1]));
-    } else V.dive = null;
-    I.G = NTERM.graph(nodes, E); I.st.only = nodes.length <= 90 ? ['all'] : null;
-    if (V.focus && !I.G.byId.has(V.focus)) V.focus = null; I.st.focus = V.focus;
-    NTERM.as(I, () => ATLAS.fit()); NTERM.crumb(I); NTERM.panel(I); NTERM.draw(I);
+    const b = M.block(I.b), s = b && b.nterm && b.nterm.snap; if (!s) return; const V = NTERM.view(I.b);
+    Object.assign(I.o, { rootLabel: b.nterm.name, group: s.scope === 'notebook' ? NEST.GROUP.project : NEST.GROUP.theme, groupWord: s.scope === 'notebook' ? 'project' : 'theme' });
+    I.G = NTERM.graph(s.nodes, s.edges); if (V.focus && !I.G.byId.has(V.focus)) V.focus = null; I.sel.focus = V.focus;
+    NEST.show(I, V.nest); NTERM.panel(I);
   },
-  /** The Atlas's drawing, then the term itself on top: a ringed node with its name over it. */
-  draw(I) {
-    if (!I.G || !I.cv.isConnected) return;
-    NTERM.as(I, () => { ATLAS.draw(); const v = I.G.byId.get('T'); if (!v) return;
-      const c = ATLAS.ctx, x = ATLAS.sx(v), y = ATLAS.sy(v), r = 8, dark = document.documentElement.classList.contains('dark') || getComputedStyle(document.body).backgroundColor !== 'rgb(255, 255, 255)';
-      c.globalAlpha = 1; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fillStyle = ATLAS.KINDC.term; c.fill(); c.lineWidth = 2.5; c.strokeStyle = dark ? '#fff' : '#111'; c.stroke();
-      c.font = '600 13px ' + getComputedStyle(document.body).getPropertyValue('--f-d'); c.textBaseline = 'middle'; const w = c.measureText(v.label).width;
-      c.fillStyle = dark ? 'rgba(20,20,20,.85)' : 'rgba(255,255,255,.9)'; c.fillRect(x - w / 2 - 5, y - r - 22, w + 10, 18); c.fillStyle = dark ? '#fff' : '#111'; c.fillText(v.label, x - w / 2, y - r - 13); });
-  },
-  /** Every map of this block again (after a dive, a focus, Reload). */
+  /** Every map of this block again (after Reload, a Fetch, a redraw of the note). */
   redo(id) { (NTERM.insts.get(id) || new Set()).forEach(I => { if (I.el.isConnected) NTERM.build(I); }); },
-  reload(id) { NTERM.views.delete(id); NTERM.redo(id); },
-  dive(id, docId) { const V = NTERM.view(id); V.dive = docId; V.focus = null; NTERM.redo(id); },
-  focus(id, nid) { const V = NTERM.view(id); V.focus = nid; (NTERM.insts.get(id) || new Set()).forEach(I => { if (!I.el.isConnected || !I.G) return; I.st.focus = I.G.byId.has(nid) ? nid : null; NTERM.panel(I); NTERM.draw(I); }); },
-  crumb(I) {
-    const b = M.block(I.b), V = NTERM.view(I.b), s = b.nterm.snap, dv = V.dive && I.G.byId.get(V.dive);
-    I.crumb.replaceChildren(h('button.nt-cb' + (dv ? '' : '.on'), { type: 'button', on: { click: () => NTERM.dive(I.b, null) } }, b.nterm.name + ' · ' + plural(s.notes, 'note')),
-      dv ? [h('span.muted', ' › '), h('span.nt-cb.on', dv.label)] : null, h('span.spacer'), h('span.tiny.muted.nt-hint', { title: 'Click: focus · double-click: dive into a note, open a component · drag: pan · wheel: zoom' }, 'double-click: dive in'));
-  },
-  /** The side panel: the notes (to dive into), or what the focused node is. */
+  reload(id) { NTERM.views.delete(id); (NTERM.insts.get(id) || new Set()).forEach(I => { I.cam = NEST.cam0(); I.nest = null; }); NTERM.redo(id); },
+  /** Into a note (null: back to where the map opens), on every map of this block. */
+  dive(id, docId) { const V = NTERM.view(id); V.focus = null;
+    (NTERM.insts.get(id) || new Set()).forEach(I => { if (!I.el.isConnected || !I.L) return; I.sel.focus = null; const n = docId ? I.L.byId.get(docId) : NEST.start(I); if (n) NEST.flyTo(I, n, 450); NTERM.panel(I); }); },
+  focus(id, nid) { const V = NTERM.view(id); V.focus = nid; (NTERM.insts.get(id) || new Set()).forEach(I => { if (!I.el.isConnected || !I.G) return; I.sel.focus = I.G.byId.has(nid) ? nid : null; I.sel.path = []; NTERM.panel(I); NEST.draw(I); }); },
+  /** The side panel: the notes (to fly into), the components of the note the map is in, or what the picked node is. */
   panel(I) {
-    const P = I.panel, G = I.G, b = M.block(I.b), V = NTERM.view(I.b), v = I.st.focus && G.byId.get(I.st.focus);
+    const P = I.panel, G = I.G, b = M.block(I.b), at = I.nest, v = I.sel.focus && G && G.byId.get(I.sel.focus); if (!P || !G || !b || !b.nterm || !b.nterm.snap) return;
     const dot = x => h('i', { style: { background: x.color || ATLAS.KINDC[x.kind] } }), row = (x, sub, click) => h('div.at-edge', { on: { click } }, dot(x), h('span', snippet(x.label, 70)), sub != null ? h('span.s', sub) : null);
     const cmps = G.nodes.filter(x => x.kind === 'cmp');
     if (!v) {
-      const notes = G.nodes.filter(x => x.kind === 'note').map(x => ({ x, n: cmps.filter(c => c.doc === x.id).length })).sort((p, q) => q.n - p.n);
-      return P.replaceChildren(h('div.at-ph', h('b', V.dive ? (G.byId.get(V.dive) || {}).label : b.nterm.name), h('div.tiny.muted', 'Written ' + b.nterm.snap.forms.map(f => '“' + f + '”').join(' · '))),
-        V.dive ? h('div.at-edges', cmps.map(c => row(c, c.n + '×', () => NTERM.focus(I.b, c.id))))
-          : h('div.at-edges', notes.length ? notes.map(o => row(o.x, plural(o.n, 'component'), () => NTERM.dive(I.b, o.x.id))) : h('div.tiny.muted', 'No component used it when it was fetched.')));
+      if (at && at.kind === 'note') { const cs = cmps.filter(c => c.doc === at.id).sort((p, q) => (q.n || 0) - (p.n || 0));
+        return P.replaceChildren(h('div.at-ph', h('b', at.label), h('div.tiny.muted', plural(cs.length, 'component') + ' using “' + b.nterm.name + '”')), h('div.at-edges', cs.map(c => row(c, c.n + '×', () => NTERM.focus(I.b, c.id))))); }
+      const within = at && at.kind === 'project' ? new Set(at.kids.map(k => k.id)) : null;
+      const notes = G.nodes.filter(x => x.kind === 'note' && (!within || within.has(x.id))).map(x => ({ x, n: cmps.filter(c => c.doc === x.id).length })).sort((p, q) => q.n - p.n);
+      return P.replaceChildren(h('div.at-ph', h('b', within ? at.label : b.nterm.name), h('div.tiny.muted', 'Written ' + b.nterm.snap.forms.map(f => '“' + f + '”').join(' · '))),
+        h('div.at-edges', notes.length ? notes.map(o => row(o.x, plural(o.n, 'component'), () => NTERM.dive(I.b, o.x.id))) : h('div.tiny.muted', 'No component used it when it was fetched.')));
     }
     const kids = G.edges.filter(e => e.a === v.id || e.b === v.id).map(e => G.byId.get(e.a === v.id ? e.b : e.a)).filter((x, i, A) => x && A.indexOf(x) === i);
     const head = h('div.at-ph', h('span.pill', { style: { background: v.color || ATLAS.KINDC[v.kind], color: '#fff' } }, v.id === 'T' ? 'this term' : v.ck || ATLAS.KINDL[v.kind].replace(/s$/, '')), h('b', v.kind === 'cmp' ? v.label.split(' — ')[0] : v.label), v.sub ? h('div.tiny.muted', v.sub) : null);
@@ -177,7 +150,7 @@ const NTERM = {
     if (v.kind === 'cmp') {
       acts.push(h('button.btn.xs.pri', { type: 'button', on: { click: () => NTERM.open(v.id) } }, 'Open'), h('button.btn.xs', { type: 'button', title: 'A pulled-in copy of it beside this term (live: it changes with the original)', on: { click: () => NTERM.pull(I.b, v.id) } }, 'Pull in here'));
       head.append(h('div.nt-snip', v.s.t.slice(0, v.s.at[0]), h('mark', v.s.t.slice(v.s.at[0], v.s.at[1])), v.s.t.slice(v.s.at[1])), h('div.tiny.muted', plural(v.n, 'use') + ' · as ' + v.f.map(f => '“' + f + '”').join(', ')));
-    } else if (v.kind === 'note') acts.push(h('button.btn.xs.pri', { type: 'button', on: { click: () => NTERM.dive(I.b, v.id) } }, 'Dive in'), h('a.btn.xs', { href: '#/doc/' + v.id }, 'Open the note'));
+    } else if (v.kind === 'note') acts.push(h('button.btn.xs.pri', { type: 'button', on: { click: () => NTERM.dive(I.b, v.id) } }, 'Fly in'), h('a.btn.xs', { href: '#/doc/' + v.id }, 'Open the note'));
     else if (v.id !== 'T' && (v.kind === 'term' || v.kind === 'person') && M.term(v.id)) acts.push(h('a.btn.xs', { href: '#/lens/' + v.id }, 'Its lens'));
     else if (v.kind === 'paper' && M.lib(v.id)) acts.push(h('a.btn.xs', { href: '#/read/' + v.id }, 'Read'));
     acts.push(h('button.btn.xs.ghost', { type: 'button', on: { click: () => NTERM.focus(I.b, null) } }, 'Unfocus'));
@@ -189,24 +162,6 @@ const NTERM = {
     const t = M.block(termId), x = M.block(id); if (!t || !x || x.status !== 'live') return toast('That component is no longer in the notebook');
     const y = DB.where('blocks', z => z.docId === t.docId && z.kind === 'ref' && z.refBlockId === id && z.status === 'live')[0]; if (y) { App.openBlock(y.id); return toast('Already pulled into this note'); }
     M.addBlock(t.docId, t.id, { kind: 'ref', refItemId: null, refBlockId: id, x: Math.round(((t.x || 0) + (t.w || 616) + 56) / 14) * 14, y: t.y || 0, w: 392 }); changed(); toast('Pulled in beside the term');
-  },
-  /** The map's mouse: focus, dive, open, pan, zoom, drag a node (kept until Reload). */
-  wire(I) {
-    const cv = I.cv, at = e => { const r = cv.getBoundingClientRect(), k = cv.width / Math.max(1, r.width); return [(e.clientX - r.left) * k, (e.clientY - r.top) * k, k]; };
-    let drag = null;
-    cv.addEventListener('pointerdown', e => { if (e.button !== 0) return; e.stopPropagation(); const [x, y, k] = at(e), v = NTERM.as(I, () => ATLAS.hit(x, y)); drag = { x: e.clientX, y: e.clientY, k, v, moved: false, tx: I.T.x, ty: I.T.y, vx: v && v.x, vy: v && v.y }; cv.setPointerCapture(e.pointerId); });
-    cv.addEventListener('pointermove', e => {
-      if (drag) { const dx = (e.clientX - drag.x) * drag.k, dy = (e.clientY - drag.y) * drag.k; if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
-        if (drag.v && drag.moved) { drag.v.x = drag.vx + dx / I.T.s; drag.v.y = drag.vy + dy / I.T.s; NTERM.view(I.b).moved[drag.v.id] = { x: Math.round(drag.v.x), y: Math.round(drag.v.y) }; } else if (!drag.v) { I.T.x = drag.tx + dx; I.T.y = drag.ty + dy; }
-        return NTERM.draw(I); }
-      const [x, y] = at(e), v = NTERM.as(I, () => ATLAS.hit(x, y)), id = v ? v.id : null; if (id !== I.st.hover) { I.st.hover = id; cv.style.cursor = v ? 'pointer' : 'grab'; NTERM.draw(I); } });
-    cv.addEventListener('pointerleave', () => { if (I.st.hover) { I.st.hover = null; NTERM.draw(I); } });
-    cv.addEventListener('pointerup', e => { const d = drag; drag = null; if (!d || d.moved) return; e.stopPropagation(); const [x, y] = at(e), v = NTERM.as(I, () => ATLAS.hit(x, y)); NTERM.focus(I.b, v ? v.id : null); });
-    cv.addEventListener('dblclick', e => { e.stopPropagation(); const [x, y] = at(e), v = NTERM.as(I, () => ATLAS.hit(x, y)); if (!v) return;
-      if (v.kind === 'note') return NTERM.dive(I.b, v.id); if (v.kind === 'cmp') return NTERM.open(v.id);
-      if ((v.kind === 'term' || v.kind === 'person') && v.id !== 'T' && M.term(v.id)) return App.go('#/lens/' + v.id); if (v.kind === 'paper' && M.lib(v.id)) return App.go('#/read/' + v.id); });
-    cv.addEventListener('wheel', e => { e.preventDefault(); e.stopPropagation(); const [x, y] = at(e), s0 = I.T.s, s = Math.min(6, Math.max(.05, s0 * (e.deltaY < 0 ? 1.12 : 1 / 1.12)));
-      I.T.x = x - (x - I.T.x) * (s / s0); I.T.y = y - (y - I.T.y) * (s / s0); I.T.s = s; NTERM.draw(I); }, { passive: false });
   },
   /** Dive in: the same map on the whole window (Esc or Close comes back). */
   max(b) {
