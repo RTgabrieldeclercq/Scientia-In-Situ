@@ -18,7 +18,9 @@ Pages built by scripts in the browser come as the HTML the site sends. Standard 
 import base64, concurrent.futures, html, ipaddress, mimetypes, re, socket, threading, time, urllib.error, urllib.parse, urllib.request
 from html.parser import HTMLParser
 
-UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
+# V3.977: it says what it is (a site that wants a person at a browser gets the saved-page route instead, never a disguise)
+UA = 'Mozilla/5.0 (compatible; ScientiaInSitu/1.0; a lab notebook saving one page for its reader)'
+SAVED = 'open the page in your browser, save it as "Webpage, Single File" (Ctrl+S, an .mhtml file), and drop that file on the note: it becomes this component, as you saw it'
 MAX_PAGE, MAX_PDF, MAX_RES, MAX_TOTAL, MAX_N = 15 << 20, 80 << 20, 8 << 20, 25 << 20, 400
 TIMEOUT, DEADLINE, WORKERS = 15, 120, 8
 CSP = ("default-src 'none'; img-src data: blob:; media-src data: blob:; font-src data:; style-src 'unsafe-inline' data:; "
@@ -178,7 +180,7 @@ class _Capture:
         for t in T:
             if t[0] == 's' and t[1] == 'base' and _get(t[2], 'href'): base = urllib.parse.urljoin(final, _get(t[2], 'href')); break
         J = lambda u: urllib.parse.urljoin(base, (u or '').strip())
-        out, sheets, skip, title, in_title, in_style, in_media, in_picture, icon = [], [], [], [], False, False, 0, 0, None
+        out, sheets, skip, title, in_title, in_style, in_media, in_picture, icon, in_svg = [], [], [], [], False, False, 0, 0, None, 0
         for t in T:
             k = t[0]
             if skip:   # inside something left out whole (a script, a frame): until its end, nested ones counted
@@ -231,7 +233,8 @@ class _Capture:
                         if v and not v.startswith('#'): _set(attrs, a, self.ref(J(v)))
                 if _get(attrs, 'style'): _set(attrs, 'style', self.css(_get(attrs, 'style'), base))
                 if _get(attrs, 'background') and tag in ('body', 'table', 'td', 'th', 'tr'): _set(attrs, 'background', self.ref(J(_get(attrs, 'background'))))
-                if tag == 'title': in_title = not sc
+                if tag == 'title' and not title and not in_svg: in_title = not sc   # the page's own title (an SVG's <title> is a tooltip)
+                if tag == 'svg' and not sc: in_svg += 1
                 if tag == 'style': in_style = not sc
                 out.append(t); continue
             if k == 'e':
@@ -241,6 +244,7 @@ class _Capture:
                 if tag in ('video', 'audio') and in_media: in_media -= 1
                 if tag == 'picture' and in_picture: in_picture -= 1
                 if tag == 'title': in_title = False
+                if tag == 'svg' and in_svg: in_svg -= 1
                 if tag == 'style': in_style = False
                 out.append(t); continue
             if k == 'd':
@@ -292,7 +296,7 @@ def capture(url, allow_private=False):
     except Refused as e:
         raise Refused('That page is bigger than this app keeps (80 MB)') if str(e) == 'too big' else e
     except urllib.error.HTTPError as e:
-        raise Refused('The site answered %d (%s)' % (e.code, e.reason) + (': it lets only a browser in — save the page from your browser (Ctrl+S) and drop the file in the note' if e.code in (401, 403, 429) else ''))
+        raise Refused('The site answered %d (%s)' % (e.code, e.reason) + (': it lets only a person at a browser in — ' + SAVED if e.code in (401, 403, 429, 503) else ''))
     except Exception as e: raise Refused('The site did not answer: ' + str(getattr(e, 'reason', e))[:160])
     C.url = final
     path = urllib.parse.urlsplit(final).path
@@ -310,6 +314,11 @@ def capture(url, allow_private=False):
     else:
         raise Refused('That address is a file (%s), not a page: download it and drop it in the note' % (ctype or 'unknown type'))
     doc, title, icon = C.page(text, final)
+    # a robot check in place of the page (a "just a moment", a "verifying", a bare page named after its host): the saved-page route
+    words = len(re.findall(r'[A-Za-z]{4,}', re.sub(r'<(script|style)\b.*?</\1>|<[^>]+>', ' ', text, flags=re.S | re.I)))
+    host = (urllib.parse.urlsplit(final).hostname or '').lower()
+    if words < 160 and (re.search(r'just a moment|verif|attention required|access denied|captcha|are you a robot|security check|bot detection|unusual traffic', title or '', re.I) or (title or '').strip().lower() in (host, host.replace('www.', ''), '')):
+        raise Refused('The site showed a check for robots instead of the page — ' + SAVED)
     data = doc.encode('utf-8')
     return {'kind': 'html', 'data': data, 'title': title or urllib.parse.urlsplit(final).hostname or final, 'final': final, 'at': at,
             'size': len(data), 'resources': len(C.order) - C.missing, 'missing': C.missing, 'icon': icon}

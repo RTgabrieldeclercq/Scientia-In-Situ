@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "60f8487f2634bd6ef40a336c7976afafde19ca7f",
-  "subject": "V3.976: Scientia — the Synthesis asks for its notes; Flag for synthesis; lit reviews by flags only",
+  "commit": "8860d4eec9a244ee1ffd720821e932d4f226e142",
+  "subject": "V3.978: Scientia — slides show each version and delete it; delete a project from its page; a theme's page shows activity",
   "date": "2026-11-11"
  },
- "cut": "7162b7e50084321bac0cfc17ab754cf8374a6b7e",
+ "cut": "edc872c9dc9e02b9526a74872c401e8ef3c8407e",
  "names": [
   "DESKLAB",
   "LABSYNC",
