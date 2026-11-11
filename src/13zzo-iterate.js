@@ -70,7 +70,7 @@ const ITER = {
     b.modified = isoLocal(new Date()); DB.put('blocks', b); M.wire(from.id, b.id, ITER.REL, true); changed();
     const pane = App.panes().find(p => p.docId === b.docId && p.paper); if (pane && pane.reveal) setTimeout(() => pane.reveal(b.id), 120);
     setTimeout(() => ITER.ask(b.id), 300);
-    toast('Version ' + v + ' of “' + snippet(M.blockName(from), 32) + '” is beside it: say under it how it improved', 5200);
+    toast('Version ' + v + ' of “' + snippet(M.blockName(from), 32) + '” is ' + (typeof IDECK !== 'undefined' && !IDECK.spread(from) ? 'up, the earlier ones on its slides' : 'beside it') + ': say under it how it improved', 5200);   // V3.974
   },
   /** The caption's words into the version (true when they changed). */
   store(id, ed) { const cur = M.block(id); if (!cur || !cur.iter || !ed.isConnected) return false; const t = ed.innerText.replace(/ /g, ' ').replace(/\s+$/, ''); if (t === (cur.iter.why || '')) return false; cur.iter.why = t; cur.modified = isoLocal(new Date()); DB.put('blocks', cur); return true; },
