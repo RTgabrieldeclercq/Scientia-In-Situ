@@ -112,6 +112,7 @@ const typechip = t => h('span.typechip', prof(t).label);
 function applyKindCSS() {
   const s = settings(), lines = [':root{'], dark = [];
   for (const k of [...KINDS, ...RETIRED_KINDS]) { const c = (s.kinds[k.id] || k).color; lines.push(`--k-${k.id}:${c};`); dark.push(`--k-${k.id}:color-mix(in srgb,${c} 58%,#fff);`); }
+  { const bc = /^#[0-9a-f]{6}$/i.test(s.bridgeColor || '') ? s.bridgeColor : '#1f9d55'; lines.push(`--bridge:${bc};`); dark.push(`--bridge:color-mix(in srgb,${bc} 70%,#fff);`); }   // V3.981: bridges (13zzu)
   lines.push('}');
   const dk = dark.join('');
   lines.push(`@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){${dk}}}`, `:root[data-theme="dark"]{${dk}}`);

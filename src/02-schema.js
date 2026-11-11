@@ -117,6 +117,7 @@ const DEFAULT_SETTINGS = {
   kinds: Object.fromEntries(KINDS.map(k => [k.id, { color: k.color, mode: k.mode }])),
   termKey: 'alt+w',            // Ctrl+W works in Focus mode (fullscreen + keyboard lock); browsers reserve it otherwise
   structKey: 'ctrl+enter',
+  bridgeColor: '#1f9d55',      // V3.981: the underline under bridged words (13zzu)
   weekStartDow: 6,             // Saturday → Friday; the review opens on the weekend after
   reviewPreview: false,
   timerCapHours: 4,

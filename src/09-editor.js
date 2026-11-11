@@ -8,13 +8,14 @@
      struct  (Ctrl+Enter)  claim · barrier · resolution · … — coloured per Settings
      term    (Ctrl+W)      outlined bold; joins the project's term repository
      cite    (Ctrl+I)      a library record, shown as title / author–year / number
-     link    (Ctrl+Enter L) a note or component; a dotted ring means not yet written
+     link    a note or component (made before V3.981; bridges replaced them, 13zzu) — underlined like bridged words
+     bridge  (Ctrl+Enter N) not stored here: the words of this component shown in another note (13zzu), underlined
    ========================================================================== */
 const OBJ = '￼';
 const ED = {
   /* ---------------- render ---------------- */
   render(el, b, docOverride) {
-    const body = b.body, text = body.text, marks = (body.marks || []).filter(m => m.to > m.from);
+    const body = b.body, text = body.text, marks = (body.marks || []).filter(m => m.to > m.from).concat(el && el.dataset && b.id && el.dataset.own === b.id && typeof BRIDGE !== 'undefined' ? BRIDGE.marks(b) : []);   // V3.981: bridged words, in the component's own box
     const d = docOverride || M.doc(b.docId), mode = (d && d.citeMode) || 'title', citeNums = ED.citeNumbers(d);
     const cuts = new Set([0, text.length]); marks.forEach(m => { cuts.add(m.from); cuts.add(m.to); });
     // list lines (13u) get a hanging indent: [marker][text that wraps under itself], so cut at line starts and marker ends
@@ -37,6 +38,7 @@ const ED = {
       let node = document.createTextNode(seg);
       for (const m of cov.filter(m => m.type === 'fmt')) node = h('span.f' + m.s, { 'data-m': m.id }, node);
       for (const m of cov.filter(m => m.type === 'link')) { const tg = IX.linkTarget(m); node = h('span.ln' + (tg ? '' : '.open') + (m.to === z ? '.end' : ''), { 'data-m': m.id, 'data-link': m.ref || '', 'data-title': m.title || '' }, node); }
+      for (const m of cov.filter(m => m.type === 'bridge')) node = h('span.br', { 'data-br': m.ids }, node);   // no data-m: ED.read never keeps it
       for (const m of cov.filter(m => m.type === 'term')) node = h('span.tm', { 'data-m': m.id, 'data-term': m.ref }, node);
       for (const m of cov.filter(m => m.type === 'person')) node = h('span.mn', { 'data-m': m.id, 'data-uid': m.uid || '', title: (m.name || '') + (m.uid ? ' · a lab member' : '') }, node);   // V3.947: @Name (13zzg)
       for (const m of cov.filter(m => m.type === 'struct')) {
@@ -225,7 +227,7 @@ const ED = {
     const choose = kind => { done(); ED.makeStructure(el, b, sel, kind, text); };
     const btn = (lab, k, fn, kc) => h('button', { on: { mousedown: e => { e.preventDefault(); fn(); } } }, kc ? h('i', { style: { '--kc': kc } }) : null, lab, h('u', k.toUpperCase()));
     const strip = h('div.strip', h('div.strip-h', 'What is “' + snippet(text, 38) + '”?'), h('div.strip-b', KINDS.map(k => btn(k.label, k.key, () => choose(k.id), `var(--k-${k.id})`))),
-      h('div.strip-b.alt', btn('Existing structure…', '/', () => { done(); ED.mentionPicker(el, b, sel); }), btn('Term', 'w', () => { done(); ED.markTerm(el, b, sel); }), btn('Link to a note…', 'l', () => { done(); ED.linkPicker(el, b, sel); })));
+      h('div.strip-b.alt', btn('Existing structure…', '/', () => { done(); ED.mentionPicker(el, b, sel); }), btn('Term', 'w', () => { done(); ED.markTerm(el, b, sel); }), btn('Bridge to a note…', 'n', () => { done(); BRIDGE.fromText(el, b, sel); })));
     document.body.append(strip);
     const r = strip.getBoundingClientRect(); strip.style.left = clamp(sel.rect.left, 8, innerWidth - r.width - 8) + 'px';
     strip.style.top = (sel.rect.top > r.height + 16 ? sel.rect.top - r.height - 8 : sel.rect.bottom + 8) + 'px';
@@ -234,7 +236,7 @@ const ED = {
       if (e.key === 'Enter') { e.preventDefault(); choose('takeaway'); return; }
       if (e.key === '/') { e.preventDefault(); done(); ED.mentionPicker(el, b, sel); return; }
       if (e.key.toLowerCase() === 'w' && !e.ctrlKey) { e.preventDefault(); done(); ED.markTerm(el, b, sel); return; }
-      if (e.key.toLowerCase() === 'l' && !e.ctrlKey) { e.preventDefault(); done(); ED.linkPicker(el, b, sel); return; }
+      if ((e.key.toLowerCase() === 'n' || e.key.toLowerCase() === 'l') && !e.ctrlKey) { e.preventDefault(); done(); BRIDGE.fromText(el, b, sel); return; }   // L: where Link to a note was
       const k = KINDS.find(x => x.key === e.key.toLowerCase()); if (k && !e.ctrlKey && !e.altKey) { e.preventDefault(); choose(k.id); return; }
       if (!['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) done();
     };
@@ -274,17 +276,7 @@ const ED = {
         render: x => h('div', kchip(x.kind), ' ', h('span.serif', snippet(x.text, 70)), h('span.s', M.docPath(M.doc(x.originDocId)))),
         onPick: x => { closePop(); ED.commit(el, b, body => { body.marks.push({ id: uid('m'), type: 'struct', from: sel.from, to: sel.to, ref: x.id }); }, sel.to); toast('Linked to the earlier ' + KIND[x.kind].label.toLowerCase()); } })]);
   },
-  /** Links point at a note or a component by id; a link to something not yet written stays legal and shows as open. */
-  linkPicker(el, b, sel, apply) {
-    const txt = ED.read(el, M.block(b.id).body.marks).text.slice(sel.from, sel.to).replace(OBJ, '').trim();
-    const items = q => { const k = q || txt.toLowerCase(); const docs = DB.where('documents', x => x.id !== b.docId && (!k || x.title.toLowerCase().includes(k))).map(x => ({ t: 'doc', x }));
-      const comps = q ? DB.where('blocks', x => x.status === 'live' && x.kind === 'component' && x.docId !== b.docId && (x.label + ' ' + x.body.text).toLowerCase().includes(q)).map(x => ({ t: 'block', x })) : [];
-      return [...docs, ...comps, { t: 'new', title: q ? inpTitle(q) : txt }]; };
-    const inpTitle = q => q.charAt(0).toUpperCase() + q.slice(1);
-    popover(sel.rect.left, sel.rect.bottom + 8, [h('h5', 'Link “' + snippet(txt, 30) + '” to…'), optionPicker({ placeholder: 'Search notes and components…', items,
-      render: o => o.t === 'doc' ? h('div', typechip(o.x.type), ' ', o.x.title, h('span.s', M.docPath(o.x))) : o.t === 'block' ? h('div', h('b', M.blockName(o.x)), ' ', h('span.serif', snippet(o.x.body.text, 60)), h('span.s', M.docPath(M.doc(o.x.docId)))) : h('div', h('b', '+ Not written yet: '), '“' + o.title + '”', h('span.s', 'Legal — it shows as an open link until a note with that title exists')),
-      onPick: o => { closePop(); if (apply) return apply(o.t === 'new' ? { ref: null, title: o.title } : { ref: o.x.id }); ED.commit(el, b, body => { body.marks.push(Object.assign({ id: uid('m'), type: 'link', from: sel.from, to: sel.to }, o.t === 'new' ? { ref: null, title: o.title } : { ref: o.x.id })); }, sel.to); } })]);
-  },
+  /** V3.981: links are no longer made — bridges replaced them (13zzu); links made before still open, and are underlined. */
   followLink(b, markId, ev) {
     const mk = (M.block(b.id).body.marks || []).find(m => m.id === markId); if (!mk) return;
     const tg = IX.linkTarget(mk);

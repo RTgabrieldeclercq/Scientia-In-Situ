@@ -28,7 +28,7 @@ const EBAR = {
   cur: null, over: false, popOpen: false,
   /** The optional buttons behind +, in the order they appear. */
   EXTRA: [
-    ['link', 'Link to a note', 'Link the selected words to a note or a component (or one not written yet)'],
+    ['link', 'Bridge to a note', 'Bridge the selected words to another note: they show there, live, and are underlined here'],
     ['cite', 'Citation', 'Insert a citation from the library (Ctrl+I, or type /cite)'],
     ['term', 'Term', 'Mark the word or phrase as a term of the project'],
     ['eq', 'Equation', 'An equation here in the text, as an equation component (its terms can be wired and solved)'],
@@ -74,7 +74,7 @@ const EBAR = {
       B(I.box, 'Checkbox list — click a box to tick it', () => EBAR.list('box'), { cls: 'eb-box' }),
       FBAR.sep(),
       B(I.make, 'Make it… — what the selected phrase is: a claim, a barrier, a question…', () => EBAR.makeIt(), { key }),
-      x('link') ? B(I.link, 'Link to a note…', () => EBAR.pick('link')) : null,
+      x('link') ? B(I.link, 'Bridge to a note…', () => EBAR.pick('link')) : null,
       x('cite') ? B('❝', 'Citation…', () => EBAR.pick('cite'), { key: 'Ctrl+I' }) : null,
       x('term') ? B(h('span.bT', 'T'), 'Term — the word or phrase joins the project’s terms', () => EBAR.pick('term'), { key: keyLabel(settings().termKey) }) : null,
       x('eq') ? B(h('span.bFx', 'ƒx'), 'Equation — here in the text, as an equation component', () => EBAR.equation()) : null,
@@ -103,7 +103,7 @@ const EBAR = {
     if (what === 'term') return ED.markTerm(c.el, c.b, sel);
     if (what === 'cite') return ED.citePicker(c.el, c.b, ED.selection(c.el));
     if (sel.collapsed) return toast('Select the words first');
-    if (what === 'link') return ED.linkPicker(c.el, c.b, sel);
+    if (what === 'link') return BRIDGE.fromText(c.el, c.b, sel);   // V3.981: a bridge (13zzu)
     if (what === 'mention') return ED.mentionPicker(c.el, c.b, sel);
   },
   insert(sym) { const c = EBAR.cur; if (!c) return; EBAR.focus(); document.execCommand('insertText', false, sym); },
