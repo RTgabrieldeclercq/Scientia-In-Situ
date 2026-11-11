@@ -24,6 +24,14 @@
    stylesheets and fonts inlined, its scripts and frames out, links to the live page, the same no-network policy),
    web.via = 'saved'. Dropped or pasted on a note (13zu2), chosen in the Website… dialog, or offered when a capture is
    refused; dropped on a website component it becomes that component's next version.
+   V3.979 — Gabe: "If given a website link, it should do that pipeline
+   automatically." A link the site keeps from the app (serve.py answers
+   blocked) opens in your own browser on the computer, and a card waits in
+   the corner (waitSaved): answer the site there if it asks, press Ctrl+S →
+   "Webpage, Single File", and the page comes in by itself — the computer
+   finds the file in Downloads (or Desktop, Documents) and makes the copy by
+   the capture's rules (api/capture/watch, webcap.watch_*). The app never
+   drives the browser; it only reads the file you saved.
    ========================================================================== */
 const WEBCAP = {
   NO_SERVER: 'Capturing from an address needs the app on your computer (or a device paired with it). Here, open the page in your browser, save it as “Webpage, Single File” (Ctrl+S, an .mhtml file) and add that file',
@@ -35,7 +43,7 @@ const WEBCAP = {
     const inp = h('input.inp', { placeholder: 'https://…', style: { width: '100%' } }), go = () => { const v = inp.value.trim(); if (!v) return false; WEBCAP.capture(d, p, WEBCAP.norm(v)); };
     inp.addEventListener('keydown', e => { if (e.key === 'Enter' && go() !== false) m.close(); });
     const m = modal({ title: 'A website', body: h('div.webcap-ask', h('label.f', h('span', 'Its address: the page is saved as it is now, in the note — the live page is never loaded again'), inp),
-      h('p.tiny.muted', { style: { margin: '14px 0 6px' } }, 'A site that lets only a person at a browser in (most journals): open the page in Chrome or Edge, save it as “Webpage, Single File” (Ctrl+S), and add that file — or drop it on the note.'),
+      h('p.tiny.muted', { style: { margin: '14px 0 6px' } }, 'A site that lets only a person at a browser in (most journals) opens in your browser: press Ctrl+S there and save it as “Webpage, Single File” — it comes into the note by itself. A page you saved before:'),
       h('button.btn.sm', { type: 'button', on: { click: () => { m.close(); WEBCAP.pickSaved(d, p); } } }, 'Add a page saved in the browser (.mhtml)…')),
       actions: [{ label: 'Cancel' }, { label: 'Capture', pri: true, run: go }] });
   },
@@ -58,11 +66,37 @@ const WEBCAP = {
     if (WEBCAP.busy) return toast('Still capturing the last one…'); WEBCAP.busy = true;
     toast('Capturing ' + WEBCAP.host(url) + '… (the page and everything it shows)', 60000);
     const id = uid('m'); let j; try { j = await WEBCAP.fetch(url, id); } finally { WEBCAP.busy = false; $$('#toasts > .toast').forEach(t => { if (/^Capturing /.test(t.textContent)) t.remove(); }); }
-    if (!j.ok) return WEBCAP.refused(d, p, j.error, from);
-    // the media record of the file the server saved (as MEDIA.add makes one), then the component (as + Insert makes an HTML page or a PDF)
+    if (!j.ok) return j.blocked ? WEBCAP.waitSaved(d, p, url, from, j.error) : WEBCAP.refused(d, p, j.error, from);
+    return WEBCAP.keep(d, p, url, id, j, from);
+  },
+  /** The media record of the file the server saved (as MEDIA.add makes one), then the component (as + Insert makes an HTML page or a PDF). */
+  keep(d, p, url, id, j, from) {
     const pdf = j.kind === 'pdf', ext = pdf ? 'pdf' : 'html', now = isoLocal(new Date());
     DB.put('media', { id, kind: ext, ext, name: WEBCAP.file(j, ext), mime: pdf ? 'application/pdf' : 'text/html', size: j.size || 0, w: 0, h: 0, dur: null, created: now, path: j.path || `images/${id}.${ext}` });
-    return WEBCAP.make(d, p, id, ext, { url, final: j.final || url, title: j.title || '', at: j.at || now, size: j.size || 0, missing: j.missing || 0, icon: j.icon || null }, from);
+    const cur = from && M.block(from.id);
+    return WEBCAP.make(d, p, id, ext, Object.assign({ url, final: j.final || url, title: j.title || '', at: j.at || now, size: j.size || 0, missing: j.missing || 0, icon: j.icon || null }, j.via ? { via: j.via } : {}), cur && cur.status === 'live' ? cur : null);
+  },
+  /** V3.979 — the site lets only a person at a browser in: the link opens in your browser (on the computer), and the page you save there
+      (Ctrl+S → "Webpage, Single File") comes in by itself. A card in the corner says so, and stops waiting when you say. */
+  async waitSaved(d, p, url, from, why) {
+    const id = uid('m'), call = o => fetch('api/capture/watch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ id }, o)) }).then(r => r.json());
+    let r = null; try { r = await call({ op: 'start', url }); } catch { } if (!r || !r.ok) return WEBCAP.refused(d, p, why, from);
+    const host = WEBCAP.host(url); let over = false;
+    const end = () => { over = true; card.remove(); }, stop = () => { end(); call({ op: 'stop' }).catch(() => { }); };
+    const card = h('div.webcap-wait', { role: 'status' },
+      h('div.ww-h', h('span.ww-dot'), h('b', 'Waiting for ' + host), h('span.spacer'), h('button.ib', { type: 'button', title: 'Stop waiting', on: { click: stop } }, '×')),
+      h('p', r.opened ? ['It lets only a person at a browser in, so it opened in your browser. '] : [h('a', { href: url, target: '_blank', rel: 'noopener noreferrer' }, 'Open it in your browser'), ' on the computer that runs the app (it lets only a person at a browser in). '],
+        'If it asks whether you are a person, or to sign in, answer it there; then press ', h('kbd', 'Ctrl+S'), ' and save it as ', h('b', '“Webpage, Single File”'), '.'),
+      h('p.tiny.muted', 'It comes into this note by itself once it is saved' + (r.folders && r.folders.length ? ' (in ' + r.folders.map(f => f.split(/[\\/]/).pop()).join(', ') + ')' : '') + '. Chrome or Edge.'));
+    document.body.append(card);
+    while (!over) {
+      await new Promise(res => setTimeout(res, 1500)); if (over) return;
+      let j; try { j = await call({ op: 'poll' }); } catch { continue; }
+      if (over || (j && j.waiting)) continue; end();
+      if (!j || !j.ok) return toast('Not added: ' + ((j && j.error) || 'the saved page did not come'), 7000);
+      const doc = M.doc(d.id); if (!doc) return;
+      return WEBCAP.keep(doc, p, url, id, j, from);
+    }
   },
   /** The component of a saved copy (media id, 'html' | 'pdf'); from: the version it saves again. */
   make(d, p, id, ext, web, from) {

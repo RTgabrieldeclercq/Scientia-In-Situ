@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "8860d4eec9a244ee1ffd720821e932d4f226e142",
-  "subject": "V3.978: Scientia — slides show each version and delete it; delete a project from its page; a theme's page shows activity",
+  "commit": "d9464938ea6bf567a5c81f385459821a6ab1845e",
+  "subject": "V3.979: Scientia — a link a site keeps from the app opens in your browser, and the page you save there comes into the note by itself",
   "date": "2026-11-11"
  },
- "cut": "edc872c9dc9e02b9526a74872c401e8ef3c8407e",
+ "cut": "658751549efab13150e63249f23ee818576bd5df",
  "names": [
   "DESKLAB",
   "LABSYNC",

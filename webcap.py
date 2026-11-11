@@ -14,8 +14,15 @@ A URL that answers with a PDF comes back as that PDF; a picture or plain text co
 Only http and https; only addresses on the internet, unless the request comes from this computer itself (a paired device
 may not reach this computer's own services, or its network's, through it); every redirect is checked again.
 Pages built by scripts in the browser come as the HTML the site sends. Standard library only.
+
+V3.979 — a site that lets only a person at a browser in (Gabe: "If given a website link, it should do that pipeline
+automatically"). capture() raises Blocked for it (401, 403, 429, 503, a check for robots). The app then opens the link in the
+person's own browser (serve.py, this computer only) and watches the folders a browser saves into (saved_folders: Downloads,
+Desktop, Documents): the page they save there with Ctrl+S → "Webpage, Single File" (MHTML) is taken by itself (watch_*,
+saved_page) and made the copy by the rules above — every resource from the file (_Parts), nothing fetched. The app never
+drives the browser: the person opens, answers and saves; the app only reads the file they saved.
 """
-import base64, concurrent.futures, html, ipaddress, mimetypes, re, socket, threading, time, urllib.error, urllib.parse, urllib.request
+import base64, concurrent.futures, email, email.utils, html, ipaddress, mimetypes, os, re, socket, sys, threading, time, urllib.error, urllib.parse, urllib.request
 from html.parser import HTMLParser
 
 # V3.977: it says what it is (a site that wants a person at a browser gets the saved-page route instead, never a disguise)
@@ -34,6 +41,10 @@ LAZYSET = ('data-srcset', 'data-lazy-srcset')
 
 class Refused(Exception):
     """A capture that cannot or may not be made; the message is for the person."""
+
+
+class Blocked(Refused):
+    """V3.979: the site lets only a person at a browser in (the page they save there can be taken instead)."""
 
 
 def _check(host, allow_private):
@@ -132,9 +143,14 @@ _URL = re.compile(r'url\(\s*(?:"([^"]*)"|\'([^\']*)\'|([^)\s]*))\s*\)', re.I)
 _IMP = re.compile(r'@import\s+(?:url\(\s*)?(?:"([^"]*)"|\'([^\']*)\'|([^\s;)]+))\s*\)?\s*([^;]*);', re.I)
 
 
+def _cands(srcset):
+    return [p.strip().split()[0] for p in re.split(r',\s+(?=\S)', (srcset or '').strip()) if p.strip()]
+
+
 class _Capture:
     def __init__(self, url, allow):
         self.url, self.net, self.want, self.order, self.missing, self.total, self.lock = url, _Net(allow), {}, [], 0, 0, threading.Lock()
+        self.has = None   # V3.979: a saved page's "is this address in the file?" — then any candidate the browser showed is used
 
     def ref(self, u):
         """A placeholder for a resource fetched later (its data: URL once it came)."""
@@ -180,7 +196,7 @@ class _Capture:
         for t in T:
             if t[0] == 's' and t[1] == 'base' and _get(t[2], 'href'): base = urllib.parse.urljoin(final, _get(t[2], 'href')); break
         J = lambda u: urllib.parse.urljoin(base, (u or '').strip())
-        out, sheets, skip, title, in_title, in_style, in_media, in_picture, icon, in_svg = [], [], [], [], False, False, 0, 0, None, 0
+        out, sheets, skip, title, in_title, in_style, in_media, in_picture, icon, in_svg, pic = [], [], [], [], False, False, 0, 0, None, 0, []
         for t in T:
             k = t[0]
             if skip:   # inside something left out whole (a script, a frame): until its end, nested ones counted
@@ -193,7 +209,9 @@ class _Capture:
                     if not sc: skip.append(tag)
                     continue
                 if tag in DROP_TAG or tag == 'noscript': continue
-                if tag == 'source' and (in_picture or in_media): continue
+                if tag == 'source' and (in_picture or in_media):
+                    if in_picture: pic.extend(_cands(_get(attrs, 'srcset')))
+                    continue
                 attrs[:] = [(a, v) for a, v in attrs if not a.startswith('on') and a not in ('integrity', 'nonce', 'crossorigin', 'ping')]
                 if tag == 'meta':
                     he = (_get(attrs, 'http-equiv') or '').lower()
@@ -218,6 +236,8 @@ class _Capture:
                     weak = not src or (src.startswith('data:') and len(src) < 400) or re.search(r'placeholder|blank\.|spacer|lazy|transparent', src, re.I)
                     pick = _pick(sset) if sset else None
                     real = lazy if weak and lazy else pick or src
+                    if self.has:   # a saved page holds the one the browser showed
+                        real = next((c for c in [real, src, lazy] + _cands(sset) + (pic if in_picture else []) if c and not c.startswith('data:') and self.has(J(c))), real)
                     if real and not real.startswith('data:'): _set(attrs, 'src', self.ref(J(real)))
                     elif real and real != src: _set(attrs, 'src', real)
                     for a in ('srcset', 'sizes', 'loading', 'decoding', 'fetchpriority') + LAZY + LAZYSET: _set(attrs, a, None)
@@ -225,7 +245,7 @@ class _Capture:
                     for a in ('src', 'autoplay', 'preload'): _set(attrs, a, None)
                     if _get(attrs, 'poster'): _set(attrs, 'poster', self.ref(J(_get(attrs, 'poster'))))
                     if not sc: in_media += 1
-                if tag == 'picture' and not sc: in_picture += 1
+                if tag == 'picture' and not sc: in_picture += 1; pic = []
                 if tag == 'input' and (_get(attrs, 'type') or '').lower() == 'image' and _get(attrs, 'src'): _set(attrs, 'src', self.ref(J(_get(attrs, 'src'))))
                 if tag in ('image', 'feimage'):
                     for a in ('href', 'xlink:href'):
@@ -296,7 +316,8 @@ def capture(url, allow_private=False):
     except Refused as e:
         raise Refused('That page is bigger than this app keeps (80 MB)') if str(e) == 'too big' else e
     except urllib.error.HTTPError as e:
-        raise Refused('The site answered %d (%s)' % (e.code, e.reason) + (': it lets only a person at a browser in — ' + SAVED if e.code in (401, 403, 429, 503) else ''))
+        if e.code in (401, 403, 429, 503): raise Blocked('The site answered %d (%s): it lets only a person at a browser in — ' % (e.code, e.reason) + SAVED)
+        raise Refused('The site answered %d (%s)' % (e.code, e.reason))
     except Exception as e: raise Refused('The site did not answer: ' + str(getattr(e, 'reason', e))[:160])
     C.url = final
     path = urllib.parse.urlsplit(final).path
@@ -318,7 +339,121 @@ def capture(url, allow_private=False):
     words = len(re.findall(r'[A-Za-z]{4,}', re.sub(r'<(script|style)\b.*?</\1>|<[^>]+>', ' ', text, flags=re.S | re.I)))
     host = (urllib.parse.urlsplit(final).hostname or '').lower()
     if words < 160 and (re.search(r'just a moment|verif|attention required|access denied|captcha|are you a robot|security check|bot detection|unusual traffic', title or '', re.I) or (title or '').strip().lower() in (host, host.replace('www.', ''), '')):
-        raise Refused('The site showed a check for robots instead of the page — ' + SAVED)
+        raise Blocked('The site showed a check for robots instead of the page — ' + SAVED)
     data = doc.encode('utf-8')
     return {'kind': 'html', 'data': data, 'title': title or urllib.parse.urlsplit(final).hostname or final, 'final': final, 'at': at,
             'size': len(data), 'resources': len(C.order) - C.missing, 'missing': C.missing, 'icon': icon}
+
+
+# ---------------------------------------------------------------- V3.979: the page the person saved in their browser
+class _Parts:
+    """The saved page's resources, by address (and cid:), standing in for the network: nothing is fetched."""
+    def __init__(self, parts): self.parts = parts
+    def has(self, url): return url in self.parts or url.split('#')[0] in self.parts
+    def get(self, url, limit, accept='*/*', referer=None):
+        r = self.parts.get(url) or self.parts.get(url.split('#')[0])
+        if not r: raise Refused('not in the saved page')
+        if len(r[3]) > limit: raise Refused('too big')
+        return r
+
+
+def from_mhtml(data, final=''):
+    """A page saved by a browser (MHTML) made into the copy by the rules of a capture: (doc, title, icon, resources, missing)."""
+    msg = email.message_from_bytes(data)
+    parts, main = {}, None
+    for p in msg.walk():
+        if p.is_multipart(): continue
+        ct = p.get_content_type(); body = p.get_payload(decode=True) or b''; cs = p.get_content_charset()
+        loc = re.sub(r'\s+', '', p.get('Content-Location') or ''); cid = (p.get('Content-ID') or '').strip().strip('<>')
+        rec = (loc or final, ct, cs, body)
+        if main is None and ct in ('text/html', 'application/xhtml+xml'): main = rec
+        if loc and loc not in parts: parts[loc] = rec
+        if cid: parts['cid:' + cid] = rec
+    if main is None: raise Refused('There is no page in that file — save the page in Chrome or Edge as "Webpage, Single File"')
+    C = _Capture(final or main[0], False); C.net = _Parts(parts); C.has = C.net.has
+    doc, title, icon = C.page(_decode(main[3], main[2]), final or main[0])
+    return doc, title, icon, len(C.order) - C.missing, C.missing
+
+
+def saved_page(path):
+    """The capture() answer for a page saved in a browser (an .mhtml file): where it came from and when, by its own headers."""
+    with open(path, 'rb') as f: data = f.read(MAX_PDF + 1)
+    if len(data) > MAX_PDF: raise Refused('That saved page is bigger than this app keeps (80 MB)')
+    head = data[:32768].decode('latin-1')
+    m = re.search(r'^Snapshot-Content-Location:\s*(\S+)', head, re.M | re.I); final = m.group(1) if m else ''
+    at = None; dm = re.search(r'^Date:\s*(.+?)\s*$', head, re.M | re.I)
+    if dm:
+        try: at = email.utils.parsedate_to_datetime(dm.group(1)).astimezone().strftime('%Y-%m-%dT%H:%M:%S')
+        except Exception: at = None
+    at = at or time.strftime('%Y-%m-%dT%H:%M:%S', time.localtime(os.path.getmtime(path)))
+    doc, title, icon, n, missing = from_mhtml(data, final)
+    out = doc.encode('utf-8'); name = re.sub(r'\.mht(ml)?$', '', os.path.basename(path), flags=re.I)
+    return {'kind': 'html', 'data': out, 'title': title or name, 'final': final, 'at': at, 'size': len(out), 'resources': n, 'missing': missing,
+            'icon': icon, 'via': 'saved', 'file': os.path.basename(path)}
+
+
+def saved_folders():
+    """Where a browser saves a page: Downloads (where Windows keeps it), Desktop, Documents; SIS_SAVED_DIRS: these folders instead."""
+    home, out = os.path.expanduser('~'), [x for x in (os.environ.get('SIS_SAVED_DIRS') or '').split(os.pathsep) if x]
+    if out: return [d for d in out if os.path.isdir(d)]
+    if sys.platform.startswith('win'):
+        try:
+            import winreg
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders') as k:
+                for v in ('{374DE290-123F-4565-9164-39C4925E467B}', 'Desktop', 'Personal'):
+                    try: out.append(os.path.expandvars(winreg.QueryValueEx(k, v)[0]))
+                    except OSError: pass
+        except Exception: pass
+    out += [os.path.join(home, n) for n in ('Downloads', 'Desktop', 'Documents')]
+    seen, res = set(), []
+    for d in out:
+        k = os.path.normcase(os.path.abspath(d))
+        if k not in seen and os.path.isdir(d): seen.add(k); res.append(d)
+    return res
+
+
+WATCH_FOR = 20 * 60   # how long a link waits for its saved page
+_WATCH, _TAKEN, _WLOCK = {}, set(), threading.Lock()
+
+
+def _host(u):
+    h = (urllib.parse.urlsplit(u or '').hostname or '').lower()
+    return h[4:] if h.startswith('www.') else h
+
+
+def watch_start(mid, url):
+    """Wait for the page at url to be saved in a browser (from now)."""
+    with _WLOCK: _WATCH[mid] = {'url': url, 'host': _host(url), 'since': time.time() - 2, 'until': time.time() + WATCH_FOR}
+
+
+def watch_stop(mid):
+    with _WLOCK: _WATCH.pop(mid, None)
+
+
+def watch_poll(mid):
+    """The saved page once it is there (saved_page's answer, taken once), None while waiting; Refused when the wait is over."""
+    with _WLOCK: W = _WATCH.get(mid); others = [w for k, w in _WATCH.items() if k != mid]
+    if not W: raise Refused('Not waiting for that page any more')
+    if time.time() > W['until']: watch_stop(mid); raise Refused('No saved page came in %d minutes — save it in your browser and drop the file on the note' % (WATCH_FOR // 60))
+    found = []
+    for d in saved_folders():
+        try: names = os.listdir(d)
+        except OSError: continue
+        for n in names:
+            if not n.lower().endswith(('.mhtml', '.mht')): continue
+            p = os.path.join(d, n)
+            try: st = os.stat(p)
+            except OSError: continue
+            if st.st_mtime < W['since'] or p in _TAKEN or time.time() - st.st_mtime < 1.0: continue   # older, taken, or still being written
+            try:
+                with open(p, 'rb') as f: head = f.read(32768).decode('latin-1')
+            except OSError: continue
+            m = re.search(r'^Snapshot-Content-Location:\s*(\S+)', head, re.M | re.I)
+            found.append((st.st_mtime, p, _host(m.group(1)) if m else ''))
+    found.sort()
+    near = lambda h: h and (h == W['host'] or h.endswith('.' + W['host']) or W['host'].endswith('.' + h))
+    pick = next((f for f in found if near(f[2])), None)
+    if not pick and found and not others: pick = found[0]   # a link that went elsewhere (doi.org → the journal): the page saved meanwhile
+    if not pick: return None
+    with _WLOCK: _TAKEN.add(pick[1]); _WATCH.pop(mid, None)
+    return saved_page(pick[1])
