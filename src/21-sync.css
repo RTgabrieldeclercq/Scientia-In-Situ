@@ -635,3 +635,5 @@ body.mobile .nav{display:none} body:has(.nav:not(.asleep)) #toasts{bottom:34px}
 .ink-selbar{width:max-content}
 /* V3.965 · quiet: nobody is at the app (13zzp) — what only moves for the eye stands still; the first touch starts it again */
 body.quiet .tchip.run i,body.quiet .regdot,body.quiet .rt-bar span.c,body.quiet #focusframe .ff-dot,body.quiet .td-dot,body.quiet .rc-dot,body.quiet #hd .syncdot i{animation-play-state:paused}
+/* V3.980 · 12 settle measures a big note's boxes whole (content-visibility off for that moment) */
+.canvas-host.big.cv-measure > .paper > .world > .box.cmp{content-visibility:visible}

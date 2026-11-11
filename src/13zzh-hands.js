@@ -21,6 +21,13 @@
      from Windows (rawmouse.py, api/edge-push) and the push goes on; where
      nothing can be read (the web, a pen), the speed rises while the
      pointer stays at the edge.
+   • V3.980 (Gabe: "The edge pan still needs refinement and should only work
+     in full screen"): only in full screen (Focus mode, or the browser's own
+     F11), where the note's edges are the screen's: it starts at the screen's
+     very edge, after the pointer has rested there DWELL ms (a flick to the
+     edge, or overshooting a button, moves nothing), eases in over EASE ms,
+     and stops the moment the pointer leaves the edge. Not over the pills,
+     the ink bar, the dock or other controls. In a window it does nothing.
    • Zoom reaches 1 % in notes; below 10 % the boxes are flat tiles.
    • The pen's button (desktop): pen-button/ScientiaPen.exe, assigned in
      Windows Settings → Pen as the shortcut button's app, tells this
@@ -30,7 +37,7 @@
      the maximised views, the slash menu and the reader keep their own.
    ========================================================================== */
 const HANDS = {
-  EDGE: 2, NEAR: 40, ROOM: 120, RANGE: 360, BACK: 2, BAND: 36, VMIN: 60, VMAX: 2400, POW: 2, HOLD: 240, REST: 150, last: null, autoBar: false, zoomBefore: null, guard: false,
+  EDGE: 2, NEAR: 40, ROOM: 120, RANGE: 360, BACK: 2, BAND: 36, VMIN: 60, VMAX: 2400, POW: 2, HOLD: 240, REST: 150, DWELL: 140, EASE: 260, last: null, autoBar: false, zoomBefore: null, guard: false,
   pan: { raf: 0, at: 0, vx: 0, vy: 0, P: null, ax: null, ay: null, lx: null, ly: null, in: null, out: false, ptype: '', feed: null, raw: null, busy: false, asked: 0, stuck: false, ctlAt: 0 },
   hand: () => window.SIS_LAB && SIS_LAB.handNow ? SIS_LAB.handNow() : (INK.mouse ? (INK.tool === 'eraser' ? 'eraser' : INK.tool) : 'move'),
   userAt: 0, recent: () => Date.now() - HANDS.userAt < 2000,
@@ -63,51 +70,31 @@ const HANDS = {
   speed: p => HANDS.VMIN + (HANDS.VMAX - HANDS.VMIN) * Math.pow(Math.min(1, Math.max(0, p) / HANDS.RANGE), HANDS.POW),
   /** This computer's server reads the mouse (api/edge-push): the desktop app. */
   desk: () => !!window.SIS_DESKTOP,
+  /** V3.980: full screen — Focus mode (the Fullscreen API), or the browser's own (F11: the window is the screen). */
+  full: () => !!document.fullscreenElement || (innerWidth > 0 && screen.width - innerWidth <= 2 && screen.height - innerHeight <= 2),
+  /** The note at the screen's edge where the pointer is: the one under it, else the nearest (the header above a note, a split's side). */
+  paneAt(x, y) { let best = null, bd = 1e9; (App.panes ? App.panes() : []).forEach(p => { const P = p.paper; if (!P || !P.el.isConnected) return; const r = P.rect(), dx = x < r.left ? r.left - x : x > r.right ? x - r.right : 0, dy = y < r.top ? r.top - y : y > r.bottom ? y - r.bottom : 0, dd = dx + dy; if (dd < bd) { bd = dd; best = P; } }); return best; },
   hover(e) {
-    const S = HANDS.pan, t = e.target, x = e.clientX, y = e.clientY, mx = S.lx == null ? 0 : x - S.lx, my = S.ly == null ? 0 : y - S.ly, was = S.in;
-    S.lx = x; S.ly = y; S.in = null; S.out = false;
-    if (!e.isTrusted || e.pointerType === 'touch' || e.buttons || HANDS.hand() !== 'move' || $('.pop') || $('.ovl') || (t.closest && t.closest('.lab-pills,.ink-bar,.nav:not(.asleep),.embed-max,.fbar,.insp,.dock,.ctools,.slash-menu'))) return HANDS.quiet();
+    const S = HANDS.pan, t = e.target, x = e.clientX, y = e.clientY;
+    S.lx = x; S.ly = y; S.out = false;
+    if (!HANDS.full() || !e.isTrusted || e.pointerType === 'touch' || e.buttons || HANDS.hand() !== 'move' || $('.pop') || $('.ovl') || (t.closest && t.closest('.lab-pills,.ink-bar,.nav:not(.asleep),.embed-max,.fbar,.insp,.dock,.ctools,.slash-menu,.webcap-wait,.iter-slides'))) return HANDS.quiet();
     S.ptype = e.pointerType;
-    // the note pushed stays the one pushed while the pointer is past its edge; the note just left can start one (a quick flick)
-    const host = t.closest && t.closest('.canvas-host'), under = host && host._dv && host._dv.paper, P = S.P && S.P.el.isConnected ? S.P : under || was;
+    // in full screen the note's edges are the screen's: the push is at the screen's very edge (−1 left/top, 1 right/bottom)
+    const E = HANDS.EDGE, sx = x <= E ? -1 : x >= innerWidth - 1 - E ? 1 : 0, sy = y <= E ? -1 : y >= innerHeight - 1 - E ? 1 : 0;
+    const P = S.P && S.P.el.isConnected ? S.P : HANDS.paneAt(x, y);
     if (!P) return HANDS.quiet();
-    const r = HANDS.edges(P), E = HANDS.EDGE, inside = x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
-    if (inside) S.in = P;
-    else if (P !== S.P && P !== was) return HANDS.quiet();   // past an edge: only the note being pushed, or the one just left
-    // per axis: the edge the pointer is at or past (−1 left/top, 1 right/bottom, 0 neither) and how far past it
-    const at = (v, lo, hi) => v <= lo + E ? [-1, lo - v] : v >= hi - E ? [1, v - hi] : [0, 0];
-    const [sx, px] = at(x, r.left, r.right), [sy, py] = at(y, r.top, r.bottom), mine = S.P === P;
-    S.ax = HANDS.axis(mine ? S.ax : null, sx, px, mx, sx < 0 ? x <= E : x >= innerWidth - E);
-    S.ay = HANDS.axis(mine ? S.ay : null, sy, py, my, sy < 0 ? y <= E : y >= innerHeight - E);
-    if (!S.ax && !S.ay) { HANDS.stopPan(); return HANDS.border(inside ? P : null, x, y, r); }
-    // past the edge over a control (the header's tabs and buttons): the push goes on only while the pointer moves on outward;
-    // sliding along it, or resting on it (step), is reaching for it, and the pan stops
-    S.ctlAt = 0;
-    if (!inside && t.closest && t.closest('button,a,input,select,textarea,label,[contenteditable="true"],[role="tab"]')) {
-      const on = (S.ax ? S.ax.s * mx : 0) + (S.ay ? S.ay.s * my : 0), along = (S.ax ? 0 : Math.abs(mx)) + (S.ay ? 0 : Math.abs(my));
-      if (!(on > 0 && on >= along)) return HANDS.quiet();
-      S.ctlAt = performance.now();
-    }
-    S.P = P; HANDS.go(); HANDS.border(P, x, y, r);
-  },
-  /** The note's edges as the pointer meets them. The sleeping navigation bar along the bottom of the window covers the note's
-      last 24 px, so there the edge is the bar's top, and the pointer goes on over the bar. */
-  edges(P) {
-    const q = P.rect(), r = { left: q.left, top: q.top, right: q.right, bottom: q.bottom }, nav = $('#nav.asleep');
-    if (nav && nav.offsetHeight) { const n = nav.getBoundingClientRect(); if (n.top < r.bottom && n.bottom >= r.bottom - 1 && n.left <= r.left + 1 && n.right >= r.right - 1) r.bottom = n.top; }
-    return r;
-  },
-  /** One axis of the push: A is how it stands ({s, hi, ex, top, pin}) or null. s, past: the edge the pointer is at and how far
-      past it (px); m: the pointer's move along the axis; pin: the pointer is at the window's limit there and can go no further. */
-  axis(A, s, past, m, pin) {
-    if (A && (s !== A.s || past > HANDS.ROOM || past < A.hi - HANDS.BACK)) A = null;   // left the edge, came back from it, or went on elsewhere: it stops at once
-    else if (!A && s && s * m > 0 && past <= HANDS.ROOM) A = { s, hi: 0, ex: 0, top: 0, pin: false };   // reached the edge, going toward it
-    if (A) { A.hi = Math.max(A.hi, past); A.pin = pin; }
-    return A;
+    if (!sx && !sy) { HANDS.stopPan(); return HANDS.border(P, x, y); }   // off the edge: it stops at once
+    const keep = (A, s) => s ? (A && A.s === s ? A : { s, hi: 0, ex: 0, top: 0, pin: true }) : null;
+    S.ax = keep(S.ax, sx); S.ay = keep(S.ay, sy); S.P = P;
+    // a rest at the edge first (a flick to it, or overshooting a button there, moves nothing); the pointer resting still sends no
+    // more moves, so a timer starts it
+    if (!S.edgeAt) { S.edgeAt = performance.now(); clearTimeout(S.dwellT); S.dwellT = setTimeout(() => { if (S.edgeAt && (S.ax || S.ay) && S.P) HANDS.go(); }, HANDS.DWELL); }
+    else if (performance.now() - S.edgeAt >= HANDS.DWELL) HANDS.go();
+    HANDS.border(P, x, y);
   },
   go() {
     const S = HANDS.pan, v = A => A ? -A.s * HANDS.speed(A.hi + A.ex) : 0; S.vx = v(S.ax); S.vy = v(S.ay);
-    if (!S.raf) { S.at = performance.now(); S.raf = requestAnimationFrame(HANDS.step); }
+    if (!S.raf) { S.at = S.t0 = performance.now(); S.raf = requestAnimationFrame(HANDS.step); }
     if (S.feed == null && S.ptype === 'mouse' && HANDS.desk()) HANDS.ask(S.at);   // learn early whether this computer reads the mouse
   },
   step(t) {
@@ -123,9 +110,9 @@ const HANDS = {
       else if (S.out) return HANDS.quiet();
       else stuck.forEach(A => { A.ex += HANDS.HOLD * dt; A.top = A.ex; });
     }
-    const v = A => A ? -A.s * HANDS.speed(A.hi + A.ex) : 0; S.vx = v(S.ax); S.vy = v(S.ay);
+    const ease = Math.min(1, Math.max(0, t - (S.t0 || t)) / HANDS.EASE), v = A => A ? -A.s * HANDS.speed(A.hi + A.ex) * ease : 0; S.vx = v(S.ax); S.vy = v(S.ay);   // V3.980: eases in
     S.P.view.x += S.vx * dt; S.P.view.y += S.vy * dt; S.P.apply();
-    if (S.stuck) HANDS.border(S.P, S.lx, S.ly, HANDS.edges(S.P));
+    if (S.stuck) HANDS.border(S.P, S.lx, S.ly);
     S.raf = requestAnimationFrame(HANDS.step);
   },
   ask(t) {
@@ -153,16 +140,16 @@ const HANDS = {
     if (S.raf && (ax || ay) && S.ptype === 'mouse' && S.feed !== false && HANDS.desk()) { S.ax = ax; S.ay = ay; S.out = true; return; }
     HANDS.quiet();
   },
-  stopPan() { const S = HANDS.pan; if (S.raf) cancelAnimationFrame(S.raf); S.raf = 0; S.vx = S.vy = 0; S.P = null; S.ax = S.ay = null; S.raw = null; S.out = false; S.stuck = false; S.ctlAt = 0; },
-  /** The edge: its line on the near side(s) fades in over the last NEAR px before it; while pushed, a band along it tints with the
-      push. border(null) hides it. */
-  border(P, x, y, r) {
+  stopPan() { const S = HANDS.pan; if (S.raf) cancelAnimationFrame(S.raf); S.raf = 0; S.vx = S.vy = 0; S.P = null; S.ax = S.ay = null; S.raw = null; S.out = false; S.stuck = false; S.ctlAt = 0; S.edgeAt = 0; clearTimeout(S.dwellT); },
+  /** The edge: its line on the near side(s) fades in over the last NEAR px before the screen's edge; while pushed, a band along it tints
+      with the push. border(null) hides it. */
+  border(P, x, y) {
     const was = HANDS._bP; if (was && (!P || was !== P) && was._eb) was._eb.hidden = true; HANDS._bP = P || null; if (!P) return;
     const S4 = ['l', 'r', 't', 'b']; let el = P._eb;
     if (!el || !el.isConnected) { el = P._eb = h('div.edge-border'); el._p = {}; S4.forEach(s => { const line = h('i.eb-line.eb-' + s), band = h('b.eb-band.eb-' + s); el._p[s] = [line, band]; el.append(line, band); }); el.style.setProperty('--eb', HANDS.BAND + 'px'); P.el.append(el); }
-    const q = P.el.getBoundingClientRect(); el.style.inset = `${r.top - q.top}px ${q.right - r.right}px ${q.bottom - r.bottom}px ${r.left - q.left}px`;   // drawn on the edges the pointer meets
-    const S = HANDS.pan, E = HANDS.EDGE, d = { l: x - r.left, r: r.right - x, t: y - r.top, b: r.bottom - y };
-    const push = (A, s) => A && A.s === s ? Math.max(.2, Math.min(1, (A.hi + A.ex) / HANDS.RANGE)) : 0;
+    el.style.inset = '0px';   // the note's own edges (in full screen, the screen's but for the header above)
+    const S = HANDS.pan, E = HANDS.EDGE, d = { l: x, r: innerWidth - 1 - x, t: y, b: innerHeight - 1 - y };
+    const push = (A, s) => A && A.s === s && S.raf ? Math.max(.2, Math.min(1, (A.hi + A.ex) / HANDS.RANGE)) : 0;
     const deep = { l: push(S.ax, -1), r: push(S.ax, 1), t: push(S.ay, -1), b: push(S.ay, 1) }, nearer = { l: d.l < d.r, r: d.r <= d.l, t: d.t < d.b, b: d.b <= d.t };
     let any = false;
     for (const s of S4) { const n = deep[s] ? 1 : nearer[s] ? clamp(1 - (d[s] - E) / HANDS.NEAR, 0, 1) : 0; any = any || n > 0;
@@ -211,7 +198,7 @@ const HANDS = {
   document.documentElement.addEventListener('mouseleave', e => { try { HANDS.leave(e); } catch (x) { HANDS.quiet(); } });   // the window itself, not each element left
   // zoom to 1 % in notes; flat tiles below 10 %
   const mp = makePaper; makePaper = function (host, opts) { const p = mp.apply(this, arguments); if (host && host.classList && host.classList.contains('canvas-host') && !(opts && opts.minZ != null)) p.o.minZ = .01; return p; };
-  const ap = Paper.prototype.apply; Paper.prototype.apply = function () { const r = ap.apply(this, arguments); try { const host = this.el.closest('.canvas-host'); if (host) host.classList.toggle('far', this.view.z < .1); } catch (e) { } return r; };
+  const ap = Paper.prototype.apply; Paper.prototype.apply = function () { const r = ap.apply(this, arguments); try { const host = this.el.closest('.canvas-host'); if (host) { const f = host.classList.contains('far'); host.classList.toggle('far', f ? this.view.z < .11 : this.view.z < .09); } } catch (e) { } return r; };   // V3.980: not at a line a zoom rests on
   // the pen's button, and its Settings
   if (document.readyState === 'complete') setTimeout(() => HANDS.watchPen(), 1500); else addEventListener('load', () => setTimeout(() => HANDS.watchPen(), 1500));
   setTimeout(() => { if (typeof SettingsView === 'undefined' || !window.SIS_DESKTOP) return; const sr = SettingsView.render; SettingsView.render = function () { const out = sr.apply(this, arguments);
