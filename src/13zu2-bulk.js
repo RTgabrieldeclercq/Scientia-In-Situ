@@ -2,7 +2,7 @@
    13zu2 · The selection does more (V3.950, Gabe's SiS Shaping, Phase E).
    • Bulk actions on a lasso or Ctrl+click selection, in its bar: Region
      around them, Move to another note… (a stub stays behind saying where
-     they went), Pull into another note…, Tidy (align left · stack · grid),
+     they went), Bridge to another note… (V3.981, 13zzu; was Pull into…), Tidy (align left · stack · grid),
      Connect all to…, Make them all a…, Fold / Unfold.
    • Connect all from one socket: dragging a wire from any selected
      component draws one from every selected component; one relation,
@@ -45,9 +45,10 @@ const BULK = {
     const text = 'Moved to ' + dest.title, s = M.addBlock(src.id, null, { x: at.x, y: at.y, w: 300, label: '' });
     M.saveBlockBody(s, { text, marks: [{ id: uid('m'), type: 'link', from: 9, to: text.length, ref: first.id }] }); IX.rebuild(); changed();
   },
-  async pullTo() { const ids = BULK.ids().filter(id => !REGION.isRg(id)); if (!ids.length) return; const dest = await CMD.pick({ name: 'note', kind: 'note', ask: 'Pull ' + plural(ids.length, 'component') + ' into…' }, '', CMD.ctx()); if (!dest) return;
-    const d = BULK.doc(); if (dest.id === (d && d.id)) return toast('They are in this note already'); const p = MOVE.spot(dest); DB.beginGroup('pull');
-    ids.forEach((id, i) => M.addBlock(dest.id, null, { kind: 'ref', refItemId: null, refBlockId: id, x: p.x, y: p.y + i * 150, w: 392 })); changed(); toast(plural(ids.length, 'component') + ' pulled into ' + dest.title); },
+  /** V3.981 — bridges to another note: one note, one reason (the caption under each), a bridge each (13zzu). */
+  async pullTo() { const ids = BULK.ids().filter(id => !REGION.isRg(id)); if (!ids.length) return; const d = BULK.doc(); const dest = await BRIDGE.pickNote('Bridge ' + plural(ids.length, 'component') + ' to…', d && d.id); if (!dest) return;
+    const why = await BRIDGE.ask(dest, ids.length > 1 ? 'them' : 'it'); if (why == null) return; const p = MOVE.spot(dest); DB.beginGroup('bridge'); let n = 0;
+    ids.forEach(id => { if (BRIDGE.make(M.block(id), dest, { why, at: { x: p.x, y: p.y + n * 150 }, quiet: true })) n++; }); IX.rebuild(); changed(); if (n) BRIDGE.said(dest, n); else toast('Already bridged to “' + snippet(dest.title || 'that note', 40) + '”'); },
   tidy(mode) {
     const pane = BULK.pane(), B = BULK.blocks().filter(b => b.kind !== 'ink' && b.x != null); if (!pane || B.length < 2) return; DB.beginGroup('tidy');
     const x0 = Math.min(...B.map(b => b.x)), y0 = Math.min(...B.map(b => b.y)), W = Math.max(...B.map(b => b.w || 392)), order = B.slice().sort((a, b) => a.y - b.y || a.x - b.x);
@@ -123,7 +124,7 @@ const CLIPX = {
     (C.refs || []).forEach(r => { const src = M.block(r.id), to = src && (src.kind === 'ref' ? M.block(src.refBlockId) : src); if (!to || to.status !== 'live' || src.status !== 'live') return; if (to.docId === d.id) { here++; return; }
       M.addBlock(d.id, null, { kind: 'ref', refItemId: src.kind === 'ref' ? src.refItemId || null : null, refBlockId: to.id, x: Math.round((r.x + dx) / 14) * 14, y: Math.round((r.y + dy) / 14) * 14, w: 392 }); n++; });
     M.touchDoc(d); IX.rebuild(); changed();
-    toast(n ? `Pulled in ${plural(n, 'component')} from “${(from && from.title) || 'their note'}”` + (here ? ` (${here} already here)` : '') + ' · Ctrl+Shift+V pastes copies instead' : here ? 'They are in this note already' : C.strokes.length ? 'Pasted the strokes' : 'Nothing to pull in: they were removed');
+    toast(n ? `Bridged ${plural(n, 'component')} from “${(from && from.title) || 'their note'}”` + (here ? ` (${here} already here)` : '') + ' — say why in the caption under each · Ctrl+Shift+V pastes copies instead' : here ? 'They are in this note already' : C.strokes.length ? 'Pasted the strokes' : 'Nothing to bridge: they were removed', 4500);
   },
   /** Files on the clipboard: a screenshot, an image copied from a page, files copied in the Explorer or the Finder. */
   files(cd) { let F = []; try { F = [...(cd.items || [])].filter(i => i.kind === 'file').map(i => i.getAsFile()).filter(Boolean); } catch (x) { } if (!F.length) try { F = [...(cd.files || [])]; } catch (x) { } return F; },
@@ -166,7 +167,7 @@ const CLIPX = {
   // the selection's bar
   const ps = INK.paintSel; INK.paintSel = function () { ps.apply(this, arguments); const sel = INK.sel, pane = sel && sel.pane; if (!pane || !pane.paper) return; const B = BULK.blocks(); if (!B.length) return;
     const bar = $('.ink-selbar', pane.paper.world); if (!bar || $('.bulk-g', bar)) return; const X = (lab, title, fn) => h('button.btn.xs', { title, on: { click: e => { e.stopPropagation(); fn(e); } } }, lab);
-    const g = h('span.bulk-g', X('Region', 'A region around them', () => BULK.region()), X('Move to…', 'Move them to another note; a stub stays here saying where they went', () => BULK.moveTo()), X('Pull into…', 'References to them in another note', () => BULK.pullTo()),
+    const g = h('span.bulk-g', X('Region', 'A region around them', () => BULK.region()), X('Move to…', 'Move them to another note; a stub stays here saying where they went', () => BULK.moveTo()), X('Bridge to…', 'Bridge them to another note: they show there, live, with a caption saying why', () => BULK.pullTo()),
       X('Tidy ▾', 'Align left · stack · grid', e => ctxMenu(e.clientX, e.clientY + 8, [{ label: 'Align left', run: () => BULK.tidy('left') }, { label: 'Stack', sub: 'One under the other', run: () => BULK.tidy('stack') }, { label: 'Grid', run: () => BULK.tidy('grid') }])),
       X('Connect all…', 'One relation from every selected component to one you pick', () => BULK.connectAll()), X('Make them…', 'Each one, whole, a claim, a barrier, a question…', () => BULK.makeAll()),
       X(B.every(b => b.collapsed) ? 'Unfold' : 'Fold', 'Fold them to their titles, or open them', () => BULK.fold(!B.every(b => b.collapsed))));

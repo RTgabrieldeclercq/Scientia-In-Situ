@@ -175,21 +175,21 @@ A note has a **header box** (title, type, profile fields, tags, ✎ for note det
 **The editor bar.** While you write in a component, a bar sits just above its top border. It is never wider than the component (it wraps), and every button is the same size.
 - **Bold · Italic · Underline**, the **three lists** (bullet, numbered, checkbox: the line, or every line you selected), **Make it…** (what the selected phrase is: a claim, a barrier, a question…), **∑ Symbols**, your quick-cast symbols, and a dotted **+**.
 - A button lights up when the caret or the selection is already in that style or list.
-- **+** adds more: **Link to a note**, **Citation**, **Term**, **Equation** (an equation here in the text, as an equation component: its terms can be wired and solved like an Equation box), **Existing structure**, **Strikethrough**. Settings → Writing → Editor bar offers the same.
+- **+** adds more: **Bridge to a note**, **Citation**, **Term**, **Equation** (an equation here in the text, as an equation component: its terms can be wired and solved like an Equation box), **Existing structure**, **Strikethrough**. Settings → Writing → Editor bar offers the same.
 - **∑ Symbols:** Greek letters, mathematics, science (°C, µ, superscripts…), arrows and typography. Click one to type it. **☆** makes it a favourite, shown first next time; the **bolt** on a favourite makes it a button of its own in the bar.
 - **It steps aside** while a menu covers it: an Alt+click menu on a structure or a term, a hover card, the selection's bar. It comes back when the menu goes. Its own menus (∑, +) open clear of it. A hover card closes when a menu opens, and none opens over an open menu.
 
 **Copy and paste.** Paste lands where the pointer last was on the canvas.
-- **Text copied inside a component** remembers where it came from. Paste it on another note's canvas (click the paper, then Ctrl+V) and **just those words** are pulled in: an **excerpt**, live, that shows only that passage of the component, with its terms and structures, and "from …" opens the original. When the original's words change, so does the excerpt; text added before it does not lose it; if the passage is deleted from the original, the excerpt keeps showing it as it read and says so. Copy the whole text and the whole component is pulled in. Paste on the same note, or with **Ctrl+Shift+V** anywhere, and it is a copy, with its structures, terms and styles.
+- **Text copied inside a component** remembers where it came from. Paste it on another note's canvas (click the paper, then Ctrl+V) and **just those words** are **bridged** there (see *Node bridges*): an **excerpt**, live, that shows only that passage of the component, with its terms and structures, a caption under it asking why, and "bridged from …" opens the original. When the original's words change, so does the excerpt; text added before it does not lose it; if the passage is deleted from the original, the excerpt keeps showing it as it read and says so. Copy the whole text and the whole component is bridged. Paste on the same note, or with **Ctrl+Shift+V** anywhere, and it is a copy, with its structures, terms and styles.
 - **Text copied from a PDF or an HTML page**, pasted on a canvas, becomes a quote wired to the file. Any other text pasted on a canvas becomes a new component.
-- **Components:** select one (click it) or several (the lasso, or Ctrl+click), and press Ctrl+C with no text highlighted. Ctrl+V on another note pulls them in: a reference to each, placed as they sat relative to each other. On their own note they are copied, and **Ctrl+Shift+V** copies them anywhere.
+- **Components:** select one (click it) or several (the lasso, or Ctrl+click), and press Ctrl+C with no text highlighted. Ctrl+V on another note bridges them there: a bridge each, placed as they sat relative to each other. On their own note they are copied, and **Ctrl+Shift+V** copies them anywhere.
 - **From outside the notebook:** a picture (a screenshot, an image copied from a web page) becomes an image panel; several pictures at once make one panel. A PDF, an HTML file, a spreadsheet or a PowerPoint copied in the Explorer becomes that component, just as + Insert makes it.
   - Pictures pasted while you write in a component go under it.
   - A copy from Word or a web page brings a picture of itself along; its text is what gets pasted.
 - **Inside a text**, paste is plain text, as before.
 
 **/ and @ in a component.** Type `/` at the start of a word and a menu opens at the caret; keep typing to filter it, ↑ ↓ to choose, Enter runs, Esc leaves what you typed. The typed word goes.
-- `/claim`, `/barrier`, `/question`, `/result`… make the sentence before the caret that structure. `/term` marks the word at the caret; `/link` links it to a note; `/cite` inserts a citation; `/mention` points the words at a structure recorded elsewhere; `/sym` opens the symbols; `/date` and `/time` type the day and the hour; `/connect` connects this component to one you pick.
+- `/claim`, `/barrier`, `/question`, `/result`… make the sentence before the caret that structure. `/term` marks the word at the caret; `/bridge` bridges this component to a note you pick (and asks why); `/cite` inserts a citation; `/mention` points the words at a structure recorded elsewhere; `/sym` opens the symbols; `/date` and `/time` type the day and the hour; `/connect` connects this component to one you pick.
 - `/paper`, `/protocol`, `/material`, `/task`, `/figure`, `/pdf`… (every row of + Insert) insert below the component.
 - Type `@` and the lab's members are listed (offline too, once seen); pick one and the name becomes a chip. A name that isn't a member is kept for next time. ⋯ → **People mentioned…** (or `/people`) lists who is named in the note and where. Nobody is notified.
 
@@ -238,7 +238,7 @@ Esc, or a click without Ctrl, lets them go.
 
 **Citations and links.**
 - **Ctrl+I** cites from the Library.
-- **Ctrl+Enter → L** links the selection to a note or component. A link shows ↗, or ○ while the target isn't written yet.
+- **Ctrl+Enter → N** (or L) **Bridge to a note…**: the selected words are bridged to another note (see *Node bridges*). Links made before bridges still open: they are underlined like bridged words (dashed while the note isn't written yet), with no ↗, and a double-click offers to go there or open it beside.
 
 ---
 
@@ -359,8 +359,22 @@ An **Iteration** is the next version of a component: Run 2 of a report, the figu
 
 ### Several at once
 Select components with the lasso or Ctrl+click and their bar offers, besides Copy, Duplicate and Delete. The bar is one row and sits where it covers no other component: under them, else beside them, else above. A Ctrl+click on a component's text selects it without leaving the caret there.
-- **Region** around them · **Move to…** another note (a small note stays behind: "Moved to …", linked to them) · **Pull into…** another note (references there) · **Tidy ▾** (align left, stack, grid) · **Connect all…** to one component you pick, with one relation · **Make them…** all a claim, a barrier, a question… (each one, whole) · **Fold / Unfold**.
+- **Region** around them · **Move to…** another note (a small note stays behind: "Moved to …", linked to them) · **Bridge to…** another note (a bridge each, with one reason for all) · **Tidy ▾** (align left, stack, grid) · **Connect all…** to one component you pick, with one relation · **Make them…** all a claim, a barrier, a question… (each one, whole) · **Fold / Unfold**.
 - **One drop wires them all:** drag a wire from the socket of any selected component onto another; the relation you choose makes a wire from every selected one.
+
+### Node bridges
+A **bridge** is a component, or some words of one, shown in another note: live (as the original changes, so does the bridge), with a caption under it saying **why** it was bridged there.
+- **Make one:**
+  - **Copy and paste:** words copied inside a component, or components copied with Ctrl+C, pasted on another note become bridges. On their own note, or with **Ctrl+Shift+V**, they are copies.
+  - **Words:** select them, then **Ctrl+Enter → N** (*Bridge to a note…*), the editing bar's **Bridge to a note**, or right-click the selection.
+  - **Any component** (an image panel, an HTML page, a PDF, a table, text…): right-click it, or ⋯, → **Bridge to another note…**.
+  - **`/bridge <component> <note> [why]`** in the bar; typed in a component, the component is that one.
+  - The selection bar's **Bridge to…** (several at once), or drag a component into another pane.
+  - Picking the note asks why: the answer is the caption. Leave it empty and say it later.
+- **In the note it went to:** its kind reads **bridge**, its edge is green, "bridged from …" opens the original, and the caption under it (*Why is it bridged here?*) pulses when it arrives. Click it to write; Enter keeps it.
+- **In its own note:** the bridged words are **underlined in green**; a component that isn't text says **bridged** beside its kind. **Double-click** the underline or the tag: **Go to the note** it is bridged to, or **Open it beside this note**. Bridged to several notes, the menu lists each, with its reason.
+- **The colour:** Settings → Structures → **Bridges** (green by default).
+- Bridges replace *Link to a note*, *Embed in another note* and *Pull into*. Links made before still work, underlined the same way. Structures pulled in (a barrier, a claim) are as before.
 
 ### Linking by hand
 - **The relation you used last comes first.** On a drop, the popover offers first (lit) the relation you last used from that kind of component; Enter with nothing typed takes it.
@@ -369,12 +383,12 @@ Select components with the lasso or Ctrl+click and their bar offers, besides Cop
   - Drop it on a component there to connect them.
   - Drop it on that note's empty paper to pick one of its components.
 - **One image of a panel:** each image has its own ● at its bottom edge, so a wire can leave from that image only.
-- **Embed into another note** (side by side):
+- **Bridge into another note** (side by side):
   - Drag a component into the other pane, or press and hold a highlight with the pen and drag it.
-  - It's embedded **live**: it follows the original. Dropped onto a component, the two are also connected.
-  - Embedded widgets (image panels, plates, PDFs…) show the real thing, with "embedded from <note>".
+  - It's bridged **live**: it follows the original. Dropped onto a component, the two are also connected.
+  - Bridged widgets (image panels, plates, PDFs…) show the real thing, with "bridged from <note>".
   - A labelled image of a panel (a result, evidence…), or a whole panel labelled, pulled in as a structure shows its picture (the image as cropped there, or the panel) above its label and words. Edit it where it lives.
-  - Hold **Alt** while dragging to **move** the component instead of embedding it.
+  - Hold **Alt** while dragging to **move** the component instead of bridging it.
 - **A note inside a note:** **+ Insert → A note…** places a card with the note's title, location and synthesis. You can highlight one of its components on the card.
 
 ### Moving components to another note
@@ -764,7 +778,7 @@ A view is a saved query that updates as your notes change.
   - drag inside the selection to move it;
   - corner handles scale it, side handles stretch it, the round top handle rotates it (snaps every 15°);
   - the selection bar has Copy, Duplicate, ⇋ ⇵ flip, pen ↔ highlighter, ◧ Fill/Unfill, colours, **Convert to text**, **Connect… / Merge** (for two ink components), and Delete;
-  - **paste:** hold the button and tap anywhere. Copied text becomes a new component, or goes into a component's text where you tap. Components copied from another note are pulled in.
+  - **paste:** hold the button and tap anywhere. Copied text becomes a new component, or goes into a component's text where you tap. Components copied from another note are bridged.
 - **No right-click menu** opens from the pen while the ink bar is on.
 
 ### Handwriting → text

@@ -5,7 +5,7 @@
    + Insert row, filtered as you type; ↑ ↓ choose, Enter or Tab runs, Esc
    leaves what you typed. The typed /word goes; the command runs on this
    component: /claim /barrier /question… mark the sentence before the caret
-   as that structure, /term the word, /link the word, /cite the picker,
+   as that structure, /term the word, /bridge this component (V3.981), /cite the picker,
    /sym the symbols, /connect this component to one you pick, /date and
    /time type the day and the hour, /paper /protocol… insert below.
    Typing @ opens the lab's members (hub api/rm/members, cached in
@@ -73,7 +73,6 @@ const SLASH = {
     if (kind) { const body = ED.read(el, M.block(b.id).body.marks), sen = SLASH.sentence(body.text, at); if (!sen) throw new Error('write the phrase first, then /' + slash + ' at its end'); const text = body.text.slice(sen[0], sen[1]); ED.makeStructure(el, b, { from: sen[0], to: sen[1], rect: SLASH.rect(el) }, slash, text); return; }
     if (slash === 'term') return ED.markTerm(el, b, null);
     if (slash === 'cite') return ED.citePicker(el, b, ED.selection(el));
-    if (slash === 'link') { const body = ED.read(el, []), w = ED.wordAt(body.text, at) || SLASH.sentence(body.text, at); if (!w) throw new Error('write the words first, then /link after them'); return ED.linkPicker(el, b, { from: w[0], to: w[1], rect: SLASH.rect(el) }); }
     if (slash === 'sym') { if (typeof EBAR !== 'undefined') { EBAR.show(el); EBAR.symbols(SLASH.rect(el)); } return; }
     if (slash === 'mention') { const body = ED.read(el, []), w = ED.wordAt(body.text, at) || SLASH.sentence(body.text, at); if (!w) throw new Error('write the words first'); return ED.mentionPicker(el, b, { from: w[0], to: w[1], rect: SLASH.rect(el) }); }
     if (slash === 'date') { document.execCommand('insertText', false, fmtDayLong(new Date())); return; }
