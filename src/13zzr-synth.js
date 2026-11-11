@@ -17,18 +17,30 @@
    • ☰ The rest (the dock): a panel listing every other component of the
      experiment's notes, by stage, each with Pull in. The person builds and
      rearranges the note.
+   • V3.973 (Gabe: "I want to be able to create a synthesis note outside of
+     an experiment. In doing so, I can add a list of notes that get
+     synthesized as a synthesis note for an experiment would. For example,
+     if there is a takeaway from a couple of lines inside a giant text
+     component, then only that takeaway gets synthesized."): /synthesis (or
+     ± Notes in the dock of any Synthesis note) chooses the notes, kept as
+     d.synthOf; gathering then works on them as on an experiment's — what is
+     marked as a structure comes in as that structure alone (a reference to
+     the takeaway, not to the component around it). An experiment's
+     Synthesis can take more notes the same way.
    ========================================================================== */
 const SYNTH = {
   KINDS: ['claim', 'evidence', 'result', 'takeaway', 'barrier', 'resolution'],
   HEAD: { claim: 'Claims', evidence: 'Evidence', result: 'Results', takeaway: 'Takeaways', barrier: 'Barriers', resolution: 'Resolutions' },
   COL: 440, ROW: 150, Y0: 0,
-  is: d => !!d && d.type === 'reflection' && !!d.chain,
+  is: d => !!d && d.type === 'reflection',   // V3.973: any Synthesis note — an experiment's last stage, or one of notes you choose
   /** Where the first column goes: right of the note's header and of every box it holds. */
   start(d) { const bs = M.docBlocks(d.id).filter(b => b.status === 'live' && b.x != null); return Math.ceil(Math.max(476, ...bs.map(b => b.x + (b.w || 392) + 84)) / 14) * 14; },
-  others: d => CHAIN.members(d).filter(x => x.id !== d.id),
+  /** The notes it synthesizes: the experiment's other notes, and those chosen (d.synthOf). */
+  others(d) { const L = d.chain ? CHAIN.members(d).filter(x => x.id !== d.id) : [], seen = new Set(L.map(x => x.id));
+    (Array.isArray(d.synthOf) ? d.synthOf : []).forEach(id => { const x = M.doc(id); if (x && !x.deleted && x.id !== d.id && !seen.has(id)) { seen.add(id); L.push(x); } }); return L; },
   /** What the experiment's other notes hold that this note does not reference yet: pulled in, a column per kind. */
   gather(d, quiet) {
-    const mem = SYNTH.others(d); if (!mem.length) { if (!quiet) toast('This note is not the end of an experiment yet'); return 0; } const ids = new Set(mem.map(x => x.id));
+    const mem = SYNTH.others(d); if (!mem.length) { if (!quiet) toast('Choose the notes it synthesizes first: ± Notes in the dock'); return 0; } const ids = new Set(mem.map(x => x.id));
     const mine = () => M.docBlocks(d.id).filter(b => b.status === 'live');
     const have = new Set(mine().filter(b => b.kind === 'ref').flatMap(b => [b.refItemId, b.refBlockId]).filter(Boolean));
     const items = DB.where('items', it => ids.has(it.originDocId) && !it.correctedBy && SYNTH.KINDS.includes(it.kind) && !have.has(it.id)).sort((a, b) => String(a.created || '').localeCompare(String(b.created || '')));
@@ -45,7 +57,7 @@ const SYNTH = {
     const from = mine().filter(b => b.synthFrom), said = new Set(from.map(b => b.synthFrom)), x = from.length ? from[0].x : nextX; let fy = from.length ? Math.max(...from.map(b => b.y)) + 170 : y0;
     mem.forEach(m => { const t = m.synthesis && String(m.synthesis.text || '').trim(); if (!t || said.has(m.id)) return;
       const b = M.addBlock(d.id, null, { kind: 'component', x, y: fy, w: 392 }); fy += 170; b.body = { text: t, marks: [] }; b.label = (prof(m.type).stage || prof(m.type).label) + ' — what it added up to'; b.synthFrom = m.id; DB.put('blocks', b); n++; });
-    if (n) changed(); if (!quiet) toast(n ? plural(n, 'thing') + ' gathered from ' + plural(mem.length, 'note') : 'Everything from the experiment is here already', 3200); return n;
+    if (n) changed(); if (!quiet) toast(n ? plural(n, 'thing') + ' gathered from ' + plural(mem.length, 'note') : 'Everything from ' + (d.chain ? 'the experiment' : 'its notes') + ' is here already', 3200); return n;
   },
   /** The rest: the other notes' live components this note does not reference, by note. */
   rest(d) { const have = new Set(M.docBlocks(d.id).filter(b => b.status === 'live' && b.kind === 'ref' && b.refBlockId && !b.refItemId).map(b => b.refBlockId));   // referenced whole (a structure's reference is not the component)
@@ -53,19 +65,51 @@ const SYNTH = {
   /** The panel in the note: every other component of the experiment, each with Pull in. */
   panel(pane, d) {
     const host = pane.host; if (!host) return; const old = $(':scope > .synth-rest', host); if (old) { old.remove(); return; }
-    const body = h('div.sr-b'), el = h('div.synth-rest.nopan', h('div.sr-h', h('span', '☰ The rest of the experiment'), h('button.x', { type: 'button', title: 'Close', on: { click: () => el.remove() } }, '×')), body);
+    const body = h('div.sr-b'), el = h('div.synth-rest.nopan', h('div.sr-h', h('span', '☰ The rest of ' + (d.chain ? 'the experiment' : 'its notes')), h('button.x', { type: 'button', title: 'Close', on: { click: () => el.remove() } }, '×')), body);
     ['pointerdown', 'mousedown', 'wheel', 'keydown', 'dblclick', 'contextmenu'].forEach(t => el.addEventListener(t, e => e.stopPropagation()));
     const fill = () => { const groups = SYNTH.rest(M.doc(d.id) || d); body.replaceChildren(groups.length ? groups.map(g => h('div', h('h4', (prof(g.doc.type).stage || prof(g.doc.type).label) + ' · ' + snippet(g.doc.title, 40)),
       g.blocks.map(b => { const K = typeof CKINDS !== 'undefined' && CKINDS.of(b); return h('div.sr-row', h('div.t', h('b', M.blockName(b) + (K ? ' · ' + K.label : '')), h('span', snippet((b.body || {}).text || (WIDGETS[b.kind] || {}).label || b.kind, 90))),
         h('button.btn.xs', { type: 'button', title: 'A reference to it here — the original stays where it is', on: { click: () => { const p = MOVE.spot(M.doc(d.id)); M.pullInto(d.id, null, { blockId: b.id, x: p.x, y: p.y }); changed(); fill(); toast('Pulled in: ' + snippet(M.blockName(b), 40)); } } }, 'Pull in')); }))) : h('div.tiny.muted', { style: { padding: '10px' } }, 'Every component of the experiment is referenced here.')); };
     fill(); host.append(el);
   },
+  /* ---------- V3.973: a Synthesis of the notes you choose ---------- */
+  /** Notes added to ids, one at a time, until Cancel. */
+  pick(ids, title) { const go = () => CMD.picker(title, '', q => CMD.KINDS.note.list(q, CMD.ctx(), { kind: 'note' }).filter(x => !ids.includes(x.v.id))).then(x => { if (x && x.id) { ids.push(x.id); return go(); } }); return go(); },
+  /** A new Synthesis note of the notes you pick (the note on screen first, when there is one), gathered, opened. */
+  async create(first) {
+    const ids = first && M.doc(first) && M.doc(first).type !== 'reflection' ? [first] : [];
+    await SYNTH.pick(ids, 'Notes to synthesize' + (ids.length ? ' — “' + snippet(M.doc(ids[0]).title, 30) + '” and…' : '') + ' (Cancel when done)'); if (!ids.length) return;
+    const f = M.doc(ids[0]), tpl = M.enabledTemplates('reflection')[0];
+    const d = M.createDoc({ type: 'reflection', projectId: f.projectId || null, themeId: f.themeId || null, title: 'Synthesis — ' + (ids.length === 1 ? f.title : snippet(f.title, 28) + ' and ' + plural(ids.length - 1, 'other note')), templateId: tpl ? tpl.id : null });
+    d.synthOf = ids.slice(); DB.put('documents', d); changed(); App.go('#/doc/' + d.id); setTimeout(() => SYNTH.gather(M.doc(d.id)), 400); return d;
+  },
+  /** ± Notes: the notes it synthesizes (click one to take it out), and + Add notes… */
+  notes(pane, d, e) {
+    d = M.doc(d.id) || d; const chain = d.chain ? CHAIN.members(d).filter(x => x.id !== d.id).map(x => x.id) : [], own = (d.synthOf || []).map(M.doc).filter(Boolean);
+    const out = id => { d.synthOf = (d.synthOf || []).filter(x => x !== id); M.touchDoc(d); changed(); toast('Taken out of the list — what it already gave stays in the note'); };
+    ctxMenu(e.clientX, e.clientY - 8, [{ head: 'Notes it synthesizes' }, ...(chain.length ? [{ label: 'The experiment’s ' + plural(chain.length, 'note'), sub: 'Planning, Run and Analysis — always', run: () => { } }] : []),
+      ...own.map(x => ({ label: x.title || 'Untitled', sub: M.docPath(x) + ' · click: take it out', run: () => out(x.id) })), own.length || chain.length ? 'sep' : null,
+      { label: '+ Add notes…', sub: 'Their claims, evidence, results, takeaways, barriers and resolutions come in', run: async () => { const ids = (d.synthOf || []).slice(), n0 = ids.length; await SYNTH.pick(ids, 'More notes to synthesize (Cancel when done)'); if (ids.length === n0) return; const cur = M.doc(d.id); cur.synthOf = ids; M.touchDoc(cur); changed(); SYNTH.gather(cur); } }].filter(Boolean));
+  },
 };
 {
+  // V3.973: /synthesis — a Synthesis of the notes you choose
+  CMD.add({ slash: 'synthesis', label: 'A synthesis of notes…', args: [], alias: ['synthesize'], group: 'Note', sub: 'Pick the notes; their claims, evidence, results, takeaways, barriers and resolutions are gathered into a new Synthesis note',
+    run: (A_, ctx) => { SYNTH.create(ctx && ctx.doc && ctx.doc.id); return 'Pick the notes to synthesize'; } });
+  // the note's ⋯ menu (the lab's pills hide the dock): a Synthesis's tools; any other note: a synthesis of it and others
+  const dm = DocView.docMenu; DocView.docMenu = function (d, e) { if (this.travel) return dm.apply(this, arguments); const orig = ctxMenu, pane = this;
+    const rows = SYNTH.is(d) ? [{ head: 'Synthesis' }, { label: '± Notes it synthesizes… (' + SYNTH.others(d).length + ')', sub: 'Add notes, or take one out', run: () => SYNTH.notes(pane, d, e) },
+        { label: '⟲ Gather', sub: 'What its notes have gained: claims, evidence, results, takeaways, barriers, resolutions', run: () => SYNTH.gather(M.doc(d.id) || d) },
+        { label: '☰ The rest', sub: 'Every other component of its notes, to pull in', run: () => SYNTH.panel(pane, d) }, 'sep']
+      : [{ label: 'A synthesis of this note and others…', sub: 'A new Synthesis note: pick the notes; what is marked in them is gathered', run: () => SYNTH.create(d.id) }];
+    ctxMenu = (x, y, list) => orig(x, y, [list[0], ...rows, ...list.slice(1)]);
+    try { return dm.apply(this, arguments); } finally { ctxMenu = orig; } };
   // the Synthesis note, when it is made from the Analysis, gathers the experiment
   const adv = CHAIN.advance; CHAIN.advance = function (d, e) { const before = CHAIN.nextOf(d); const r = adv.apply(this, arguments); const n = CHAIN.nextOf(d); if (n && !before && SYNTH.is(n)) setTimeout(() => SYNTH.gather(n, true), 0); return r; };
   // the dock of a Synthesis note: ⟲ Gather, ☰ The rest
   const rd = DocView.renderDock; DocView.renderDock = function (d) { const r = rd.apply(this, arguments); if (!SYNTH.is(d) || this.travel || !this.dock) return r;
-    this.dock.append(h('span.dk-sep'), h('button.dk', { title: 'Pull in what the experiment’s notes have gained: claims, evidence, results, takeaways, barriers, resolutions, and what each note added up to', on: { click: () => SYNTH.gather(d) } }, '⟲ Gather'),
-      h('button.dk', { title: 'Every other component of the experiment, to pull in', on: { click: () => SYNTH.panel(this, d) } }, '☰ The rest')); return r; };
+    const n = SYNTH.others(d).length;
+    this.dock.append(h('span.dk-sep'), h('button.dk', { title: 'The notes it synthesizes: add or take out', on: { click: e => SYNTH.notes(this, d, e) } }, '± Notes' + (n ? ' (' + n + ')' : '')),
+      h('button.dk', { title: 'Pull in what its notes have gained: claims, evidence, results, takeaways, barriers, resolutions, and what each note added up to', on: { click: () => SYNTH.gather(d) } }, '⟲ Gather'),
+      h('button.dk', { title: 'Every other component of its notes, to pull in', on: { click: () => SYNTH.panel(this, d) } }, '☰ The rest')); return r; };
 }
