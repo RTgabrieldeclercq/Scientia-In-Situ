@@ -165,7 +165,7 @@ A note has a **header box** (title, type, profile fields, tags, ✎ for note det
 - **It steps aside** while a menu covers it: an Alt+click menu on a structure or a term, a hover card, the selection's bar. It comes back when the menu goes. Its own menus (∑, +) open clear of it. A hover card closes when a menu opens, and none opens over an open menu.
 
 **Copy and paste.** Paste lands where the pointer last was on the canvas.
-- **Text copied inside a component** remembers where it came from. Paste it on another note's canvas (click the paper, then Ctrl+V) and it is pulled in: a reference to that component. Paste it on the same note and it is a copy, with its structures, terms and styles.
+- **Text copied inside a component** remembers where it came from. Paste it on another note's canvas (click the paper, then Ctrl+V) and **just those words** are pulled in: an **excerpt**, live, that shows only that passage of the component, with its terms and structures, and "from …" opens the original. When the original's words change, so does the excerpt; text added before it does not lose it; if the passage is deleted from the original, the excerpt keeps showing it as it read and says so. Copy the whole text and the whole component is pulled in. Paste on the same note, or with **Ctrl+Shift+V** anywhere, and it is a copy, with its structures, terms and styles.
 - **Text copied from a PDF or an HTML page**, pasted on a canvas, becomes a quote wired to the file. Any other text pasted on a canvas becomes a new component.
 - **Components:** select one (click it) or several (the lasso, or Ctrl+click), and press Ctrl+C with no text highlighted. Ctrl+V on another note pulls them in: a reference to each, placed as they sat relative to each other. On their own note they are copied, and **Ctrl+Shift+V** copies them anywhere.
 - **From outside the notebook:** a picture (a screenshot, an image copied from a web page) becomes an image panel; several pictures at once make one panel. A PDF, an HTML file, a spreadsheet or a PowerPoint copied in the Explorer becomes that component, just as + Insert makes it.
@@ -384,6 +384,9 @@ The last stage of an experiment is its **Synthesis**: one note in the project th
 - **⟲ Gather** (the dock) pulls in what the notes have gained since.
 - **☰ The rest** (the dock) opens a scrollable panel of every other component of the experiment, by stage, each with **Pull in**, so you can bring anything else across. Then build and rearrange the note as you like.
 - A Reflection note made before is a Synthesis too: open it and press ⟲ Gather.
+- **A synthesis of any notes**, outside an experiment: `/synthesis`, or **A synthesis of this note and others…** in a note's ⋯ menu. Pick the notes one after another (Cancel when done); a Synthesis note is made in the first note's project and gathers them as above. Only what is **marked** in them comes in: a takeaway marked in two lines of a long component arrives as that takeaway alone, not the component around it.
+- **± Notes** (the dock, or the Synthesis note's ⋯ menu) lists the notes it synthesizes: **+ Add notes…** brings more in and gathers them; click one to take it out of the list (what it already gave stays). An experiment's Synthesis can take more notes this way too.
+- ± Notes, ⟲ Gather and ☰ The rest are in the note's ⋯ menu as well.
 
 ### Protocols
 A protocol is one box, with its steps on a rail.
@@ -421,6 +424,7 @@ Open it with **+ Insert** on the bar at the bottom of the note, or right-click t
 | **Calculator** | Also via the **Calculator** button at the top right of every canvas. |
 | **Equation** | Also via **∑ Equation**. An equation box with a legend of its terms. |
 | **HTML file…** | An exported plot, report or page, sandboxed. |
+| **Website…** | A web page saved in the note as it is now, kept even if the site goes away (see Websites, below). |
 | **PDF…** | Pages drawn by the app; text is selectable and searchable. |
 | **Slides (PowerPoint)…** | One picture per slide, with speaker notes. Needs PowerPoint on Windows. |
 | **Recording** | Microphone + transcript (§18). |
@@ -488,6 +492,14 @@ Open it with **+ Insert** on the bar at the bottom of the note, or right-click t
   - On an HTML page a snip ends clip mode, and a snip made in the maximised page brings you back to the note, where the new panel is. (An equation brings you back once you press Done in the equation editor.)
   - On an HTML page a figure is a chart (SVG or canvas), a picture, a table or a `<figure>`, with its legend. Its heading becomes the label and its caption the text. A page that draws its charts with its own scripts (an exported report or plot) works once they are drawn. A display equation written with KaTeX goes into the equation editor as its own LaTeX.
   - An equation becomes an equation component: you type it in the equation editor against the snip (a KaTeX equation arrives already typed), checked by you first.
+
+### Websites
+- **+ Insert → Website…** (or `/website`) asks for an address. The page is saved **once, as it is now**, in your notebook folder: its text, styles, pictures and fonts in one file, with the site's scripts and frames left out. It becomes a page component like an HTML page (quoting, snips and ink labels work the same). An address that is a PDF becomes a PDF component.
+- **The site is never visited again.** Opening the note shows the saved copy, and the copy is not allowed to load anything from the internet. If the site changes or goes away, the note still shows the page as it was when you saved it.
+- **The strip under the header** says when and from where it was saved. **↗ Live page** opens the site in your browser, only when you click it. **⟳ Capture again** saves the page anew as the next version, on top of the deck, with the earlier copy kept beneath.
+- **Where it works:** on the computer that runs the app, and on the devices paired with it (the computer fetches the page). A site that lets only a browser in (it answers "403") cannot be captured: save the page from your browser (Ctrl+S) and drop the file in the note.
+- Pages built by scripts in the browser come as the HTML the site sends, which can be bare for some sites.
+- `/collection website` shows every saved page in the Atlas.
 
 ### Slides
 - **Browse:** ‹ › or ← → (with the mouse over the deck) go slide by slide. **Grid** shows them all.
