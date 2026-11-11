@@ -27,12 +27,6 @@
 .iter-ed:empty::before{content:attr(data-ph);color:var(--ink-3);font-style:italic;pointer-events:none}
 .box.folded > .iter-why{display:none}
 /* V3.967 · 13zzq the deck: the versions stacked, a strip to go through them */
-.iter-deck{display:flex;align-items:center;gap:6px;padding:3px 10px 4px;border-bottom:1px dashed var(--rule);font:600 10px/16px var(--f-m);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);cursor:grab;user-select:none;touch-action:pan-y}
-.iter-deck button{border:0;background:transparent;color:var(--ink-2);font:600 14px/16px var(--f-d);cursor:pointer;padding:0 5px;border-radius:5px} .iter-deck button:hover{background:var(--surface-2)} .iter-deck button:disabled{opacity:.3;cursor:default}
-.iter-deck .id-new{font-size:13px;color:var(--it,#0e7490)} .iter-deck .id-dots{display:inline-flex;gap:4px;margin:0 2px} .iter-deck .id-dots i{width:6px;height:6px;border-radius:50%;background:var(--rule-2);cursor:pointer} .iter-deck .id-dots i.on{background:var(--it,#0e7490)}
-.iter-deck .id-l{flex:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.box.deck-under{pointer-events:none;overflow:hidden;opacity:.82;box-shadow:0 1px 2px rgba(0,0,0,.1)} .box.deck-under > *:not(.bh){visibility:hidden} .box.deck-under > .bh{opacity:.55}
-.box.deck-top{box-shadow:var(--shadow)} .box.folded > .iter-deck{display:none} .box.deck-hid{display:none}
 /* V3.967 · 13zzr the rest of the experiment, in a Synthesis note */
 .synth-rest{position:absolute;right:12px;top:56px;bottom:64px;width:340px;z-index:60;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--rule-2);border-radius:10px;box-shadow:var(--shadow-lg);overflow:hidden;animation:tin .15s}
 .synth-rest .sr-h{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--rule);font:600 12.5px var(--f-d)} .synth-rest .sr-h .x{margin-left:auto;border:0;background:transparent;cursor:pointer;font-size:16px;color:var(--ink-3)}
@@ -43,3 +37,32 @@
 .web-strip .ws-ic{width:14px;height:14px;flex:none;border-radius:3px;object-fit:contain} .web-strip .ws-g{display:inline-grid;place-items:center;font-size:12px}
 .web-strip .ws-t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink-2);min-width:0} .web-strip .ws-n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10.5px;min-width:0}
 .web-strip .btn.xs{flex:none} .box.folded > .web-strip{display:none}
+/* V3.974 · 13zzq the versions as slides inside the component's left edge */
+.box.has-slides{padding-left:var(--slw,104px);min-height:150px} .box.deck-top{box-shadow:var(--shadow)} .box.deck-hid{display:none}
+.iter-slides{position:absolute;left:0;top:0;bottom:0;width:calc(var(--slw,104px) - 8px);overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:6px;padding:6px;border-right:1px solid var(--rule);background:color-mix(in srgb,var(--ink) 3%,var(--surface));border-radius:7px 0 0 7px;scrollbar-width:thin;z-index:2}
+.isl{display:flex;flex-direction:column;gap:2px;align-items:stretch;text-align:left;border:1px solid var(--rule-2);background:var(--surface);border-radius:6px;padding:4px 5px;cursor:pointer;min-height:52px;flex:none;color:var(--ink-2);font:inherit}
+.isl:hover{border-color:var(--it,#0e7490)} .isl.on{border-color:var(--it,#0e7490);box-shadow:0 0 0 2px color-mix(in srgb,var(--it,#0e7490) 28%,transparent);color:var(--ink)}
+.isl-n{font:600 9.5px/1.2 var(--f-m);letter-spacing:.06em;text-transform:uppercase;color:var(--it,#0e7490)}
+.isl-txt{font:10px/1.3 var(--f-s,serif);display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.isl-img{width:100%;max-height:52px;object-fit:cover;border-radius:3px;pointer-events:none}
+.isl-file{font:600 10px/1.3 var(--f-d)} .isl-file span{display:block;font-weight:400;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.isl-new{flex:none;border:1px dashed var(--rule-2);background:transparent;border-radius:6px;color:var(--it,#0e7490);font:600 15px/1 var(--f-d);padding:6px;cursor:pointer} .isl-new:hover{background:var(--surface-2)}
+.box.folded.has-slides{padding-left:0;min-height:0} .box.folded > .iter-slides{display:none}
+/* V3.975 · 15d the portfolio: structure dots, experiments as one card, the sort button */
+.pfdots{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.pfdot{display:inline-grid;place-items:center;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:var(--c);color:#fff;font:700 10.5px/1 var(--f-m);cursor:default;box-shadow:0 0 0 2px color-mix(in srgb,var(--c) 25%,transparent);transition:transform .12s}
+.pfdot:hover{transform:scale(1.15)}
+.pfdot-pop{position:fixed;z-index:3000;max-width:330px;min-width:200px;background:var(--surface);border:2px solid var(--c);border-radius:14px;box-shadow:var(--shadow-lg);padding:8px 11px 9px;font-size:12.5px;animation:pfgrow .14s ease-out;transform-origin:12px 12px}
+.pfdot-pop .pp-h{font:600 11px/1.4 var(--f-m);color:var(--c);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px} .pfdot-pop .pp-h b{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border-radius:999px;background:var(--c);color:#fff;margin-right:2px}
+.pfdot-pop .pp-i{font:13px/1.4 var(--f-s,serif);color:var(--ink);padding:3px 0;border-top:1px solid var(--rule)} .pfdot-pop .pp-i:first-of-type{border-top:0} .pfdot-pop .pp-more{font-size:11px;color:var(--ink-3);margin-top:3px}
+@keyframes pfgrow{from{transform:scale(.3);opacity:.2}to{transform:none;opacity:1}}
+.pf-exp{cursor:pointer} .pf-exp.open{border-color:var(--teal,#0e7490)} .pf-exp .pf-exp-tog{font-size:13px;width:22px;height:20px;padding:0;margin-right:2px}
+.pf-stages{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px} .pf-stage{font:600 10px/1.2 var(--f-m);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:5px;background:var(--surface-2);color:var(--ink-2);text-decoration:none} .pf-stage:hover{background:var(--rule)}
+.pf-expg{display:flex;flex-direction:column;gap:6px} .pf-exp-in{display:flex;flex-direction:column;gap:6px;padding-left:10px;border-left:2px solid var(--rule-2);margin-left:8px}
+.pf-sort{white-space:nowrap}
+.pf-proj{position:absolute;display:flex;flex-direction:column;gap:14px} .pf-proj .box{position:relative;left:auto;top:auto} .pf-cols{display:flex;align-items:flex-start} .pf-col{display:flex;flex-direction:column;gap:12px;flex:none}
+/* V3.976 · 13zzr the Synthesis's "notes to synthesize" component */
+.synth-of{padding:10px 12px;display:flex;flex-direction:column;gap:6px} .synth-of .sy-h{font:600 13px/1.3 var(--f-d)} .synth-of .sy-ask{margin:0;font:12.5px/1.45 var(--f-s,serif);color:var(--ink-2)}
+.synth-of .sy-list{display:flex;flex-direction:column;gap:3px} .synth-of .sy-row{display:flex;align-items:center;gap:6px;font-size:12.5px;min-width:0}
+.synth-of .sy-t{font-weight:600;color:var(--ink);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0} .synth-of .sy-t:hover{text-decoration:underline}
+.synth-of .sy-x{width:20px;height:20px;padding:0;font-size:13px} .synth-of .sy-acts{display:flex;gap:6px;margin-top:2px}
