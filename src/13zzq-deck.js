@@ -29,6 +29,16 @@
      when they are many, and a click brings that version up; + at its foot
      makes the next. The other versions are not drawn. ↑ ↓ (or ← →) with
      the component selected go through them.
+   • V3.978 (Gabe: "The slide deck format of the iteration should have a
+     preview in the slides to the left. Versions can be deleted from an
+     iteration panel."): each slide shows its version as it looks — the
+     version's own box, drawn small (previews, after the note is drawn; a
+     page or a PDF shows its name where its frame was). × on a slide (or its
+     right-click menu) deletes that version at once, as a component is
+     deleted (Ctrl+Z brings it back): the line closes up — the next improves
+     on the one before it, the second becomes the first when the first goes,
+     one left is a component again — and is numbered again (drop). With a pen
+     hand a touch on × does nothing (the palm, as on the command bar).
    ========================================================================== */
 const IDECK = {
   shown: new Map(),   // root id → the version on top this session (default: the newest)
@@ -64,14 +74,65 @@ const IDECK = {
   /** The slides: every version, the one on screen marked; + makes the next. Inside the component's left edge. */
   slides(b, ro) {
     const L = ITER.line(b), att = IDECK.attempts(b), word = k => (att ? 'attempt ' : 'v') + (k + 1);
+    const del = (e, x) => { e.stopPropagation(); e.preventDefault(); if (typeof NAV !== 'undefined' && NAV.palmOff && NAV.palmOff(e)) return; IDECK.drop(x.id); };
     const el = h('div.iter-slides.nopan', { title: 'The versions — click one to bring it up' },
       L.map((x, k) => h('button.isl' + (x.id === b.id ? '.on' : ''), { type: 'button', 'data-id': x.id, title: (att ? 'Attempt ' : 'Version ') + (k + 1) + (x.iter && x.iter.why ? ' — ' + snippet(x.iter.why, 140) : k === 0 ? ' — the first' : ''),
-        on: { click: e => { e.stopPropagation(); if (x.id !== b.id) IDECK.to(b, x.id); } } }, h('span.isl-n', word(k)), IDECK.thumb(x))),
+        on: { click: e => { e.stopPropagation(); if (x.id !== b.id) IDECK.to(b, x.id); },
+          contextmenu: e => { e.preventDefault(); e.stopPropagation(); if (ro) return; ctxMenu(e.clientX, e.clientY + 6, [{ head: (att ? 'Attempt ' : 'Version ') + (k + 1) }, x.id !== b.id ? { label: 'Bring it up', run: () => IDECK.to(b, x.id) } : null,
+            { label: 'Delete ' + word(k), danger: true, sub: 'The others close up and are numbered again · Ctrl+Z brings it back', run: () => IDECK.drop(x.id) }].filter(Boolean)); } } },
+        h('span.isl-n', word(k)), IDECK.thumb(x),
+        ro ? null : h('span.isl-x', { role: 'button', title: 'Delete ' + word(k) + ' — Ctrl+Z brings it back', on: { click: e => del(e, x), pointerdown: e => e.stopPropagation() } }, '×'))),
       ro ? null : h('button.isl-new', { type: 'button', title: att ? 'A new attempt' : 'A new version', on: { click: e => { e.stopPropagation(); ITER.make(L[L.length - 1]); } } }, '+'));
     // the slides scroll on their own; a press there neither drags the component nor pans the paper
     ['pointerdown', 'mousedown', 'dblclick', 'contextmenu', 'wheel'].forEach(t => el.addEventListener(t, e => e.stopPropagation()));
     setTimeout(() => { const on = $('.isl.on', el); if (on && el.scrollHeight > el.clientHeight + 2) on.scrollIntoView({ block: 'nearest' }); }, 0);
     return el;
+  },
+  /** V3.978 — each slide shows its version as it looks: that version's box, drawn small (once the note is drawn and its widgets have
+      drawn themselves). */
+  previews(pane) {
+    const w = pane && pane.paper && pane.paper.world; if (!w || !w.isConnected || pane.travel) return;
+    $$(':scope > .box.deck-top > .iter-slides', w).forEach(col => $$(':scope > .isl[data-id]', col).forEach(sl => { if ($(':scope > .isl-pv', sl)) return;
+      const src = $(`:scope > .box[data-id="${sl.dataset.id}"]`, w), x = M.block(sl.dataset.id); if (!src || !x) return;
+      try { const pv = IDECK.preview(src, x, sl); if (pv) { const old = $(':scope > .isl-img, :scope > .isl-txt, :scope > .isl-file', sl); old ? old.replaceWith(pv) : sl.append(pv); IDECK.fit(pv); } } catch (e) { console.warn('[slide preview]', e); } }));
+  },
+  /** A copy of the version's box that does nothing: no ids, no data-id (the app finds a box by it), nothing editable, frames as their names. */
+  preview(src, x, sl) {
+    const top = src.classList.contains('deck-top'), c = src.cloneNode(true);
+    c.classList.remove('deck-hid', 'deck-top', 'has-slides', 'sel', 'selected', 'multi', 'drag', 'website-live'); c.removeAttribute('data-id'); c.removeAttribute('id');
+    $$('.iter-slides, .port, .rz, .embed-rz, .embed-tools, :scope > .bh, :scope > .iter-why', c).forEach(e => e.remove());   // the content, not the header: the slide says which version
+    $$('[data-id]', c).forEach(e => e.removeAttribute('data-id')); $$('[id]', c).forEach(e => e.removeAttribute('id'));
+    $$('[contenteditable]', c).forEach(e => e.setAttribute('contenteditable', 'false')); $$('input,textarea,select,button', c).forEach(e => { e.tabIndex = -1; });
+    const sc = [...src.querySelectorAll('canvas')]; [...c.querySelectorAll('canvas')].forEach((k, i) => { const s = sc[i]; if (s && s.width && s.height) try { k.width = s.width; k.height = s.height; k.getContext('2d').drawImage(s, 0, 0); } catch (e) { } });
+    $$('iframe', c).forEach(f => f.replaceWith(h('div.isl-frame', { style: { height: f.style.height || (f.parentElement && f.parentElement.style.height) || '300px' } }, x.web ? 'Website' : x.kind === 'pdf' ? 'PDF' : 'Page', h('b', snippet(x.label || M.blockName(x), 60)))));
+    $$('video', c).forEach(v => { v.removeAttribute('autoplay'); v.preload = 'metadata'; v.muted = true; });
+    // the width it is drawn at (the one on screen has the slides inside its edge); text is laid out narrower, so its words show larger
+    const W = x.kind === 'component' ? 240 : Math.max(160, (x.w || 392) - (top ? IDECK.SLW : 0));
+    Object.assign(c.style, { position: 'absolute', left: '0px', top: '0px', width: W + 'px', margin: '0', boxShadow: 'none', transformOrigin: '0 0', pointerEvents: 'none' });
+    c.setAttribute('inert', ''); c.setAttribute('aria-hidden', 'true');
+    const pv = h('span.isl-pv', { 'data-w': W }, c); return pv;
+  },
+  /** The copy scaled to the slide's width; the slide as tall as it, up to a limit. */
+  fit(pv) { const c = pv.firstChild, W = +pv.dataset.w || 392, sw = Math.max(40, pv.clientWidth || 80), s = sw / W; c.style.transform = 'scale(' + s + ')'; pv.style.height = Math.round(Math.min(150, Math.max(30, (c.offsetHeight || 200) * s))) + 'px'; },
+  /** V3.978 — a version deleted (from its slide): the line closes up and is numbered again; one left is a component again. One Ctrl+Z. */
+  drop(id) {
+    const x = M.block(id); if (!x || x.status !== 'live') return; const L = ITER.line(x), k = L.findIndex(y => y.id === id); if (k < 0 || L.length < 2) return;
+    const why = EDIT.blocker([id]); if (why) return toast(why, 5000);
+    const root = L[0], rest = L.filter(y => y.id !== id), nr = rest[0], shown = IDECK.top(x).id, att = IDECK.attempts(x), name = (att ? 'Attempt ' : 'Version ') + (k + 1);
+    const bg = DB.beginGroup; DB.beginGroup('delete-version'); DB.beginGroup = () => { };   // one undo step, whatever is called on the way
+    try {
+    if (rest.length === 1) IDECK.widen(root, -1);   // one left: a component again, its own width
+    const R0 = M.block(root.id), flags = { iterSlides: R0.iterSlides, iterSpread: R0.iterSpread };
+    rest.forEach((y, i) => { const cur = M.block(y.id); if (!cur) return;
+      if (i === 0) { delete cur.iter; if (rest.length === 1) { delete cur.iterSlides; delete cur.iterSpread; } else if (cur.id !== root.id) Object.keys(flags).forEach(f => { if (flags[f]) cur[f] = flags[f]; }); DB.put('blocks', cur); return; }
+      let of = cur.iter.of === id ? (x.iter ? x.iter.of : nr.id) : cur.iter.of; if (!rest.some(r => r.id === of)) of = rest[i - 1].id;
+      const was = cur.iter.of; cur.iter = Object.assign({}, cur.iter, { root: nr.id, of, v: i + 1 }); DB.put('blocks', cur);
+      if (of !== was && !DB.where('wires', w => w.from === of && w.to === cur.id && w.rel === ITER.REL).length) DB.put('wires', { id: uid('w'), from: of, to: cur.id, rel: ITER.REL, directed: true, created: isoLocal(new Date()) }); });   // M.wire's record, without its side effects
+    EDIT.purge(EDIT.footprint([id]));
+    } finally { DB.beginGroup = bg; }
+    IDECK.shown.delete(root.id); if (rest.length > 1) IDECK.shown.set(nr.id, shown === id ? rest[Math.min(k, rest.length - 1)].id : shown);
+    DB.beginGroup(); IX.rebuild(); changed();
+    toast(name + ' deleted' + (rest.length === 1 ? ' — one version left, a component again' : ' — the others are numbered again') + ' · Ctrl+Z brings it back', 4500);
   },
   /** One size for the whole deck (V3.970 — Gabe: "resizing one of the components resizes all other equally to keep that card deck
    *  feel"): the card just saved gives its width, and its height when it has one (a page, a PDF), to the other versions. */
@@ -113,6 +174,8 @@ CKINDS.BASE.push({ id: 'troubleshooting', label: 'Troubleshooting', color: '#B23
     if (b.id === IDECK.top(b).id) { el.classList.add('deck-top', 'has-slides'); el.prepend(IDECK.slides(b, !!this.travel)); } else el.classList.add('deck-hid');
     return el; };
   const up = DocView.update; DocView.update = function () { const out = up.apply(this, arguments); try { IDECK.after(this); } catch (e) { } return out; };
+  // V3.978: the previews, once the note's widgets have drawn themselves (an image panel lays its pictures out a frame later)
+  const fl = DocView.fill; DocView.fill = function () { const out = fl.apply(this, arguments), pane = this; requestAnimationFrame(() => setTimeout(() => IDECK.previews(pane), 80)); return out; };
   // "boxes never overlap" (12 settle): the versions not drawn sit that out, then follow the one on screen
   const se = DocView.settle; DocView.settle = function () { const d = M.doc(this.docId); if (!d || this.travel || prof(d.type).ordered) return se.apply(this, arguments);
     const lb = M.liveBlocks; M.liveBlocks = function (id) { const L = lb.apply(this, arguments); return id === d.id ? L.filter(b => !IDECK.beneath(b)) : L; };

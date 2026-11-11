@@ -82,9 +82,9 @@ const PFKIT = {
     (items || DB.where('items', i => i.originDocId === d.id && !i.correctedBy)).forEach(i => { const t = +new Date(i.created); if (inside(t)) ev.push({ t, s: PFKIT.SCORE[i.kind] || PFKIT.SCORE.structure }); });
     return ev;
   },
-  /** Activity of these notes: { score (the last `days`), last, days (since the last moment), perDay (the last 6 weeks) }. */
-  activity(docs, days = 28) {
-    const since = Date.now() - days * 864e5, map = Date.now() - 42 * 864e5, byDoc = new Map(), ids = new Set(docs.map(d => d.id));
+  /** Activity of these notes: { score (the last `days`), last, days (since the last moment), perDay (the last `mapDays`: 6 weeks, a theme's page 8) }. */
+  activity(docs, days = 28, mapDays = 42) {
+    const since = Date.now() - days * 864e5, map = Date.now() - mapDays * 864e5, byDoc = new Map(), ids = new Set(docs.map(d => d.id));
     DB.where('items', i => ids.has(i.originDocId) && !i.correctedBy).forEach(i => { (byDoc.get(i.originDocId) || byDoc.set(i.originDocId, []).get(i.originDocId)).push(i); });
     let score = 0, last = 0; const perDay = new Map();
     docs.forEach(d => PFKIT.events(d, byDoc.get(d.id) || []).forEach(e => { if (e.t > last) last = e.t; if (e.t >= since) score += e.s; if (e.t >= map) { const k = localDate(new Date(e.t)); perDay.set(k, (perDay.get(k) || 0) + e.s); } }));
@@ -102,6 +102,9 @@ const PFKIT = {
   },
   /** "activity 34 · 4 wk" for a health line. */
   say: H => 'activity ' + (H.act || 0) + ' · 4 wk',
+  /** V3.978 — one note's activity, for a list: what it scored, and until when it still counts (two weeks from its date). */
+  noteAct(d) { const ev = PFKIT.events(d), s = ev.reduce((a, e) => a + e.s, 0), t0 = +new Date(d.created), open = !!t0 && !PFKIT.isLit(d) && Date.now() < t0 + PFKIT.WINDOW;
+    return { score: s, open, until: open ? new Date(t0 + PFKIT.WINDOW) : null }; },
 };
 {
   // a theme's health is its activity: the score of the last four weeks, stalled after three weeks without any

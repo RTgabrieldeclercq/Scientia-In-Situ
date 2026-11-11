@@ -81,6 +81,35 @@ const EDIT = {
       actions: [{ label: 'Cancel' }, { label: 'Delete note', danger: true, pri: true, run: async () => { if (DISK.on) await DISK.keep('before-delete-note'); if (EDIT.deleteDoc(d)) { App.go('#/portfolio'); toast('Note deleted — Ctrl+Z brings it back', 4000); } } }] });
   },
 
+  /** V3.978 — a project deleted: its themes and aims go; its notes go with it (notes 'delete') or stay, outside any project, with all
+      they hold (notes 'keep'). One Ctrl+Z brings everything back. */
+  deleteProject(p, notes) {
+    p = p && M.project(p.id); if (!p) return false; const pid = p.id, docs = DB.where('documents', d => d.projectId === pid), themes = DB.where('themes', t => t.projectId === pid), tids = new Set(themes.map(t => t.id));
+    if (notes === 'delete') { const ids = new Set(docs.map(d => d.id)), why = EDIT.blocker(DB.where('blocks', b => ids.has(b.docId)).map(b => b.id)); if (why) { toast(why, 5000); return false; } }
+    const bg = DB.beginGroup, rb = IX.rebuild; DB.beginGroup('delete-project'); DB.beginGroup = () => { }; IX.rebuild = () => { };   // one undo step; the index once, at the end
+    try {
+      if (notes === 'delete') docs.forEach(d => { if (M.doc(d.id)) EDIT.deleteDoc(d); });
+      else docs.forEach(d => { d.projectId = null; d.themeId = null; DB.put('documents', d); });
+      DB.where('items', i => i.projectId === pid).forEach(i => { i.projectId = null; DB.put('items', i); });
+      DB.where('terms', t => t.projectId === pid).forEach(t => { if (notes === 'delete') DB.del('terms', t.id); else { t.projectId = null; DB.put('terms', t); } });
+      ['datasets', 'reminders', 'sessions'].forEach(st => DB.where(st, r => r.projectId === pid || (r.themeId && tids.has(r.themeId))).forEach(r => { if (r.projectId === pid) r.projectId = null; if (r.themeId && tids.has(r.themeId)) r.themeId = null; DB.put(st, r); }));
+      DB.where('documents', d => d.review && (d.review.projectIds || []).includes(pid)).forEach(d => { d.review = Object.assign({}, d.review, { projectIds: d.review.projectIds.filter(x => x !== pid) }); DB.put('documents', d); });   // a lit review serves it no more
+      DB.where('aims', a => tids.has(a.themeId)).forEach(a => DB.del('aims', a.id)); themes.forEach(t => DB.del('themes', t.id)); DB.del('projects', pid);
+    } finally { DB.beginGroup = bg; IX.rebuild = rb; }
+    DB.beginGroup(); IX.rebuild(); changed(); return true;
+  },
+  confirmProject(p) {
+    p = p && M.project(p.id); if (!p) return; if (p.rm || p.sharedFrom) return toast(p.rm ? 'This project is assigned in RM: it is not deleted here' : 'A project shared with you is its owner’s to delete', 5000);
+    const sh = Object.keys(p.shareWith || {}).length; if (sh) return toast('It is shared with ' + plural(sh, 'person', 'people') + ': stop sharing it first, then delete it', 5000);
+    const docs = DB.where('documents', d => d.projectId === p.id && !d.deleted), themes = DB.where('themes', t => t.projectId === p.id), its = DB.where('items', i => i.projectId === p.id).length;
+    const go = async notes => { if (DISK.on) await DISK.keep('before-delete-project'); if (EDIT.deleteProject(p, notes)) { App.go('#/portfolio'); toast('Project deleted' + (notes === 'keep' && docs.length ? ' — its ' + plural(docs.length, 'note') + ' are outside any project now' : '') + ' · Ctrl+Z brings it back', 5000); } };
+    modal({ title: 'Delete the project “' + p.name + '”?', body: h('div',
+      h('p.serif', { style: { marginTop: 0 } }, 'It holds ' + plural(docs.length, 'note') + ', ' + plural(themes.length, 'theme') + (its ? ' and ' + plural(its, 'structure') : '') + '. Its themes and their aims go either way.'),
+      docs.length ? h('p', h('b', 'Keep its notes'), ': they stay as they are, with everything in them, outside any project — move each one to another project when you like. ', h('b', 'Delete its notes too'), ': they go with it.') : null,
+      h('p.tiny.muted', 'Ctrl+Z (outside a text box) undoes it in this session. With a notebook folder, a copy of everything is kept in .scientia/kept first.')),
+      actions: [{ label: 'Cancel' }, docs.length ? { label: 'Delete it, keep its notes', pri: true, run: () => go('keep') } : null, { label: docs.length ? 'Delete it and its notes' : 'Delete the project', danger: true, run: () => go('delete') }].filter(Boolean) });
+  },
+
   /* ---------------- a note's details ---------------- */
   noteDialog(d) {
     const p0 = prof(d.type), projects = DB.all('projects');
