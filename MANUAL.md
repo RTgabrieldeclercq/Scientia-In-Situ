@@ -146,6 +146,12 @@ A note has a **header box** (title, type, profile fields, tags, ✎ for note det
 - **Tidy layout** (⋯ beside the title, or `/tidy`) lays the note out by its connections: each chain of wired components from its origin downwards, rows ordered so the wires cross as little as they can, neighbours far enough apart to read the arrow and its label, regions as pieces of their own. Then everything — the chains and the components with no connections alike — is packed into the smallest near-square area (a little wider than tall, like the window, so Fit gives the highest zoom), with room between the pieces to read and to move about. Ctrl+Z undoes it. **Flow in order** (⋯) is the old tidy: the boxes in order, two columns.
 - **Folding moves the neighbours.** ▾ on a component (or a region's fold) brings what sits below it up by the height that went, and what sits to its right left by the width that went; unfolding pushes them back. A box you moved in between stays where you put it. Ink never moves.
 - **The Portfolio's layout is yours:** where you put its cards, and which are folded, follows you to every computer.
+- **In a project, the Portfolio shows:**
+  - **Lit reviews** in their own column, every literature note of the project (and the reviews linked to it), never under Project-wide or a theme.
+  - **An experiment as one card**: its name and its stages (Planning, Run, Analysis, Synthesis; a stage opens its note). **▸** unfolds it into its notes, and it stays unfolded on this computer until **▾** folds it.
+  - **Notes in the order of their date**, the day a note is about, newest first. **⇅** on the project changes it: oldest first, recent changes, most active, or title.
+  - **Dots on each note** for its **takeaways**, **open barriers** and **evidence**, in their colours from Settings, with the count inside. Hover a dot (or tap it) and it opens onto the words marked.
+- **Health is activity**, not time recorded. A note earns activity only in the **two weeks from its date**: a component made scores 1, a structure marked 3, a **takeaway** or a **result** 10. Lit reviews earn none. A theme card and the project's header say "activity N · 4 wk" (the last four weeks), the heatmap shows each day's activity, and a theme with none for three weeks is *stalled*.
 
 ### Editing the note itself
 - **Note details** (✎ on the header box, or ⋯ → Note details…): title, type, project, theme, date. Changing the date moves every component's stamp with it, unless you untick that option.
@@ -331,14 +337,14 @@ A **Story** is a kind of component for telling — a talk, a paper's thread, a l
 ### Iterations
 An **Iteration** is the next version of a component: Run 2 of a report, the figure redone, the hypothesis reworded.
 - **Make one:** the component's ⋯ → **New iteration**, or Iteration in the kind label's list (double-click it), or `/iteration` with the component selected.
-- **What you get:** a blank component of the same type and kind, **on the deck**: the versions stack at one spot, the newest on top, the older ones peeking out beneath. It has the same size and label: an image panel keeps its grid, a table starts empty. An HTML page, a PDF or slides ask for the new version's file, and that file keeps its own name.
-- **The deck:** the strip under the header says which version is on top ("v2 of 3"). **Swipe it** left or right, press **‹ ›**, click a dot, or press **← →** with the card selected, to go through the versions; **+** on the strip makes the next. Picking a version in the version tag's menu puts it on top too. Moving any card moves the deck.
-- **One size:** resize the card on top and every version takes the same width (and height, for a page or a PDF), so the deck stays a deck. Stacking a spread-out deck gives every version the top card's size.
-- The version tag's menu offers **Spread out** (every version beside the one before, wired **next version**, each keeping its own size) and **Stack as a deck** to bring them back.
+- **What you get:** a blank component of the same type and kind, and the component now shows **one version at a time**, with all of them as **slides** in a column inside its left edge, like PowerPoint. It has the same size and label: an image panel keeps its grid, a table starts empty. An HTML page, a PDF or slides ask for the new version's file, and that file keeps its own name.
+- **The slides:** each shows its version's first words, a picture's thumbnail or a file's name, with v1, v2… above it. **Click a slide** to bring that version up; the column scrolls when there are many. **+** at its foot makes the next version. With the component selected, **↑ ↓** (or ← →) go through them. Picking a version in the version tag's menu brings it up too. The component is the slides' width wider, so the text keeps its room.
+- **One size:** resize the component and every version takes the same width (and height, for a page or a PDF).
+- The version tag's menu offers **Spread out** (every version beside the one before, wired **next version**, each keeping its own size) and **Show as slides** to bring them back.
 - **How it improved:** under the new version, like an image panel's caption, is the question "How did v2 improve on v1?"; the caret waits there. What you write is kept with that version.
 - **Which version:** each version shows **v1**, **v2**, **v3**… in its header. Click it to list every version, with how each improved, to go to one, or to make the next.
 - `/collection iteration` shows every version in the Atlas.
-- **Troubleshooting** is a component kind made for this: set it on an empty component and it starts with **Problem / Tried / Outcome**; each attempt is a new version on the deck ("attempt 2 of 3", **+** for the next). It resolves a barrier and leads to a resolution, a decision or a method.
+- **Troubleshooting** is a component kind made for this: set it on an empty component and it starts with **Problem / Tried / Outcome**; each attempt is a new version, its slide named "attempt 2" (**+** under the slides for the next). It resolves a barrier and leads to a resolution, a decision or a method.
 
 ### Several at once
 Select components with the lasso or Ctrl+click and their bar offers, besides Copy, Duplicate and Delete. The bar is one row and sits where it covers no other component: under them, else beside them, else above. A Ctrl+click on a component's text selects it without leaving the caret there.
@@ -387,6 +393,9 @@ The last stage of an experiment is its **Synthesis**: one note in the project th
 - **A synthesis of any notes**, outside an experiment: `/synthesis`, or **A synthesis of this note and others…** in a note's ⋯ menu. Pick the notes one after another (Cancel when done); a Synthesis note is made in the first note's project and gathers them as above. Only what is **marked** in them comes in: a takeaway marked in two lines of a long component arrives as that takeaway alone, not the component around it.
 - **± Notes** (the dock, or the Synthesis note's ⋯ menu) lists the notes it synthesizes: **+ Add notes…** brings more in and gathers them; click one to take it out of the list (what it already gave stays). An experiment's Synthesis can take more notes this way too.
 - ± Notes, ⟲ Gather and ☰ The rest are in the note's ⋯ menu as well.
+- **Notes to synthesize:** every Synthesis note has a component that lists the notes it synthesizes (an experiment's are marked "the experiment"), with **+ Add notes…**, **⟲ Gather**, and × to take one out. A new Synthesis note opens with it, asking which notes you would like to synthesize.
+- **Flag for synthesis:** in a note that a Synthesis synthesizes, right-click a component → **Flag for synthesis**, or right-click words you selected, or a marked passage (a highlighted takeaway, claim…), → **Flag these words for synthesis**. It is pulled into the Synthesis under **Flagged for synthesis**: the component, or a live excerpt of just the words.
+- **Lit reviews give only what you flag.** Their claims, evidence, results and takeaways are not gathered, and ☰ The rest leaves them out: flag what should come in.
 
 ### Protocols
 A protocol is one box, with its steps on a rail.
@@ -496,7 +505,7 @@ Open it with **+ Insert** on the bar at the bottom of the note, or right-click t
 ### Websites
 - **+ Insert → Website…** (or `/website`) asks for an address. The page is saved **once, as it is now**, in your notebook folder: its text, styles, pictures and fonts in one file, with the site's scripts and frames left out. It becomes a page component like an HTML page (quoting, snips and ink labels work the same). An address that is a PDF becomes a PDF component.
 - **The site is never visited again.** Opening the note shows the saved copy, and the copy is not allowed to load anything from the internet. If the site changes or goes away, the note still shows the page as it was when you saved it.
-- **The strip under the header** says when and from where it was saved. **↗ Live page** opens the site in your browser, only when you click it. **⟳ Capture again** saves the page anew as the next version, on top of the deck, with the earlier copy kept beneath.
+- **The strip under the header** says when and from where it was saved. **↗ Live page** opens the site in your browser, only when you click it. **⟳ Capture again** saves the page anew as the next version, shown with the earlier copy as a slide beside it, kept beneath.
 - **Where it works:** on the computer that runs the app, and on the devices paired with it (the computer fetches the page). A site that lets only a browser in (it answers "403") cannot be captured: save the page from your browser (Ctrl+S) and drop the file in the note.
 - Pages built by scripts in the browser come as the HTML the site sends, which can be bare for some sites.
 - `/collection website` shows every saved page in the Atlas.

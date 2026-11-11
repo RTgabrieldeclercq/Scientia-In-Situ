@@ -128,6 +128,7 @@ const M = {
     const now = new Date();
     const b = Object.assign({ id: uid('c'), docId: d.id, kind: 'component', label: '', body: { text: '', marks: [] }, status: 'live',
       supersedes: [], supersededBy: [], created: isoLocal(now), modified: isoLocal(now), manualSec: null, step: null, x: null, y: null, w: 392, fields: [], boundTo: null }, init);
+    b.made = isoLocal(now);   // V3.975: when it was really made (a backdated note stamps `created` with its own date); activity (15d) counts this
     b.stamp = M.stampFor(d.id, now);
     DB.put('blocks', b);
     const i = afterId ? d.blockIds.indexOf(afterId) : -1;
