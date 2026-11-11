@@ -128,17 +128,19 @@ const CLIPX = {
   /** Files on the clipboard: a screenshot, an image copied from a page, files copied in the Explorer or the Finder. */
   files(cd) { let F = []; try { F = [...(cd.items || [])].filter(i => i.kind === 'file').map(i => i.getAsFile()).filter(Boolean); } catch (x) { } if (!F.length) try { F = [...(cd.files || [])]; } catch (x) { } return F; },
   sort(f) { const n = String(f.name || '').toLowerCase(), t = String(f.type || '').toLowerCase(), x = (n.match(/\.([a-z0-9]+)$/) || [])[1] || '';
+    if (x === 'mhtml' || x === 'mht' || t === 'multipart/related' || t === 'message/rfc822' && /\.mht/.test(n)) return 'mhtml';   // V3.977: a page saved in the browser (13zzs)
     if (t === 'application/pdf' || x === 'pdf') return 'pdf'; if (t === 'text/html' || x === 'html' || x === 'htm') return 'html';
     if (t.startsWith('image/') || t.startsWith('video/') || /^(png|jpe?g|gif|webp|bmp|avif|mp4|webm|mov|m4v)$/.test(x)) return 'image';
     if (/^(xlsx|xlsm|xls|ods|csv|tsv)$/.test(x) || /spreadsheet|ms-excel|text\/csv|tab-separated/.test(t)) return 'sheet'; if (/^(pptx|ppt|pptm|ppsx|odp)$/.test(x)) return 'deck'; return null; },
   /** Each file as what it is, made by its own + Insert code: images (and videos) together in one image panel, a PDF, an HTML page, a table, slides. */
   addFiles(d, at, files) {
-    const by = { image: [], pdf: [], html: [], sheet: [], deck: [] }, skip = []; files.forEach(f => { const k = CLIPX.sort(f); if (k) by[k].push(f); else skip.push(f.name || 'a file'); });
-    if (skip.length) toast('Can’t paste ' + skip.join(', ') + ': pictures, PDFs, HTML pages, spreadsheets and slides can be pasted', 4500);
+    const by = { image: [], pdf: [], html: [], sheet: [], deck: [], mhtml: [] }, skip = []; files.forEach(f => { const k = CLIPX.sort(f); if (k) by[k].push(f); else skip.push(f.name || 'a file'); });
+    if (skip.length) toast('Can’t add ' + skip.join(', ') + ': pictures, PDFs, HTML pages, pages saved in the browser, spreadsheets and slides can be', 4500);
     let p = { x: at.x, y: at.y }; const next = () => { const q = p; p = { x: p.x + 42, y: p.y + 42 }; return q; }; DB.beginGroup('paste');
     if (by.image.length) { const n = by.image.length, cols = n <= 4 ? n : 3, b = FIG.create(d, next(), Math.ceil(n / cols), cols, by.image.map(CLIPX.named)); b.fig.letters = n > 1; DB.put('blocks', b); toast(n > 1 ? plural(n, 'picture') + ' pasted as one image panel' : 'Pasted as an image panel'); }
     by.pdf.forEach(f => CLIPX.through([f], () => PDFW.insert(d, next()))); by.html.forEach(f => CLIPX.through([f], () => EMBED.insert(d, next())));
     by.sheet.forEach(f => CLIPX.through([f], () => TABLE.insert(d, next()))); by.deck.forEach(f => CLIPX.through([f], () => DECK.insert(d, next())));
+    by.mhtml.forEach(f => WEBCAP.fromMhtml(d, next(), f));
   },
   /** A screenshot is "image.png": it gets the day and time instead. */
   named(f) { if (f.name && !/^image\.(png|jpe?g|gif|webp|bmp)$/i.test(f.name)) return f; const ext = String((f.type || 'image/png').split('/')[1] || 'png').replace('jpeg', 'jpg').replace(/\W.*$/, ''), now = new Date();

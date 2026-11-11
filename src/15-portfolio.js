@@ -96,7 +96,8 @@ const ProjectView = {
       h('p.stand', `${plural(active.length, 'active theme')} · ${plural(docs.length, 'note')} · ${plural(IX.openBarriers(id).length, 'open barrier')} · ${plural(terms.length, 'term')}`),
       h('div.row', h('button.btn.pri', { on: { click: () => App.newDoc({ projectId: id }) } }, '+ New note'),
         h('button.btn', { on: { click: async () => { const n = await askText('New theme', 'A line of attack — a question you could plausibly answer'); if (n) M.createTheme(id, n); } } }, '+ Theme'),
-        h('button.btn.ghost', { on: { click: async () => { const n = await askText('Rename project', 'Name', p.name); if (n) { p.name = n; DB.put('projects', p); changed(); } } } }, 'Rename')),
+        h('button.btn.ghost', { on: { click: async () => { const n = await askText('Rename project', 'Name', p.name); if (n) { p.name = n; DB.put('projects', p); changed(); } } } }, 'Rename'),
+        p.rm || p.sharedFrom ? null : h('button.btn.ghost.danger.pv-del', { title: 'Delete the project: its notes stay (outside any project) or go with it — you choose', on: { click: () => EDIT.confirmProject(p) } }, 'Delete project…')),
       h('div.sec-h', h('h2', 'Themes'), h('span.k', 'health roster')),
       h('div.cards', active.map(t => { const H = IX.themeHealth(t);
         return h('div.card.click', { on: { click: () => App.go('#/theme/' + t.id) } },
@@ -137,13 +138,16 @@ const ThemeView = {
           { label: 'Split…', run: async () => { const n = await askText('Split theme', 'New theme names, one per line', '', { multiline: true }); if (n) M.splitTheme(t, n.split('\n').map(x => x.trim()).filter(Boolean)); } },
           { label: 'Retire', sub: 'A decision to stop, recorded', run: async () => { const r = await askText('Retire theme', 'Why (one line)'); if (r !== null) M.retireTheme(t, r); } }]) } }, 'Lineage ▾')] : null,
         h('button.btn', { on: { click: () => Exporter.theme(id) } }, 'Export read-only HTML')),
-      h('div.tiles', tile(fmtDur(H.ms4), 'recorded · 4 wk'), tile(H.openB.length, 'open barriers', null, 'barrier'), tile(H.evid, 'results & evidence', null, 'result'), tile(H.days == null ? '—' : H.days + 'd', 'since last activity', H.stalled ? 'stalled — continue, re-shape or retire' : null)),
+      h('div.tiles', tile(H.act || 0, 'activity · 4 wk', 'notes in their first two weeks'), tile(H.openB.length, 'open barriers', null, 'barrier'), tile(H.evid, 'results & evidence', null, 'result'), tile(H.days == null ? '—' : H.days + 'd', 'since last activity', H.stalled ? 'stalled — continue, re-shape or retire' : null)),
       h('div.two',
         h('div', h('div.sec-h', h('h2', 'Aims')), aims.length ? aims.map(a => aimEl(a)) : h('div.list', h('div.empty', 'No aim — this theme is exploratory by definition, which feeds the Explore lane.')),
-          h('div.sec-h', h('h2', 'Activity'), h('span.k', '8 weeks')), heatmapEl({ weeks: 8, themeId: id, cell: 13 }),
+          h('div.sec-h', h('h2', 'Activity'), h('span.k', '8 weeks')), PFKIT.heat(PFKIT.activity(H.docs.filter(d => !d.deleted), 28, 56).perDay, { weeks: 8, cell: 13 }),   // V3.978: activity, as the project's
           lin.length ? [h('div.sec-h', h('h2', 'Lineage')), h('div.list', lin.map(x => h('div.li.click', { on: { click: () => App.go('#/theme/' + x.t.id) } }, h('span.t', x.t.name, h('span.s', `generation ${x.gen} · ${x.t.status} ${fmtDay(x.t.supersededAt || x.t.created)}`)))))] : null),
         h('div', h('div.sec-h', h('h2', 'Notes'), h('span.k', docs.length)),
-          h('div.list', docs.length ? docs.map(d => h('div.li.click', { on: { click: () => App.go('#/doc/' + d.id) } }, typechip(d.type), h('span.t', d.title, h('span.s', plural(M.liveBlocks(d.id).length, 'component'))), h('span.tiny.mono.muted', fmtWhen(d.modified)))) : h('div.empty', 'No notes yet')),
+          h('div.list', docs.length ? docs.map(d => { const A = PFKIT.noteAct(d);
+            return h('div.li.click', { on: { click: () => App.go('#/doc/' + d.id) } }, typechip(d.type), h('span.t', d.title, h('span.s', plural(M.liveBlocks(d.id).length, 'component'))),
+              PFKIT.isLit(d) ? null : h('span.tiny.mono' + (A.open ? '.th-act-open' : '.muted'), { title: A.open ? 'Its activity counts until ' + fmtDayLong(A.until) + ' (two weeks from its date)' : 'Its two weeks are over: what it scored stays in the record' }, 'activity ' + A.score + (A.open ? ' · open' : '')),
+              h('span.tiny.mono.muted', fmtWhen(d.modified))); }) : h('div.empty', 'No notes yet')),
           H.openB.length ? [h('div.sec-h', h('h2', 'Open barriers')), capped(H.openB, 5, it => itemRow(it))] : null,
           (() => { const dec = DB.where('items', i => i.kind === 'decision' && H.docs.some(d => d.id === i.originDocId)).sort((a, b) => b.created.localeCompare(a.created)); return dec.length ? [h('div.sec-h', h('h2', 'Decision log')), capped(dec, 5, it => itemRow(it))] : null; })())));
   },
