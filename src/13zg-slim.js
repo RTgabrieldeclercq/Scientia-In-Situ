@@ -18,9 +18,17 @@ const SLIM = {
     const lab = $(':scope > .blab', bh), W = WIDGETS[kind]; if (lab && W && lab.placeholder === 'label') lab.placeholder = W.label;
     SLIM.fit(el);
   },
-  /** One row when it fits; otherwise name · time · ⋯ on top and the tools on a row of their own just below. */
+  /** One row when it fits; otherwise name · time · ⋯ on top and the tools on a row of their own just below.
+      V3.982: decided in one go (one row tried, measured, kept or not — nothing in between is drawn, and the box's size changes only
+      when the answer does, so its ResizeObserver doesn't call it again); a box being built (not on the paper yet) takes the answer it
+      had at this width, checked once it is. Before, every redraw put each two-row header (image panels, equations…) on one row for
+      two frames: the box jumped on every edit in the note. */
+  rows: new Map(),
   fit(el) { const bh = $(':scope > .bh', el), t = bh && $(':scope > .bh-tools', bh), st = bh && $(':scope > .stampbtn', bh); if (!t || !st) return;
-    bh.classList.remove('two'); requestAnimationFrame(() => { if (!bh.isConnected) return; const top = bh.firstElementChild.offsetTop; if (t.offsetTop > top + 4 || st.offsetTop > top + 4) bh.classList.add('two'); }); },
+    const key = (el.dataset.id || '') + '|' + (el.style.width || '');
+    const decide = () => { if (!bh.isConnected) return false; bh.classList.remove('two'); const top = bh.firstElementChild.offsetTop, two = t.offsetTop > top + 4 || st.offsetTop > top + 4;
+      if (two) bh.classList.add('two'); SLIM.rows.set(key, two); if (SLIM.rows.size > 4000) SLIM.rows.clear(); return true; };
+    if (decide()) return; if (SLIM.rows.has(key)) bh.classList.toggle('two', SLIM.rows.get(key)); requestAnimationFrame(decide); },
   watch(el) { if (!el._slimRO && window.ResizeObserver) { el._slimRO = new ResizeObserver(() => SLIM.fit(el)); el._slimRO.observe(el); } SLIM.dock(el); if (el._slimObs) return; const o = new MutationObserver(() => { clearTimeout(el._slimT); el._slimT = setTimeout(() => SLIM.dock(el), 0); }); o.observe(el, { childList: true, subtree: true }); el._slimObs = o; },
 };
 {

@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "dee85117b040aed01b183148fc11f27028984543",
-  "subject": "V3.981: Scientia — node bridges: a component or some words shown in another note, with why; underlined where they came from",
+  "commit": "4ecfebbecd8006c978c086f0deaf65ac29b42cd1",
+  "subject": "V3.982: Scientia — wires take the shortest way round the components; lit reviews no longer flicker",
   "date": "2026-11-11"
  },
- "cut": "6c60054070e996cdf2bb82f0403ab9f88e86bd65",
+ "cut": "db4e96ba57a443e0576bae7ba3653c0826e95641",
  "names": [
   "DESKLAB",
   "LABSYNC",
