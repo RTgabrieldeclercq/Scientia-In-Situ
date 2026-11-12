@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "a4329fd08dc3872dc805c8a4b19bb33bb741b22b",
-  "subject": "V3.980: Scientia — pages, PDFs and whiteboards stay loaded through edits; crowded notes no longer flicker or spread; the edge pans only in full screen",
+  "commit": "dee85117b040aed01b183148fc11f27028984543",
+  "subject": "V3.981: Scientia — node bridges: a component or some words shown in another note, with why; underlined where they came from",
   "date": "2026-11-11"
  },
- "cut": "313ea602b56be84b8c748d1e10bb6203cdc4502c",
+ "cut": "6c60054070e996cdf2bb82f0403ab9f88e86bd65",
  "names": [
   "DESKLAB",
   "LABSYNC",
