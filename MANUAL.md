@@ -152,6 +152,7 @@ A note has a **header box** (title, type, profile fields, tags, ✎ for note det
 - **Undo:** **Ctrl+Z** outside a text box undoes deletions and other changes.
 - **The hint line** at the bottom of a note has a ×: close it and it stays closed; ⋯ → **Shortcuts…** lists the keys instead. A note with more than a hundred components lets the browser skip the boxes far off screen when you are zoomed in (from 60 %), so it pans smoothly; zoomed out, every box is drawn, so nothing flickers at the rim.
 - **Pages, PDFs and whiteboards stay loaded.** An edit elsewhere in the note, or moving them, does not load them again: an HTML page or a website keeps its place and what you left it at, a PDF stays where you scrolled it, a whiteboard stays drawn. A change to the component itself draws it again.
+- **Nothing flickers when the note is drawn again.** A paper's wires to the quotes of pages it isn't showing stay faint (they used to flash bright and fade back on every click or edit, so a lit review flickered all over), and an image panel's or an equation's header stays on its two rows instead of jumping to one for a moment.
 - **Tidy layout** (⋯ beside the title, or `/tidy`) lays the note out by its connections: each chain of wired components from its origin downwards, rows ordered so the wires cross as little as they can, neighbours far enough apart to read the arrow and its label, regions as pieces of their own. Then everything — the chains and the components with no connections alike — is packed into the smallest near-square area (a little wider than tall, like the window, so Fit gives the highest zoom), with room between the pieces to read and to move about. Ctrl+Z undoes it. **Flow in order** (⋯) is the old tidy: the boxes in order, two columns.
 - **Folding moves the neighbours.** ▾ on a component (or a region's fold) brings what sits below it up by the height that went, and what sits to its right left by the width that went; unfolding pushes them back. A box you moved in between stays where you put it. Ink never moves.
 - **The Portfolio's layout is yours:** where you put its cards, and which are folded, follows you to every computer.
@@ -316,7 +317,8 @@ The same strip has three more keys: `/` reuses an existing structure, **W** mark
 - **Make one:** drag a component's **●** onto another component, then choose the relation:
   - **follows · leads to · caused · resolves · supports · contradicts · comments on · needs · related**;
   - or type your own words (e.g. "calibrates") and press Enter.
-- **Each relation has its own colour.** Wires route around boxes. Where a wire must cross a box, it's drawn faintly over it, lifted, so the text stays readable.
+- **Each relation has its own colour.** A wire takes the **shortest way round**: from a side of one component to a side of the other, through the empty paper, bending only at the corners of what is in its way, leaving and arriving square-on, with rounded corners. Nothing in the way: a straight run. Wires leaving one side are spread along it in the order they head off; wires rounding the same corner are drawn a little apart. Move a component and the wires near it find their way again.
+  - Only a wire that can't get through (its end boxed in) is drawn as a curve, faintly over what it crosses, lifted, so the text stays readable.
 - **Click a wire** to change its type, reverse it, or delete it.
 - **Quick chaining:** drop the ● on **empty paper**. Two panels open:
   - **left:** the relation (keys 1–9; Tab flips the direction);

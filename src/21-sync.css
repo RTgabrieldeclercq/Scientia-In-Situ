@@ -388,7 +388,7 @@ body:has(.embed-max) .pop,body:has(.embed-max) .modal-bg,body:has(.embed-max) .o
 /* a paper's wires to its clips and quotes: faint, except those from the page it shows (solid, and drawn again above the cards) */
 svg.wires path.w.pw-dim{opacity:.16} svg.wires path.w.lift.pw-dim{opacity:.08} svg.wires circle.wend.pw-dim{opacity:.2} .wl.pw-dim{opacity:.32}
 svg.wires path.w.pw-on,svg.wires path.w.pw-top{opacity:1;stroke-width:2.2} .wl.pw-on{z-index:4}
-svg.wires path.w,svg.wires circle.wend,.wl{transition:opacity .25s}
+svg.wires path.w,svg.wires circle.wend,.wl{transition:opacity .25s} .pw-now svg.wires path.w,.pw-now svg.wires circle.wend,.pw-now > .wl{transition:none}   /* V3.982: no fade while the wires are drawn again (12b) */
 /* ---------- 13zzb · a paper read beside the note (half the window, full height) ---------- */
 body.rd-on #app{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 body.rd-on #hd{grid-column:1/-1}
