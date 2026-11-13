@@ -31,6 +31,7 @@ Object.assign(DocView, {
     ctxMenu(e.clientX - 200, e.clientY - 10, [{ head: d.title },
       { label: 'Note details…', sub: 'Title, type, project, theme, date', run: () => EDIT.noteDialog(d) },
       { label: 'Log time…', sub: 'Time worked without the timer', run: () => this.logTime(d) },
+      { label: 'Needs investigation…', sub: 'A reminder on this note: a dot here, breathing in the Portfolio, on Today', run: () => REM.invAdd(null, d) },
       { label: 'Time entries…', sub: 'Move, change or delete recorded time', run: () => EDIT.timeDialog(d) },
       prof(d.type).type === 'protocol' ? { label: 'Run this protocol…', sub: 'New experiment with its steps bound here; starts the timer', run: () => App.newDoc({ type: 'experiment', projectId: d.projectId }) } : null,
       { label: 'Tidy layout', sub: 'Re-flow the boxes in order', run: () => this.tidy() },
@@ -67,6 +68,7 @@ Object.assign(DocView, {
     const isP = PROTO.is(b), pdef = isP && PROTO.defOf(b), W = WIDGETS[b.kind];
     if (W) return ctxMenu(e.clientX, e.clientY + 6, [{ head: b.label || W.label }, ...(W.menu ? W.menu(b) : []), 'sep',
       b.status === 'live' ? { label: 'Bridge to another note…', sub: 'It shows there, live, with a caption saying why', run: () => BRIDGE.to(b) } : null,
+      b.status === 'live' ? { label: 'Needs investigation…', sub: 'A reminder on it: a dot here, breathing in the Portfolio, on Today', run: () => REM.invAdd(b) } : null,
       { label: 'Connect to a component in another note…', run: () => this.crossWire(b.id) },
       { label: flag ? 'Clear flag' : 'Flag for weekly review', run: () => M.toggleFlag('block', b.id) },
       { label: 'Remove from this note', sub: 'Kept in the record; the files stay in the images folder', danger: true, run: () => { b.status = 'removed'; b.removedAt = isoLocal(new Date()); DB.put('blocks', b); changed(); toast((b.label || 'Widget') + ' removed'); } }]);
@@ -85,6 +87,7 @@ Object.assign(DocView, {
       live && next ? { label: 'Merge with next', sub: `with “${snippet(M.blockName(next), 30)}”`, run: () => M.mergeBlocks(b, next) } : null,
       { label: 'Connect to a component in another note…', run: () => this.crossWire(b.id) },
       b.status === 'live' && (b.kind !== 'ref' || BRIDGE.is(b)) ? { label: 'Bridge to another note…', sub: 'It shows there, live, with a caption saying why', run: () => BRIDGE.to(b) } : null,
+      live ? { label: 'Needs investigation…', sub: 'A reminder on it: a dot here, breathing in the Portfolio, on Today', run: () => REM.invAdd(b) } : null,
       live && !b.parent && i > 0 ? { label: 'Make it a substep of the one above', sub: 'Nested, numbered as a sub-step', run: () => { const prev = d.blockIds.slice(0, i).reverse().map(M.block).find(x => x && x.status === 'live' && x.kind === 'component' && !x.parent); if (prev) M.nestUnder(b, prev.id); } } : null,
       live && b.parent ? { label: 'Un-nest', run: () => M.nestUnder(b, null) } : null,
       live ? { label: 'Fields…', sub: 'Typed key/value rows, charted across runs', run: () => this.fieldsDialog(b) } : null,

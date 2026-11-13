@@ -118,6 +118,7 @@ const DEFAULT_SETTINGS = {
   termKey: 'alt+w',            // Ctrl+W works in Focus mode (fullscreen + keyboard lock); browsers reserve it otherwise
   structKey: 'ctrl+enter',
   bridgeColor: '#1f9d55',      // V3.981: the underline under bridged words (13zzu)
+  bridgeBar: true,             // V3.990: the bridge bar under the tabs (13zzv); bridgeBarShut: the day × closed it; bridgeUse: { since, n, at } the crossings this fortnight
   weekStartDow: 6,             // Saturday → Friday; the review opens on the weekend after
   reviewPreview: false,
   timerCapHours: 4,

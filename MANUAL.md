@@ -78,7 +78,7 @@ This manual covers everything the notebook can do, from first launch to the pen 
 
 | Tab | What it shows |
 |---|---|
-| **Today** | The day's timeline, the Capture box, what's coming up, chores, a resurfaced claim or question. |
+| **Today** | The day's timeline, the Capture box, what's coming up, chores, what needs investigating and a resurfaced claim or question. |
 | **Tasks** | Every open task: Overdue / Today / Upcoming / No date, plus Done lately. |
 | **Portfolio** | Your projects in a list, most relevant first, with the notes outside any project; the open one beside the list, its themes and notes. Each project has its own page, with its tasks. |
 | **Review** | The weekly review (it opens on the weekend). |
@@ -390,6 +390,13 @@ A **bridge** is a component, or some words of one, shown in another note: live (
 - **In the note it went to:** its kind reads **bridge**, its edge is green, "bridged from …" opens the original, and the caption under it (*Why is it bridged here?*) pulses when it arrives. Click it to write; Enter keeps it.
 - **In its own note:** the bridged words are **underlined in green**; a component that isn't text says **bridged** beside its kind. **Double-click** the underline or the tag: **Go to the note** it is bridged to, or **Open it beside this note**. Bridged to several notes, the menu lists each, with its reason.
 - **The colour:** Settings → Structures → **Bridges** (green by default).
+- **At a note's edges:** each note it is bridged with is a circle in the faded margin. **Left:** the notes what is bridged or pulled into this note comes from. **Right:** the notes its components are bridged (or pulled) to. The number is how many; a dashed ring means structures pulled in only. A circle sits level with its component and moves with the paper; when the component is out of view it waits at the top or bottom.
+  - **Point at one:** the note's name, and a thread to each of its components. **Click:** go there, landing on the bridge (in a split, in that pane). **Alt+click:** open it beside. **Right-click:** choose which bridge to land on. On a touchscreen: tap to see it, tap again to go.
+  - In a window they are half-moons, half under the edge. In full screen they are beads, a little inside it, since the screen's edge pans the note there.
+- **The bridge bar** (under the tabs): it opens when you cross a bridge — a circle, *Go to* on an underline, "bridged from …" — and in a note of your three most-used bridges.
+  - **The trail:** the notes you crossed to, on a line, with the way you crossed between each (→ to where it went, ← back to where it came from). ‹ › walk it; click a note to go there.
+  - **Most used:** the three pairs of notes you cross between most, counted over two weeks (from Monday 9 November 2026, starting again every other Monday), the same on all your devices.
+  - Going to another tab closes it; **Alt+←** or **Alt+→** back to a note of the trail brings it back. **×** closes it until tomorrow. Settings → Structures → **Bridges** turns it off.
 - Bridges replace *Link to a note*, *Embed in another note* and *Pull into*. Links made before still work, underlined the same way. Structures pulled in (a barrier, a claim) are as before.
 
 ### Linking by hand
@@ -607,7 +614,7 @@ Open it with the ＋ **Quick cast** → **⋯** (everything that can go in this 
   - the **timeline** of everything written today, in any note, including backdated entries and edits (marked "entered for…" / "edited · from…");
   - **Coming up** (next 7 days);
   - chores;
-  - the **resurfaced** card.
+  - **Needs investigation**, above Recent notes: what you marked to look into, oldest first, and with it the **resurfaced** card.
 - **The resurfaced card** is one claim or question older than two weeks. Answer it with Still holds / Explore lane / Answered / Contest / Another.
 - **Capture** (✎, **Ctrl+Shift+Space**, or the Capture box) adds a timestamped entry to **today's day note**. You can give it a kind: observation, idea, question, barrier, reminder or result.
 - **Day notes** (one per date) also show time recorded, notes touched, chores and what's due.
@@ -634,6 +641,10 @@ Open it with the ＋ **Quick cast** → **⋯** (everything that can go in this 
 
 ### Reminders (🔔)
 - **Types:** deadline (can be all-day), meeting (end time + place/attendees), or reminder.
+- **Needs investigation** (◉): something to look into, with no date. Right-click a component (or the note's ⋯) → **Needs investigation…**, or **+ Needs investigation** under 🔔.
+  - It is a **dot** on that component (or on the note's first box); click it for what it is, **Edit** or **Investigated ✓**.
+  - In the **Portfolio**, its note (and project) has a dot that glows in and out, with how many; point at it to read them, click one to go there.
+  - On **Today** it is listed above Recent notes, with the resurfaced claim, until you mark it investigated. It never alerts and is never sent to My Week.
 - **Options:** alert lead (none, at the time, or minutes/hours/days before), repeat, project or theme, linked note.
 - **Alerts** pop up with **Meeting note / Snooze 10 min / Done**, and as system notifications when the app is in the background (if allowed).
 - **Meeting note** opens or creates that meeting's note on its day.

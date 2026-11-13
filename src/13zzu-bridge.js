@@ -129,11 +129,11 @@ const BRIDGE = {
     if (L.length) BRIDGE.menu(e, L, t, 'Bridged to');
   },
   menu(e, L, t, head) {
-    const one = L.length === 1;
+    const one = L.length === 1, from = (DV(t) || {}).docId, to = x => x.isDoc ? x.id : (M.block(x.id) || {}).docId;   // V3.990: crossing, for the bar (13zzv)
     ctxMenu(e.clientX, e.clientY + 8, [{ head: one ? head + ' “' + snippet(L[0].title, 36) + '”' : head + ' ' + L.length + ' notes' }, ...L.flatMap((x, i) => [
       !one && i ? 'sep' : null, !one ? { head: x.title } : null,
-      { label: 'Go to ' + (one ? 'the note' : 'it'), sub: x.sub || '', run: () => x.isDoc ? App.go('#/doc/' + x.id) : App.openBlock(x.id) },
-      { label: 'Open it beside this note', sub: 'side by side', run: () => App.openSide(x.id, t, x.isDoc) }])]);
+      { label: 'Go to ' + (one ? 'the note' : 'it'), sub: x.sub || '', run: () => { BWAY.arm(from, to(x), 'r'); x.isDoc ? App.go('#/doc/' + x.id) : App.openBlock(x.id); } },
+      { label: 'Open it beside this note', sub: 'side by side', run: () => { BWAY.arm(from, to(x), 'r'); App.openSide(x.id, t, x.isDoc); } }])]);
   },
 };
 {

@@ -77,7 +77,7 @@ const HANDS = {
   hover(e) {
     const S = HANDS.pan, t = e.target, x = e.clientX, y = e.clientY;
     S.lx = x; S.ly = y; S.out = false;
-    if (!HANDS.full() || !e.isTrusted || e.pointerType === 'touch' || e.buttons || HANDS.hand() !== 'move' || $('.pop') || $('.ovl') || (t.closest && t.closest('.lab-pills,.ink-bar,.nav:not(.asleep),.embed-max,.fbar,.insp,.dock,.ctools,.slash-menu,.webcap-wait,.iter-slides'))) return HANDS.quiet();
+    if (!HANDS.full() || !e.isTrusted || e.pointerType === 'touch' || e.buttons || HANDS.hand() !== 'move' || $('.pop') || $('.ovl') || (t.closest && t.closest('.bw-mk,.lab-pills,.ink-bar,.nav:not(.asleep),.embed-max,.fbar,.insp,.dock,.ctools,.slash-menu,.webcap-wait,.iter-slides'))) return HANDS.quiet();
     S.ptype = e.pointerType;
     // in full screen the note's edges are the screen's: the push is at the screen's very edge (−1 left/top, 1 right/bottom)
     const E = HANDS.EDGE, sx = x <= E ? -1 : x >= innerWidth - 1 - E ? 1 : 0, sy = y <= E ? -1 : y >= innerHeight - 1 - E ? 1 : 0;
