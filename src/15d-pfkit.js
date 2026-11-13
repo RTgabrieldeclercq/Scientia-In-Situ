@@ -48,7 +48,7 @@ const PFKIT = {
   },
   /* ---------- the dots ---------- */
   DOTS: [['takeaway', 'takeaway', 'takeaways'], ['barrier', 'open barrier', 'open barriers'], ['evidence', 'evidence', 'evidence']],
-  col: k => k === 'investigate' ? 'var(--inv)' : (((settings().kinds || {})[k] || {}).color) || (KIND[k] || {}).color || '#888',
+  col: k => (((settings().kinds || {})[k] || {}).color) || (KIND[k] || {}).color || '#888',
   /** Takeaways, open barriers and evidence marked in these notes: a dot each in its colour with the count; hover or tap opens it onto the words. */
   dots(docs) {
     docs = Array.isArray(docs) ? docs : [docs]; const ids = new Set(docs.map(d => d.id)), its = DB.where('items', i => ids.has(i.originDocId) && !i.correctedBy), out = [];
@@ -58,10 +58,10 @@ const PFKIT = {
       const el = h('span.pfdot', { 'data-k': k, style: { '--c': PFKIT.col(k) },
         on: { mouseenter: () => { if (!(PFKIT._pop && PFKIT._pop._for === el)) PFKIT.pop(el, k, L.length === 1 ? one : many, L); }, mouseleave: e => { if (PFKIT._pop && e.relatedTarget && PFKIT._pop.contains(e.relatedTarget)) return; PFKIT.unpop(); }, pointerdown: e => e.stopPropagation(), click: e => { e.stopPropagation(); if (PFKIT._pop && PFKIT._pop._for === el) PFKIT.unpop(); else PFKIT.pop(el, k, L.length === 1 ? one : many, L); } } }, String(L.length));
       out.push(el); });
-    // V3.991: what needs investigating in these notes — first, its dot breathing in and out
-    const inv = typeof REM !== 'undefined' && REM.inv ? REM.inv(ids) : [];
-    if (inv.length) { const L = inv.map(r => ({ text: r.title + (r.notes ? ' — ' + r.notes : ''), go: e => { PFKIT.unpop(); REM.invGo(r, e); } })), word = inv.length === 1 ? 'needs investigation' : 'need investigation';
-      const el = h('span.pfdot.inv', { 'data-k': 'investigate', style: { '--c': 'var(--inv)' }, on: { mouseenter: () => { if (!(PFKIT._pop && PFKIT._pop._for === el)) PFKIT.pop(el, 'investigate', word, L); },
+    // V3.991, a structure since V3.992 (13zzw): what needs investigating in these notes — first, its dot breathing in and out
+    const inv = typeof INVEST !== 'undefined' ? INVEST.open(ids) : [];
+    if (inv.length) { const L = inv.map(it => ({ text: it.text, go: e => { PFKIT.unpop(); INVEST.go(it, e); } })), word = inv.length === 1 ? 'needs investigation' : 'need investigation';
+      const el = h('span.pfdot.inv', { 'data-k': 'investigate', style: { '--c': PFKIT.col('investigate') }, on: { mouseenter: () => { if (!(PFKIT._pop && PFKIT._pop._for === el)) PFKIT.pop(el, 'investigate', word, L); },
         mouseleave: e => { if (PFKIT._pop && e.relatedTarget && PFKIT._pop.contains(e.relatedTarget)) return; PFKIT.unpop(); }, pointerdown: e => e.stopPropagation(),
         click: e => { e.stopPropagation(); if (PFKIT._pop && PFKIT._pop._for === el) PFKIT.unpop(); else PFKIT.pop(el, 'investigate', word, L); } } }, String(inv.length));
       out.unshift(el); }

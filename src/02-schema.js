@@ -52,6 +52,7 @@ const KINDS = [
   { id: 'takeaway',    key: 't', label: 'Takeaway',    color: '#6B4FA3', mode: 'text' },
   { id: 'decision',    key: 'd', label: 'Decision',    color: '#4A5651', mode: 'text' },
   { id: 'question',    key: 'q', label: 'Question',    color: '#B5761B', mode: 'text',      lifecycle: 'open' },
+  { id: 'investigate', key: 'x', label: 'Needs investigation', color: '#D9480F', mode: 'highlight', lifecycle: 'open' },   // V3.992 (13zzw): open until investigated
   { id: 'idea',        key: 'i', label: 'Idea',        color: '#9E2A62', mode: 'text' },
   { id: 'deviation',   key: 'v', label: 'Deviation',   color: '#A8571A', mode: 'text' },
   { id: 'observation', key: 'o', label: 'Observation', color: '#5E6B65', mode: 'text' },

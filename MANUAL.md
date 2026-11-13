@@ -91,6 +91,8 @@ This manual covers everything the notebook can do, from first launch to the pen 
 | **Canvas** | Only shown when the spatial-canvas lab is on. |
 | **Settings** | All settings (§23). |
 
+Switching tabs, the page slides in from the side of the tab you chose and the underline glides under it.
+
 **Header controls:**
 
 | Control | What it does |
@@ -146,7 +148,7 @@ A note has a **header box** (title, type, profile fields, tags, ✎ for note det
 
 ### Components
 - **Select:** click. Then click again, or press Enter, to type.
-- **Move:** drag by the header. Boxes snap to 14 px and never overlap.
+- **Move:** drag by the header. Boxes snap to 14 px and never overlap. Hold **Shift** while dragging to move one grid cell (14 px) at a time — a component, a region by its title, or a lasso selection.
 - **Resize:** drag the right edge or the corner grip — as large as you like, there is no limit. Image panels and slides keep their shape: drag their corner down and they grow both ways; PDFs, HTML pages and tables take any width and height.
 - **Title:** each component has a title line. **Tab** or **Enter** in the title moves to the text.
 - **Stamp:** each component shows its full date and time (e.g. 16 Oct 2026 14:32). Click the stamp to move it to any date and time.
@@ -261,6 +263,7 @@ Select text, press **Ctrl+Enter**, then a letter:
 | r | Resolution | i | Idea |
 | s | Result | v | Deviation |
 | o | Observation | m | **Reminder** |
+| x | **Needs investigation** | | |
 
 The same strip has three more keys: `/` reuses an existing structure, **W** marks a term, and **L** makes a link.
 
@@ -270,6 +273,11 @@ The same strip has three more keys: `/` reuses an existing structure, **W** mark
   - flags its component for the next weekly review;
   - puts a 🔔 badge on every component connected to it, in any note;
   - click the badge to read the reminder, go to it, or mark it **Done ✓**.
+- **Needs investigation (x):** something to look into. Its words are highlighted, and it stays open until you mark it **Investigated ✓**.
+  - **Make one:** select words, **Ctrl+Enter → X** (or `/investigate`), or right-click a text component → **Needs investigation** (all its words).
+  - **A dot** in its component's header opens it; **Investigated ✓** is there, and in the structure's own menu (Alt+click).
+  - **In the Portfolio**, its note (and project) has a dot that glows in and out, with how many; point at it to read them, click one to go there.
+  - **On Today** the open ones are listed above Recent notes, oldest first, with the resurfaced claim.
 - **Colours** and the *text colour vs highlight* style per kind are set in **Settings → Structures** (RGB picker).
 - **Edit wording…** (click a structure) changes it in place. If **Settings → Timing → Lock wording once the day turns** is on, corrections become new records that point at the old one.
 - **Lineage:** revise, split and merge keep the old wording greyed inside the new component.
@@ -614,7 +622,7 @@ Open it with the ＋ **Quick cast** → **⋯** (everything that can go in this 
   - the **timeline** of everything written today, in any note, including backdated entries and edits (marked "entered for…" / "edited · from…");
   - **Coming up** (next 7 days);
   - chores;
-  - **Needs investigation**, above Recent notes: what you marked to look into, oldest first, and with it the **resurfaced** card.
+  - **Needs investigation**, above Recent notes: the open structures of that kind, oldest first, and with them the **resurfaced** card.
 - **The resurfaced card** is one claim or question older than two weeks. Answer it with Still holds / Explore lane / Answered / Contest / Another.
 - **Capture** (✎, **Ctrl+Shift+Space**, or the Capture box) adds a timestamped entry to **today's day note**. You can give it a kind: observation, idea, question, barrier, reminder or result.
 - **Day notes** (one per date) also show time recorded, notes touched, chores and what's due.
@@ -641,10 +649,6 @@ Open it with the ＋ **Quick cast** → **⋯** (everything that can go in this 
 
 ### Reminders (🔔)
 - **Types:** deadline (can be all-day), meeting (end time + place/attendees), or reminder.
-- **Needs investigation** (◉): something to look into, with no date. Right-click a component (or the note's ⋯) → **Needs investigation…**, or **+ Needs investigation** under 🔔.
-  - It is a **dot** on that component (or on the note's first box); click it for what it is, **Edit** or **Investigated ✓**.
-  - In the **Portfolio**, its note (and project) has a dot that glows in and out, with how many; point at it to read them, click one to go there.
-  - On **Today** it is listed above Recent notes, with the resurfaced claim, until you mark it investigated. It never alerts and is never sent to My Week.
 - **Options:** alert lead (none, at the time, or minutes/hours/days before), repeat, project or theme, linked note.
 - **Alerts** pop up with **Meeting note / Snooze 10 min / Done**, and as system notifications when the app is in the background (if allowed).
 - **Meeting note** opens or creates that meeting's note on its day.

@@ -7,7 +7,7 @@
    note; alerts pop up inside the app (and as a system notification if you
    allow it). A meeting can open its own meeting note.
    ========================================================================== */
-const REMKIND = { deadline: { icon: '⚑', label: 'Deadline', lead: 1440 }, meeting: { icon: '◷', label: 'Meeting', lead: 15 }, reminder: { icon: '◔', label: 'Reminder', lead: 0 }, investigate: { icon: '◉', label: 'Needs investigation', lead: -1, undated: true } };
+const REMKIND = { deadline: { icon: '⚑', label: 'Deadline', lead: 1440 }, meeting: { icon: '◷', label: 'Meeting', lead: 15 }, reminder: { icon: '◔', label: 'Reminder', lead: 0 } };
 const REM = {
   all: () => DB.all('reminders'),
   /** The next occurrence at or after `from` (repeats roll forward). */
@@ -18,9 +18,9 @@ const REM = {
     const skip = r.skip || []; while ((+t + span < +from || skip.includes(localDate(t))) && guard++ < 2000) t = step(t);
     return t;
   },
-  /** Open items with their next time, soonest first. Done one-offs drop out. */
+  /** Open items with their next time, soonest first. Done one-offs drop out; one with no date (V3.991's Needs investigation, until 13zzw makes it a structure) is never listed. */
   open(now = new Date()) {
-    return REM.all().filter(r => !r.done && !(REMKIND[r.kind] || {}).undated).map(r => { const at = REM.when(r, r.repeat && r.repeat !== 'none' ? new Date(+now - 864e5) : new Date(0)); return { r, at, end: r.end ? new Date(+at + (+new Date(r.end) - +new Date(r.at))) : null }; })
+    return REM.all().filter(r => !r.done && r.at).map(r => { const at = REM.when(r, r.repeat && r.repeat !== 'none' ? new Date(+now - 864e5) : new Date(0)); return { r, at, end: r.end ? new Date(+at + (+new Date(r.end) - +new Date(r.at))) : null }; })
       .filter(x => !(x.r.skip || []).includes(localDate(x.at))).sort((a, b) => a.at - b.at);
   },
   bucket(x, now = new Date()) { const day = localDate(x.at), today = localDate(now); if ((x.end || x.at) < now && !(x.r.allDay && day === today)) return 'Overdue'; if (day === today) return 'Today'; if (day === localDate(addDays(now, 1))) return 'Tomorrow'; if (+x.at - +now < 7 * 864e5) return 'This week'; return 'Later'; },
@@ -54,11 +54,6 @@ const REM = {
     const note = r.docId && M.doc(r.docId);
     const seg = h('div.seg'), body = h('div');
     const draw = () => { seg.replaceChildren(...Object.entries(REMKIND).map(([k, K]) => h('button' + (k === kind ? '.on' : ''), { on: { click: () => { kind = k; if (r.lead == null) fillLead(); draw(); } } }, K.icon + ' ' + K.label)));
-      if (REMKIND[kind].undated) { const b0 = r.blockId && M.block(r.blockId); title.placeholder = 'e.g. Why did the edge collapse at 10 ng/mL?';   // V3.991: no date — it waits until it is investigated
-        return body.replaceChildren(h('label.f', { style: { marginTop: '12px' } }, h('span', 'What needs investigating'), title),
-          h('div.tiny.muted', { style: { marginTop: '8px' } }, note ? 'A dot on “' + note.title + '”' + (b0 ? ' › ' + M.blockName(b0) : '') + ', breathing on its row in the Portfolio, and a row on Today, until it is investigated' : 'On Today and the Reminders page until it is investigated. Made from a note (right-click a component), it also gets a dot there.'),
-          h('label.f', { style: { marginTop: '10px' } }, h('span', 'Notes'), notes)); }
-      title.placeholder = 'e.g. Committee report · Lab meeting · Order FBS';
       body.replaceChildren(h('label.f', { style: { marginTop: '12px' } }, h('span', kind === 'meeting' ? 'What' : 'Title'), title),
         h('div.grid2', { style: { marginTop: '10px' } }, h('label.f', h('span', kind === 'deadline' ? 'Due' : 'When'), h('div.row', { style: { gap: '6px', flexWrap: 'nowrap' } }, date, allDay.checked ? null : time)),
           kind === 'meeting' ? h('label.f', h('span', 'Ends'), endT) : h('label.row', { style: { gap: '6px', alignSelf: 'end', paddingBottom: '6px' } }, allDay, h('span.tiny', 'All day'))),
@@ -68,10 +63,6 @@ const REM = {
         h('label.f', { style: { marginTop: '10px' } }, h('span', 'Notes'), notes)); };
     allDay.addEventListener('change', draw); fillLead(); draw();
     const save = () => {
-      if (REMKIND[kind].undated) { const t0 = title.value.trim(); if (!t0) { toast('Say what needs investigating'); return false; } const d0 = r.docId && M.doc(r.docId);
-        const rec = Object.assign(r0 || { id: uid('rm'), created: isoLocal(new Date()) }, { kind, title: t0, at: null, end: null, allDay: false, where: '', repeat: 'none', lead: -1, projectId: d0 ? d0.projectId || null : r.projectId || null,
-          themeId: d0 ? d0.themeId || null : r.themeId || null, docId: r.docId || null, blockId: r.blockId || null, notes: notes.value.trim(), modified: isoLocal(new Date()), alerted: null, done: null });
-        DB.put('reminders', rec); changed(); REM.badge(); toast('Needs investigation' + (d0 ? ' — a dot on “' + snippet(d0.title, 36) + '”' : ' — on Today')); return; }
       const t = title.value.trim(); if (!t) { toast('Give it a title'); return false; } if (!date.value) { toast('Pick a date'); return false; }
       const [y, mo, dd] = date.value.split('-').map(Number), [hh, mm] = (kind !== 'meeting' && allDay.checked ? '09:00' : time.value || '09:00').split(':').map(Number), at = new Date(y, mo - 1, dd, hh, mm);
       let end = null; if (kind === 'meeting') { const [eh, em] = (endT.value || '').split(':').map(Number); if (!isNaN(eh)) { end = new Date(y, mo - 1, dd, eh, em); if (end <= at) end = new Date(+at + 36e5); } }
@@ -112,52 +103,12 @@ const REM = {
     const b = $('#remindbtn'), r = b ? b.getBoundingClientRect() : { left: innerWidth - 420, bottom: 60 }, items = REM.open().slice(0, 40);
     popover(Math.max(8, r.right - 400), r.bottom + 8, [h('div.rm-ph', h('b', '🔔 Reminders'), h('span.spacer'), ...Object.entries(REMKIND).map(([k, K]) => h('button.btn.xs', { on: { click: () => { closePop(); REM.edit({ kind: k, docId: (App.panes()[0] && App.panes()[0].docId) || null }); } } }, '+ ' + K.label))),
       items.length ? h('div.rm-list', REM.list(items)) : h('div.empty', { style: { padding: '18px' } }, 'Nothing coming up. Add a deadline or a meeting.'),
-      REM.inv().length ? h('div.rm-list', h('div.rm-g', h('div.rm-gh', 'Needs investigation'), REM.inv().slice(0, 6).map(r => REM.invRow(r, { compact: true })))) : null,
       h('div.rm-pf', h('a.tiny', { on: { click: () => { closePop(); App.go('#/reminders'); } } }, 'All reminders →'))], { cls: 'pop.rmpop' });
   },
   badge() { const b = $('#remindbtn'); if (!b) return; const n = REM.due().length, late = REM.open().some(x => REM.bucket(x) === 'Overdue'); b.dataset.n = n || ''; b.classList.toggle('late', late); b.title = n ? plural(n, 'reminder') + ' in the next 24 h' + (late ? ' (some overdue)' : '') : 'Reminders — deadlines and meetings'; },
   home() {
     const items = REM.open().filter(x => +x.at - Date.now() < 7 * 864e5);
     return [h('div.sec-h', h('h2', 'Coming up'), h('span.r', h('button.btn.sm.ghost', { on: { click: () => REM.edit({}) } }, '+ Add'))), items.length ? h('div.rm-list.home', REM.list(items.slice(0, 8))) : h('div.tiny.muted', { style: { margin: '0 0 14px' } }, 'No deadlines or meetings in the next 7 days.')];
-  },
-
-  /* ---------------- V3.991 · Needs investigation (Gabe: "A new type of reminder called Need to Investigate, which is saved as a reminder as a dot in the
-     note that glows in an in/out phase in the portfolio. The Needs Investigation appears in the Today tab above recent notes, and joins where the
-     resurfaced claims are."). A reminder with no date (at: null, so never an alert, never in Coming up, never in My Week), on a note or a component
-     of it (docId, blockId). It is a dot on that component (or on the note's first box), a breathing dot on the note's row in the Portfolio (15d
-     PFKIT.dots), and a row on Today with the resurfaced claim, above Recent notes, until it is investigated (done). ---------------- */
-  /** The open ones, oldest first: all, or those in the notes docIds. */
-  inv(docIds) { const ids = docIds ? (docIds instanceof Set ? docIds : new Set(docIds)) : null; return REM.all().filter(r => r.kind === 'investigate' && !r.done && (!ids || ids.has(r.docId))).sort((a, b) => String(a.created || '').localeCompare(String(b.created || ''))); },
-  invOf: blockId => REM.all().filter(r => r.kind === 'investigate' && !r.done && r.blockId === blockId),
-  /** Make one on component b (or on note d as a whole). */
-  invAdd(b, d) { d = d || (b && M.doc(b.docId)); if (!d) return; REM.edit({ kind: 'investigate', docId: d.id, blockId: b ? b.id : null, projectId: d.projectId || null, themeId: d.themeId || null }); },
-  invWhere(r) { const d = r.docId && M.doc(r.docId), b = r.blockId && M.block(r.blockId); return d ? d.title + (b && b.status === 'live' ? ' › ' + M.blockName(b) : '') : 'not in a note'; },
-  invAge(r) { const n = Math.floor((Date.now() - +new Date(r.created)) / 864e5); return n < 1 ? 'today' : n === 1 ? 'yesterday' : n + ' d'; },
-  invGo(r, e) { const b = r.blockId && M.block(r.blockId); if (b && b.status === 'live') App.jump(b.id, e); else if (r.docId && M.doc(r.docId)) App.jump(r.docId, e, true); else REM.edit({ id: r.id }); },
-  invDone(r) { const cur = DB.get('reminders', r.id); if (!cur) return; cur.done = isoLocal(new Date()); DB.put('reminders', cur); changed(); toast('Investigated — its dot goes'); },
-  invRow(r, { compact } = {}) {
-    return h('div.rm-row.k-investigate', h('span.rm-i.inv-i', h('i')),
-      h('div.rm-t', { title: 'Go to it (Alt+click: beside)', on: { click: e => { closePop(); REM.invGo(r, e); } } }, h('b', r.title), h('span.rm-m', [REM.invWhere(r), r.notes ? snippet(r.notes, 70) : null].filter(Boolean).join(' · '))),
-      h('span.rm-rel', REM.invAge(r)),
-      compact ? null : h('span.rm-acts', h('button.btn.xs', { title: 'Edit', on: { click: e => { e.stopPropagation(); closePop(); REM.edit({ id: r.id }); } } }, 'Edit'),
-        h('button.btn.xs', { title: 'Investigated — its dot goes', on: { click: e => { e.stopPropagation(); REM.invDone(r); } } }, '✓')));
-  },
-  /** Today, above Recent notes: what needs investigating, then the claim resurfaced today. */
-  invHome() {
-    const L = REM.inv(), rs = typeof RESURF !== 'undefined' ? RESURF.card() : null;
-    return [h('div.sec-h.inv-h', { style: { marginTop: '24px' } }, h('h2', 'Needs investigation'), L.length ? h('span.k', String(L.length)) : null,
-        h('span.r', h('button.btn.sm.ghost', { title: 'Something to look into — made from a note (right-click a component), it gets a dot there', on: { click: () => REM.edit({ kind: 'investigate' }) } }, '+ Add'))),
-      L.length ? h('div.rm-list.home.inv-list', L.slice(0, 8).map(r => REM.invRow(r))) : rs ? null : h('div.tiny.muted', { style: { margin: '0 0 14px' } }, 'Nothing to look into. Right-click a component → Needs investigation…'),
-      L.length > 8 ? h('a.tiny.inv-more', { on: { click: () => App.go('#/reminders') } }, 'and ' + (L.length - 8) + ' more →') : null, rs];
-  },
-  invPop(list, e) {
-    popover(e.clientX, e.clientY + 10, [h('h5', 'Needs investigation'), ...list.map(r => h('div.inv-pp', h('div.serif', r.title), r.notes ? h('div.tiny.muted', r.notes) : null,
-      h('div.row', { style: { gap: '6px', marginTop: '4px' } }, h('span.tiny.muted', 'noted ' + fmtDay(r.created)), h('span.spacer'),
-        h('button.btn.xs', { on: { click: () => { closePop(); REM.edit({ id: r.id }); } } }, 'Edit'), h('button.btn.xs.pri', { on: { click: () => { closePop(); REM.invDone(r); } } }, 'Investigated ✓'))))]);
-  },
-  invDot(list) {
-    return h('button.inv-dot.nopan', { type: 'button', title: 'Needs investigation: ' + list.map(r => r.title).join(' · '), 'aria-label': 'Needs investigation — ' + plural(list.length, 'reminder'),
-      on: { pointerdown: e => e.stopPropagation(), click: e => { e.stopPropagation(); REM.invPop(list, e); } } }, h('i'), list.length > 1 ? h('span', String(list.length)) : null);
   },
 
   /* ---------------- alerts ---------------- */
@@ -195,7 +146,6 @@ const RemindersView = {
     return h('div.page.narrow', h('div.eyebrow', 'Deadlines · meetings'), h('h1.title', 'Reminders'),
       h('div.row', { style: { gap: '8px', margin: '6px 0 16px' } }, Object.entries(REMKIND).map(([k, K]) => h('button.btn' + (k === 'deadline' ? '.pri' : ''), { on: { click: () => REM.edit({ kind: k }) } }, '+ ' + K.label))),
       REM.open().length ? h('div.rm-list.page', REM.list(REM.open())) : h('div.empty', 'Nothing coming up.'),
-      REM.inv().length ? [h('div.sec-h', { style: { marginTop: '24px' } }, h('h2', 'Needs investigation')), h('div.rm-list.page', REM.inv().map(r => REM.invRow(r)))] : null,
       done.length ? [h('div.sec-h', { style: { marginTop: '24px' } }, h('h2', 'Done')), h('div.list', done.map(r => h('div.li', h('span.muted', (REMKIND[r.kind] || {}).icon), h('span.t', h('s', r.title), h('span.s', (r.at ? 'due ' + fmtDay(r.at) : 'noted ' + fmtDay(r.created)) + ' · done ' + fmtDay(r.done))), h('button.btn.xs.ghost', { on: { click: () => { r.done = null; DB.put('reminders', r); changed(); } } }, 'Reopen'))))] : null);
   },
 };
@@ -205,10 +155,3 @@ VIEWS.reminders = RemindersView;
 INSERTS.push({ id: 'reminder', group: 'Plan', icon: '🔔', label: 'Deadline or meeting…', sub: 'A reminder linked to this note — shows under 🔔, on Today and in the day note', run: d => REM.edit({ docId: d.id, projectId: d.projectId, themeId: d.themeId }) });
 if (typeof LV !== 'undefined' && LV.SOURCES) LV.SOURCES.reminders = { label: 'Reminders (deadlines, meetings)', date: 'at', end: 'end', title: 'title', group: 'kind',
   rows() { return REM.all().filter(r => r.at).map(r => ({ _id: r.id, _src: 'reminders', _open: () => REM.edit({ id: r.id }), title: r.title, kind: r.kind, at: r.at, end: r.end, where: r.where || '', repeat: r.repeat || 'none', status: r.done ? 'done' : 'open', project: (M.project(r.projectId) || {}).name || '', theme: (r.themeId && (M.theme(r.themeId) || {}).name) || '', note: (M.doc(r.docId) || {}).title || '', themeId: r.themeId, projectId: r.projectId, docId: r.docId })); } };
-{
-  // V3.991: Needs investigation is a dot in its note — on its component, or on the note's first box (the note as a whole, or a component gone)
-  const bx = DocView.box; DocView.box = function (b) { const el = bx.apply(this, arguments); try { if (el && b && b.id && b.id[0] !== '_' && b.status === 'live') { const L = REM.invOf(b.id);
-    if (L.length) { const bh = $(':scope > .bh', el), st = bh && $(':scope > .stampbtn', bh), dot = REM.invDot(L); st ? st.before(dot) : bh ? bh.append(dot) : el.append(dot); } } } catch (e) { } return el; };
-  const hb = DocView.headBox; DocView.headBox = function (d) { const el = hb.apply(this, arguments); try { const L = REM.inv([d.id]).filter(r => { const b = r.blockId && M.block(r.blockId); return !b || b.status !== 'live'; });
-    if (L.length) { const sp = $(':scope > .bh > .spacer', el); sp ? sp.before(REM.invDot(L)) : el.append(REM.invDot(L)); } } catch (e) { } return el; };
-}

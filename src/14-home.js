@@ -68,7 +68,7 @@ const HomeView = {
           capped(openB.sort((a, b) => a.created.localeCompare(b.created)), 4, it => itemRow(it, h('span.tiny.mono.muted', Math.floor((Date.now() - +new Date(it.created)) / 864e5) + 'd')), 'No open barriers'),
           h('div.sec-h', { style: { marginTop: '24px' } }, h('h2', 'Last five weeks'), h('span.r', h('a.btn.sm.ghost', { href: '#/activity' }, 'Activity →'))),
           heatmapEl({ weeks: 5, cell: 15 }), h('div', { style: { marginTop: '8px' } }, legendEl()),
-          REM.invHome(),   // V3.991: what needs investigating, and the resurfaced claim with it
+          INVEST.home(),   // V3.991, a structure since V3.992 (13zzw): what needs investigating, and the resurfaced claim with it
           h('div.sec-h', { style: { marginTop: '24px' } }, h('h2', 'Recent notes')),
           h('div.list', recent.map(d => h('div.li.click', { on: { click: () => App.go('#/doc/' + d.id) } }, typechip(d.type), h('span.t', d.title, h('span.s', M.docPath(d))), h('span.tiny.mono.muted', fmtWhen(d.modified))))))));
   },
