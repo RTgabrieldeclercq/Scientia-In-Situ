@@ -5,14 +5,16 @@
    • Lit reviews (literature notes) go to the project's Lit reviews column,
      never to Project-wide (isLit).
    • An experiment's notes (Planning, Run, Analysis, Synthesis — one chain)
-     are one card with ▸; unfolded, it stays unfolded (on this device)
-     until ▾ folds it (entries, expCard).
+     are one entry (entries); the Portfolio draws it as one row with ▸ and
+     it stays unfolded on this device until folded (prefs().exp, V3.988).
    • Notes are in the order of their date — the day the note is about —
      unless the project's sort button says otherwise: note date (newest or
      oldest first), recent changes, most active, title (sortBtn).
    • Each note's card shows its takeaways, open barriers and evidence as
      dots in their colours from Settings with the count inside; hovering
-     (or a tap) opens the dot onto the words marked (dots).
+     (or a tap) opens the dot onto the words marked (dots). V3.988: an
+     Insight counts as a takeaway, a Result as evidence, an Anomaly nothing
+     explains as an open barrier (CKINDS.counted).
    • Health is activity, not time recorded (activity, heat): a
      note scores only in the two weeks from its date — a component made
      (+1), a structure marked (+3), a takeaway or a result (+10); lit
@@ -44,22 +46,15 @@ const PFKIT = {
     return h('button.btn.xs.pf-sort', { type: 'button', title: 'The order of this project’s notes: ' + cur[1], on: { pointerdown: e => e.stopPropagation(), click: e => { e.stopPropagation();
       ctxMenu(e.clientX, e.clientY + 8, [{ head: 'Sort the notes' }, ...PFKIT.SORTS.map(([id, label]) => ({ label: (id === k ? '✓ ' : '') + label, run: () => { const s = PFKIT.prefs(); s.sort[pid] = id; PFKIT.save(s); redraw(); } }))]); } } }, '⇅ ' + cur[2]);
   },
-  /** An experiment's notes as one card: its name, its stages, ▸ to unfold them — unfolded, it stays so until ▾. card(d) draws a note's card. */
-  expCard(g, card, redraw) {
-    const open = !!PFKIT.prefs().exp[g.chain], flip = e => { e.stopPropagation(); const s = PFKIT.prefs(); if (open) delete s.exp[g.chain]; else s.exp[g.chain] = true; PFKIT.save(s); redraw(); };
-    const tog = h('button.ib.pf-exp-tog', { type: 'button', 'aria-expanded': String(open), title: open ? 'Fold the experiment' : 'Unfold the experiment: each of its notes', on: { pointerdown: e => e.stopPropagation(), click: flip } }, open ? '▾' : '▸');
-    const stages = h('div.pf-stages', g.docs.map(d => h('a.pf-stage', { href: '#/doc/' + d.id, title: d.title, on: { pointerdown: e => e.stopPropagation(), click: e => e.stopPropagation() } }, prof(d.type).stage || prof(d.type).label)));
-    const head = h('div.box.dcard.pf-exp.nopan' + (open ? '.open' : ''), { 'data-chain': g.chain, title: 'An experiment: ' + plural(g.docs.length, 'note'), on: { click: flip } },
-      h('div.row', tog, h('span.pill', 'Experiment'), h('span.spacer'), h('span.mono.tiny.muted', { title: 'Its first note’s date' }, fmtDay(g.docs[0].created))), h('div.dn', g.name), stages, PFKIT.dots(g.docs));
-    return open ? h('div.pf-expg', head, h('div.pf-exp-in', g.docs.map(d => card(d)))) : head;
-  },
   /* ---------- the dots ---------- */
   DOTS: [['takeaway', 'takeaway', 'takeaways'], ['barrier', 'open barrier', 'open barriers'], ['evidence', 'evidence', 'evidence']],
   col: k => (((settings().kinds || {})[k] || {}).color) || (KIND[k] || {}).color || '#888',
   /** Takeaways, open barriers and evidence marked in these notes: a dot each in its colour with the count; hover or tap opens it onto the words. */
   dots(docs) {
     docs = Array.isArray(docs) ? docs : [docs]; const ids = new Set(docs.map(d => d.id)), its = DB.where('items', i => ids.has(i.originDocId) && !i.correctedBy), out = [];
-    PFKIT.DOTS.forEach(([k, one, many]) => { const L = its.filter(i => i.kind === k && (k !== 'barrier' || IX.status(i) === 'open')); if (!L.length) return;
+    const C = typeof CKINDS !== 'undefined' && CKINDS.counted ? CKINDS.counted(ids) : { takeaway: [], evidence: [], barrier: [] };   // V3.988: Insight, Result, an Anomaly nothing explains
+    const said = b => { const K = CKINDS.get(b.ckind); return { text: (K ? K.label + ': ' : '') + (String((b.body || {}).text || '').trim() || M.blockName(b)) }; };
+    PFKIT.DOTS.forEach(([k, one, many]) => { const L = its.filter(i => i.kind === k && (k !== 'barrier' || IX.status(i) === 'open')).concat((C[k] || []).map(said)); if (!L.length) return;
       const el = h('span.pfdot', { 'data-k': k, style: { '--c': PFKIT.col(k) },
         on: { mouseenter: () => { if (!(PFKIT._pop && PFKIT._pop._for === el)) PFKIT.pop(el, k, L.length === 1 ? one : many, L); }, mouseleave: e => { if (PFKIT._pop && e.relatedTarget && PFKIT._pop.contains(e.relatedTarget)) return; PFKIT.unpop(); }, pointerdown: e => e.stopPropagation(), click: e => { e.stopPropagation(); if (PFKIT._pop && PFKIT._pop._for === el) PFKIT.unpop(); else PFKIT.pop(el, k, L.length === 1 ? one : many, L); } } }, String(L.length));
       out.push(el); });

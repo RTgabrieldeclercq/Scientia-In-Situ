@@ -9,7 +9,7 @@ const M = {
   project: id => DB.get('projects', id), theme: id => DB.get('themes', id), term: id => DB.get('terms', id),
   lib: id => DB.get('library', id), session: id => DB.get('sessions', id), aim: id => DB.get('aims', id),
 
-  docBlocks(docId) { const d = M.doc(docId); return d ? d.blockIds.map(M.block).filter(Boolean) : []; },
+  docBlocks(docId) { const d = M.doc(docId); return d && Array.isArray(d.blockIds) ? d.blockIds.map(M.block).filter(Boolean) : []; },   // V3.988: a note can arrive from the hub before its components (no blockIds yet)
   liveBlocks(docId) { return M.docBlocks(docId).filter(b => b.status !== 'superseded'); },
   blockTime(b) { return (b.stamp && b.stamp.at) || b.created; },
   docPath(d) {

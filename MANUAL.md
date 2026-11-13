@@ -45,6 +45,10 @@ This manual covers everything the notebook can do, from first launch to the pen 
    - **Settings → Start empty** clears the browser.
 4. **Updating the app** never touches your data. Replace `scientia.html` or the whole app folder. To check which build you're running, hover the **SiS** logo.
 5. **Reload** with ⟳ in the header, or with Ctrl+R / F5.
+6. **On the lab site** (RM → **Lab Notebook**) the notebook opens on a menu with two ways in. Both keep the same notes in your account:
+   - **Simple notebook:** a fresh, empty canvas every week, made for you. Pen, highlighter, text, image panels, PDFs, HTML pages and saved websites, and nothing else (no tabs, structures, terms or connections). The bar above it moves between your weeks (‹ ›, the list, **This week**) and **Open in Scientia** opens the week in the full app.
+   - **Scientia:** this whole app, filling the page under RM's bar, in step with Scientia on your computer. The small **Lab Notebook** button at its bottom left opens the menu, the simple notebook and **Sync with your computer…**.
+   - The canvas notebook you kept before stays one link away on the menu.
 
 > **Moving from the old hub (port 8765):** in the old hub, use Settings → Export everything (JSON). Then in this app, use Settings → Import… and pick that file.
 
@@ -62,7 +66,7 @@ This manual covers everything the notebook can do, from first launch to the pen 
 | **Term** | A word or phrase you track across all notes (§7). |
 | **Connection** | A directed, typed wire between two components (§8). |
 
-- A note belongs to one project and one theme. It can also be **General** (no project): use + Note → Project: *No project (general)*. General notes sit at the top of the Portfolio, and their header lists the projects they touch.
+- A note belongs to one project and one theme. It can also be **General** (no project): use + Note → Project: *No project (general)*. General notes are **General** in the Portfolio's list, and their header lists the projects they touch.
 - To move a note, use ⋯ → **Project & theme…**.
 - **Delete a project:** **Delete project…** on the project's page. Choose **keep its notes** (they stay, with everything in them, outside any project; move each where you like) or **delete its notes too**. Its themes and aims go either way, and a lit review that served it serves it no more. **Ctrl+Z** brings everything back; with a notebook folder a copy is kept first. Not offered for a project assigned in RM or one shared with you; a project you share: stop sharing it first.
 
@@ -76,7 +80,7 @@ This manual covers everything the notebook can do, from first launch to the pen 
 |---|---|
 | **Today** | The day's timeline, the Capture box, what's coming up, chores, a resurfaced claim or question. |
 | **Tasks** | Every open task: Overdue / Today / Upcoming / No date, plus Done lately. |
-| **Portfolio** | The map of projects → themes → notes, plus General notes. Each project has its own page, with its tasks. |
+| **Portfolio** | Your projects in a list, most relevant first, with the notes outside any project; the open one beside the list, its themes and notes. Each project has its own page, with its tasks. |
 | **Review** | The weekly review (it opens on the weekend). |
 | **Activity** | Heatmap, theme small multiples, weekly numbers, the Done list. |
 | **Terms** | Every term, with its forms and lens. |
@@ -155,13 +159,15 @@ A note has a **header box** (title, type, profile fields, tags, ✎ for note det
 - **Nothing flickers when the note is drawn again.** A paper's wires to the quotes of pages it isn't showing stay faint (they used to flash bright and fade back on every click or edit, so a lit review flickered all over), and an image panel's or an equation's header stays on its two rows instead of jumping to one for a moment.
 - **Tidy layout** (⋯ beside the title, or `/tidy`) lays the note out by its connections: each chain of wired components from its origin downwards, rows ordered so the wires cross as little as they can, neighbours far enough apart to read the arrow and its label, regions as pieces of their own. Then everything — the chains and the components with no connections alike — is packed into the smallest near-square area (a little wider than tall, like the window, so Fit gives the highest zoom), with room between the pieces to read and to move about. Ctrl+Z undoes it. **Flow in order** (⋯) is the old tidy: the boxes in order, two columns.
 - **Folding moves the neighbours.** ▾ on a component (or a region's fold) brings what sits below it up by the height that went, and what sits to its right left by the width that went; unfolding pushes them back. A box you moved in between stays where you put it. Ink never moves.
-- **The Portfolio's layout is yours:** where you put its cards, and which are folded, follows you to every computer.
-- **In a project, the Portfolio shows:**
-  - **Lit reviews** in their own column, every literature note of the project (and the reviews linked to it), never under Project-wide or a theme.
-  - **An experiment as one card**: its name and its stages (Planning, Run, Analysis, Synthesis; a stage opens its note). **▸** unfolds it into its notes, and it stays unfolded on this computer until **▾** folds it.
-  - **Notes in the order of their date**, the day a note is about, newest first. **⇅** on the project changes it: oldest first, recent changes, most active, or title.
-  - **Dots on each note** for its **takeaways**, **open barriers** and **evidence**, in their colours from Settings, with the count inside. Hover a dot (or tap it) and it opens onto the words marked.
-- **Health is activity**, not time recorded. A note earns activity only in the **two weeks from its date**: a component made scores 1, a structure marked 3, a **takeaway** or a **result** 10. Lit reviews earn none. A theme card and the project's header say "activity N · 4 wk" (the last four weeks), the heatmap shows each day's activity, and a theme with none for three weeks is *stalled*. A theme's own page shows the same: activity over four weeks, the eight-week activity map, and each note's activity ("open" while its two weeks run).
+- **The Portfolio is two panes.** On the left, your projects in a list, **most relevant first** (the most activity in the last four weeks; **Recent** and **A–Z** at the top of the list change the order), and the notes outside any project (**General**). Each row has the project's activity for four weeks and its dots. Click one (or ↑ ↓ in the list) and it opens on the right; the Portfolio opens it again next time.
+- **The open project** shows its themes, each with its question, its state (aims, exploratory or stalled), its activity, and its **Experiments** beside its other **Notes**; then the **Project-wide** notes; then its **Lit reviews** (every literature note of the project and the reviews linked to it, never under a theme). Its name opens the project's page. **+ Note**, **+ Theme** and **⇅** (the order of its notes) sit under the title.
+  - **The switch** (All · Experiments · Notes · Lit reviews, each with its count) shows only that kind; with two themes or more, **chips** narrow it to one theme.
+  - **An experiment is one row**: its name, its stages (Planning, Run, Analysis, Synthesis; a stage opens its note), its dots and its dates. **▸** unfolds it into its notes, and it stays unfolded on this computer until you fold it.
+  - **Notes in the order of their date**, the day a note is about, newest first. **⇅** changes it: oldest first, recent changes, most active, or title.
+  - **Dots on each note** for its **takeaways**, **open barriers** and **evidence**, in their colours from Settings, with the count inside. Hover a dot (or tap it) and it opens onto the words marked. An Insight component counts as a takeaway, a Result as evidence, and an Anomaly nothing explains yet as an open barrier.
+  - **↔ n** on a note: it is tied to n other notes (wires, pulled-in components, protocol runs, links). Hover it and those notes light up, and so do the projects in the list that hold them.
+- **On a narrow screen** the list comes first; a project slides in over it, and **‹ Projects** goes back.
+- **Health is activity**, not time recorded. A note earns activity only in the **two weeks from its date**: a component made scores 1, a structure marked 3, a **takeaway** or a **result** 10. Lit reviews earn none. A theme's line and the open project say "activity N · 4 wk" (the last four weeks), the heatmap shows each day's activity, and a theme with none for three weeks is *stalled*. A theme's own page shows the same: activity over four weeks, the eight-week activity map, and each note's activity ("open" while its two weeks run).
 
 ### Editing the note itself
 - **Note details** (✎ on the header box, or ⋯ → Note details…): title, type, project, theme, date. Changing the date moves every component's stamp with it, unless you untick that option.
@@ -332,11 +338,19 @@ The same strip has three more keys: `/` reuses an existing structure, **W** mark
 - **Deleting a region** keeps its components.
 
 ### Kinds of component
-- **Double-click the small label** left of a component's title (it reads "Block") to make the component a **Hypothesis**, a **Question**, a **Verdict**, a **Method**, a **Meeting**, **Feedback** or a **Story** (or a kind of your own, Settings → Component kinds). **Iteration** in the same list makes the component's next version (see Iterations below). Standard means no kind. The component keeps its shape and fill; its header takes the kind's colour and its label the kind's name.
+- **Double-click the small label** left of a component's title (it reads "Block") to make the component a **Hypothesis**, a **Question**, a **Verdict**, a **Method**, a **Meeting**, **Feedback**, a **Story**, or one of the results kinds below (or a kind of your own, Settings → Component kinds). **Iteration** in the same list makes the component's next version (see Iterations below). Standard means no kind. The component keeps its shape and fill; its header takes the kind's colour and its label the kind's name.
 - **A kind says the only ways it links.** Each way is a relation, what it is with, and which way round: a Hypothesis *fuels* a question; evidence (an observation, a result, an image panel, a paper…) *supports* or *contradicts* a hypothesis; a Method *tests* it; a Verdict *resolves* it; it *predicts* a result; it *refines* another hypothesis. A Question is fuelled by a hypothesis, *leads to* a hypothesis or a method, is *answered* by a verdict, evidence or a claim. A Method *tests*, *follows* a protocol, *needs* a material, *produces* a run or evidence. A Meeting *leads to* decisions, tasks, questions; Feedback *comments on* anything and *leads to* a task. Settings → Component kinds lists every way in words; so does the kind's menu.
 - **A drop goes one of those ways or not at all.** Drag a wire between two components of which one has a kind: if there is one way, it connects at once (the toast says which); if there are several, the popover offers just those (1–9, Enter takes the first — the one you used last from that kind); if there is none, nothing is made and the toast says what the kind links to — give the other component a kind, or a structure (a question mark in its text makes it a question; an observation mark makes it evidence). A wire's label menu changes it only to another of their ways. Two standard components link as they always did, any way.
 - **The drop on empty paper** from a kinded component lists the kind's ways on the left (→ it does, ← done to it); the new component becomes what the way names — *fuels* from a Hypothesis makes a Question.
 - **Kinds sit on top of structures.** Drag a wire and drop it on a claim, an observation or a question *inside* a component: the wire ends on that structure, not on the whole component, and the structure's hover card says what ends there. So a hypothesis stems from this observation, not from the whole meeting note.
+- **The results kinds.** A **Result** is what was measured or found, with its numbers. A Method or a protocol run *produces* it; it *supports* or *contradicts* a Hypothesis, a Mechanism or a claim; it *correlates with* another Result or data; it *reveals* an Insight; it *replicates* an earlier Result; it *answers* a question; a Control *validates* it, a Caveat *qualifies* it, a Mechanism *explains* it, an image panel *illustrates* it.
+  - An **Insight** is what a result means: a Result, an observation or an Anomaly *reveals* it; it *fuels* a question or a Hypothesis, *leads to* a decision, a task or a Method, *refines* an earlier Insight.
+  - A **Mechanism** is a proposed explanation: it *explains* a Result, an Insight or an Anomaly and *predicts* a Result; a Method *tests* it.
+  - A **Control** is the baseline that makes a result believable: it *validates* a Result or a Method.
+  - An **Anomaly** is a result that doesn't fit: it *contradicts* a Hypothesis or a Mechanism, *fuels* a question, *reveals* an Insight; until a Mechanism *explains* it, the Portfolio counts it as an open barrier.
+  - A **Caveat** is a limit on what a result can claim: it *qualifies* a Result, an Insight or a claim and *leads to* the Method or task that would lift it.
+  - **Correlation is a link, not a kind.** *Correlates with* has no arrow. It never becomes *caused* by itself; that stays a wire you choose.
+  - A Result counts as **evidence** wherever evidence is asked for (a Hypothesis, a Verdict, an aim's milestone, the Portfolio's evidence dot) and an Insight as a **takeaway**; the Synthesis gathers both (an Insight among the takeaways, a Result among the results). A component that carries a Result structure links as a result too. From a Method, the drop on empty paper offers *produces*, and the new component is a Result.
 - **Your own kind** (Settings → Component kinds → + Kind): a name, then its ways one per line — `→ fuels: question` (it does) or `← supports: evidence, claim` (done to it); a relation word of your own is kept as it is.
 
 ### Stories
