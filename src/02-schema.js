@@ -52,6 +52,7 @@ const KINDS = [
   { id: 'takeaway',    key: 't', label: 'Takeaway',    color: '#6B4FA3', mode: 'text' },
   { id: 'decision',    key: 'd', label: 'Decision',    color: '#4A5651', mode: 'text' },
   { id: 'question',    key: 'q', label: 'Question',    color: '#B5761B', mode: 'text',      lifecycle: 'open' },
+  { id: 'investigate', key: 'x', label: 'Needs investigation', color: '#D9480F', mode: 'highlight', lifecycle: 'open' },   // V3.992 (13zzw): open until investigated
   { id: 'idea',        key: 'i', label: 'Idea',        color: '#9E2A62', mode: 'text' },
   { id: 'deviation',   key: 'v', label: 'Deviation',   color: '#A8571A', mode: 'text' },
   { id: 'observation', key: 'o', label: 'Observation', color: '#5E6B65', mode: 'text' },
@@ -118,6 +119,7 @@ const DEFAULT_SETTINGS = {
   termKey: 'alt+w',            // Ctrl+W works in Focus mode (fullscreen + keyboard lock); browsers reserve it otherwise
   structKey: 'ctrl+enter',
   bridgeColor: '#1f9d55',      // V3.981: the underline under bridged words (13zzu)
+  bridgeBar: true,             // V3.990: the bridge bar under the tabs (13zzv); bridgeBarShut: the day × closed it; bridgeUse: { since, n, at } the crossings this fortnight
   weekStartDow: 6,             // Saturday → Friday; the review opens on the weekend after
   reviewPreview: false,
   timerCapHours: 4,

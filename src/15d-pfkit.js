@@ -57,12 +57,19 @@ const PFKIT = {
       const el = h('span.pfdot', { 'data-k': k, style: { '--c': PFKIT.col(k) },
         on: { mouseenter: () => { if (!(PFKIT._pop && PFKIT._pop._for === el)) PFKIT.pop(el, k, L.length === 1 ? one : many, L); }, mouseleave: e => { if (PFKIT._pop && e.relatedTarget && PFKIT._pop.contains(e.relatedTarget)) return; PFKIT.unpop(); }, pointerdown: e => e.stopPropagation(), click: e => { e.stopPropagation(); if (PFKIT._pop && PFKIT._pop._for === el) PFKIT.unpop(); else PFKIT.pop(el, k, L.length === 1 ? one : many, L); } } }, String(L.length));
       out.push(el); });
+    // V3.991, a structure since V3.992 (13zzw): what needs investigating in these notes — first, its dot breathing in and out
+    const inv = typeof INVEST !== 'undefined' ? INVEST.open(ids) : [];
+    if (inv.length) { const L = inv.map(it => ({ text: it.text, go: e => { PFKIT.unpop(); INVEST.go(it, e); } })), word = inv.length === 1 ? 'needs investigation' : 'need investigation';
+      const el = h('span.pfdot.inv', { 'data-k': 'investigate', style: { '--c': PFKIT.col('investigate') }, on: { mouseenter: () => { if (!(PFKIT._pop && PFKIT._pop._for === el)) PFKIT.pop(el, 'investigate', word, L); },
+        mouseleave: e => { if (PFKIT._pop && e.relatedTarget && PFKIT._pop.contains(e.relatedTarget)) return; PFKIT.unpop(); }, pointerdown: e => e.stopPropagation(),
+        click: e => { e.stopPropagation(); if (PFKIT._pop && PFKIT._pop._for === el) PFKIT.unpop(); else PFKIT.pop(el, 'investigate', word, L); } } }, String(inv.length));
+      out.unshift(el); }
     return out.length ? h('div.pfdots', out) : null;
   },
   pop(el, k, word, L) {
     PFKIT.unpop(); const r = el.getBoundingClientRect();
     const p = h('div.pfdot-pop', { style: { '--c': PFKIT.col(k), left: Math.max(8, Math.min(innerWidth - 340, r.left - 6)) + 'px', top: Math.min(innerHeight - 60, r.top - 6) + 'px' } },
-      h('div.pp-h', h('b', String(L.length)), ' ', word), L.slice(0, 12).map(i => h('div.pp-i', snippet(String(i.text || ''), 180))), L.length > 12 ? h('div.pp-more', '+ ' + (L.length - 12) + ' more') : null);
+      h('div.pp-h', h('b', String(L.length)), ' ', word), L.slice(0, 12).map(i => h('div.pp-i' + (i.go ? '.go' : ''), i.go ? { title: 'Go to it', on: { click: i.go } } : null, snippet(String(i.text || ''), 180))), L.length > 12 ? h('div.pp-more', '+ ' + (L.length - 12) + ' more') : null);
     p._for = el; p.addEventListener('mouseleave', e => { if (e.relatedTarget === el) return; PFKIT.unpop(); }); document.body.append(p); PFKIT._pop = p;   // the dot opened: the cursor goes from the dot onto it
   },
   unpop() { if (PFKIT._pop) { PFKIT._pop.remove(); PFKIT._pop = null; } },

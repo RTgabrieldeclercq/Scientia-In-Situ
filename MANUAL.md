@@ -74,7 +74,7 @@ This manual covers everything the notebook can do, from first launch to the pen 
 
 | Tab | What it shows |
 |---|---|
-| **Today** | The day's timeline, the Capture box, what's coming up, chores, a resurfaced claim or question. |
+| **Today** | The day's timeline, the Capture box, what's coming up, chores, what needs investigating and a resurfaced claim or question. |
 | **Tasks** | Every open task: Overdue / Today / Upcoming / No date, plus Done lately. |
 | **Portfolio** | Your projects in a list, most relevant first, with the notes outside any project; the open one beside the list, its themes and notes. Each project has its own page, with its tasks. |
 | **Review** | The weekly review (it opens on the weekend). |
@@ -86,6 +86,8 @@ This manual covers everything the notebook can do, from first launch to the pen 
 | **Materials** | Cell lines, antibodies, gels, reagents… |
 | **Canvas** | Only shown when the spatial-canvas lab is on. |
 | **Settings** | All settings (§23). |
+
+Switching tabs, the page slides in from the side of the tab you chose and the underline glides under it.
 
 **Header controls:**
 
@@ -135,7 +137,7 @@ A note has a **header box** (title, type, profile fields, tags, ✎ for note det
 
 ### Components
 - **Select:** click. Then click again, or press Enter, to type.
-- **Move:** drag by the header. Boxes snap to 14 px and never overlap.
+- **Move:** drag by the header. Boxes snap to 14 px and never overlap. Hold **Shift** while dragging to move one grid cell (14 px) at a time — a component, a region by its title, or a lasso selection.
 - **Resize:** drag the right edge or the corner grip — as large as you like, there is no limit. Image panels and slides keep their shape: drag their corner down and they grow both ways; PDFs, HTML pages and tables take any width and height.
 - **Title:** each component has a title line. **Tab** or **Enter** in the title moves to the text.
 - **Stamp:** each component shows its full date and time (e.g. 16 Oct 2026 14:32). Click the stamp to move it to any date and time.
@@ -250,6 +252,7 @@ Select text, press **Ctrl+Enter**, then a letter:
 | r | Resolution | i | Idea |
 | s | Result | v | Deviation |
 | o | Observation | m | **Reminder** |
+| x | **Needs investigation** | | |
 
 The same strip has three more keys: `/` reuses an existing structure, **W** marks a term, and **L** makes a link.
 
@@ -259,6 +262,11 @@ The same strip has three more keys: `/` reuses an existing structure, **W** mark
   - flags its component for the next weekly review;
   - puts a 🔔 badge on every component connected to it, in any note;
   - click the badge to read the reminder, go to it, or mark it **Done ✓**.
+- **Needs investigation (x):** something to look into. Its words are highlighted, and it stays open until you mark it **Investigated ✓**.
+  - **Make one:** select words, **Ctrl+Enter → X** (or `/investigate`), or right-click a text component → **Needs investigation** (all its words).
+  - **A dot** in its component's header opens it; **Investigated ✓** is there, and in the structure's own menu (Alt+click).
+  - **In the Portfolio**, its note (and project) has a dot that glows in and out, with how many; point at it to read them, click one to go there.
+  - **On Today** the open ones are listed above Recent notes, oldest first, with the resurfaced claim.
 - **Colours** and the *text colour vs highlight* style per kind are set in **Settings → Structures** (RGB picker).
 - **Edit wording…** (click a structure) changes it in place. If **Settings → Timing → Lock wording once the day turns** is on, corrections become new records that point at the old one.
 - **Lineage:** revise, split and merge keep the old wording greyed inside the new component.
@@ -379,6 +387,13 @@ A **bridge** is a component, or some words of one, shown in another note: live (
 - **In the note it went to:** its kind reads **bridge**, its edge is green, "bridged from …" opens the original, and the caption under it (*Why is it bridged here?*) pulses when it arrives. Click it to write; Enter keeps it.
 - **In its own note:** the bridged words are **underlined in green**; a component that isn't text says **bridged** beside its kind. **Double-click** the underline or the tag: **Go to the note** it is bridged to, or **Open it beside this note**. Bridged to several notes, the menu lists each, with its reason.
 - **The colour:** Settings → Structures → **Bridges** (green by default).
+- **At a note's edges:** each note it is bridged with is a circle in the faded margin. **Left:** the notes what is bridged or pulled into this note comes from. **Right:** the notes its components are bridged (or pulled) to. The number is how many; a dashed ring means structures pulled in only. A circle sits level with its component and moves with the paper; when the component is out of view it waits at the top or bottom.
+  - **Point at one:** the note's name, and a thread to each of its components. **Click:** go there, landing on the bridge (in a split, in that pane). **Alt+click:** open it beside. **Right-click:** choose which bridge to land on. On a touchscreen: tap to see it, tap again to go.
+  - In a window they are half-moons, half under the edge. In full screen they are beads, a little inside it, since the screen's edge pans the note there.
+- **The bridge bar** (under the tabs): it opens when you cross a bridge — a circle, *Go to* on an underline, "bridged from …" — and in a note of your three most-used bridges.
+  - **The trail:** the notes you crossed to, on a line, with the way you crossed between each (→ to where it went, ← back to where it came from). ‹ › walk it; click a note to go there.
+  - **Most used:** the three pairs of notes you cross between most, counted over two weeks (from Monday 9 November 2026, starting again every other Monday), the same on all your devices.
+  - Going to another tab closes it; **Alt+←** or **Alt+→** back to a note of the trail brings it back. **×** closes it until tomorrow. Settings → Structures → **Bridges** turns it off.
 - Bridges replace *Link to a note*, *Embed in another note* and *Pull into*. Links made before still work, underlined the same way. Structures pulled in (a barrier, a claim) are as before.
 
 ### Linking by hand
@@ -504,6 +519,8 @@ Open it with **+ Insert** on the bar at the bottom of the note, or right-click t
 ### Equations
 - **Legend:** each term gets a name and unit.
 - **Register…** shares the equation everywhere: edit it once and every note updates. **Unlink from the registry** keeps a private copy.
+- **Capture one from a paper:** in the Library's reader, **∑ Capture equation**, then draw a box round the equation on the page. Type it in the editor, checking it against the snip, name it, and it is registered, with its paper and page. The reader's side panel lists the equations registered from that paper.
+- **∑ Equation → Registered equation…** shows the paper (and page) each was captured from.
 - **🖩 Solve in calculator** (or wire the equation to a calculator):
   - type the values you know and the rest are solved;
   - wire several equations that share terms to solve them as a system;
@@ -595,7 +612,7 @@ Open it with **+ Insert** on the bar at the bottom of the note, or right-click t
   - the **timeline** of everything written today, in any note, including backdated entries and edits (marked "entered for…" / "edited · from…");
   - **Coming up** (next 7 days);
   - chores;
-  - the **resurfaced** card.
+  - **Needs investigation**, above Recent notes: the open structures of that kind, oldest first, and with them the **resurfaced** card.
 - **The resurfaced card** is one claim or question older than two weeks. Answer it with Still holds / Explore lane / Answered / Contest / Another.
 - **Capture** (✎, **Ctrl+Shift+Space**, or the Capture box) adds a timestamped entry to **today's day note**. You can give it a kind: observation, idea, question, barrier, reminder or result.
 - **Day notes** (one per date) also show time recorded, notes touched, chores and what's due.

@@ -18,9 +18,9 @@ const REM = {
     const skip = r.skip || []; while ((+t + span < +from || skip.includes(localDate(t))) && guard++ < 2000) t = step(t);
     return t;
   },
-  /** Open items with their next time, soonest first. Done one-offs drop out. */
+  /** Open items with their next time, soonest first. Done one-offs drop out; one with no date (V3.991's Needs investigation, until 13zzw makes it a structure) is never listed. */
   open(now = new Date()) {
-    return REM.all().filter(r => !r.done).map(r => { const at = REM.when(r, r.repeat && r.repeat !== 'none' ? new Date(+now - 864e5) : new Date(0)); return { r, at, end: r.end ? new Date(+at + (+new Date(r.end) - +new Date(r.at))) : null }; })
+    return REM.all().filter(r => !r.done && r.at).map(r => { const at = REM.when(r, r.repeat && r.repeat !== 'none' ? new Date(+now - 864e5) : new Date(0)); return { r, at, end: r.end ? new Date(+at + (+new Date(r.end) - +new Date(r.at))) : null }; })
       .filter(x => !(x.r.skip || []).includes(localDate(x.at))).sort((a, b) => a.at - b.at);
   },
   bucket(x, now = new Date()) { const day = localDate(x.at), today = localDate(now); if ((x.end || x.at) < now && !(x.r.allDay && day === today)) return 'Overdue'; if (day === today) return 'Today'; if (day === localDate(addDays(now, 1))) return 'Tomorrow'; if (+x.at - +now < 7 * 864e5) return 'This week'; return 'Later'; },
@@ -146,7 +146,7 @@ const RemindersView = {
     return h('div.page.narrow', h('div.eyebrow', 'Deadlines · meetings'), h('h1.title', 'Reminders'),
       h('div.row', { style: { gap: '8px', margin: '6px 0 16px' } }, Object.entries(REMKIND).map(([k, K]) => h('button.btn' + (k === 'deadline' ? '.pri' : ''), { on: { click: () => REM.edit({ kind: k }) } }, '+ ' + K.label))),
       REM.open().length ? h('div.rm-list.page', REM.list(REM.open())) : h('div.empty', 'Nothing coming up.'),
-      done.length ? [h('div.sec-h', { style: { marginTop: '24px' } }, h('h2', 'Done')), h('div.list', done.map(r => h('div.li', h('span.muted', (REMKIND[r.kind] || {}).icon), h('span.t', h('s', r.title), h('span.s', 'due ' + fmtDay(r.at) + ' · done ' + fmtDay(r.done))), h('button.btn.xs.ghost', { on: { click: () => { r.done = null; DB.put('reminders', r); changed(); } } }, 'Reopen'))))] : null);
+      done.length ? [h('div.sec-h', { style: { marginTop: '24px' } }, h('h2', 'Done')), h('div.list', done.map(r => h('div.li', h('span.muted', (REMKIND[r.kind] || {}).icon), h('span.t', h('s', r.title), h('span.s', (r.at ? 'due ' + fmtDay(r.at) : 'noted ' + fmtDay(r.created)) + ' · done ' + fmtDay(r.done))), h('button.btn.xs.ghost', { on: { click: () => { r.done = null; DB.put('reminders', r); changed(); } } }, 'Reopen'))))] : null);
   },
 };
 VIEWS.reminders = RemindersView;
@@ -154,4 +154,4 @@ VIEWS.reminders = RemindersView;
 /* ---------------- hooks: Insert, palette, live views, day note ---------------- */
 INSERTS.push({ id: 'reminder', group: 'Plan', icon: '🔔', label: 'Deadline or meeting…', sub: 'A reminder linked to this note — shows under 🔔, on Today and in the day note', run: d => REM.edit({ docId: d.id, projectId: d.projectId, themeId: d.themeId }) });
 if (typeof LV !== 'undefined' && LV.SOURCES) LV.SOURCES.reminders = { label: 'Reminders (deadlines, meetings)', date: 'at', end: 'end', title: 'title', group: 'kind',
-  rows() { return REM.all().map(r => ({ _id: r.id, _src: 'reminders', _open: () => REM.edit({ id: r.id }), title: r.title, kind: r.kind, at: r.at, end: r.end, where: r.where || '', repeat: r.repeat || 'none', status: r.done ? 'done' : 'open', project: (M.project(r.projectId) || {}).name || '', theme: (r.themeId && (M.theme(r.themeId) || {}).name) || '', note: (M.doc(r.docId) || {}).title || '', themeId: r.themeId, projectId: r.projectId, docId: r.docId })); } };
+  rows() { return REM.all().filter(r => r.at).map(r => ({ _id: r.id, _src: 'reminders', _open: () => REM.edit({ id: r.id }), title: r.title, kind: r.kind, at: r.at, end: r.end, where: r.where || '', repeat: r.repeat || 'none', status: r.done ? 'done' : 'open', project: (M.project(r.projectId) || {}).name || '', theme: (r.themeId && (M.theme(r.themeId) || {}).name) || '', note: (M.doc(r.docId) || {}).title || '', themeId: r.themeId, projectId: r.projectId, docId: r.docId })); } };

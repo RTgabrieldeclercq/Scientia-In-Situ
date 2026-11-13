@@ -21,10 +21,21 @@ const App = {
       const host = $('#view'); host.className = view.canvas ? 'canvasview' : 'pageview';
       const out = view.render(...r.args) || h('div');
       host.replaceChildren(view.canvas ? out : h('div.pagewrap.scrolly', out)); App._mounted = true;
+      App.tabIn(r);   // V3.992
       if (!view.canvas) { const pw = $('.pagewrap', host); if (App._scroll && App._scroll.key === location.hash) pw.scrollTop = App._scroll.top; pw.addEventListener('scroll', debounce(() => { App._scroll = { key: location.hash, top: pw.scrollTop }; }, 80)); }
       view.after && view.after(...r.args);
     }
     if (!view.title) App.setTitle(TABS.find(t => t[0] === (TABOF[r.name] || r.name)) ? TABS.find(t => t[0] === (TABOF[r.name] || r.name))[1] : '', null);
+  },
+  /** V3.992 (Gabe: "I want the tab switching to have an updated clean UI animation like the Portfolio switching between projects"): another tab's
+      view slides in from the side of that tab (16 px, fading in, as the Portfolio's project does) while the tab's underline glides there; the title fades in. */
+  tabOf: r => r.name === 'doc' && (M.doc(r.args[0]) || {}).type === 'day' ? 'home' : TABOF[r.name] || r.name,
+  tabIn(r) {
+    const tab = App.tabOf(r), was = App._tab; App._tab = tab; if (!was || was === tab || RM()) return;
+    const ks = $$('#tabs .tab').map(a => a.dataset.k), el = $('#view').firstElementChild, t = $('#ttl'); if (!el) return;
+    el.classList.remove('tab-in', 'from-l', 'from-r'); void el.offsetWidth; el.classList.add('tab-in', ks.indexOf(tab) >= ks.indexOf(was) ? 'from-r' : 'from-l');
+    el.addEventListener('animationend', () => el.classList.remove('tab-in', 'from-l', 'from-r'), { once: true });
+    if (t) { t.classList.remove('ttl-in'); void t.offsetWidth; t.classList.add('ttl-in'); }
   },
   /** Row one: the journal-entry-sized title and a small mono meta line. `more(e)`: ⋯ beside the title (a note's More — V3.941, it left the note's bottom bar). */
   setTitle(text, meta, { editable, onEdit, more } = {}) {
@@ -180,7 +191,7 @@ function helpModal() {
   const s = settings(), row = (k, d) => [h('dt', k), h('dd', d)];
   modal({ title: 'Keys and gestures', wide: true, body: h('dl.help', row(keyLabel(s.structKey), 'Say what a selected phrase is — claim, barrier, resolution, result, takeaway, decision, question, idea, deviation, observation, reminder; / an existing one; W a term; L a link'),
     row('Ctrl+W', 'Mark a term — in Focus mode (Ctrl+.), where the browser lets the page have it. ' + keyLabel(s.termKey) + ' works everywhere'), row('Ctrl+I', 'Cite from the library (with text selected: add it to the library)'),
-    row('Enter / Shift+Enter', 'New component below / line break'), row('Double-click paper', 'New component there'), row('Right-click', 'Pull in barriers or structures; bridge a component to another note; box actions'),
+    row('Enter / Shift+Enter', 'New component below / line break'), row('Double-click paper', 'New component there'), row('Shift + drag', 'Move a component a grid cell at a time'), row('Right-click', 'Pull in barriers or structures; bridge a component to another note; box actions'),
     row('Drag ● on a box', 'Connect two components and say how (direction matters)'), row('Drag paper · wheel', 'Pan; Ctrl+wheel or pinch zooms; Space+drag pans over boxes'),
     row('Ctrl+click a link', 'Open that note (in a split view: in the pane you clicked)'), row('Alt+click a link', 'Open it beside — up to four notes, 2×2'),
     row('∑ Equation', 'New equation with a legend of its terms, or a registered one; drag its ● onto a calculator to solve it'),

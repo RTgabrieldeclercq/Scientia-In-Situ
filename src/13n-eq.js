@@ -305,8 +305,14 @@ const EQ = {
     const m = modal({ title, wide: true, actions: [{ label: 'Close' }], body: optionPicker({ placeholder: 'Search by name, term or meaning (e.g. “stiffness”, “Hooke”)…', sort: 'equations',
       items: q => DB.all('equations').filter(r => !q || (r.name + ' ' + r.tex + ' ' + Object.entries(r.vars || {}).map(([k, v]) => k + ' ' + (v.name || '') + ' ' + (v.unit || '')).join(' ')).toLowerCase().includes(q)).map(r => Object.assign({ title: r.name, date: r.modified || r.created }, r)),
       render: r => { const eqh = h('span.eqpick'); const html = MATH.html(r.tex, false); if (html) eqh.innerHTML = html; else eqh.textContent = r.tex;
-        return h('div', h('b', r.name), ' ', eqh, h('span.s', EQ.terms(r.tex).map(v => v.k + ((r.vars || {})[v.k] && r.vars[v.k].name ? ' ' + r.vars[v.k].name : '')).join(' · ') + (r.uses ? ' · used ' + plural(r.uses, 'time') : ''))); },
+        return h('div', { title: r.note || '' }, h('b', r.name), ' ', eqh, r.snip ? h('img.eqpick-snip', { src: r.snip, alt: '' }) : null, h('span.s', [EQ.from(r), EQ.terms(r.tex).map(v => v.k + ((r.vars || {})[v.k] && r.vars[v.k].name ? ' ' + r.vars[v.k].name : '')).join(' · ') + (r.uses ? ' · used ' + plural(r.uses, 'time') : '')].filter(Boolean).join(' · '))); },
       emptyText: 'No registered equations yet — write one, then “Register…” on its box', onPick: r => { m.close(); onPick(r); } }) });
+  },
+  /** V3.993: where a registered equation came from — the paper in your Library it was captured from (17b). */
+  from(r) {
+    if (!r) return '';
+    if (r.source && r.source.lib) { const p = M.lib(r.source.lib); return 'from ' + (p ? snippet(p.title || 'a paper', 48) : 'a paper') + (r.source.page ? ', p. ' + r.source.page : ''); }
+    return '';
   },
   register(b) {
     const d = EQ.data(b); if (!d.tex) return toast('Write the equation first');
