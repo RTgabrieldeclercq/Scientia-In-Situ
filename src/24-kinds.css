@@ -306,3 +306,10 @@ body.quiet .pfdot.inv::after{animation-play-state:paused}
 #ttl.ttl-in{animation:ttlin .35s cubic-bezier(.16,1,.3,1)}
 @keyframes ttlin{from{opacity:0;translate:0 3px}}
 @media (prefers-reduced-motion:reduce){#view > .tab-in.from-r,#view > .tab-in.from-l,#ttl.ttl-in{animation:none}}
+/* V3.993 — the Library reader captures equations (17b); registered equations show where they came from (13n) */
+.rd-capbtn.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.rd-pages.rd-capturing{user-select:none;-webkit-user-select:none} .rd-pages.rd-capturing .rd-page{cursor:crosshair} .rd-pages.rd-capturing .textLayer{pointer-events:none}
+.rd-capbox{position:absolute;z-index:5;border:1.5px dashed var(--teal);background:color-mix(in srgb,var(--teal) 10%,transparent);border-radius:3px;pointer-events:none}
+.rd-eqs{display:grid;gap:6px;margin-bottom:14px} .rd-eq{border:1px solid var(--rule);border-radius:8px;padding:6px 9px 7px;cursor:pointer;background:var(--surface)} .rd-eq:hover{border-color:var(--rule-2)}
+.rd-eqtex{overflow-x:auto;margin-top:4px;font-size:13px}
+.eqpick-snip{height:26px;max-width:120px;object-fit:contain;vertical-align:middle;border-radius:3px;margin-left:6px;background:#fff;border:1px solid var(--rule)}

@@ -288,8 +288,8 @@ const EQ = {
   },
   syncText(b) { const d = EQ.data(b), names = EQ.terms(d.tex).map(v => v.k + ' ' + ((d.vars || {})[v.k] || {}).name || '').join(' · '); b.body = { text: [EQ.label(b), d.tex, names].filter(Boolean).join('\n'), marks: [] }; b.modified = isoLocal(new Date()); },
   create(d, at, init = {}) {
-    const rec = init.eqId && DB.get('equations', init.eqId);
-    const b = M.addBlock(d.id, null, { kind: 'eq', label: rec ? rec.name : 'Equation', eqId: init.eqId || null, eq: { tex: rec ? rec.tex : init.tex || '', vars: Object.assign({}, rec ? rec.vars : init.vars || {}) }, x: Math.round(at.x / 14) * 14, y: Math.round(at.y / 14) * 14, w: 420 });
+    const rec = init.eqId && DB.get('equations', init.eqId), link = !!rec && !rec.rm;   // V3.993: one from the lab library (RM's reader; the hub keeps it) is placed as a copy
+    const b = M.addBlock(d.id, null, { kind: 'eq', label: rec ? rec.name : 'Equation', eqId: link ? init.eqId : null, eqFrom: rec && rec.rm ? rec.id : null, eq: { tex: rec ? rec.tex : init.tex || '', vars: Object.assign({}, rec ? rec.vars : init.vars || {}) }, x: Math.round(at.x / 14) * 14, y: Math.round(at.y / 14) * 14, w: 420 });
     if (rec) { rec.uses = (rec.uses || 0) + 1; DB.put('equations', rec); }
     EQ.syncText(b); DB.put('blocks', b); changed(); return b;
   },
@@ -305,8 +305,14 @@ const EQ = {
     const m = modal({ title, wide: true, actions: [{ label: 'Close' }], body: optionPicker({ placeholder: 'Search by name, term or meaning (e.g. “stiffness”, “Hooke”)…', sort: 'equations',
       items: q => DB.all('equations').filter(r => !q || (r.name + ' ' + r.tex + ' ' + Object.entries(r.vars || {}).map(([k, v]) => k + ' ' + (v.name || '') + ' ' + (v.unit || '')).join(' ')).toLowerCase().includes(q)).map(r => Object.assign({ title: r.name, date: r.modified || r.created }, r)),
       render: r => { const eqh = h('span.eqpick'); const html = MATH.html(r.tex, false); if (html) eqh.innerHTML = html; else eqh.textContent = r.tex;
-        return h('div', h('b', r.name), ' ', eqh, h('span.s', EQ.terms(r.tex).map(v => v.k + ((r.vars || {})[v.k] && r.vars[v.k].name ? ' ' + r.vars[v.k].name : '')).join(' · ') + (r.uses ? ' · used ' + plural(r.uses, 'time') : ''))); },
+        return h('div', { title: r.note || '' }, h('b', r.name), ' ', eqh, r.snip ? h('img.eqpick-snip', { src: r.snip, alt: '' }) : null, h('span.s', [EQ.from(r), EQ.terms(r.tex).map(v => v.k + ((r.vars || {})[v.k] && r.vars[v.k].name ? ' ' + r.vars[v.k].name : '')).join(' · ') + (r.uses ? ' · used ' + plural(r.uses, 'time') : '')].filter(Boolean).join(' · '))); },
       emptyText: 'No registered equations yet — write one, then “Register…” on its box', onPick: r => { m.close(); onPick(r); } }) });
+  },
+  /** V3.993: where a registered equation came from — the lab library (captured in RM's paper reader; read-only here, the hub keeps it) or a paper in your Library (17b). */
+  from(r) {
+    if (!r) return ''; if (r.rm) { const p = M.lib(r.rmPaper); return 'from the lab library' + (p ? ' · ' + snippet(p.title || '', 48) : '') + (r.page ? ', p. ' + r.page : '') + (r.by && !r.mine ? ' · ' + r.by : ''); }
+    if (r.source && r.source.lib) { const p = M.lib(r.source.lib); return 'from ' + (p ? snippet(p.title || 'a paper', 48) : 'a paper') + (r.source.page ? ', p. ' + r.source.page : ''); }
+    return '';
   },
   register(b) {
     const d = EQ.data(b); if (!d.tex) return toast('Write the equation first');
@@ -315,7 +321,7 @@ const EQ = {
       DB.put('equations', r); b.eqId = r.id; b.label = r.name; EQ.syncText(b); DB.put('blocks', b); changed(); toast('Registered — insert it in any note with ∑ Equation → Registered'); });
   },
   unregister(b) { const r = EQ.rec(b); if (!r) return; b.eq = { tex: r.tex, vars: Object.assign({}, r.vars) }; b.eqId = null; DB.put('blocks', b); changed(); toast('This box keeps its copy; the registry entry stays for other notes'); },
-  removeFromRegistry(r) { DB.where('blocks', x => x.eqId === r.id).forEach(x => { x.eq = { tex: r.tex, vars: Object.assign({}, r.vars) }; x.eqId = null; DB.put('blocks', x); }); DB.del('equations', r.id); changed(); toast('Removed from the registry — boxes keep their copies'); },
+  removeFromRegistry(r) { if (r && r.rm) return toast('It is from the lab library — it is kept on the website (the paper reader), where it can be changed or removed'); DB.where('blocks', x => x.eqId === r.id).forEach(x => { x.eq = { tex: r.tex, vars: Object.assign({}, r.vars) }; x.eqId = null; DB.put('blocks', x); }); DB.del('equations', r.id); changed(); toast('Removed from the registry — boxes keep their copies'); },
   widen(c) { if ((c.w || 336) < 420) { c.w = 420; DB.put('blocks', c); } },
   linkedTo: calc => IX.wiresOf(calc.id).map(w => M.block(w.from === calc.id ? w.to : w.from)).filter(x => x && x.kind === 'eq' && x.status === 'live'),
   calcsOf: eqb => IX.wiresOf(eqb.id).map(w => M.block(w.from === eqb.id ? w.to : w.from)).filter(x => x && x.kind === 'calc' && x.status === 'live'),

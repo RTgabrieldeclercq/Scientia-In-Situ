@@ -54,17 +54,49 @@ const ReaderView = {
     const zl = h('span.mono.tiny');
     bar.append(h('button.btn.sm', { on: { click: () => App.go('#/library') } }, '← Library'), h('b.rd-t', snippet(lib.title || '', 80)), h('span.spacer'),
       h('button.wbtn', { on: { click: () => this.setZoom(this.zoom / 1.15) } }, '−'), zl, h('button.wbtn', { on: { click: () => this.setZoom(this.zoom * 1.15) } }, '+'),
+      h('button.btn.sm.rd-capbtn', { title: 'Capture an equation: draw a box round it on the page — it is read (or typed), named and registered', on: { click: () => this.capture(!this.capturing) } }, '∑ Capture equation'),
       h('span.tiny.muted', 'Evidence goes to'), projSel, h('button.btn.sm', { on: { click: e => { const d = READER.litDoc(lib); App.jump(d.id, e, true); } } }, 'Literature note ↗'));
-    host.append(bar, h('div.rd-main', pages, side));
+    host.append(bar, h('div.rd-main', pages, side)); this.host = host; this.capturing = false;
     this.pagesEl = pages; this.side = side; this.zl = zl; this.pageEls = []; this.pendingPage = +page || null;
     this.drawSide();
     pdfjsLib.getDocument({ url: MEDIA.url(rec), isEvalSupported: false }).promise.then(pdf => { this.pdf = pdf; this.layout(); }).catch(e => { pages.replaceChildren(h('div.empty-c', 'Could not open the PDF: ' + e.message)); });
-    pages.addEventListener('mouseup', e => setTimeout(() => this.onSelect(e), 10));
+    pages.addEventListener('mouseup', e => { if (!this.capturing) setTimeout(() => this.onSelect(e), 10); });
+    pages.addEventListener('pointerdown', e => this.capDown(e));   // V3.993
     host.addEventListener('keydown', e => this.onKey(e)); host.tabIndex = -1;
     this._key = e => { if (App.route.name !== 'read') return document.removeEventListener('keydown', this._key); this.onKey(e); }; document.addEventListener('keydown', this._key);
     return host;
   },
   update(libId) { this.drawSide(); this.pageEls.forEach(p => this.paintMarks(p)); },
+  /* ---- V3.993 — capture an equation, as the website's reader does: draw a box round it on a page, check its LaTeX (read from the snip where the
+     lab's reader is there, else typed against it), name it — it is registered (13n `equations`) with its paper, page and a small snip. ---- */
+  capture(on) {
+    this.capturing = !!on; if (this.pagesEl) this.pagesEl.classList.toggle('rd-capturing', this.capturing);
+    const b = this.host && $('.rd-capbtn', this.host); if (b) b.classList.toggle('on', this.capturing);
+    if (this._capEsc) { document.removeEventListener('keydown', this._capEsc, true); this._capEsc = null; }
+    if (this.capturing) { this._capEsc = e => { if (e.key === 'Escape' && !$('.ovl') && !$('.meditor')) { e.preventDefault(); this.capture(false); } }; document.addEventListener('keydown', this._capEsc, true); toast('Draw a box round the equation on the page · Esc stops'); }
+  },
+  capDown(e) {
+    if (!this.capturing || e.button !== 0) return; const pg = e.target.closest && e.target.closest('.rd-page'); if (!pg || !pg._done) return; e.preventDefault();
+    const r0 = pg.getBoundingClientRect(), x0 = e.clientX - r0.left, y0 = e.clientY - r0.top, box = h('div.rd-capbox'); pg.append(box); let R = null;
+    const mv = ev => { const x = clamp(ev.clientX - r0.left, 0, r0.width), y = clamp(ev.clientY - r0.top, 0, r0.height); R = { x: Math.min(x0, x), y: Math.min(y0, y), w: Math.abs(x - x0), h: Math.abs(y - y0) };
+      Object.assign(box.style, { left: R.x + 'px', top: R.y + 'px', width: R.w + 'px', height: R.h + 'px' }); };
+    const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); box.remove(); if (R && R.w >= 8 && R.h >= 6) this.captureAt(pg._n, R, r0.width, r0.height); };
+    addEventListener('pointermove', mv); addEventListener('pointerup', up);
+  },
+  async captureAt(n, R, pw, ph) {
+    const lib = this.lib, m = lib && lib.pdf && MEDIA.get(lib.pdf); if (!m) return;
+    const r = { x: R.x / pw, y: R.y / ph, w: R.w / pw, h: R.h / ph };   // 0–1 of the page, then the page's own units
+    const pdf = await PDFW.load(m), vp = (await pdf.getPage(n)).getViewport({ scale: 1 }), P = { x: r.x * vp.width, y: r.y * vp.height, w: r.w * vp.width, h: r.h * vp.height, W: vp.width, H: vp.height };
+    let snip = '', small = '';
+    try { snip = await CLIP.snip(m, n, P); const cv = await CLIP.canvas(m, n, P, 600); small = cv.toDataURL('image/jpeg', .85); cv.width = cv.height = 0; } catch (e) { return toast('Could not snip that: ' + (e.message || e)); }
+    const paper = (LIB.shortRef && LIB.shortRef(lib)) || snippet(lib.title || 'paper', 40), rect = [r.x, r.y, r.w, r.h].map(v => +clamp(v, 0, 1).toFixed(4));
+    MATH.editor({ tex: '', display: true, title: 'Equation · ' + paper + ', p. ' + n, onSave: tex => { if (!tex) return;
+      askText('Register this equation', 'Name (how you will look it up)', 'Equation · ' + paper + ', p. ' + n).then(name => { if (!name) return;
+        const now = isoLocal(new Date()), rec = { id: uid('eq'), name: name.trim(), tex, vars: {}, created: now, modified: now, uses: 0, snip: small, source: { lib: lib.id, page: n, rect } };
+        try { EQ.terms(tex).forEach(v => { rec.vars[v.k] = { name: '', unit: '' }; }); } catch (e) { }
+        DB.put('equations', rec); changed(); toast('Registered — insert it in any note with ∑ Equation → Registered equation'); }); } });
+    CLIP.ocrHead(snip, 'paper');
+  },
   setZoom(z) { this.zoom = clamp(z, 0.4, 4); this.layout(true); },
   async layout(keep) {
     const pdf = this.pdf; if (!pdf) return; const W = this.pagesEl.clientWidth - 48, first = await pdf.getPage(1), base = first.getViewport({ scale: 1 }), scale = Math.max(0.3, W / base.width) * this.zoom;
@@ -158,7 +190,12 @@ const ReaderView = {
         h('textarea.inp.rd-ni', { rows: 1, placeholder: 'Add a note… (Enter)', on: { click: e => e.stopPropagation(), keydown: e => { e.stopPropagation(); if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (READER.addNote(b, e.target.value)) toast('Note added beside the highlight on the literature note'); } }, input: e => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; } } }),
         h('a.tiny', { on: { click: e => { e.stopPropagation(); App.jump(b.id, e); } } }, 'on the note ↗')) }; });
     const host = h('div'), bar = filterBar(rows, host, { placeholder: 'Search highlights…', min: 1 });
-    this.side.replaceChildren(h('div.rd-sh', h('b', plural(anns.length, 'highlight')), h('div.tiny.muted', 'Select text to highlight · Ctrl+B to make it a claim, evidence, question…')), bar, host);
+    // V3.993: the equations registered from this paper (here, or on the website's reader for a paper of the lab library)
+    const eqs = DB.all('equations').filter(r => (r.source && r.source.lib === this.libId) || (r.rm && r.rmPaper === this.libId)).sort((a, c) => ((a.source && a.source.page) || a.page || 0) - ((c.source && c.source.page) || c.page || 0));
+    const eqBox = eqs.length ? h('div.rd-eqs', h('div.rd-sh', h('b', plural(eqs.length, 'equation')), h('div.tiny.muted', 'Registered from this paper · ∑ Equation → Registered equation puts one in a note')),
+      eqs.map(r => { const pg = (r.source && r.source.page) || r.page; return h('div.rd-eq', { title: r.note || '', on: { click: () => { const p = pg && this.pageEls[pg - 1]; if (p) p.scrollIntoView({ block: 'center', behavior: 'smooth' }); } } },
+        h('div.row', { style: { gap: '6px' } }, h('b', r.name), h('span.spacer'), r.rm ? h('span.pill', { title: EQ.from(r) }, 'lab library') : null, pg ? h('span.mono.tiny.muted', 'p. ' + pg) : null), EQ.html(r.tex, true, 'div.rd-eqtex')); })) : null;
+    this.side.replaceChildren(eqBox || '', h('div.rd-sh', h('b', plural(anns.length, 'highlight')), h('div.tiny.muted', 'Select text to highlight · Ctrl+B to make it a claim, evidence, question…')), bar, host);
   },
 };
 VIEWS.read = ReaderView;

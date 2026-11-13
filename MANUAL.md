@@ -530,6 +530,9 @@ Open it with the ＋ **Quick cast** → **⋯** (everything that can go in this 
 ### Equations
 - **Legend:** each term gets a name and unit.
 - **Register…** shares the equation everywhere: edit it once and every note updates. **Unlink from the registry** keeps a private copy.
+- **Capture one from a paper:** in the Library's reader, **∑ Capture equation**, then draw a box round the equation on the page. Check it in the editor against the snip (on the lab's site it is read for you; otherwise type it), name it, and it is registered, with its paper and page. The reader's side panel lists the equations registered from that paper.
+- **∑ Equation → Registered equation…** shows where each came from: a paper (and page), or the lab library.
+- **On the lab's site,** the equations you or the lab capture in the website's paper reader arrive among your registered equations by themselves (read-only: one goes into a note as a copy you can edit).
 - **🖩 Solve in calculator** (or wire the equation to a calculator):
   - type the values you know and the rest are solved;
   - wire several equations that share terms to solve them as a system;
