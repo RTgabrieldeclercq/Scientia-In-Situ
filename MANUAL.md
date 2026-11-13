@@ -519,6 +519,8 @@ Open it with **+ Insert** on the bar at the bottom of the note, or right-click t
 ### Equations
 - **Legend:** each term gets a name and unit.
 - **Register…** shares the equation everywhere: edit it once and every note updates. **Unlink from the registry** keeps a private copy.
+- **Capture one from a paper:** in the Library's reader, **∑ Capture equation**, then draw a box round the equation on the page. Type it in the editor, checking it against the snip, name it, and it is registered, with its paper and page. The reader's side panel lists the equations registered from that paper.
+- **∑ Equation → Registered equation…** shows the paper (and page) each was captured from.
 - **🖩 Solve in calculator** (or wire the equation to a calculator):
   - type the values you know and the rest are solved;
   - wire several equations that share terms to solve them as a system;

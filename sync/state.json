@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "9cedc45e531f8b90e689f518e5ba0e0151d07510",
-  "subject": "V3.992: Scientia — Needs investigation becomes a structure; tabs slide in; Shift+drag by grid cells; Full screen as ⤢",
+  "commit": "555706e4dec205697de4a86cce5da7eef017300b",
+  "subject": "V3.993: Scientia — the website's equation captures reach the Lab Notebook; the Library reader captures and registers equations",
   "date": "2026-11-13"
  },
- "cut": "449effb565474b063013b24989beae88c49d52a9",
+ "cut": "7b05753e9757639a2df4370510e0e89bcafa96a3",
  "names": [
   "DESKLAB",
   "LABSYNC",
