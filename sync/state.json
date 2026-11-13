@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "4ecfebbecd8006c978c086f0deaf65ac29b42cd1",
-  "subject": "V3.982: Scientia — wires take the shortest way round the components; lit reviews no longer flicker",
-  "date": "2026-11-11"
+  "commit": "aa7ddf79ad6712ecc86f49c65948aa32b771cbeb",
+  "subject": "V3.988: Scientia — the Portfolio as two panes (a list of projects, the open one beside it); the results kinds",
+  "date": "2026-11-13"
  },
- "cut": "db4e96ba57a443e0576bae7ba3653c0826e95641",
+ "cut": "c7820ef4892f293a1592e42a697a33c56de407c0",
  "names": [
   "DESKLAB",
   "LABSYNC",
