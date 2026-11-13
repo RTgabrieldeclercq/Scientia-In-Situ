@@ -173,7 +173,7 @@ const VAULT = {
     for (const t of DB.all('terms')) F.set(P.term.get(t.id).file, VAULT.term(t, P));
     for (const r of DB.all('library')) F.set(P.lib.get(r.id).file, VAULT.lib(r, P));
     if (typeof REM !== 'undefined' && DB.all('reminders').length) { const open = REM.open(), done = DB.all('reminders').filter(r => r.done);
-      F.set('Reminders.md', [VAULT.fm({ type: 'reminders', tags: ['scientia/reminders'] }), '# Reminders', '', ...REM.inv().map(r => `- [ ] Needs investigation: **${r.title}**${r.docId && P.doc.get(r.docId) ? ' · ' + VAULT.wl(P.doc.get(r.docId), (M.doc(r.docId) || {}).title) : ''}`), ...open.map(x => `- [ ] ${REMKIND[x.r.kind].label}: **${x.r.title}** — ${REM.fmtAt(x)}${x.r.where ? ' · ' + x.r.where : ''}${x.r.repeat && x.r.repeat !== 'none' ? ' · ' + x.r.repeat : ''}${x.r.docId && P.doc.get(x.r.docId) ? ' · ' + VAULT.wl(P.doc.get(x.r.docId), (M.doc(x.r.docId) || {}).title) : ''}`), '', ...(done.length ? ['## Done', ...done.map(r => `- [x] ${r.title} — ${fmtDay(r.at || r.done)}`)] : []), ''].join('\n')); }
+      F.set('Reminders.md', [VAULT.fm({ type: 'reminders', tags: ['scientia/reminders'] }), '# Reminders', '', ...open.map(x => `- [ ] ${REMKIND[x.r.kind].label}: **${x.r.title}** — ${REM.fmtAt(x)}${x.r.where ? ' · ' + x.r.where : ''}${x.r.repeat && x.r.repeat !== 'none' ? ' · ' + x.r.repeat : ''}${x.r.docId && P.doc.get(x.r.docId) ? ' · ' + VAULT.wl(P.doc.get(x.r.docId), (M.doc(x.r.docId) || {}).title) : ''}`), '', ...(done.length ? ['## Done', ...done.map(r => `- [x] ${r.title} — ${fmtDay(r.at || r.done)}`)] : []), ''].join('\n')); }
     return F;
   },
   /** Send only what changed; delete files the app wrote earlier that no longer exist. */

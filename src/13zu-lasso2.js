@@ -53,7 +53,7 @@ const LASSO2 = {
   move(pane, paper, e, wp0) {
     const sel = INK.sel, paths = sel.items.map(x => $(`:scope > .box[data-id="${x.id}"] .ink-svg path[data-i="${x.i}"]`, paper.world)).filter(Boolean), bx = LASSO2.boxes().map(b => ({ b, el: $(`:scope > .box[data-id="${b.id}"]`, paper.world), x: b.x || 0, y: b.y || 0 }));
     let d = { x: 0, y: 0 }; INK.drawing = e.pointerId;
-    const mv = ev => { if (ev.pointerId !== e.pointerId) return; ev.preventDefault(); const p = paper.toWorld(ev.clientX, ev.clientY); d = { x: p.x - wp0.x, y: p.y - wp0.y };
+    const mv = ev => { if (ev.pointerId !== e.pointerId) return; ev.preventDefault(); const p = paper.toWorld(ev.clientX, ev.clientY); d = { x: p.x - wp0.x, y: p.y - wp0.y }; if (ev.shiftKey) d = { x: Math.round(d.x / 14) * 14, y: Math.round(d.y / 14) * 14 };   // V3.992: Shift, a grid cell at a time
       paths.forEach(pt => pt.setAttribute('transform', `translate(${d.x},${d.y})`)); bx.forEach(o => { if (o.el) { o.el.style.left = (o.x + d.x) + 'px'; o.el.style.top = (o.y + d.y) + 'px'; } });
       $$('.ink-selbox', paper.world).forEach(x => x.style.transform = `translate(${d.x}px,${d.y}px)`); pane.drawWires && pane.drawWires(); };
     const up = ev => { if (ev.pointerId !== e.pointerId) return; INK.drawing = null; removeEventListener('pointermove', mv, true); removeEventListener('pointerup', up, true);

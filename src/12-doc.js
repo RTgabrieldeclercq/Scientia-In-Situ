@@ -279,12 +279,12 @@ const DocView = {
       const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); document.body.classList.remove('resizing'); b.w = Math.round(b.w / 14) * 14; box.style.width = b.w + 'px'; DB.put('blocks', b); DB.beginGroup(); this.drawWires(); };
       addEventListener('pointermove', mv); addEventListener('pointerup', up); return; }
     if (e.target.closest('.ed,input,textarea,select,button,a,label,.chips,.ghosts,.refs,.tags,.ptext.edit,.obsn,.itdot,.wplate,.wlegend,.fg-cell')) { if (id[0] !== '_') this.select(id, true); return; }
-    // drag the box by its frame or header
+    // drag the box by its frame or header (V3.992: with Shift held, a grid cell at a time)
     e.preventDefault(); if (id[0] !== '_') this.select(id, true);
     const d = M.doc(this.docId), rec = id === '_head' ? d.layout.head : id === '_synth' ? (d.layout.synth = d.layout.synth || { x: box.offsetLeft, y: box.offsetTop }) : M.block(id);
     const sx = e.clientX, sy = e.clientY, ox = rec.x || 0, oy = rec.y || 0; let moved = false, shift = { x: 0, y: 0 };
     const mv = ev => { const dx = (ev.clientX - sx) / P.view.z + shift.x, dy = (ev.clientY - sy) / P.view.z + shift.y; if (!moved && Math.abs(dx) + Math.abs(dy) < 3) return; if (!moved) { moved = true; box.classList.add('dragging'); hideHover(); }
-      rec.x = ox + dx; rec.y = oy + dy; box.style.left = rec.x + 'px'; box.style.top = rec.y + 'px'; this.drawWires(); P.edgePan(ev, (ddx, ddy) => { shift.x -= ddx / P.view.z; shift.y -= ddy / P.view.z; mv(ev); }); };
+      const g = ev.shiftKey; rec.x = g ? Math.round((ox + dx) / 14) * 14 : ox + dx; rec.y = g ? Math.round((oy + dy) / 14) * 14 : oy + dy; box.style.left = rec.x + 'px'; box.style.top = rec.y + 'px'; this.drawWires(); P.edgePan(ev, (ddx, ddy) => { shift.x -= ddx / P.view.z; shift.y -= ddy / P.view.z; mv(ev); }); };
     const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); P.stopEdgePan(); if (!moved) return; box.classList.remove('dragging');
       const nx = Math.round(rec.x / 14) * 14, ny = Math.round(rec.y / 14) * 14, ddx = rec.x - nx, ddy = rec.y - ny; rec.x = nx; rec.y = ny; box.style.left = nx + 'px'; box.style.top = ny + 'px';
       box.animate && !RM() && box.animate([{ transform: `translate(${ddx}px,${ddy}px)` }, { transform: 'none' }], { duration: 240, easing: 'cubic-bezier(.34,1.4,.64,1)' });
