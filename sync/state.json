@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "aa7ddf79ad6712ecc86f49c65948aa32b771cbeb",
-  "subject": "V3.988: Scientia — the Portfolio as two panes (a list of projects, the open one beside it); the results kinds",
+  "commit": "d50d6d0c47f02fa33e7bbe52d0e830fb9b196417",
+  "subject": "V3.991: Scientia — Needs investigation: a reminder with no date, a dot in its note, breathing in the Portfolio, on Today",
   "date": "2026-11-13"
  },
- "cut": "c7820ef4892f293a1592e42a697a33c56de407c0",
+ "cut": "062c0eca569e3cca15d58bbc287d93660a4fae91",
  "names": [
   "DESKLAB",
   "LABSYNC",

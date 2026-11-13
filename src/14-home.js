@@ -61,13 +61,14 @@ const HomeView = {
           h('div.capbox', h('input.inp', { placeholder: 'A thought, a delivery, a result… (Enter) — goes to today’s day note', on: { keydown: e => { if (e.key === 'Enter' && e.target.value.trim()) { DAY.add(e.target.value); e.target.value = ''; toast('Captured'); } } } }),
             h('div.tiny.muted', plural(DAY.entries(DAY.doc()).length, 'entry', 'entries') + ' today · Ctrl+Shift+Space from anywhere')),
           REM.home(),
-          h('div.dayh.home', CHORES.dayRow(today)), RESURF.card(),
+          h('div.dayh.home', CHORES.dayRow(today)),
           TIMER.active().length ? [h('div.sec-h', h('h2', 'Running')), h('div.list', TIMER.active().map(s => { const d = M.doc(s.docId); return h('div.li.click', { on: { click: () => App.go('#/doc/' + s.docId) } }, h('span.tchip' + (s.state === 'running' ? '.run' : '.paused'), h('i'), h('span.wt', { 'data-sess': s.id }, fmtDur(TIMER.elapsed(s), true))), h('span.t', d ? d.title : '—', h('span.s', d ? M.docPath(d) : '')), s.steps && s.steps.length ? h('span.tiny.mono.muted', plural(s.steps.length, 'step') + ' checked') : null); }))] : null,
           h('div.sec-h', h('h2', 'Needs attention')),
           h('div.tiles', { style: { marginBottom: '12px' } }, tile(openB.length, 'open barriers', null, 'barrier'), tile(flags.length, 'flags'), tile(DB.where('sessions', s => s.state === 'open').length, 'open time entries')),
           capped(openB.sort((a, b) => a.created.localeCompare(b.created)), 4, it => itemRow(it, h('span.tiny.mono.muted', Math.floor((Date.now() - +new Date(it.created)) / 864e5) + 'd')), 'No open barriers'),
           h('div.sec-h', { style: { marginTop: '24px' } }, h('h2', 'Last five weeks'), h('span.r', h('a.btn.sm.ghost', { href: '#/activity' }, 'Activity →'))),
           heatmapEl({ weeks: 5, cell: 15 }), h('div', { style: { marginTop: '8px' } }, legendEl()),
+          REM.invHome(),   // V3.991: what needs investigating, and the resurfaced claim with it
           h('div.sec-h', { style: { marginTop: '24px' } }, h('h2', 'Recent notes')),
           h('div.list', recent.map(d => h('div.li.click', { on: { click: () => App.go('#/doc/' + d.id) } }, typechip(d.type), h('span.t', d.title, h('span.s', M.docPath(d))), h('span.tiny.mono.muted', fmtWhen(d.modified))))))));
   },
