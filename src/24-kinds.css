@@ -504,3 +504,21 @@ body.f-off-calc .ctools > button[title^="Open a calculator"]{display:none}
 body.f-off-board .fg-wb,body.f-off-board .sf-wb{display:none}
 body.f-off-pfdots .pfdots{display:none}
 body.f-off-syncdot .syncdot:not([data-tone="red"]){display:none}
+
+/* V3.996 — the previews of where pasted things land, gravity, a region pushing another aside, and Flag for synthesis (20a-features.js) */
+.pv-land{position:relative;height:118px;border:1px dashed var(--rule-2);border-radius:8px}
+.pv-land .pv-view{position:absolute;inset:6px;pointer-events:none} .pv-land .pv-view .k{position:absolute;left:4px;top:2px;font:9px var(--f-m);color:var(--ink-4);letter-spacing:.06em;text-transform:uppercase}
+.pv-land .pv-view .c{position:absolute;left:50%;top:50%;width:9px;height:9px;margin:-5px 0 0 -5px;border:1.5px solid var(--teal);border-radius:50%}
+.pv-land .pvb{position:absolute;width:52%} .pv-land .pv-under{left:8px;top:22px}
+.pv-land .pv-pasted{left:44%;top:60px;border-color:var(--teal);box-shadow:var(--shadow)}
+.pv-land.centre .pv-pasted{left:24%;top:34px;z-index:2}
+.pv-grav{position:relative;display:grid;gap:6px} .pv-grav .pv-gB{transition:transform .3s} .pv-grav:not(.on) .pv-gB{transform:translateY(22px)}
+.pv-grav .pv-up{position:absolute;right:8px;bottom:18px;font:600 15px var(--f-m);color:var(--teal)}
+.pv-grav:not(.on){padding-bottom:22px}
+.pv-rgrow{display:grid;grid-template-columns:1fr;gap:8px} .pv-rgrow.push{grid-template-columns:3fr 2fr}
+.pv-rgrow:not(.push) .pv-other{margin-top:-40px;opacity:.7}
+.pv-other{border-color:color-mix(in srgb,var(--mag) 45%,var(--rule-2))}
+.pv-selw{background:color-mix(in srgb,var(--teal) 22%,transparent);border-radius:2px}
+.pv-strip{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface);border:1px solid var(--rule-2);border-radius:8px;padding:5px;box-shadow:var(--shadow);font-size:11.5px}
+.pv-strip span{padding:2px 7px;border-radius:5px;color:var(--ink-2)} .pv-strip span.on{background:var(--surface-2);color:var(--ink);font-weight:600} .pv-strip u{font:10px var(--f-m);margin-left:3px}
+.pv-synthnote{display:grid;gap:6px;border:1px solid var(--rule);border-radius:8px;padding:8px;background:color-mix(in srgb,var(--paper) 70%,var(--surface))} .pv-synthnote > b{font-size:11.5px}

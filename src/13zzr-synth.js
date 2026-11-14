@@ -39,6 +39,21 @@
      component, words you select, or a marked passage → Flag for synthesis:
      a pulled-in component (or a live excerpt of the words, 13zzt) lands
      under "Flagged for synthesis". A lit review gives nothing but that.
+   • V3.996 (Gabe: "pulling flagged items from synthesis only brings up that
+     item, not an additional component mentioning if it is a result or a
+     flagged for synthesis. Flag for synthesis should be able to appear on
+     your Ctrl+Enter shortcut and automatically identifies that it is an
+     excerpt. Only right-clicked or selected components … register as being
+     the full component flagged for synthesis … If you have a component or
+     more selected and you type /synthesize which asks to which synthesis
+     note they will be flagged for."): no header components any more — the
+     columns are kept on the note (d.synthCols: { claim: {x, y}, …, flagged })
+     and what comes in is only the thing itself (headers made before stay
+     where they are, and are used as the column). Words: Ctrl+Enter → F, Flag
+     for synthesis (a live excerpt). A component: right-click → Flag for
+     synthesis (the whole of it), or select components and /synthesize. With
+     more than one Synthesis to go to, it asks which. Settings → Features →
+     Flag for synthesis switches all three off.
    ========================================================================== */
 const SYNTH = {
   KINDS: ['claim', 'evidence', 'result', 'takeaway', 'barrier', 'resolution'],
@@ -62,19 +77,22 @@ const SYNTH = {
     const comps = [...CK.takeaway.map(b => ({ k: 'takeaway', b })), ...CK.evidence.map(b => ({ k: 'result', b })), ...CK.barrier.map(b => ({ k: 'barrier', b }))]
       .filter(c => !have.has(c.b.id) && !DB.where('items', it => it.originBlockId === c.b.id && it.kind === c.k && !it.correctedBy).length);
     const heads = new Map(mine().filter(b => b.synthHead).map(b => [b.synthHead, b])), H = [...heads.values()]; let n = 0;
+    // V3.996: a column per kind with no header component — where it is, is kept on the note (d.synthCols); a header made before is that column
+    const cols = Object.assign({}, d.synthCols || {}); heads.forEach((b, k) => { if (!cols[k]) cols[k] = { x: b.x, y: b.y }; });
     // the columns go right of what the note holds (its header and template boxes); a kind new since goes right of the last column
-    const F0 = mine().filter(b => b.synthFrom), at = [...H, ...F0];
+    const F0 = mine().filter(b => b.synthFrom), at = [...H, ...F0, ...Object.values(cols)];
     let nextX = at.length ? Math.max(...at.map(b => b.x)) + SYNTH.COL : SYNTH.start(d); const y0 = at.length ? Math.min(...at.map(b => b.y)) : SYNTH.Y0;
-    SYNTH.KINDS.forEach(k => { let head = heads.get(k); if (!head && !items.some(it => it.kind === k) && !comps.some(c => c.k === k)) return;
-      if (!head) { head = M.addBlock(d.id, null, { kind: 'component', x: nextX, y: y0, w: 392 }); head.body = { text: SYNTH.HEAD[k], marks: [] }; head.synthHead = k; DB.put('blocks', head); nextX += SYNTH.COL; }
-      const below = mine().filter(b => b.id !== head.id && b.x != null && Math.abs(b.x - head.x) < SYNTH.COL / 2 && b.y > head.y);
-      let y = Math.max(head.y + 96, ...below.map(b => b.y + 136));
+    SYNTH.KINDS.forEach(k => { let head = cols[k]; if (!head && !items.some(it => it.kind === k) && !comps.some(c => c.k === k)) return;
+      if (!head) { head = cols[k] = { x: nextX, y: y0 }; nextX += SYNTH.COL; }
+      const hb = heads.get(k), below = mine().filter(b => (!hb || b.id !== hb.id) && b.x != null && Math.abs(b.x - head.x) < SYNTH.COL / 2 && b.y >= head.y);
+      let y = Math.max(hb ? hb.y + 96 : head.y, ...below.map(b => b.y + 136));
       items.filter(it => it.kind === k).forEach(it => { M.pullInto(d.id, null, { itemId: it.id, x: head.x, y }); y += SYNTH.ROW; n++; });
       comps.filter(c => c.k === k).forEach(c => { M.pullInto(d.id, null, { blockId: c.b.id, x: head.x, y }); y += SYNTH.ROW; n++; }); });
     // each stage's "what this note adds up to", once
     const from = mine().filter(b => b.synthFrom), said = new Set(from.map(b => b.synthFrom)), x = from.length ? from[0].x : nextX; let fy = from.length ? Math.max(...from.map(b => b.y)) + 170 : y0;
     mem.forEach(m => { const t = m.synthesis && String(m.synthesis.text || '').trim(); if (!t || said.has(m.id) || lit.has(m.id)) return;
       const b = M.addBlock(d.id, null, { kind: 'component', x, y: fy, w: 392 }); fy += 170; b.body = { text: t, marks: [] }; b.label = (prof(m.type).stage || prof(m.type).label) + ' — what it added up to'; b.synthFrom = m.id; DB.put('blocks', b); n++; });
+    if (JSON.stringify(cols) !== JSON.stringify(d.synthCols || {})) { const cd = M.doc(d.id); cd.synthCols = cols; DB.put('documents', cd); }
     if (n) changed(); if (!quiet) toast(n ? plural(n, 'thing') + ' gathered from ' + plural(mem.length, 'note') : 'Everything from ' + (d.chain ? 'the experiment' : 'its notes') + ' is here already', 3200); return n;
   },
   /** The rest: the other notes' live components this note does not reference, by note. */
@@ -122,11 +140,30 @@ const SYNTH = {
     let refSpan = null; if (span && span.to > span.from && !(span.from <= 0 && span.to >= text.length)) { const a = span.from, z = span.to; refSpan = { from: a, to: z, exact: text.slice(a, z), prefix: text.slice(Math.max(0, a - 40), a), suffix: text.slice(z, z + 40) }; }
     const mine = M.docBlocks(s.id).filter(x => x.status === 'live');
     if (mine.some(x => x.kind === 'ref' && x.refBlockId === b.id && !x.refItemId && (refSpan ? x.refSpan && x.refSpan.exact === refSpan.exact : !x.refSpan))) { toast('Already in “' + s.title + '”'); return null; }
-    let head = mine.find(x => x.synthHead === 'flagged');
-    if (!head) { head = M.addBlock(s.id, null, { kind: 'component', x: SYNTH.start(s), y: 0, w: 392 }); head.body = { text: 'Flagged for synthesis', marks: [] }; head.synthHead = 'flagged'; DB.put('blocks', head); }
-    const below = M.docBlocks(s.id).filter(x => x.status === 'live' && x.id !== head.id && x.x != null && Math.abs(x.x - head.x) < SYNTH.COL / 2 && x.y > head.y);
-    const nb = M.addBlock(s.id, null, Object.assign({ kind: 'ref', refItemId: null, refBlockId: b.id, x: head.x, y: Math.max(head.y + 96, ...below.map(x => x.y + 136)), w: 392, synthFlag: true }, refSpan ? { refSpan } : {}));
+    // V3.996: no "Flagged for synthesis" component — the column is kept on the note (a header made before is that column)
+    const hb = mine.find(x => x.synthHead === 'flagged'), cols = Object.assign({}, s.synthCols || {});
+    if (!cols.flagged) { cols.flagged = hb ? { x: hb.x, y: hb.y } : { x: SYNTH.start(s), y: 0 }; s.synthCols = cols; DB.put('documents', s); }
+    const head = cols.flagged, below = M.docBlocks(s.id).filter(x => x.status === 'live' && (!hb || x.id !== hb.id) && x.x != null && Math.abs(x.x - head.x) < SYNTH.COL / 2 && x.y >= head.y);
+    const nb = M.addBlock(s.id, null, Object.assign({ kind: 'ref', refItemId: null, refBlockId: b.id, x: head.x, y: Math.max(hb ? hb.y + 96 : head.y, ...below.map(x => x.y + 136)), w: 392, synthFlag: true }, refSpan ? { refSpan } : {}));
     IX.rebuild(); changed(); toast((refSpan ? 'The words are flagged' : 'Flagged') + ' for synthesis — pulled into “' + s.title + '”'); return nb;
+  },
+  /** V3.996: which Synthesis note — asked (those that synthesize this note first, then every other Synthesis); without `ask`, the one that synthesizes this note when there is just one. Resolves to the note, or null. */
+  async choose(docId, what, ask) {
+    const mine = SYNTH.of(docId); if (mine.length === 1 && !ask) return mine[0];
+    const own = new Set(mine.map(x => x.id)), all = DB.where('documents', x => x.type === 'reflection' && !x.deleted && x.id !== docId).sort((a, b) => (own.has(b.id) - own.has(a.id)) || String(b.modified || '').localeCompare(String(a.modified || '')));
+    if (!all.length) { toast('No Synthesis note yet — /synthesis makes one of the notes you pick'); return null; }
+    const v = await CMD.picker('Flag ' + (what || 'it') + ' for which synthesis?', '', q => all.filter(x => !q || (x.title || '').toLowerCase().includes(q)).map(x => ({ label: x.title || 'Synthesis', sub: own.has(x.id) ? 'synthesizes this note' : M.docPath(x), v: x })));
+    return v || null;
+  },
+  /** V3.996: components (whole) flagged for a Synthesis note, chosen once. */
+  async flagMany(bs) {
+    bs = bs.map(b => M.block(b.id || b)).filter(b => b && b.status === 'live' && b.kind !== 'synthof' && !b.synthHead && !(b.kind === 'ref' && b.refItemId)); if (!bs.length) { toast('Select the components to flag first (lasso, or Ctrl+click), or type it in one'); return 0; }
+    const s = await SYNTH.choose(bs[0].docId, bs.length > 1 ? plural(bs.length, 'component') : '“' + snippet(M.blockName(bs[0]), 30) + '”', true); if (!s) return 0;   // /synthesize asks which
+    let n = 0; bs.forEach(b => { if (SYNTH.flag(s, b.kind === 'ref' ? M.block(b.refBlockId) || b : b, null)) n++; }); if (n > 1) toast(plural(n, 'component') + ' flagged for synthesis — pulled into “' + s.title + '”'); return n;
+  },
+  /** V3.996: the words selected (Ctrl+Enter → F): a live excerpt of them, flagged. */
+  async flagWords(b, sel, text) {
+    const s = await SYNTH.choose(b.docId, '“' + snippet(text || '', 30) + '”'); if (!s) return null; return SYNTH.flag(s, b, { from: sel.from, to: sel.to });
   },
   /* ---------- V3.973: a Synthesis of the notes you choose ---------- */
   /** Notes added to ids, one at a time, until Cancel. */
@@ -164,8 +201,9 @@ WIDGETS.synthof = { label: 'notes to synthesize', w: 520, body: SYNTH.ofBody, me
     let span = sel && !sel.collapsed && sel.to > sel.from ? { from: sel.from, to: sel.to } : P0 && P0.span;
     if (!span) { const mk = e.target.closest('span.st[data-m]') || e.target.closest('[data-m]'), id = (mk && mk.dataset.m) || (P0 && P0.mark), m = id && ((b.body && b.body.marks) || []).find(x => x.id === id); if (m && m.to > m.from) span = { from: m.from, to: m.to }; }
     const to = s => S.length > 1 ? ' → ' + snippet(s.title, 28) : '';
-    const rows = [{ head: 'Synthesis' }, ...S.flatMap(s => [span ? { label: 'Flag these words for synthesis' + to(s), sub: 'Into “' + snippet(s.title, 40) + '”, a live excerpt of them', run: () => SYNTH.flag(s, b, span) } : null,
-      { label: (span ? 'Flag the whole component for synthesis' : 'Flag for synthesis') + to(s), sub: 'Into “' + snippet(s.title, 40) + '”, pulled in', run: () => SYNTH.flag(s, b, null) }].filter(Boolean))];
+    // V3.996: right-click flags the whole component (words: Ctrl+Enter → F); Settings → Features → Flag for synthesis
+    if (typeof FEAT !== 'undefined' && !FEAT.on('synthflag')) return mn.apply(this, arguments);
+    const rows = [{ head: 'Synthesis' }, ...S.map(s => ({ label: 'Flag for synthesis' + to(s), sub: 'The whole component, into “' + snippet(s.title, 40) + '”' + (span ? ' — the words alone: Ctrl+Enter → F' : ''), run: () => SYNTH.flag(s, b, null) }))];
     const orig = ctxMenu; ctxMenu = (x, y, list) => orig(x, y, [...list, 'sep', ...rows]);
     try { return mn.apply(this, arguments); } finally { ctxMenu = orig; } };
   // a Synthesis note made otherwise (/new, a changed type, from before): its "notes to synthesize" component the first time it is drawn —
@@ -173,7 +211,15 @@ WIDGETS.synthof = { label: 'notes to synthesize', w: 520, body: SYNTH.ofBody, me
   const fl = DocView.fill; DocView.fill = function (d) { const r = fl.apply(this, arguments);
     if (d && !this.travel && SYNTH.is(d) && !d.synthAsked) setTimeout(() => { if (SYNTH.ensureAsk(d)) changed(); }, 0); return r; };
   // V3.973: /synthesis — a Synthesis of the notes you choose
-  CMD.add({ slash: 'synthesis', label: 'A synthesis of notes…', args: [], alias: ['synthesize'], group: 'Note', sub: 'Pick the notes; their claims, evidence, results, takeaways, barriers and resolutions are gathered into a new Synthesis note',
+  // V3.996: /synthesize — the components selected (or the one it is typed in), flagged for the Synthesis you choose
+  CMD.add({ slash: 'synthesize', label: 'Flag the selected components for synthesis…', args: [], alias: ['flag-synthesis'], group: 'Component', sub: 'Asks which Synthesis note; the whole components are pulled in there',
+    run: (A_, ctx) => { if (typeof FEAT !== 'undefined' && !FEAT.on('synthflag')) throw new Error('Flag for synthesis is off — Settings → Features'); const sel = typeof LASSO2 !== 'undefined' ? LASSO2.boxes() : [];
+      const bs = sel.length ? sel : ctx && ctx.block ? [ctx.block] : []; if (!bs.length) throw new Error('select the components first (lasso, or Ctrl+click), or type it in one');
+      SYNTH.flagMany(bs); return 'Flag ' + plural(bs.length, 'component') + ' for synthesis'; } });
+  // V3.996: Ctrl+Enter → F: the words selected, flagged for synthesis (a live excerpt)
+  (ED.stripExtra = ED.stripExtra || []).push({ id: 'synthflag', label: 'Flag for synthesis', key: 'f', when: b => (typeof FEAT === 'undefined' || FEAT.on('synthflag')) && b && b.kind === 'component' && DB.where('documents', x => x.type === 'reflection' && !x.deleted && x.id !== b.docId).length > 0,
+    run: (el, b, sel, text) => { const cur = M.block(b.id), body = ED.read(el, cur.body.marks); if (body.text !== cur.body.text) { M.saveBlockBody(cur, body); IX.rebuild(); } SYNTH.flagWords(M.block(b.id), sel, text); } });
+  CMD.add({ slash: 'synthesis', label: 'A synthesis of notes…', args: [], alias: [], group: 'Note', sub: 'Pick the notes; their claims, evidence, results, takeaways, barriers and resolutions are gathered into a new Synthesis note',
     run: (A_, ctx) => { SYNTH.create(ctx && ctx.doc && ctx.doc.id); return 'Pick the notes to synthesize'; } });
   // the note's ⋯ menu (the lab's pills hide the dock): a Synthesis's tools; any other note: a synthesis of it and others
   const dm = DocView.docMenu; DocView.docMenu = function (d, e) { if (this.travel) return dm.apply(this, arguments); const orig = ctxMenu, pane = this;

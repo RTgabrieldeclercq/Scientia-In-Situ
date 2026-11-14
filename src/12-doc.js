@@ -360,15 +360,31 @@ const DocView = {
     const floats = b => b.float && b.float.x === b.x && b.float.y === b.y;
     const live = M.liveBlocks(d.id).filter(b => b.x != null && b.kind !== 'ink' && !floats(b)), auto = live.filter(b => b.auto);
     const head = this.rectOf('_head'); let moved = false;
+    const put = b => { DB.put('blocks', b); const el = $(`.box[data-id="${b.id}"]`, this.paper.world); if (el) el.style.top = b.y + 'px'; };
+    // V3.996 — gravity (Gabe: "collapsing anything gravity pulls back any previously displaced by the same amount from the expansion of it"). A box pushed
+    // down here keeps it in REFLOW's list (13vb, b.shift): { by: the pusher, dy, at: where it landed, push: true, h: the pusher's height then }. When the
+    // pusher is shorter now — emptied, its earlier versions closed, hidden in a folded region, gone — the box comes back up by as much (never more than it
+    // was pushed), and what it pushed comes with it. A fold gives its pushes back itself (REFLOW, measured before and after); a box moved by hand since stays.
+    const grav = typeof FEAT === 'undefined' || FEAT.tune('writing', 'gravity') !== false, kids = new Map(), RP = typeof REFLOW !== 'undefined' ? REFLOW.pending : null;
+    if (RP && RP.pane === this && REGION.isRg(RP.id)) return false;   // a region folding or unfolding: REFLOW moves things first (to the side), then settles
+    const lastPush = b => { const S = Array.isArray(b.shift) ? b.shift : [], e = S[S.length - 1]; return e && e.push ? e : null; };
+    const drop = (b, e) => { b.shift = b.shift.filter(x => x !== e); if (!b.shift.length) delete b.shift; };
+    live.forEach(b => { const e = lastPush(b); if (!e) return; if (!grav || !e.at || e.at.x !== b.x || e.at.y !== b.y) { drop(b, e); DB.put('blocks', b); return; } if (!kids.has(e.by)) kids.set(e.by, []); kids.get(e.by).push(b); });
+    const back = (x, e, m) => { x.y -= m; e.dy -= m; e.at = { x: x.x, y: x.y }; if (e.dy <= 0) drop(x, e); moved = true; put(x); };
+    const lift = (id, k) => (kids.get(id) || []).forEach(x => { const e = lastPush(x); if (!e || e.by !== id) return; const m = Math.min(k, e.dy); if (m <= 0) return; back(x, e, m); lift(x.id, m); });
+    kids.forEach((xs, id) => { if (RP && RP.id === id) return; const r = this.rectOf(id), hNow = r ? r.h : 0;
+      xs.forEach(x => { const e = lastPush(x); if (!e || e.by !== id || e.h == null) return; const s = e.h - hNow; if (s < 7) return;
+        const m = Math.min(e.dy, Math.round(s / 14) * 14); e.h = hNow; if (m <= 0) return; back(x, e, m); lift(x.id, m); }); });
     // boxes never overlap: a box that grew (or was placed automatically) pushes the ones below it down
     const R = live.map(b => ({ b, r: this.rectOf(b.id) })).filter(x => x.r).sort((a, c) => a.b.y - c.b.y || d.blockIds.indexOf(a.b.id) - d.blockIds.indexOf(c.b.id));
     const placed = head ? [{ x: head.x, w: head.w, bottom: head.y + head.h }] : [];
     for (const { b, r } of R) {
       const hz = placed.filter(p => p.x < b.x + r.w && p.x + p.w > b.x); let mv = false;
       if (b.auto) { if (hz.length) { const ny = Math.ceil((Math.max(...hz.map(p => p.bottom)) + 28) / 14) * 14; if (ny !== b.y) { b.y = ny; mv = true; } } }
-      else { const over = hz.filter(p => b.y < p.bottom + 14 && b.y + r.h > (p.top == null ? -1e9 : p.top)); if (over.length) { const ny = Math.ceil((Math.max(...over.map(p => p.bottom)) + 14) / 14) * 14; if (ny > b.y) { b.y = ny; mv = true; } } }
-      if (mv) { moved = true; DB.put('blocks', b); const el = $(`.box[data-id="${b.id}"]`, this.paper.world); if (el) el.style.top = b.y + 'px'; }
-      placed.push({ x: b.x, w: r.w, top: b.y, bottom: b.y + r.h });
+      else { const over = hz.filter(p => b.y < p.bottom + 14 && b.y + r.h > (p.top == null ? -1e9 : p.top)); if (over.length) { const top = over.reduce((a, p) => p.bottom > a.bottom ? p : a), ny = Math.ceil((top.bottom + 14) / 14) * 14;
+        if (ny > b.y) { if (grav && top.id) { const e = lastPush(b), dy = ny - b.y; if (e && e.by === top.id) { e.dy += dy; e.at = { x: b.x, y: ny }; e.h = top.h; } else b.shift = [...(Array.isArray(b.shift) ? b.shift : []), { by: top.id, dx: 0, dy, at: { x: b.x, y: ny }, push: true, h: top.h }]; } b.y = ny; mv = true; } } }
+      if (mv) { moved = true; put(b); }
+      placed.push({ id: b.id, x: b.x, w: r.w, top: b.y, bottom: b.y + r.h, h: r.h });
     }
     auto.forEach(b => { b.auto = false; DB.put('blocks', b); }); if (moved || auto.length) DB.beginGroup();
     const sy = $('.box.synth', this.paper.world); if (sy && !d.layout.synth) { const bb = this.bboxOf(live); if (bb) sy.style.left = (bb.x1 + 80) + 'px'; }

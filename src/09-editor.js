@@ -226,8 +226,10 @@ const ED = {
     const done = () => { strip.remove(); document.removeEventListener('keydown', key, true); };
     const choose = kind => { done(); ED.makeStructure(el, b, sel, kind, text); };
     const btn = (lab, k, fn, kc) => h('button', { on: { mousedown: e => { e.preventDefault(); fn(); } } }, kc ? h('i', { style: { '--kc': kc } }) : null, lab, h('u', k.toUpperCase()));
+    const extra = (ED.stripExtra || []).filter(x => { try { return !x.when || x.when(b, el); } catch (e) { return false; } });   // V3.996: actions other modules add ({ label, key, when(b), run(el, b, sel, text) }) — 13zzr's Flag for synthesis
     const strip = h('div.strip', h('div.strip-h', 'What is “' + snippet(text, 38) + '”?'), h('div.strip-b', KINDS.map(k => btn(k.label, k.key, () => choose(k.id), `var(--k-${k.id})`))),
-      h('div.strip-b.alt', btn('Existing structure…', '/', () => { done(); ED.mentionPicker(el, b, sel); }), btn('Term', 'w', () => { done(); ED.markTerm(el, b, sel); }), btn('Bridge to a note…', 'n', () => { done(); BRIDGE.fromText(el, b, sel); })));
+      h('div.strip-b.alt', btn('Existing structure…', '/', () => { done(); ED.mentionPicker(el, b, sel); }), btn('Term', 'w', () => { done(); ED.markTerm(el, b, sel); }), btn('Bridge to a note…', 'n', () => { done(); BRIDGE.fromText(el, b, sel); }),
+        ...extra.map(x => btn(x.label, x.key, () => { done(); x.run(el, b, sel, text); }))));
     document.body.append(strip);
     const r = strip.getBoundingClientRect(); strip.style.left = clamp(sel.rect.left, 8, innerWidth - r.width - 8) + 'px';
     strip.style.top = (sel.rect.top > r.height + 16 ? sel.rect.top - r.height - 8 : sel.rect.bottom + 8) + 'px';
@@ -237,6 +239,7 @@ const ED = {
       if (e.key === '/') { e.preventDefault(); done(); ED.mentionPicker(el, b, sel); return; }
       if (e.key.toLowerCase() === 'w' && !e.ctrlKey) { e.preventDefault(); done(); ED.markTerm(el, b, sel); return; }
       if ((e.key.toLowerCase() === 'n' || e.key.toLowerCase() === 'l') && !e.ctrlKey) { e.preventDefault(); done(); BRIDGE.fromText(el, b, sel); return; }   // L: where Link to a note was
+      { const x = !e.ctrlKey && !e.altKey && extra.find(y => y.key === e.key.toLowerCase()); if (x) { e.preventDefault(); done(); x.run(el, b, sel, text); return; } }
       const k = KINDS.find(x => x.key === e.key.toLowerCase()); if (k && !e.ctrlKey && !e.altKey) { e.preventDefault(); choose(k.id); return; }
       if (!['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) done();
     };
