@@ -6,8 +6,10 @@
    (kind 'ref' with refBlockId; refSpan for a passage, 13zzt), with a caption
    under it there saying why it was bridged (b.why).
    • In the original note the words bridged are underlined (green; Settings →
-     Structures → Bridges changes it), and a component that isn't text says
-     "bridged" beside its kind. Double-click either: go to the note it is
+     Structures → Bridges changes it). V3.994: the component itself is green
+     too — a green right edge (its bridges go out to the right, as the circles
+     at the note's edge do) and "⇄ bridged to <the note>" first among its
+     chips. Double-click the words, or click the chip: go to the note it is
      bridged to, or open that note beside this one.
    • Made by copy and paste into another note (components, or words copied
      in a component), the Ctrl+Enter strip's "Bridge to a note…", the editing
@@ -42,8 +44,6 @@ const BRIDGE = {
   },
   /** For ED.render, in the component's own box: its bridged words as marks the editor underlines (never saved: ED.read keeps only real marks). */
   marks(b) { try { return BRIDGE.isText(b) && b.status === 'live' ? BRIDGE.spans(b).map((s, i) => ({ id: '_br' + i, type: 'bridge', from: s.from, to: s.to, ids: s.ids.join(',') })) : []; } catch (e) { return []; } },
-  /** "bridged" beside the kind: a component that isn't text (or has no words to underline). */
-  tagged: b => !BRIDGE.isText(b) || !String((b.body && b.body.text) || '').trim(),
   /** Make one: the component src (or the passage span { from, to, text } of it) in note dest, with why. A bridge given as src bridges its original. */
   make(src, dest, o = {}) {
     if (!src || !dest) return null; let keep = null;
@@ -137,16 +137,17 @@ const BRIDGE = {
   },
 };
 {
-  // the box: a bridge has its caption; a bridged component that isn't text says so beside its kind
+  // the box: a bridge has its caption; a component bridged elsewhere is green (.bridged: its right edge) and says where it goes (a green chip, first)
   const bx = DocView.box; DocView.box = function (b, d, p) {
     const el = bx.apply(this, arguments); if (!el || !b) return el;
     try {
       if (BRIDGE.is(b)) { el.classList.add('bridge'); const cap = BRIDGE.caption(b, !!this.travel); if (cap) { const ch = $(':scope > .chips', el); ch ? ch.before(cap) : el.append(cap); } }
       else if (b.kind !== 'ref' && b.status === 'live') {
         const out = BRIDGE.out(b.id); if (out.length) { el.classList.add('bridged');
-          if (BRIDGE.tagged(b)) { const num = $(':scope > .bh > .num', el), names = [...new Set(out.map(x => (M.doc(x.docId) || {}).title || 'Untitled'))];
-            const tag = h('span.br-tag', { title: 'Bridged to ' + names.map(n => '“' + n + '”').join(', ') + ' · double-click: go there, or open it beside' }, '⇄ bridged');
-            num ? num.after(tag) : $(':scope > .bh', el) && $(':scope > .bh', el).prepend(tag); } }
+          const names = [...new Set(out.map(x => (M.doc(x.docId) || {}).title || 'Untitled'))];
+          const tag = h('button.wchip.br-tag.br-out', { type: 'button', title: 'Bridged to ' + names.map(n => '“' + n + '”').join(', ') + ' · click: go there, or open it beside',
+            on: { pointerdown: e => e.stopPropagation(), click: e => { e.stopPropagation(); BRIDGE.dbl(e.currentTarget, e); } } }, '⇄ bridged to ' + (names.length === 1 ? snippet(names[0], 34) : names.length + ' notes'));
+          const ch = $(':scope > .chips', el); ch ? ch.prepend(tag) : el.append(h('div.chips', tag)); }
       }
     } catch (e) { console.warn('[bridge]', e); }
     return el;

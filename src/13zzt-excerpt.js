@@ -56,10 +56,10 @@ const EXCERPT = {
   // the card: just the passage, with the original's styles, structures and terms over it
   const rc = DocView.refCard; DocView.refCard = function (b, d) {
     if (!b || !b.refSpan || b.refItemId) return rc.apply(this, arguments);
-    const v = EXCERPT.view(b); if (!v) return h('div.refbody', 'Missing reference'); const ob = v.ob, od = M.doc(ob.docId);
-    const origin = h('div.origin', 'bridged from ', h('a', { title: 'Open the original · Alt+click: beside', on: { click: e => App.jump(ob.id, e) } }, od ? M.docPath(od) : 'missing'), ' › ' + M.blockName(ob) + ' · ' + fmtDay(ob.created));
+    const v = EXCERPT.view(b); if (!v) return h('div.refbody', 'Missing reference'); const ob = v.ob;
+    const origin = this.origin(d, ob, 'passage');   // V3.994: the band (12-doc)
     const pv = h('div.ed'); ED.render(pv, Object.assign({}, ob, { body: { text: v.text, marks: v.marks } })); pv.contentEditable = 'false';
-    return h('div.refbody.excerpt', h('div.row', h('span.pill', { title: 'A part of a component in another note, live' }, 'excerpt'), ob.label ? h('b', { style: { fontSize: '12.5px' } }, ob.label) : null), origin, pv,
+    return h('div.refbody.excerpt', origin, pv,
       v.gone ? h('div.tiny.muted.ex-gone', 'These words are no longer in the original — this is how they read when they were pulled in.') : null);
   };
 }
