@@ -149,7 +149,13 @@ const CLIPX = {
   /** An insert run with these files standing in for the file dialog it opens (PLATE.pickFiles), so a pasted file is made exactly as an inserted one. */
   through(files, run) { const pf = PLATE.pickFiles, stand = (cb, multiple) => { PLATE.pickFiles = pf; cb(multiple === false ? files.slice(0, 1) : files); }; PLATE.pickFiles = stand;
     try { return run(); } finally { setTimeout(() => { if (PLATE.pickFiles === stand) PLATE.pickFiles = pf; }, 1500); } },
-  spot(pane) { const A = CLIPX.at; if (A && A.pane === pane && Date.now() - A.t < 60000) return { x: Math.round(A.x / 14) * 14, y: Math.round(A.y / 14) * 14 }; const r = pane.paper.rect(), c = pane.paper.toWorld(r.left + r.width / 2, r.top + r.height / 2); return { x: Math.round((c.x - 196) / 14) * 14, y: Math.round((c.y - 60) / 14) * 14 }; },
+  /** V3.996 (Gabe: "When you copy and paste a component, insert a PDF or HTML, it pastes in the center of where you are in the canvas, superposing any
+      components that are there"): the centre of the view — and what lands there floats (b.float, 12 settle), on top of what is there until it is moved.
+      Settings → Features → Writing in components: or where the pointer was, making room, as before. */
+  centre: () => typeof FEAT === 'undefined' || FEAT.tune('writing', 'land') !== 'room',
+  landing: null, _made: null,
+  float(ids) { ids.forEach(id => { const b = M.block(id); if (b && b.x != null && b.kind !== 'ink') { b.float = { x: b.x, y: b.y }; DB.put('blocks', b); } }); },
+  spot(pane) { const A = CLIPX.at; if (!CLIPX.centre() && A && A.pane === pane && Date.now() - A.t < 60000) return { x: Math.round(A.x / 14) * 14, y: Math.round(A.y / 14) * 14 }; const r = pane.paper.rect(), c = pane.paper.toWorld(r.left + r.width / 2, r.top + r.height / 2); return { x: Math.round((c.x - 196) / 14) * 14, y: Math.round((c.y - 60) / 14) * 14 }; },
   /** A new component; from a component of this note, its structures, terms and styles over the copied range come along. */
   component(d, at, text, src, j) {
     const b = M.addBlock(d.id, null, { x: at.x, y: at.y, w: 392, label: '' }); let marks = [];
@@ -191,4 +197,19 @@ const CLIPX = {
   // V3.961 — Ctrl+C on components; beforecopy cancelled makes the copy event come with nothing selected; Ctrl+Shift+V pastes copies
   document.addEventListener('keydown', e => { try { CLIPX.keyCopy(e); } catch (x) { console.warn('[copy]', x); } if ((e.ctrlKey || e.metaKey) && (e.key || '').toLowerCase() === 'v') CLIPX.shiftAt = e.shiftKey ? Date.now() : 0; }, true);
   document.addEventListener('beforecopy', e => { if (CLIPX.armed && Date.now() - CLIPX.armed < 1000) e.preventDefault(); }, true);
+}
+{
+  // V3.996: what a paste or an insert makes lands where it was put and floats there (CLIPX.centre); a file picked later lands where the insert was asked
+  const ab = M.addBlock; M.addBlock = function (docId, afterId, init) { const b = ab.apply(this, arguments);
+    try { if (b && CLIPX.centre()) { if (CLIPX._made) CLIPX._made.push(b.id); else { const L = CLIPX.landing; if (L && L.docId === docId && init && init.x != null && Date.now() - L.t < 90000 && Math.abs(init.x - L.p.x) <= 14 && Math.abs((init.y || 0) - L.p.y) <= 14) CLIPX.float([b.id]); } } } catch (e) { }
+    return b; };
+  const pz = CLIPX.paste; CLIPX.paste = function (e) { const made = []; CLIPX._made = made;
+    try { const pane = CMD.ctx().pane; if (pane && pane.paper) CLIPX.landing = { docId: pane.docId, p: CLIPX.spot(pane), t: Date.now() }; return pz.apply(this, arguments); }
+    finally { CLIPX._made = null; if (made.length) CLIPX.float(made); } };
+  // + Insert, the slash, the navigation bar: each row's run is watched once (rows added later too, when the menu opens)
+  const watch = () => { if (typeof INSERTS === 'undefined') return; INSERTS.forEach(r => { if (!r || r._land || typeof r.run !== 'function') return; const run = r.run; r._land = true;
+    r.run = function (d, p) { const made = []; const outer = CLIPX._made; CLIPX._made = made; if (d && p && p.x != null) CLIPX.landing = { docId: d.id, p: { x: Math.round(p.x / 14) * 14, y: Math.round(p.y / 14) * 14 }, t: Date.now() };
+      try { return run.apply(this, arguments); } finally { CLIPX._made = outer; if (made.length) CLIPX.float(made); if (outer) outer.push(...made); } }; }); };
+  setTimeout(watch, 0);
+  if (typeof INSERT !== 'undefined') { const im = INSERT.menu; INSERT.menu = function () { watch(); return im.apply(this, arguments); }; }
 }

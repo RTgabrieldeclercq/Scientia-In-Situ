@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "aa2384c076c35c99d4fcaef63e899451407a9572",
-  "subject": "V3.995: Scientia — Settings rewired as features: a switch for each, presets, a tile per feature with all its settings, and a live preview of each that follows the scroll",
+  "commit": "00e760f93fa1d20ba600f2bb725bd7546e6e4aec",
+  "subject": "V3.996: Scientia — an unfolding region moves the other regions aside, whole, and folding gives back exactly what was pushed; synthesis brings only the thing itself; pasted and inserted things land at the centre",
   "date": "2026-11-14"
  },
- "cut": "844b790cfb474e19311073014ba50a12e34c98a2",
+ "cut": "fb555722f9c535c3b1c969cc0320ed326318a164",
  "names": [
   "DESKLAB",
   "LABSYNC",
