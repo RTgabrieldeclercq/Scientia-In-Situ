@@ -8,18 +8,27 @@
    in the lens's inks. Chain, beside Nests in the bar, is the board of boxes
    as before (lanes by theme or note, columns by day).
    ========================================================================== */
+/** V3.997 (Gabe: "Terms mentioned in lit reviews do not appear in the terms tab"): a mention in a lit review (a literature note, or a Lit review) is left out of the
+    Terms tab and the term's page — Settings → Features → Terms can count them again. */
+const TERMLIT = {
+  is: d => !!d && (d.type === 'literature' || (typeof LITREV !== 'undefined' && LITREV.is(d))),
+  counted: () => typeof FEAT !== 'undefined' && FEAT.tune('terms', 'lit') === 'counted',
+  occ(termId) { const all = IX.termOcc.get(termId) || []; return TERMLIT.counted() ? all : all.filter(o => !TERMLIT.is(M.doc(o.docId))); },
+};
 const TermsView = {
   render() {
-    const terms = DB.all('terms').map(t => { const occ = IX.termOcc.get(t.id) || [], ks = {};
+    let onlyLit = 0;
+    const terms = DB.all('terms').map(t => { const occ = TERMLIT.occ(t.id), ks = {}; if (!occ.length && (IX.termOcc.get(t.id) || []).length) { onlyLit++; return null; }
       occ.forEach(o => o.itemIds.forEach(i => { const it = M.item(i); if (it) ks[it.kind] = (ks[it.kind] || 0) + 1; }));
       return { t, occ, ks, notes: new Set(occ.map(o => o.docId)).size, last: Math.max(0, ...occ.map(o => +new Date(M.blockTime(M.block(o.blockId)) || 0))) }; })
-      .sort((a, b) => b.occ.length - a.occ.length);
+      .filter(Boolean).sort((a, b) => b.occ.length - a.occ.length);
     return h('div.page', h('div.eyebrow', 'Repository'), h('div.row', { style: { alignItems: 'baseline' } }, h('h1.title', 'Terms'), h('span.spacer'), h('button.btn.sm', { title: 'Look through every component in every note and mark each use of each term', on: { click: () => TERMSCAN.rescan() } }, '⟳ Rescan terms')),
       h('p.stand', `Mark a word or phrase with ${keyLabel(settings().termKey)} inside any note. Each term accumulates the structures it appears with — the claim it sat in, the barrier that sentence became, the resolution that closed it — with provenance.`),
       h('div.list', terms.length ? terms.map(({ t, occ, ks, notes, last }) => h('div.li.click', { on: { click: () => App.go('#/lens/' + t.id) } },
         h('span', { style: { width: '220px', flex: 'none', fontSize: '15px' } }, h('span.term-demo', t.label)),
         h('span.t', h('span.row', Object.entries(ks).map(([k, n]) => kchip(k, `${KIND[k].label} ${n}`))), h('span.s', `${(M.project(t.projectId) || { name: 'General' }).name} · ${plural(notes, 'note')} · ${plural(occ.length, 'occurrence')}${last ? ' · last ' + fmtWhen(last) : ''}`)),
-        t.importedFrom ? h('span.pill.mag', 'imported') : null)) : h('div.empty', 'No terms yet')));
+        t.importedFrom ? h('span.pill.mag', 'imported') : null)) : h('div.empty', 'No terms yet')),
+      TERMLIT.counted() ? null : h('p.tiny.muted', { style: { marginTop: '12px' } }, 'Mentions in lit reviews are not counted' + (onlyLit ? ' · ' + plural(onlyLit, 'term') + ' used only there ' + (onlyLit === 1 ? 'is' : 'are') + ' not listed' : '') + ' — Settings → Features → Terms counts them.'));
   },
   importDialog(projectId) {
     const m = modal({ title: 'Import a term into ' + M.project(projectId).name, actions: [{ label: 'Cancel' }], body: h('div', h('p.tiny.muted', { style: { marginTop: 0 } }, 'An imported term stays linked to its source. In the lens, “include linked projects” chains occurrences across both.'),
@@ -34,7 +43,7 @@ const LensView = {
   render(termId) {
     const t = M.term(termId); if (!t) return h('div.canvas-host', h('div.empty-c', 'Term not found'));
     const st = LensView.state[termId] || (LensView.state[termId] = { scope: 'project', scopeId: t.projectId, imported: false, view: 'nest' });
-    const occ = IX.termOcc.get(termId) || [], docs = [...new Set(occ.map(o => o.docId))].map(M.doc).filter(Boolean);
+    const occ = TERMLIT.occ(termId), docs = [...new Set(occ.map(o => o.docId))].map(M.doc).filter(Boolean);   // V3.997: lit reviews left out
     const themes = [...new Set(docs.map(d => d.themeId).filter(Boolean))].map(M.theme).filter(Boolean);
     if (st.scope === 'theme' && !themes.find(x => x.id === st.scopeId)) st.scopeId = themes[0] && themes[0].id;
     if (st.scope === 'doc' && !docs.find(x => x.id === st.scopeId)) st.scopeId = (docs.find(d => prof(d.type).steps) || docs[0] || {}).id;

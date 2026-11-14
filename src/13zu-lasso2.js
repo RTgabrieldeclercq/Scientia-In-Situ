@@ -219,3 +219,14 @@ LASSO2.toggleBox = function (pane, id) {
     e.preventDefault(); e.stopPropagation(); INK.deleteSel();
   }, true);
 }
+{
+  // V3.997 (Gabe: "When you have items selected, simply clicking outside of it, removes the selection."): a click on the note — the paper, or a component
+  // not in the selection — lets the lasso / Ctrl+click selection go. A drag (panning) keeps it; Ctrl, Shift or ⌘ add to it; the selection and its bar keep it.
+  let down = null;
+  document.addEventListener('pointerdown', e => { down = null; if (!INK.sel || e.button > 0 || e.ctrlKey || e.metaKey || e.shiftKey || !e.target || !e.target.closest) return; const t = e.target;
+    if (!t.closest('.paper') || t.closest('.ink-selbar, .ink-selbox, .box.lsel')) return; const bx = t.closest('.box[data-id]'); if (bx && (INK.sel.boxes || []).includes(bx.dataset.id)) return;   // one of the selection
+    if (!(t.matches('.paper, .grid, .world, .fade') || t.closest('.box'))) return;
+    down = { x: e.clientX, y: e.clientY, t: Date.now() }; }, true);
+  document.addEventListener('pointerup', e => { const d = down; down = null; if (!d || !INK.sel || Math.hypot(e.clientX - d.x, e.clientY - d.y) > 6 || Date.now() - d.t > 700) return;
+    INK.clearSel(); try { INK.paintBars(); } catch (x) { } }, true);
+}

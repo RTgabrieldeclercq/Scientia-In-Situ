@@ -135,8 +135,12 @@ const PV = {
       PV.cap('Select words, press ' + keyLabel(settings().structKey) + ', then the letter.')] });
 
   D({ id: 'terms', group: 'structures', label: 'Terms', tab: 'terms', desc: 'Words you mark as terms of the project, outlined in bold and found by themselves in every note that uses them, with the Terms tab and their nests. Off: no outline, no scanning, no Terms tab; the terms stay.',
-    tune: [T('key', 'Mark a term', 'seg', Object.assign({ opts: [['alt+w', 'Alt+W'], ['alt+shift+w', 'Alt+Shift+W']], d: 'Ctrl+W in Focus mode' }, B('termKey')))],
-    preview: () => [PV.box({ num: 'Block', label: 'Gels', body: ['Every ', on('terms') ? h('span.term-demo', 'traction force') : 'traction force', ' map on the ', on('terms') ? h('span.term-demo', '30 kPa gel') : '30 kPa gel', ' drifted.'] }), PV.cap('Mark one with ' + keyLabel(settings().termKey) + '; it is found in every other note too.')] });
+    tune: [T('key', 'Mark a term', 'seg', Object.assign({ opts: [['alt+w', 'Alt+W'], ['alt+shift+w', 'Alt+Shift+W']], d: 'Ctrl+W in Focus mode' }, B('termKey'))),
+      T('lit', 'Mentions in lit reviews', 'seg', { isNew: true, def: 'out', opts: [['out', 'Left out'], ['counted', 'Counted']], d: 'Left out of the Terms tab and the term’s page; a term used only in lit reviews isn’t listed' })],
+    preview: () => { const lit = tune('terms', 'lit') === 'counted';
+      return [PV.box({ num: 'Block', label: 'Gels', body: ['Every ', on('terms') ? h('span.term-demo', 'traction force') : 'traction force', ' map on the ', on('terms') ? h('span.term-demo', '30 kPa gel') : '30 kPa gel', ' drifted.'] }),
+        h('div.pv-list', [['traction force', lit ? '7 notes · 12 uses' : '5 notes · 9 uses'], ['30 kPa gel', '3 notes · 4 uses'], lit ? ['traction stress', 'lit reviews only · 2 uses'] : null].filter(Boolean).map(([a, b]) => h('div', h('span.term-demo', a), h('span', b)))),
+        PV.cap('Mark one with ' + keyLabel(settings().termKey) + '; it is found in every other note too. ' + (lit ? 'Lit reviews are counted in the Terms tab.' : 'Lit reviews are left out of the Terms tab.'))]; } });
 
   D({ id: 'investigate', group: 'structures', label: 'Needs investigation', desc: 'A structure that stays open until investigated: a dot in its component’s header, a breathing dot in the Portfolio, its list on Today above Recent notes.',
     preview: () => [run3({ stamp: null, head: [h('span.inv-dot', { title: 'Needs investigation' })], body: ['Why do the ', PV.st('investigate', 'beads drift'), ' after 40 frames?'] }),
