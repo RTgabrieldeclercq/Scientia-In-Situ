@@ -8,7 +8,8 @@
 .paper .grid{position:absolute;inset:0;pointer-events:none;
   background-image:linear-gradient(to right,var(--grid-line) 0 1px,transparent 1px),linear-gradient(to bottom,var(--grid-line) 0 1px,transparent 1px);
   background-size:var(--s) var(--s),var(--s) var(--s);background-position:var(--gx) var(--gy),var(--gx) var(--gy)}
-.paper .world{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+.paper .world{position:absolute;left:0;top:0;transform-origin:0 0}
+.paper .world.moving{will-change:transform}   /* V3.998: a layer only while it pans or zooms (10-paper apply); at rest it is drawn at its zoom, so words stay sharp */
 .paper .fade{position:absolute;inset:0;pointer-events:none;z-index:5;background:
   linear-gradient(to right,var(--paper),color-mix(in srgb,var(--paper) 0%,transparent)) left/5% 100% no-repeat,
   linear-gradient(to left,var(--paper),color-mix(in srgb,var(--paper) 0%,transparent)) right/5% 100% no-repeat,
