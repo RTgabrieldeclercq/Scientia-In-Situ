@@ -212,7 +212,7 @@ const REGION = {
         removeEventListener('pointermove', mv); removeEventListener('pointerup', up); P.stopEdgePan && P.stopEdgePan(); REGION.rdown = false; document.body.classList.remove('rg-drawing');
         $$('.rg-pick', P.world).forEach(x => x.classList.remove('rg-pick'));
         if (band) { band.remove(); REGION.noMenu = Date.now(); const ids = [...pickedR.map(r => r.id), ...picked.map(x => x.dataset.id)];
-          if (ids.length) { const r = REGION.create(M.doc(pane.docId), ids); setTimeout(() => { const n = $(`.region[data-rg="${r.id}"] .rg-name`, P.world); n && REGION.rename(pane, M.doc(pane.docId), r, n); }, 60); }
+          if (ids.length) { const r = REGION.create(M.doc(pane.docId), ids); if (!r) return; setTimeout(() => { const n = $(`.region[data-rg="${r.id}"] .rg-name`, P.world); n && REGION.rename(pane, M.doc(pane.docId), r, n); }, 60); }
           else toast('Draw around at least one component'); return; }
         if (REGION.pending) { const [ce, cp] = REGION.pending; REGION.pending = null; REGION._menu.call(pane, ce, cp); }
       };

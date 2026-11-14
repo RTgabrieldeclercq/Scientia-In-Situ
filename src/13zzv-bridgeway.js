@@ -31,7 +31,8 @@
      the bar) and in a note of the three; it closes when you leave the notes
      for another tab, and comes back with Alt+← / Alt+→ to a note of the
      trail. × closes it until tomorrow (settings.bridgeBarShut); Settings →
-     Structures → Bridges turns it off (settings.bridgeBar).
+     Features → Bridge bar turns it off (settings.bridgeBar) and sets how many
+     most-used bridges it shows (0–5) and over how many weeks (V3.995).
    ========================================================================== */
 const BWAY = {
   ANCHOR: '2026-11-09', TRAIL: 12, GAP: 38, TOP: 84, BOTTOM: 100,   // clear of what sits in a note's corners: its tools and zoom (top), its Next button and the hand (bottom)
@@ -44,22 +45,25 @@ const BWAY = {
     next: '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5 8 6l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     x: '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
   },
-  on: () => settings().bridgeBar !== false,
+  on: () => typeof FEAT !== 'undefined' && FEAT.by.bridgeBar ? FEAT.on('bridgeBar') : settings().bridgeBar !== false,   // V3.995: Settings → Features → Bridge bar
   shut: () => settings().bridgeBarShut === localDate(new Date()),
   beads: () => typeof HANDS !== 'undefined' && !!HANDS.full && HANDS.full(),
   alive: id => { const d = id && M.doc(id); return !!d && !d.deleted; },
   name: id => (M.doc(id) || {}).title || 'Untitled',
 
   /* ---------------- the counts: pairs of notes, by fortnight ---------------- */
-  /** The first day of this fortnight: Mondays two weeks apart from ANCHOR. */
-  since(now = new Date()) { const a = parseDay(BWAY.ANCHOR), n = Math.floor(Math.round((dayStart(now) - a) / 864e5) / 14); return localDate(addDays(a, n * 14)); },
+  /** The first day of this count: Mondays two weeks apart from ANCHOR — V3.995: 1, 2 or 4 weeks apart, or never reset (Settings → Features → Bridge bar). */
+  weeks() { const w = typeof FEAT !== 'undefined' ? +FEAT.tune('bridgeBar', 'weeks') : 2; return [0, 1, 2, 4].includes(w) ? w : 2; },
+  since(now = new Date()) { const a = parseDay(BWAY.ANCHOR), w = BWAY.weeks(); if (!w) return BWAY.ANCHOR; const n = Math.floor(Math.round((dayStart(now) - a) / 864e5) / (7 * w)); return localDate(addDays(a, n * 7 * w)); },
+  /** V3.995: how many most-used bridges the bar shows (0 to 5; 0: only the crossing you are on). */
+  topN() { const n = typeof FEAT !== 'undefined' ? +FEAT.tune('bridgeBar', 'top') : 3; return Number.isFinite(n) ? clamp(Math.round(n), 0, 5) : 3; },
   use() { const u = settings().bridgeUse, s = BWAY.since(); return u && u.since === s && u.n ? u : { since: s, n: {}, at: {} }; },
   key: (a, b) => [a, b].sort().join('|'),
   count(a, b) {
     if (!a || !b || a === b) return; const u = BWAY.use(), k = BWAY.key(a, b), n = Object.assign({}, u.n), at = Object.assign({}, u.at);
     n[k] = (n[k] || 0) + 1; at[k] = Date.now(); saveSettings({ bridgeUse: { since: u.since, n, at } }); BWAY.bumped = k;
   },
-  top() { const u = BWAY.use(); return Object.keys(u.n).filter(k => u.n[k] > 0 && k.split('|').every(BWAY.alive)).sort((a, b) => u.n[b] - u.n[a] || (u.at[b] || 0) - (u.at[a] || 0)).slice(0, 3); },
+  top() { const u = BWAY.use(); return Object.keys(u.n).filter(k => u.n[k] > 0 && k.split('|').every(BWAY.alive)).sort((a, b) => u.n[b] - u.n[a] || (u.at[b] || 0) - (u.at[a] || 0)).slice(0, BWAY.topN()); },
 
   /* ---------------- the edges ---------------- */
   /** A note's two margins: { l, r }, each [{ doc, here: [its component ids], bridges, pulled, items: [{ here, there, why, pulled, label }] }]. */
@@ -250,7 +254,7 @@ const BWAY = {
         h('button', { type: 'button', title: 'Forward along the trail', 'aria-label': 'Forward along the trail', disabled: BWAY.at >= T.length - 1, html: BWAY.I.next, on: { click: () => BWAY.walkTo(BWAY.at + 1) } })) : null,
       T.length > 1 ? trail : h('div.bw-trail'),
       tops.length ? h('div.bw-top', h('span.bw-tk', 'Most used'), tops) : null,
-      h('button.bw-close', { type: 'button', title: 'Close the bar until tomorrow (Settings → Structures → Bridges turns it off)', 'aria-label': 'Close the bridge bar until tomorrow', html: BWAY.I.x, on: { click: () => BWAY.close() } }));
+      h('button.bw-close', { type: 'button', title: 'Close the bar until tomorrow (Settings → Features → Bridge bar turns it off)', 'aria-label': 'Close the bridge bar until tomorrow', html: BWAY.I.x, on: { click: () => BWAY.close() } }));
     requestAnimationFrame(() => { const c = $('.bw-st.cur', trail); if (c && trail.scrollWidth > trail.clientWidth) trail.scrollLeft = c.offsetLeft - trail.clientWidth + c.offsetWidth + 24; });
   },
   walkTo(i) { const t = BWAY.trail[i]; if (!t || !BWAY.alive(t.id)) return; BWAY.step = { to: t.id, at: i }; App.go('#/doc/' + t.id); },
@@ -261,7 +265,7 @@ const BWAY = {
       return BWAY.go(other, id, 'bar', land || null, null, null); }
     App.go('#/doc/' + id);
   },
-  close() { saveSettings({ bridgeBarShut: localDate(new Date()) }); BWAY.show(false); toast('The bridge bar is closed until tomorrow. Settings → Structures → Bridges turns it off for good', 5000); },
+  close() { saveSettings({ bridgeBarShut: localDate(new Date()) }); BWAY.show(false); toast('The bridge bar is closed until tomorrow. Settings → Features → Bridge bar turns it off for good', 5000); },
 };
 {
   // the circles follow the paper, and are drawn with the note (every pane: they share DocView's methods)

@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "cae730b461ee4adb4ce862b0e162a90aa6eee8ef",
-  "subject": "V3.994: Scientia — a bridge says where it comes from in a band; a component bridged to another note is green in its own note too",
+  "commit": "aa2384c076c35c99d4fcaef63e899451407a9572",
+  "subject": "V3.995: Scientia — Settings rewired as features: a switch for each, presets, a tile per feature with all its settings, and a live preview of each that follows the scroll",
   "date": "2026-11-14"
  },
- "cut": "7abdf382898ccbe2820244a2dce4d463e382c7aa",
+ "cut": "844b790cfb474e19311073014ba50a12e34c98a2",
  "names": [
   "DESKLAB",
   "LABSYNC",

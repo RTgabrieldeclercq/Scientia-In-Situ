@@ -57,8 +57,13 @@ const EBAR = {
   rebuild() { const c = EBAR.cur; if (!c) return; c.bar.replaceChildren(...EBAR.items()); EBAR.sync(); EBAR.place(); },
   place() {
     const c = EBAR.cur; if (!c) return; if (!c.el.isConnected) return EBAR.hide();
-    const box = c.el.closest('.box'), hd = $('#hd'), top = hd ? hd.getBoundingClientRect().bottom + 2 : 0;
-    FBAR.place(c.bar, box.getBoundingClientRect(), { top, min: 150, max: 760 });
+    const box = c.el.closest('.box'), hd = $('#hd'), top = hd ? hd.getBoundingClientRect().bottom + 2 : 0, r = box.getBoundingClientRect();
+    FBAR.place(c.bar, r, { top, min: 150, max: 760 });
+    // V3.995: its size (Settings → Features → Editing bar) — fixed, or eased between two sizes over the note's zoom; as wide on screen as before, the buttons bigger or smaller
+    let k = 1; try { const dv = DV(c.el), z = dv && dv.paper && dv.paper.view ? dv.paper.view.z : 1; k = FEAT.size('editbar', 'size', z); } catch (e) { }
+    if (Math.abs(k - 1) < .01) { c.bar.style.transform = ''; return; }
+    const w = parseFloat(c.bar.style.width) || r.width; c.bar.style.width = Math.round(w / k) + 'px'; c.bar.style.transformOrigin = '0 0'; c.bar.style.transform = 'scale(' + k + ')';
+    const hgt = c.bar.offsetHeight * k, above = r.top - hgt - 6; c.bar.classList.toggle('below', above < top); c.bar.style.top = Math.round(above >= top ? above : r.bottom + 6) + 'px';
   },
   /* ---------- the buttons ---------- */
   items() {
@@ -159,7 +164,5 @@ const EBAR = {
   const os = ED.openStrip; ED.openStrip = function () { EBAR.hide(); return os.apply(this, arguments); };
   new MutationObserver(() => { if (!EBAR.cur && !$('.strip')) { const el = EBAR.editorOf(document.activeElement); if (el) EBAR.show(el); } }).observe(document.body, { childList: true });
   // Settings → Writing gets the same choices (SettingsView is defined later in the build, so this waits for the load to finish)
-  setTimeout(() => { if (typeof SettingsView === 'undefined') return; const sr = SettingsView.render; SettingsView.render = function () { const out = sr.apply(this, arguments);
-    try { const h2 = [...out.querySelectorAll('.sec-h h2')].find(x => x.textContent === 'Writing'), sec = h2 && h2.closest('.sec-h'); let after = sec && sec.nextElementSibling; while (after && !after.classList.contains('grid2')) after = after.nextElementSibling; if (after) after.after(EBAR.settingsUI()); } catch (e) { console.warn('[editor bar]', e); }
-    return out; }; }, 0);
+  // V3.995: its settings are in Settings → Features → Editing bar (20a-features.js), no longer appended to the page
 }
