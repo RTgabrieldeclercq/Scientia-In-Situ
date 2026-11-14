@@ -159,5 +159,5 @@ const ATLAS = {
   VIEWS.atlas = { title: true, render: () => ATLAS.render() };
   setTimeout(() => { if (typeof Search === 'undefined') return; const so = Search.open; Search.open = function (o) { if (ATLAS.on() && !(o && o.quick)) return ATLAS.openWith(Search.q || ''); return so.apply(this, arguments); }; }, 0);   // Search is defined later in the build
   document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key || '').toLowerCase() === 'k') { e.preventDefault(); e.stopImmediatePropagation(); Search.open({ quick: true }); } }, true);
-  setTimeout(() => { if (typeof SettingsView === 'undefined') return; const sr = SettingsView.render; SettingsView.render = function () { const out = sr.apply(this, arguments); try { const h2 = [...out.querySelectorAll('.sec-h h2')].find(x => x.textContent === 'Keys'), sec = h2 && h2.closest('.sec-h'); const ui = ATLAS.settingsUI(); if (sec) sec.before(ui); else out.append(ui); } catch (e) { } return out; }; }, 0);
+  // V3.995: its settings are in Settings → Features → Atlas (20a-features.js), no longer appended to the page
 }

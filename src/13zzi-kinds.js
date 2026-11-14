@@ -256,7 +256,5 @@ const AUTHORS = {
   // authors as terms: when the library changes, and once at the start; Settings
   const ch = changed; changed = function () { const r = ch.apply(this, arguments); try { AUTHORS.maybe(); } catch (e) { } return r; };
   setTimeout(() => { try { AUTHORS.maybe(); } catch (e) { } }, 3000);
-  setTimeout(() => { if (typeof SettingsView === 'undefined') return; const sr = SettingsView.render; SettingsView.render = function () { const out = sr.apply(this, arguments);
-    try { const h2 = [...out.querySelectorAll('.sec-h h2')].find(x => x.textContent === 'Keys'), sec = h2 && h2.closest('.sec-h'); const ui = CKINDS.settingsUI(); if (sec) sec.before(ui); else out.append(ui); } catch (e) { console.warn('[kinds]', e); }
-    return out; }; }, 0);
+  // V3.995: its settings are in Settings → Features → Structures (20a-features.js), no longer appended to the page
 }

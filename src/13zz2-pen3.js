@@ -23,7 +23,7 @@ const PEN3 = {
     return [...ids].filter(id => { const b = M.block(id); return b && b.docId === pane.docId && b.status === 'live'; });
   },
   region(pane, poly) { const ids = PEN3.inside(pane, poly); if (!ids.length) return toast('Nothing inside the loop to make a region of');
-    const d = M.doc(pane.docId); DB.beginGroup(); const r = REGION.create(d, ids); toast(`Region of ${plural(ids.length, 'component')} — rename it on its tab`); return r; },
+    const d = M.doc(pane.docId); DB.beginGroup(); const r = REGION.create(d, ids); if (!r) return null; toast(`Region of ${plural(ids.length, 'component')} — rename it on its tab`); return r; },
   ask(pane, poly, x, y) {
     popover(x, y + 8, [h('h5', 'This loop…'), h('div.row', { style: { gap: '6px', padding: '0 6px 6px' } },
       h('button.btn.xs.pri', { on: { click: () => { closePop(); PEN3.region(pane, poly); } } }, '▭ Make a region'),

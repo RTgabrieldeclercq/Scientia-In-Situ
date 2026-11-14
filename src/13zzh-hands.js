@@ -201,7 +201,5 @@ const HANDS = {
   const ap = Paper.prototype.apply; Paper.prototype.apply = function () { const r = ap.apply(this, arguments); try { const host = this.el.closest('.canvas-host'); if (host) { const f = host.classList.contains('far'); host.classList.toggle('far', f ? this.view.z < .11 : this.view.z < .09); } } catch (e) { } return r; };   // V3.980: not at a line a zoom rests on
   // the pen's button, and its Settings
   if (document.readyState === 'complete') setTimeout(() => HANDS.watchPen(), 1500); else addEventListener('load', () => setTimeout(() => HANDS.watchPen(), 1500));
-  setTimeout(() => { if (typeof SettingsView === 'undefined' || !window.SIS_DESKTOP) return; const sr = SettingsView.render; SettingsView.render = function () { const out = sr.apply(this, arguments);
-    try { const h2 = [...out.querySelectorAll('.sec-h h2')].find(x => x.textContent === 'Keys'), sec = h2 && h2.closest('.sec-h'); const ui = HANDS.settingsUI(); if (sec) sec.before(ui); else out.append(ui); } catch (e) { console.warn('[hands]', e); }
-    return out; }; }, 0);
+  // V3.995: its settings are in Settings → Features → Pen & touch (20a-features.js), no longer appended to the page
 }

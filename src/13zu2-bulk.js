@@ -34,7 +34,7 @@ const BULK = {
   ids: () => BULK.blocks().map(b => b.id),
   doc: () => { const p = BULK.pane(); return p && M.doc(p.docId); },
   keep() { const sel = INK.sel; if (sel && typeof LASSO2 !== 'undefined' && LASSO2.keep) LASSO2.keep(sel); },
-  region(name) { const d = BULK.doc(), ids = BULK.ids().filter(id => !REGION.isRg(id)); if (!d || !ids.length) return; const r = REGION.create(d, ids); if (name) r.name = name; REGION.save(d); changed(); toast('Region ' + r.name + ' · name it from its header'); },
+  region(name) { const d = BULK.doc(), ids = BULK.ids().filter(id => !REGION.isRg(id)); if (!d || !ids.length) return; const r = REGION.create(d, ids); if (!r) return; if (name) r.name = name; REGION.save(d); changed(); toast('Region ' + r.name + ' · name it from its header'); },
   async moveTo() { const ids = BULK.ids(); if (!ids.length) return; const dest = await CMD.pick({ name: 'note', kind: 'note', ask: 'Move ' + plural(ids.length, 'component') + ' to…' }, '', CMD.ctx()); if (dest) BULK.move(ids, dest); },
   /** Move, then a stub where they were: "Moved to <note>", linked to the first of them. */
   async move(ids, dest) {
