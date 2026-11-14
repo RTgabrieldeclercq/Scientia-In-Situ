@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "555706e4dec205697de4a86cce5da7eef017300b",
-  "subject": "V3.993: Scientia — the website's equation captures reach the Lab Notebook; the Library reader captures and registers equations",
-  "date": "2026-11-13"
+  "commit": "cae730b461ee4adb4ce862b0e162a90aa6eee8ef",
+  "subject": "V3.994: Scientia — a bridge says where it comes from in a band; a component bridged to another note is green in its own note too",
+  "date": "2026-11-14"
  },
- "cut": "7b05753e9757639a2df4370510e0e89bcafa96a3",
+ "cut": "7abdf382898ccbe2820244a2dce4d463e382c7aa",
  "names": [
   "DESKLAB",
   "LABSYNC",

@@ -184,12 +184,26 @@ const DocView = {
     chips.push(...BINDS.chips(b), ...DAY.chips(b));
     return h('div.chips', chips);
   },
+  /** V3.994: where a bridge (or a pulled-in structure) comes from — a band at the top of its card instead of small dark text (Gabe: "Bridges should show their provenance more clearly"):
+   *  what it is (what: 'bridge' | 'passage' | 'pulled' | 'widget'), its note (click: go to the component there; Alt+click: beside), the component, the project and the day; ↗ opens it beside. Used by 13zzt and 13zx too. */
+  origin(d, ob, what, extra) {
+    const od = ob && M.doc(ob.docId), K = { bridge: '⇄ Bridged from', passage: '⇄ Passage from', pulled: '⇲ Pulled from', widget: '⇄ Bridged from' }[what] || '⇄ From';
+    if (!ob || !od) return h('div.origin.or-' + what + '.or-gone', h('div.or-top', h('span.or-k', K), h('span.or-note', 'a note that is no longer here')));
+    const cross = () => { try { if (d && d.id) BWAY.arm(d.id, ob.docId, 'l'); } catch (e) { } };
+    const path = M.docPath(od).split(' › ').slice(0, -1).join(' › ');
+    return h('div.origin.or-' + what,
+      h('div.or-top', h('span.or-k', K),
+        h('a.or-note', { title: M.docPath(od) + ' — click: go to it · Alt+click: open it beside', on: { click: e => { e.stopPropagation(); cross(); App.jump(ob.id, e); } } }, od.title || 'Untitled'),
+        h('span.or-cmp', M.blockName(ob)),
+        h('button.or-go', { type: 'button', title: 'Open “' + snippet(od.title || 'Untitled', 40) + '” beside this note', on: { click: e => { e.stopPropagation(); cross(); App.openSide(ob.id, e.currentTarget, false); } } }, '↗')),
+      h('div.or-path', [path, fmtDay(ob.created), extra].filter(Boolean).join(' · ')));
+  },
   refCard(b, d) {
-    const it = b.refItemId && M.item(b.refItemId), ob = M.block(b.refBlockId), od = ob && M.doc(ob.docId);
-    const origin = h('div.origin', it ? 'from ' : 'bridged from ', h('a', { title: 'Alt+click: open beside', on: { click: e => { if (!ob) return; BWAY.arm(d.id, ob.docId, 'l'); App.jump(ob.id, e); } } }, od ? M.docPath(od) : 'missing'), ob ? ' › ' + M.blockName(ob) : '', ' · ', ob ? fmtDay(ob.created) : '');
+    const it = b.refItemId && M.item(b.refItemId), ob = M.block(b.refBlockId);
+    const origin = this.origin(d, ob, it ? 'pulled' : 'bridge');
     if (it) {
       const st = IX.status(it), res = (IX.resolutions.get(it.id) || []).map(M.item).filter(Boolean);
-      return h('div.refbody', { style: { '--kc': `var(--k-${it.kind})` } }, h('div.row', kchip(it.kind), st ? h('span.pill' + (st === 'open' ? '.bad' : st === 'resolved' ? '.ok' : ''), st) : null), origin,
+      return h('div.refbody', { style: { '--kc': `var(--k-${it.kind})` } }, origin, h('div.row', kchip(it.kind), st ? h('span.pill' + (st === 'open' ? '.bad' : st === 'resolved' ? '.ok' : ''), st) : null),
         h('div.x.serif', h('span.st.st-' + it.kind + (st === 'closed' ? '.closed' : ''), it.text)),
         res.length ? h('div.res', res.map(r => h('div', '✓ ', snippet(r.text, 110), h('span.muted.mono', '  — ' + (M.doc(r.originDocId) || {}).title)))) : null,
         this.travel ? null : h('div.row', { style: { marginTop: '6px', gap: '6px' } },
@@ -197,7 +211,7 @@ const DocView = {
           it.kind === 'barrier' && st === 'resolved' ? h('button.btn.xs', { on: { click: () => { M.closeItem(it); toast('Closed — not offered for pulling any more; still searchable here'); } } }, 'Close barrier') : null,
           st === 'closed' ? h('span.tiny.muted', 'closed — still searchable here, no longer offered for pulling') : null));
     }
-    if (ob) { const pv = h('div.ed'); ED.render(pv, ob); pv.contentEditable = 'false'; return h('div.refbody', h('div.row', h('span.pill', 'component'), ob.label ? h('b', { style: { fontSize: '12.5px' } }, ob.label) : null), origin, pv); }
+    if (ob) { const pv = h('div.ed'); ED.render(pv, ob); pv.contentEditable = 'false'; return h('div.refbody', origin, pv); }   // V3.994: the band names the component (the "component" pill and label went)
     return h('div.refbody', 'Missing reference');
   },
   async resolveHere(refBlock, barrier) {

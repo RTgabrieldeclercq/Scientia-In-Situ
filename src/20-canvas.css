@@ -67,8 +67,7 @@ body.wiring .box .port{border-color:var(--mag)} body.wiring .box.cmp{cursor:cros
 .box .rz:hover{background:linear-gradient(to right,transparent 3px,var(--ink-4) 3px 5px,transparent 5px)}
 .box.ref{border-style:dashed;border-left-style:solid;background:color-mix(in srgb,var(--surface) 82%,var(--paper))}
 .refbody{padding:2px 14px 10px 13px}
-.refbody .origin{font-family:var(--f-m);font-size:10px;color:var(--ink-3);margin:4px 0}
-.refbody .origin a{cursor:pointer;color:var(--ink-2)}
+/* .refbody .origin: where a bridge comes from — V3.994, in 24-kinds.css */
 .refbody .x{font-size:15px;margin:4px 0 6px;line-height:1.55}
 .refbody .res{font-size:12.5px;color:var(--ok);font-family:var(--f-b)}
 .refbody .ed{padding:2px 0}
