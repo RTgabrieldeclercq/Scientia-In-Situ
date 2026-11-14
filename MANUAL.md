@@ -190,6 +190,8 @@ A note has a **header box** (title, type, profile fields, tags, ✎ for note det
 - **∑ Symbols:** Greek letters, mathematics, science (°C, µ, superscripts…), arrows and typography. Click one to type it. **☆** makes it a favourite, shown first next time; the **bolt** on a favourite makes it a button of its own in the bar.
 - **It steps aside** while a menu covers it: an Alt+click menu on a structure or a term, a hover card, the selection's bar. It comes back when the menu goes. Its own menus (∑, +) open clear of it. A hover card closes when a menu opens, and none opens over an open menu.
 
+**Letting a selection go.** A click anywhere else on the note — the paper, or a component you didn't select — lets go of a lasso or Ctrl+click selection; dragging to pan keeps it, and Ctrl or Shift add to it.
+
 **Copy and paste.** Paste lands at the centre of what you are looking at, on top of what is there, until you move it — so do a PDF, an HTML file or anything else you insert (Settings → Features → Writing in components: or where the pointer was, making room).
 - **Text copied inside a component** remembers where it came from. Paste it on another note's canvas (click the paper, then Ctrl+V) and **just those words** are **bridged** there (see *Node bridges*): an **excerpt**, live, that shows only that passage of the component, with its terms and structures, a caption under it asking why, and the band at its top (**Passage from** the note) opens the original. When the original's words change, so does the excerpt; text added before it does not lose it; if the passage is deleted from the original, the excerpt keeps showing it as it read and says so. Copy the whole text and the whole component is bridged. Paste on the same note, or with **Ctrl+Shift+V** anywhere, and it is a copy, with its structures, terms and styles.
 - **Text copied from a PDF or an HTML page**, pasted on a canvas, becomes a quote wired to the file. Any other text pasted on a canvas becomes a new component.
@@ -314,6 +316,8 @@ The same strip has three more keys: `/` reuses an existing structure, **W** mark
   - terms that share a box are pulled in, in their own colours (toggle them in the side panel);
   - click a box's header to open that note. **Export chain** writes this board.
 - A component inside a **region** gives its term "secondary sources": the region's other components, shown as a dashed card.
+
+**Lit reviews aren't counted.** The Terms tab and a term's page leave out mentions in lit reviews; a term used only there isn't listed (Settings → Features → Terms → Mentions in lit reviews counts them).
 
 ### Terms in one note
 - **+ Insert → Term in this note…** (or `/noteterm`) makes a term that lives in this note only. Type how it is written; add its other forms on the component (**+ another way it is written**, Enter). Forms follow the same rules as a term's other forms: with capitals they match only with those capitals.
