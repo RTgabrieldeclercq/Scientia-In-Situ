@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "66c4da5d13f0ee0590b4581dde6cf7b755fef2e0",
-  "subject": "V3.1002: Scientia — the reader beside a note as tabs (any note's PDFs and HTML pages, + to open more), split up to 2×2; Cited in while you read; a quote shows where it is from in a band, and a bridged quote carries both bands",
+  "commit": "791a29e0a7fe40f29ea11677ea85478694f99584",
+  "subject": "V4.2: Scientia — the reader beside a note as tabs (any note's PDFs and HTML pages, + to open more), split up to 2×2; Cited in while you read; a quote shows where it is from in a band, and a bridged quote carries both bands",
   "date": "2026-11-14"
  },
- "cut": "2bfde8e278ec892d0563c948466511a5057a6c59",
+ "cut": "131f96c097983f061f631014c684d0ef87ea4412",
  "names": [
   "DESKLAB",
   "LABSYNC",

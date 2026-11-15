@@ -1,5 +1,5 @@
 /* ==========================================================================
-   17e · Reading across notes (V3.1002 — Gabe: "The origin note of the
+   17e · Reading across notes (V4.2 — Gabe: "The origin note of the
    embedded paper or HTML brings you to it when you switch tabs when you are
    in the beside view. Papers that are cited in other notes are brought up as
    a choice for where to navigate when you are reading it." · "A quote from a

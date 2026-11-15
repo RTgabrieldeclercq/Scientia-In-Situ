@@ -1,5 +1,5 @@
 /* ==========================================================================
-   14f · The Atlas on three axes (V3.1000 — Gabe: "I want the Atlas to keep
+   14f · The Atlas on three axes (V4.0 — Gabe: "I want the Atlas to keep
    its 3D nature with a set of three axes defined by how they categorize or
    sort what you see. For example, one of the axes could be timeline (oldest
    notes start at the origin and continues growing). The Atlas dots

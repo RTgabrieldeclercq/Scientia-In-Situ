@@ -1,4 +1,4 @@
-/* ---------- 14f · the Atlas on three axes (V3.1000): a room in 3D, each axis sorting by one thing; dots are glass beads that open into the term page's bubbles ---------- */
+/* ---------- 14f · the Atlas on three axes (V4.0): a room in 3D, each axis sorting by one thing; dots are glass beads that open into the term page's bubbles ---------- */
 :root{--a3-component:#A87C00;--a3-panel:#A87C00;--a3-page:#8C6D3F;--a3-data:#2F6FB0;--a3-note:#3F7FD0;--a3-term:#4E9A2E;--a3-paper:#D9822B;--a3-person:#7C5CD6;--a3-ax0:var(--teal);--a3-ax1:var(--mag);--a3-ax2:#8A5A00}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--a3-component:#D9B04A;--a3-panel:#D9B04A;--a3-page:#C4A276;--a3-data:#7FA9DA;--a3-note:#86AEE6;--a3-term:#8DC46F;--a3-paper:#EBAE70;--a3-person:#AE97EA;--a3-ax2:#D9A64A}}
 :root[data-theme="dark"]{--a3-component:#D9B04A;--a3-panel:#D9B04A;--a3-page:#C4A276;--a3-data:#7FA9DA;--a3-note:#86AEE6;--a3-term:#8DC46F;--a3-paper:#EBAE70;--a3-person:#AE97EA;--a3-ax2:#D9A64A}
@@ -108,7 +108,7 @@
   .atlas.a3 .at-q{width:170px}
 }
 @media (prefers-reduced-motion:reduce){.a3-ob .bb-pop{animation:none}}
-/* ---------- Gabe's notes on the Atlas (V3.1000): resting on a dot opens it (a ring closes in meanwhile); a thread's popup ---------- */
+/* ---------- Gabe's notes on the Atlas (V4.0): resting on a dot opens it (a ring closes in meanwhile); a thread's popup ---------- */
 .a3-dot::before{content:"";position:absolute;left:0;top:0;width:calc(var(--rs,10px) * 2 + 10px);height:calc(var(--rs,10px) * 2 + 10px);border-radius:50%;border:1.6px solid var(--kc);pointer-events:none;transform:translate(-50%,-50%);opacity:0}
 .a3-dot.wait::before{opacity:.9;animation:a3wait var(--hd,1s) linear both}
 @keyframes a3wait{from{opacity:0;transform:translate(-50%,-50%) scale(1.75)}to{opacity:.9;transform:translate(-50%,-50%) scale(1)}}
@@ -138,7 +138,7 @@
 .a3-tk.rul{background:color-mix(in srgb,var(--paper) 90%,transparent);box-shadow:0 0 0 1px var(--rule);color:var(--ink)}
 /* a bridge's copy in its note: the bridges' green band round its bead */
 .a3-dot.brc .a3-bd{outline:2px solid var(--bridge);outline-offset:1px}
-/* V3.1000 (third round): the thread's popup is big — over most of the room, centred (a phone: all of it) — and each end is a large bubble; the list below, the popup scrolling */
+/* V4.0 (third round): the thread's popup is big — over most of the room, centred (a phone: all of it) — and each end is a large bubble; the list below, the popup scrolling */
 .a3-tp{left:6%;top:6%;width:88%;height:88%;max-height:none;display:flex;flex-direction:column;gap:10px;padding:12px 16px 14px}
 .a3-tp.narrow{left:8px;right:8px;top:8px;bottom:8px;width:auto;height:auto}
 .a3-tp .a3-tpr{grid-template-columns:minmax(0,1fr) 80px minmax(0,1fr);align-items:start;gap:6px;flex:none}

@@ -25,7 +25,7 @@
      bubble), onPort(glass, e), flat (true: a plain tray; false: glass even
      with Term bubbles off; unset: follows Term bubbles), ring: { on, ms }
      (the pointing ring for this bubble, instead of Term bubbles' own) }.
-     el._g is its geometry. (V3.1000: flat false and ring, for the Atlas.)
+     el._g is its geometry. (V4.0: flat false and ring, for the Atlas.)
    • BUBBLE.warp(D) → the id of the SVG filter that bends a disc of diameter
      D at its rim (one per size, 8 px steps; strength: Settings → Term
      bubbles → Glass).

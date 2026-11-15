@@ -1,5 +1,5 @@
 /* ==========================================================================
-   17e · Library search, and a paper's reading state (V3.1001 — Gabe: "The
+   17e · Library search, and a paper's reading state (V4.1 — Gabe: "The
    search in the library should be updated to be better and have more ways to
    search").
    One query language (field:value, "a phrase", -word, added:7d), with

@@ -14,7 +14,7 @@
    V3.945 — an HTML page reads beside the note too (the book on its card,
    "◧ Beside" when maximised): the page itself, its highlights and notes,
    ⇄, ⤢ and Close; its own tools (✎ Note, Export ink labels) come from 13zze.
-   V3.1002 (Gabe: "You may have multiple tabs of papers opened at once with a
+   V4.2 (Gabe: "You may have multiple tabs of papers opened at once with a
    + button beside a new tab bar in the reader, which applies to HTMLs too";
    "You can split the beside view to two beside views based on reading tabs
    that you have opened (up to 2x2, just like the feature in the notes)"):
@@ -306,7 +306,7 @@ const RDOCK = {
     if (b && b.kind === 'html' && !RDOCK.phone()) { const ov = [...$$('.embed-max:not(.rd-dock)')].pop(), x = ov && [...$$('.em-bar button', ov)].find(z => /Close/.test(z.textContent));
       if (x) x.before(h('button.btn.sm', { title: 'Read it beside the note — the page in half the screen', on: { click: e => { e.stopPropagation(); x.click(); RDOCK.open(M.block(b.id)); } } }, '◧ Beside')); }
     return r; };
-  // V3.1002 — a page in a pane is filled as that pane's page, even when two panes draw in the same moment
+  // V4.2 — a page in a pane is filled as that pane's page, even when two panes draw in the same moment
   const qf = QUOTE.fill; QUOTE.fill = function (fr, rec, srcId) { return qf.call(this, fr, rec, (fr && fr._rdSrc) || srcId); };
   // "from …" on a quote, and "on the note" in the highlights list, stay with the paper beside
   const qg = QUOTE.goto; QUOTE.goto = function (q) { const p = q && q.quote && RDOCK.paneOf(q.quote.src); if (p) return MXHL.goto(p.id, q); return qg.apply(this, arguments); };

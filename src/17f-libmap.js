@@ -1,5 +1,5 @@
 /* ==========================================================================
-   17f · The shelf map and a paper's sheet (V3.1001 — Gabe: shelves and foci
+   17f · The shelf map and a paper's sheet (V4.1 — Gabe: shelves and foci
    should "display its organization better").
    LMAP — the Library as shelves you can see: each shelf a board in its own
    colour (17d), its foci standing on it as rows of spines, one spine per
