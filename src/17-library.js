@@ -22,8 +22,13 @@ const LibraryView = {
      on a shelf, a focus or a facet puts its words in the box. Map or list (Settings → Shelf map: Auto shows the map
      with nothing typed and the list once you search). Keyboard: Ctrl+F searches, ↑ ↓ through the results, Enter opens
      the paper's sheet, Esc clears. With Library search off: the plain filter and the tree's selection, as before. */
-  view: null, adding: false, act: 0, full: false, inside: null, sort: null, el: null, inp: null, sugL: null, sugI: 0, sugFrom: 0,
+  view: null, adding: null, act: 0, full: false, inside: null, sort: null, el: null, inp: null, sugL: null, sugI: 0, sugFrom: 0,
   query: () => LibraryView.q || '',
+  /** V4.3 — what a build adds to this page (none in this app; a build can add its own): { meta(all) → the title line, eyebrow, stand, addersOpen, panel() → an element under the adders,
+      sections(R) → [{ title, cls, rows, empty, note }] (the list in groups), card(r, f) → { cls, attrs, side: [buttons] (instead of Read / + PDF / logo), extra: [elements] },
+      sheet(r, f) → { acts: [buttons] (instead of Read / + PDF), secs: [elements] }, facets(R) → [{ title, opts: [[words, label, n]] }] }. */
+  ext: null,
+  hook(x) { LibraryView.ext = x || null; if (LibraryView.el && LibraryView.el.isConnected) { App._mounted = false; App.refresh(); } return LibraryView; },
   on: () => typeof FEAT === 'undefined' || FEAT.on('libsearch'),
   mapOn: () => typeof FEAT === 'undefined' || FEAT.on('libmap'),
   insideOn: () => LibraryView.inside != null ? LibraryView.inside : FEAT.tune('libsearch', 'inside') !== false,
@@ -43,14 +48,15 @@ const LibraryView = {
     return LSEARCH.sort(LSEARCH.run(LibraryView.q, { inside: LibraryView.insideOn(), text: LibraryView.full }), LibraryView.sortBy());
   },
   render() {
-    const on = LibraryView.on(), all = DB.all('library'), meta = plural(all.length, 'entry', 'entries') + ' · ' + all.filter(r => r.pdf).length + ' with PDFs · ' + all.filter(r => (IX.citations.get(r.id) || []).length).length + ' cited in notes';
-    App.setTitle('Library', [h('span', meta + ' · global — owned by no project')]);
-    const adding = LibraryView.adding || !all.length;
-    const page = h('div.page.lib-page', h('div.lib-top', h('div', h('div.eyebrow', 'Global'), h('h1.title', 'Library'), h('div.tiny.mono.muted', meta)),
+    const on = LibraryView.on(), X = LibraryView.ext || {}, all = DB.all('library'), meta = X.meta ? X.meta(all) : plural(all.length, 'entry', 'entries') + ' · ' + all.filter(r => r.pdf).length + ' with PDFs · ' + all.filter(r => (IX.citations.get(r.id) || []).length).length + ' cited in notes';
+    App.setTitle('Library', [h('span', X.meta ? meta : meta + ' · global — owned by no project')]);
+    const adding = LibraryView.adding != null ? LibraryView.adding : (!all.length || !!X.addersOpen);
+    const page = h('div.page.lib-page', h('div.lib-top', h('div', h('div.eyebrow', X.eyebrow || 'Global'), h('h1.title', 'Library'), h('div.tiny.mono.muted', meta)),
         h('div.row', h('button.btn' + (adding ? '.on' : ''), { title: 'Add a paper by DOI, a pasted citation or a link', on: { click: () => { LibraryView.adding = !adding; App._mounted = false; App.refresh(); } } }, adding ? '− Add' : '+ Add'),
           h('button.btn', { title: 'New paper shelf', on: { click: () => LGROUP.addTheme() } }, '+ Shelf'))),
-      h('p.stand', 'Papers and links, owned by no project and citable from all of them. Shelves hold foci, foci hold papers' + (LGROUP.smartOn() ? '; a smart focus ✶ is a saved search that fills itself' : '') + '.'),
+      h('p.stand', X.stand || 'Papers and links, owned by no project and citable from all of them. Shelves hold foci, foci hold papers' + (LGROUP.smartOn() ? '; a smart focus ✶ is a saved search that fills itself' : '') + '.'),
       adding ? LibraryView.adders() : null,
+      X.panel ? X.panel() : null,
       on ? LibraryView.searchBar() : h('input.inp.lib-filter', { placeholder: 'Filter by author, year, journal, title…', value: LibraryView.q, style: { width: '100%', marginTop: '14px' }, on: { input: debounce(e => { LibraryView.q = e.target.value; LibraryView.draw(); }, 120) } }),
       h('div.lib-facets'),
       h('div.lib-wrap', h('div.lib-sidehost'), h('div.lib-main', h('div.sec-h.lib-mh'), h('div.lib-view'))));
@@ -84,8 +90,10 @@ const LibraryView = {
   },
   /* ---------- drawing (everything but the search box, so typing keeps its place) ---------- */
   draw() {
-    const P = LibraryView.el; if (!P) return; const on = LibraryView.on(), R = LibraryView.results(), q = !!LibraryView.q.trim(), view = LibraryView.curView();
-    LibraryView._R = R; LibraryView.act = Math.min(LibraryView.act, Math.max(0, R.length - 1));
+    const P = LibraryView.el; if (!P) return; const on = LibraryView.on(), X = LibraryView.ext || {}, R = LibraryView.results(), q = !!LibraryView.q.trim(), view = LibraryView.curView();
+    const S = view === 'list' && X.sections ? X.sections(R) : null, RR = S ? S.flatMap(s => s.rows) : R;   // V4.3: a build's own groups, if it adds them
+    LibraryView._R = RR; LibraryView.act = Math.min(LibraryView.act, Math.max(0, RR.length - 1));
+    if (on && q && LSEARCH.sources.length && (LibraryView.insideOn() || /(^|\s)-?(hl|highlight|quote|note):/i.test(LibraryView.q))) LSEARCH.warm(DB.all('library'));   // V4.3: what an added source still has to fetch
     if (on && /(^|\s)-?text:/i.test(LibraryView.q) && !LSEARCH.textsReady() && !LibraryView._loading) { LibraryView._loading = true; const ld = $('.lib-load', P); LSEARCH.loadTexts((k, N) => { if (ld) ld.textContent = ' reading the PDFs… ' + k + ' / ' + N; }).then(() => { LibraryView._loading = false; if (ld) ld.textContent = ''; LibraryView.draw(); }); }   // text: reads the PDFs' words once
     const sh = $('.lib-sidehost', P); if (sh) sh.replaceChildren(LGROUP.side());
     if (on) LibraryView.drawToks(); const fc = $('.lib-facets', P); if (fc) fc.replaceChildren(...(on && FEAT.tune('libsearch', 'facets') !== false && DB.all('library').length ? LibraryView.facets(R) : []));
@@ -95,6 +103,7 @@ const LibraryView = {
       LibraryView.mapOn() ? h('div.seg.lib-vseg', { role: 'group', 'aria-label': 'View' }, [['map', 'Shelves'], ['list', 'List']].map(([k, l]) => h('button' + (view === k ? '.on' : ''), { type: 'button', 'aria-pressed': String(view === k), on: { click: () => { LibraryView.view = k; LibraryView.draw(); } } }, l))) : null);
     const vh = $('.lib-view', P); if (!vh) return;
     if (view === 'map') vh.replaceChildren(LMAP.render(R, on ? q : !!(LibraryView.q.trim() || LGROUP.sel)));
+    else if (S) { let i = 0; vh.replaceChildren(...S.flatMap(s => [h('div.sec-h.lib-sh', h('h2', s.title), h('span.k', String(s.rows.length)), s.note ? h('span.r.tiny.muted', s.note) : null), h('div.list.lib-list' + (s.cls ? '.' + s.cls : ''), s.rows.length ? s.rows.map(x => LibraryView.card(x.r, x, i++)) : h('div.empty', s.empty || 'Nothing matches'))])); }
     else vh.replaceChildren(R.length ? h('div.list.lib-list', R.map((x, i) => LibraryView.card(x.r, x, i))) : h('div.empty', total ? 'Nothing matches.' + (on ? ' Remove a part of the search' + (FEAT.tune('libsearch', 'pdftext') !== false && !LibraryView.full ? ', or tick “Inside the PDFs’ text”' : '') + '.' : '') : 'Nothing in the library yet — + Add a paper by DOI or a pasted citation.'));
   },
   drawToks() {
@@ -107,7 +116,7 @@ const LibraryView = {
   facets(R) {
     const F = LSEARCH.facets(R), cur = new Set(LSEARCH.parse(LibraryView.q).map(LSEARCH.unparse)), mx = Math.max(1, ...F.bins.map(b => b.n));
     const opts = list => h('div.lf-opts', list.filter(x => x[2] > 0).map(([tok, label, n]) => h('button' + (cur.has(tok) ? '.on' : ''), { type: 'button', on: { click: () => LibraryView.toggleTok(tok) } }, h('span', label), h('em', String(n)))));
-    const out = [];
+    const out = ((LibraryView.ext && LibraryView.ext.facets && LibraryView.ext.facets(R)) || []).map(fc => h('div.lf', h('h4', fc.title), opts(fc.opts)));   // V4.3: a build's own facets, if it adds them
     if (F.bins.length > 1) out.push(h('div.lf', h('h4', 'Year'), h('div.lf-yh', { role: 'group', 'aria-label': 'Papers by year' }, F.bins.map(b => h('button' + (b.n ? '' : '.off'), { type: 'button', title: (b.a === b.z ? b.a : b.a + '–' + b.z) + ': ' + plural(b.n, 'paper'), style: { height: Math.max(3, b.n / mx * 44) + 'px' }, on: { click: () => b.n && LibraryView.toggleTok('year:' + (b.a === b.z ? b.a : b.a + '-' + b.z)) } }))), h('div.lf-yx', h('span', String(F.y0)), h('span', String(F.y1)))));
     if (LGROUP.readOn()) out.push(h('div.lf', h('h4', 'Reading'), opts(F.states.map(([k, n]) => ['is:' + k, { unread: 'Not opened', reading: 'Reading', read: 'Read', annotated: 'Highlighted', cited: 'Cited in notes' }[k], n]))));
     else out.push(h('div.lf', h('h4', 'In notes'), opts(F.states.filter(x => x[0] === 'annotated' || x[0] === 'cited').map(([k, n]) => ['is:' + k, k === 'cited' ? 'Cited in notes' : 'Highlighted', n]))));
@@ -145,16 +154,18 @@ const LibraryView = {
   card(r, x, i) {
     const f = (x && x.f) || LSEARCH.facts(r), W = (x && x.why) || [], tw = W.find(w => w.f === 'title'), why = W.filter(w => !/^(title|year|state|kind|added|author|journal|shelf|focus)$/.test(w.f));
     const flag = M.flagFor('library', r.id), st = LIBSTATE.of(r, f), stOn = LGROUP.readOn() && FEAT.tune('libread', 'cards') !== false, title = r.title || r.url || 'Untitled';
-    return h('div.libcard' + (i != null && i === LibraryView.act ? '.act' : ''), { 'data-i': i == null ? '' : i, 'data-id': r.id, draggable: 'true',
-      on: { dragstart: e => { e.dataTransfer.setData('text/x-sis-paper', r.id); e.dataTransfer.effectAllowed = 'copy'; }, click: e => { if (e.target.closest('a, button, input, label, .lg-chips')) return; if (i != null) LibraryView.act = i; LSHEET.open(r); } } },
+    const ex = (LibraryView.ext && LibraryView.ext.card && LibraryView.ext.card(r, f)) || {};   // V4.3: a build's own actions, if it adds them
+    const flagBtn = h('button.btn.xs' + (flag ? '.on' : ''), { title: 'Flag for review', on: { click: () => M.toggleFlag('library', r.id) } }, flag ? '⚑' : '⚐'), stPill = stOn ? h('span.lib-st.lib-st-' + st, LIBSTATE.LABEL[st]) : null;
+    return h('div.libcard' + (ex.cls ? '.' + ex.cls : '') + (i != null && i === LibraryView.act ? '.act' : ''), Object.assign({ 'data-i': i == null ? '' : i, 'data-id': r.id, draggable: 'true',
+      on: { dragstart: e => { e.dataTransfer.setData('text/x-sis-paper', r.id); e.dataTransfer.effectAllowed = 'copy'; }, click: e => { if (e.target.closest('a, button, input, label, .lg-chips')) return; if (i != null) LibraryView.act = i; LSHEET.open(r); } } }, ex.attrs || {}),
       LIB.sigil(r), h('div', { style: { minWidth: 0 } }, LGROUP.chips(r),
         h('div.ti', r.kind === 'link' ? h('a', { href: r.url, target: '_blank', rel: 'noopener' }, tw ? LSEARCH.mark(title, tw.v, 400) : title) : (tw ? LSEARCH.mark(title, tw.v, 400) : title)),
         h('div.au', LIB.apaAuthors(r.authors), r.container ? [' — ', h('i', LIB.journal(r.container))] : '', r.year ? ', ' + r.year : ''),
         why.length ? h('div.lib-why', why.slice(0, 3).map(w => h('div', h('b', w.f), h('span', LSEARCH.mark(w.s, w.v))))) : h('div.apa', LIB.apa(r)),
         f.cites.length ? h('div.row', { style: { marginTop: '6px' } }, h('span.tiny.mono.muted', 'cited in'), f.cites.slice(0, 4).map(d => h('a.btn.xs', { href: '#/doc/' + d.id }, d.title || 'Untitled')), f.cites.length > 4 ? h('span.tiny.muted', '+' + (f.cites.length - 4)) : null) : null),
-      h('div.lib-cside', stOn ? h('span.lib-st.lib-st-' + st, LIBSTATE.LABEL[st]) : null, h('span.pill', r.kind || 'paper'),
+      ex.side ? h('div.lib-cside', stPill, ...ex.side, flagBtn) : h('div.lib-cside', stPill, h('span.pill', r.kind || 'paper'), ...(ex.extra || []),
         r.kind !== 'link' ? (r.pdf ? h('a.btn.xs.pri', { href: '#/read/' + r.id, title: plural(f.hl.length, 'highlight') }, '📄 Read' + (f.hl.length ? ' · ' + f.hl.length : '')) : h('button.btn.xs', { on: { click: () => READER.attach(r) } }, '+ PDF')) : null,
-        h('button.btn.xs' + (flag ? '.on' : ''), { title: 'Flag for review', on: { click: () => M.toggleFlag('library', r.id) } }, flag ? '⚑' : '⚐'),
+        flagBtn,
         r.kind !== 'link' ? h('button.btn.xs.ghost', { title: 'Use your own logo for this journal (stored locally, reused by every paper in it)', on: { click: () => LIB.setLogo(r) } }, LIB.logoFor(r) ? 'logo ✓' : 'logo…') : null));
   },
   addDialog(txt) {

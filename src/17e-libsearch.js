@@ -22,6 +22,11 @@
    unread one "reading" (Settings → Reading state).
    LIB.search keeps its plain behaviour; a query with fields goes through here,
    so the citation picker understands author: and year: too.
+   V4.3 — sources: a build can add what it knows about a paper (highlights made
+   elsewhere, a PDF it fetched, its own cards in notes) with
+   LSEARCH.addSource({ pdfs, hl, embeds, warm }), and words for is: with
+   LSEARCH.addIs(word, test, hint). This app adds none; warm() fetches
+   what is not here yet; LSEARCH.warm(papers) asks every source.
    ========================================================================== */
 const LIBSTATE = {
   LABEL: { unread: 'Not opened', reading: 'Reading', read: 'Read' },
@@ -58,6 +63,15 @@ const LSEARCH = {
 
   /* ---------- what each paper holds (built once, again when the notebook changes) ---------- */
   _ix: null, _sig: '', _smart: new Map(), _depth: 0,
+  /** V4.3 — other sources of what a paper holds. Each: { pdfs(r, ctx) → media ids that are this paper's PDF too, hl(r, ctx) → [{ page, text, color?, hex?, by?, open? }],
+      embeds(r, ctx) → [blocks that show it in a note], warm(papers, done) → fetch what isn't here yet, then done() }. ctx: one object per index build, for a source's own lookups. */
+  sources: [], moreIs: {},
+  addSource(src) { if (src && !LSEARCH.sources.includes(src)) LSEARCH.sources.push(src); LSEARCH.bust(); return src; },
+  addIs(word, test, hint) { LSEARCH.moreIs[word] = { test, hint: hint || '' }; if (!LSEARCH.IS.includes(word)) LSEARCH.IS.push(word); },
+  /** Ask the sources for what they don't have yet about these papers; when more comes, the index is rebuilt and the page redrawn. */
+  warm(papers) { const rs = (papers || []).filter(Boolean); if (!rs.length) return; LSEARCH.sources.forEach(src => { if (typeof src.warm !== 'function') return; try { src.warm(rs, () => { LSEARCH.bust(); LSEARCH._redraw(); }); } catch (e) { console.warn('[libsearch] warm', e); } }); },
+  _redraw: debounce(() => { try { if (typeof LibraryView !== 'undefined' && LibraryView.el && LibraryView.el.isConnected) LibraryView.draw(); if (typeof LSHEET !== 'undefined' && LSHEET.id) LSHEET.redraw(); } catch (e) { } }, 250),
+  from(fn, r, ctx) { const out = []; LSEARCH.sources.forEach(src => { if (typeof src[fn] !== 'function') return; try { const v = src[fn](r, ctx); if (v && v.length) out.push(...v); } catch (e) { console.warn('[libsearch] source', fn, e); } }); return out; },
   bust() { LSEARCH._ix = null; LSEARCH._smart = new Map(); },
   sig: () => ['library', 'libsets', 'blocks', 'documents', 'items', 'flags'].map(s => DB.all(s).length).join(':') + ':' + (IX.citations ? IX.citations.size : 0),
   index() {
@@ -68,16 +82,17 @@ const LSEARCH = {
     DB.where('blocks', b => b.kind === 'pdf' && b.media && b.status === 'live').forEach(b => { embeds.set(b.id, b); push(embBy, b.media, b); });
     DB.where('blocks', b => b.quote && b.quote.src && b.status === 'live').forEach(q => { const e = embeds.get(q.quote.src); if (e) push(quotesBy, e.media, q); });
     DB.where('items', it => it.sourceRef && it.sourceRef.type === 'library' && it.sourceRef.id).forEach(it => push(itemsBy, it.sourceRef.id, it));
-    const F = new Map();
+    const F = new Map(), ctx = {};
     for (const r of DB.all('library')) {
       const d = lit.get(r.id), hlb = d ? M.liveBlocks(d.id).filter(b => b.anchor && b.anchor.source === r.id && b.status !== 'removed') : [];
       const txt = b => (b && b.body && b.body.text) || '';
-      const hl = hlb.map(b => ({ b, page: b.anchor.page, text: txt(b) }));
+      const hl = hlb.map(b => ({ b, page: b.anchor.page, text: txt(b) })).concat(LSEARCH.from('hl', r, ctx).map(x => Object.assign({ ext: true }, x, { text: x.text || '' })));
+      const pdfs = [...new Set([r.pdf, ...LSEARCH.from('pdfs', r, ctx)].filter(Boolean))];
       const notes = hlb.flatMap(b => (typeof READER.notesOf === 'function' ? READER.notesOf(b) : []).map(n => ({ b: n, page: b.anchor.page, text: txt(n) })))
         .concat((itemsBy.get(r.id) || []).map(it => ({ it, page: it.sourceRef.page || null, text: it.text || '' })));
-      const quotes = ((r.pdf && quotesBy.get(r.pdf)) || []).map(q => ({ b: q, page: q.quote.page || null, text: q.quote.exact || txt(q), doc: M.doc(q.docId) }));
+      const quotes = pdfs.flatMap(m => quotesBy.get(m) || []).map(q => ({ b: q, page: q.quote.page || null, text: q.quote.exact || txt(q), doc: M.doc(q.docId) }));
       const citeIds = IX.citations.get(r.id) || [], cites = [...new Set(citeIds.map(id => (M.block(id) || {}).docId).filter(Boolean))].map(M.doc).filter(Boolean);
-      F.set(r.id, { r, hl, notes, quotes, cites, citeIds, embeds: (r.pdf && embBy.get(r.pdf)) || [] });
+      F.set(r.id, { r, hl, notes, quotes, cites, citeIds, embeds: pdfs.flatMap(m => embBy.get(m) || []).concat(LSEARCH.from('embeds', r, ctx)) });
     }
     LSEARCH._ix = F; LSEARCH._sig = s; LSEARCH._smart = new Map(); return F;
   },
@@ -106,11 +121,13 @@ const LSEARCH = {
     if ((m = v.match(/^(\d{4})-(\d{2})$/))) return String(r.added || '').slice(0, 7) === m[1] + '-' + m[2]; return true; },
   state(f) { return LIBSTATE.of(f.r, f); },
   inside(f, v) {
-    const has = LSEARCH.has, hl = f.hl.find(x => has(x.text, v)); if (hl) return { f: 'highlight · p. ' + hl.page, s: hl.text, b: hl.b };
+    const has = LSEARCH.has, hl = f.hl.find(x => has(x.text, v)); if (hl) return { f: LSEARCH.hlLabel(hl), s: hl.text, b: hl.b, x: hl };
     const q = f.quotes.find(x => has(x.text, v)); if (q) return { f: 'quote · ' + ((q.doc && q.doc.title) || 'a note'), s: q.text, b: q.b };
     const n = f.notes.find(x => has(x.text, v)); if (n) return { f: n.it ? 'structure' : 'note' + (n.page ? ' · p. ' + n.page : ''), s: n.text, b: n.b };
     return null;
   },
+  /** "highlight · p. 4", or a source's own (V4.3: an added source names itself, e.g. "… highlight · p. 3 · who made it"). */
+  hlLabel: x => (x.src ? x.src + ' highlight' : 'highlight') + (x.page != null ? ' · p. ' + x.page : '') + (x.by ? ' · ' + x.by : ''),
   inText(r, v) { const T = typeof RD2 !== 'undefined' && RD2._texts && RD2._texts.get(r.id); if (!T) return null; for (let i = 0; i < T.length; i++) if (T[i].toLowerCase().includes(v)) return { f: 'pdf · p. ' + (i + 1), s: T[i] }; return null; },
   test(f, t, opt) {
     const r = f.r, v = t.v, has = LSEARCH.has, R = (k, s, x) => Object.assign({ f: k, s: String(s == null ? '' : s) }, x || {});
@@ -134,7 +151,7 @@ const LSEARCH = {
       case 'shelf': { const g = LSEARCH.fociOf(r).find(g => { const th = g.themeId && LGROUP.get(g.themeId); return th && has(th.name, v); }); return g ? R('shelf', LGROUP.get(g.themeId).name) : null; }
       case 'focus': { const g = LSEARCH.fociOf(r).find(g => has(LSEARCH.fpath(g), v) || has(g.name, v)); return g ? R('focus', LSEARCH.fpath(g)) : null; }
       case 'cited': { const d = f.cites.find(d => has(d.title, v) || has(M.docPath ? M.docPath(d) : d.title, v)); return d ? R('cited in', d.title || 'Untitled', { doc: d }) : null; }
-      case 'hl': { const x = f.hl.find(x => has(x.text, v)); return x ? R('highlight · p. ' + x.page, x.text, { b: x.b }) : null; }
+      case 'hl': { const x = f.hl.find(x => has(x.text, v)); return x ? R(LSEARCH.hlLabel(x), x.text, { b: x.b, x }) : null; }
       case 'quote': { const x = f.quotes.find(x => has(x.text, v)); return x ? R('quote · ' + ((x.doc && x.doc.title) || 'a note'), x.text, { b: x.b }) : null; }
       case 'note': { const x = f.notes.find(x => has(x.text, v)); return x ? R(x.it ? 'structure' : 'note', x.text, { b: x.b }) : null; }
       case 'text': return LSEARCH.inText(r, v);
@@ -142,7 +159,7 @@ const LSEARCH = {
       case 'kind': return (r.kind || 'paper') === v ? R('kind', v) : null;
       case 'is': {
         const st = LSEARCH.state(f), ok = { unread: st === 'unread', reading: st === 'reading', read: st === 'read', annotated: f.hl.length > 0, cited: f.cites.length > 0, uncited: !f.cites.length, unfiled: !LSEARCH.fociOf(r).length,
-          pdf: !!r.pdf, nopdf: !r.pdf, link: r.kind === 'link', paper: r.kind !== 'link', preprint: !!r.isPreprint, flagged: !!M.flagFor('library', r.id) }[v];
+          pdf: !!r.pdf, nopdf: !r.pdf, link: r.kind === 'link', paper: r.kind !== 'link', preprint: !!r.isPreprint, flagged: !!M.flagFor('library', r.id) }[v] || (LSEARCH.moreIs[v] ? !!LSEARCH.moreIs[v].test(r, f) : false);
         return ok ? R('state', v) : null; }
     }
     return null;
@@ -190,7 +207,7 @@ const LSEARCH = {
       const f = LSEARCH.FIELDS[m[2].toLowerCase()], v = m[4].replace(/^"/, '').toLowerCase(), L0 = [];
       if (f === 'shelf') LGROUP.themes().forEach(t => L0.push([t.name, plural(LGROUP.groups(t.id).length, 'focus', 'foci')]));
       else if (f === 'focus') LGROUP.allGroups().forEach(g => L0.push([LSEARCH.fpath(g), plural(LSEARCH.members(g).size, 'paper')]));
-      else if (f === 'is') LSEARCH.IS.forEach(x => L0.push([x, '']));
+      else if (f === 'is') LSEARCH.IS.forEach(x => L0.push([x, (LSEARCH.moreIs[x] || {}).hint || '']));
       else if (f === 'journal') [...new Set(DB.all('library').map(r => r.container).filter(Boolean))].forEach(x => L0.push([x, '']));
       else if (f === 'author') [...new Set(DB.all('library').flatMap(r => (r.authors || []).map(a => a.family).filter(Boolean)))].forEach(x => L0.push([x, '']));
       else if (f === 'cited') [...new Set([].concat(...[...LSEARCH.index().values()].map(x => x.cites)))].forEach(d => L0.push([d.title || 'Untitled', 'a note']));
