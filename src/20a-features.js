@@ -232,7 +232,7 @@ const PV = {
     preview: () => { const m = settings().citeMode, c = m === 'author' ? '(Style et al., 2014)' : m === 'number' ? '[3]' : 'Traction force microscopy in physics and biology';
       return [PV.box({ num: 'Block', label: 'Background', body: ['Cells pull on soft gels as they move ', h('span.pv-cite', c), '.'] })]; } });
 
-  /* V3.1001 — the Library overhaul (17e search, 17d shelves and foci, 17f shelf map and sheet) */
+  /* V4.1 — the Library overhaul (17e search, 17d shelves and foci, 17f shelf map and sheet) */
   D({ id: 'libsearch', group: 'reading', needs: 'library', label: 'Library search', isNew: true, presets: { simple: true },
     desc: 'One search box for the Library with fields (author:, year:2010-2016, shelf:, focus:, cited:"run 3", hl:, quote:, text:, is:unread…), "phrases", -left-out words and OR; it says why each paper matched. Off: the plain filter, as before.',
     tune: [T('inside', 'Plain words look inside the papers too', 'switch', { isNew: true, def: true, d: 'Their highlights, the quotes taken from them and the notes on them; off: only the papers’ own details' }),
@@ -284,7 +284,7 @@ const PV = {
     preview: () => [h('div.pvb', h('div.pvb-h', h('span.pvb-n', 'Website'), h('b', 'Traction force microscopy — Wikipedia'), h('span.sp'), h('span.pvb-st', 'kept 13 Nov')), h('div.pv-page', { style: { margin: '0 10px 10px' } }, h('div.pv-pl'), h('div.pv-pl.s'), h('div.pv-pl'), h('div.pv-pl.s')))] });
 
 
-  /* ---------- V3.1002 — the reader beside a note: tabs, split, Cited in, where a quote is from (13zzb, 17e, 25-reader.css) ---------- */
+  /* ---------- V4.2 — the reader beside a note: tabs, split, Cited in, where a quote is from (13zzb, 17e, 25-reader.css) ---------- */
   const rdRedraw = () => { try { if (RDOCK.wrap) { RDOCK.layout(); RDOCK.tabsRow(); } } catch (e) { } };
   const rdRebuild = () => { try { if (RDOCK.wrap) RDOCK.remount(); } catch (e) { } };
   const rdPage = () => h('div.pv-page', h('div.pv-pl'), h('div.pv-pl.s'), h('div.pv-pl'), h('div.pv-pl.s'));

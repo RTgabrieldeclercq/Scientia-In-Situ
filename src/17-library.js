@@ -15,7 +15,7 @@ const LibraryView = {
       h('div.card.flat', h('h3.lab', { style: { marginTop: 0 } }, 'Paste a citation · works offline'), paste, h('div.row', { style: { marginTop: '8px' } }, h('button.btn', { on: { click: () => { try { const r = LIB.parseAny(paste.value); LIB.add(r); paste.value = ''; toast('Added · ' + LIB.shortRef(r)); } catch (e) { toast(String(e.message || e)); } } } }, 'Parse & add'),
         h('button.btn.ghost', { on: { click: () => LibraryView.addDialog('') } }, 'Add a link…'))));
   },
-  /* ---------- V3.1001: the page — search, facets, the tree, the shelf map or the list, the paper's sheet ----------
+  /* ---------- V4.1: the page — search, facets, the tree, the shelf map or the list, the paper's sheet ----------
      Gabe: "an overhaul of the library page, where shelves and foci have a massive overhaul that feels better with
      its features and displays its organization better. The search in the library should be updated to be better
      and have more ways to search." The search box (17e's language) is the one place that says what you see: a click

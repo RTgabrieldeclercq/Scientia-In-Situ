@@ -1,6 +1,6 @@
 /* ==========================================================================
    25 · The reader beside a note as tabs and panes, Cited in, and where a
-   quote is from (V3.1002 — 13zzb-reader.js, 17e-readtabs.js).
+   quote is from (V4.2 — 13zzb-reader.js, 17e-readtabs.js).
    ========================================================================== */
 /* the window: the reader's part as Settings says (half by default) */
 body.rd-on #app{grid-template-columns:var(--rd-cols,minmax(0,1fr) minmax(0,1fr))}

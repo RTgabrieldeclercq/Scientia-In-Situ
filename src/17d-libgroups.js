@@ -10,7 +10,7 @@
    no focus, a shelf = every paper in its foci, one focus). On each paper,
    its foci show as chips; ＋ adds it to foci or a new one. Papers can also
    be dragged onto a focus in the tree.
-   V3.1001 (Gabe: "shelves and foci have a massive overhaul that feels better
+   V4.1 (Gabe: "shelves and foci have a massive overhaul that feels better
    with its features and displays its organization better"):
    • A shelf has a colour (`hue`, from its name until chosen) and a place
      (`order`): its swatch in the tree, its board on the shelf map (17f), the
