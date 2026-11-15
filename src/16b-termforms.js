@@ -54,13 +54,11 @@ const TFORMS = {
 };
 {
   const blk = TERMSCAN.block.bind(TERMSCAN); TERMSCAN.block = function (b, only) { const n = blk(b, only); const cur = b && M.block(b.id) || b; return n + TFORMS.block(cur, only); };
-  // Terms page: each term's forms under it
-  const tr = TermsView.render; TermsView.render = function (...a) { const el = tr.apply(this, a);
-    $$('.list > .li.click', el).forEach(row => { const lab = $('.term-demo', row); const t = lab && DB.where('terms', x => x.label === lab.textContent)[0]; if (t) lab.parentNode.append(h('div', { style: { marginTop: '3px' } }, TFORMS.editor(t, true))); });
-    const p = $('p.stand', el); if (p) p.append(' A term can have other forms (an abbreviation, a synonym): “+ form” under it — they are found everywhere too.'); return el; };
-  // the lens: an "Other forms" section
-  const lr = LensView.render; LensView.render = function (termId) { const el = lr.call(this, termId); const t = M.term(termId), side = t && $('aside.insp', el);
-    if (side) { const s = h('div.ins-s', h('h6', 'Other forms'), TFORMS.editor(t), h('div.tiny.muted', { style: { marginTop: '4px' } }, 'Capitals in a form must match (AEW ≠ aew); other forms match any case and plurals.')); const occ = [...side.querySelectorAll('.ins-s')][0]; occ ? occ.before(s) : side.append(s); }
+  // Terms page (V3.999): a term's other forms beside its project in its row (the page's search finds them too); they are edited on the term's page
+  const tr = TermsView.row; TermsView.row = function (r, ...a) { const el = tr.call(this, r, ...a); const fs = TFORMS.forms(r.t).filter(f => f.toLowerCase() !== String(r.t.label).toLowerCase()), sub = $('.tl-sub', el); if (sub && fs.length) sub.append(' · also ' + fs.join(', ')); return el; };
+  // the term's page: an "Other forms" section, after its synergies
+  const lr = LensView.render; LensView.render = function (termId, ...a) { const el = lr.call(this, termId, ...a); const t = M.term(termId), side = t && $('aside.insp', el);
+    if (side) { const s = h('div.ins-s', h('h6', 'Other forms'), TFORMS.editor(t), h('div.tiny.muted', { style: { marginTop: '4px' } }, 'Capitals in a form must match (AEW ≠ aew); other forms match any case and plurals.')); const syn = $('.tbb-syn', side), occ = [...side.querySelectorAll('.ins-s')][0]; syn ? syn.after(s) : occ ? occ.before(s) : side.append(s); }
     return el; };
   // hover: which form was found here
   let lastForm = null;

@@ -1,0 +1,120 @@
+/* ==========================================================================
+   25 · The reader beside a note as tabs and panes, Cited in, and where a
+   quote is from (V3.1002 — 13zzb-reader.js, 17e-readtabs.js).
+   ========================================================================== */
+/* the window: the reader's part as Settings says (half by default) */
+body.rd-on #app{grid-template-columns:var(--rd-cols,minmax(0,1fr) minmax(0,1fr))}
+/* the dock: the tab row over the panes, in the reader's column */
+.rd-wrap{position:relative;z-index:20;grid-row:2;min-width:0;min-height:0;display:flex;flex-direction:column;background:var(--paper)}
+body.rd-left .rd-wrap{grid-column:1;border-right:1px solid var(--rule);box-shadow:6px 0 22px -14px rgba(0,0,0,.35)}
+body.rd-right .rd-wrap{grid-column:2;border-left:1px solid var(--rule);box-shadow:-6px 0 22px -14px rgba(0,0,0,.35)}
+.rd-panes{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:1px;background:var(--rule)}
+.rd-panes.n2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.rd-panes.n2.rows{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) minmax(0,1fr)}
+.rd-panes.n4{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr) minmax(0,1fr)}
+body .rd-wrap .embed-max.rd-docked{border:0;box-shadow:none;z-index:auto;min-width:0;min-height:0}
+.rd-wrap.rd-split .rd-panes > .rd-act{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--teal) 55%,transparent);z-index:1}
+.rd-wrap.rd-split .rd-bar{padding:5px 8px;gap:5px}
+.rd-wrap.rd-split .rd-ttl{max-width:22ch}
+.rd-wrap.rd-split .rd-swap{display:none}
+/* the tab row */
+.rd-tabs{display:flex;align-items:stretch;gap:4px;min-height:34px;padding:4px 6px 0;border-bottom:1px solid var(--rule);background:color-mix(in srgb,var(--ink) 5%,var(--paper));flex:none}
+.rd-wrap.rd-notabs .rd-tabs{display:none}
+.rd-tl{display:flex;align-items:stretch;gap:3px;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+.rd-tl::-webkit-scrollbar{display:none}
+.rd-tab{display:flex;align-items:center;gap:6px;max-width:220px;min-width:0;padding:0 4px 0 10px;border:1px solid transparent;border-bottom:0;border-radius:8px 8px 0 0;color:var(--ink-2);font-size:12.5px;cursor:pointer;white-space:nowrap;user-select:none;position:relative;flex:none}
+.rd-tab:hover{background:color-mix(in srgb,var(--ink) 6%,transparent);color:var(--ink)}
+.rd-tab.shown{color:var(--ink)} .rd-tab.shown::after{content:'';position:absolute;left:10px;right:10px;bottom:2px;height:2px;border-radius:2px;background:color-mix(in srgb,var(--teal) 40%,transparent)}
+.rd-tab.act{background:var(--paper);border-color:var(--rule);color:var(--ink);font-weight:600;margin-bottom:-1px}
+.rd-tab.act::after{display:none}
+.rd-tab.drag{opacity:.45} .rd-tab.dl{box-shadow:inset 2px 0 0 var(--teal)} .rd-tab.dr{box-shadow:inset -2px 0 0 var(--teal)}
+.rd-tab:focus-visible{outline:2px solid var(--teal);outline-offset:-2px}
+.rd-tn{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.rd-tk{flex:none;font-family:var(--f-m);font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);border:1px solid var(--rule-2);border-radius:3px;padding:0 3px;line-height:13px;font-weight:400}
+.rd-tx{flex:none;width:18px;height:18px;border:0;border-radius:4px;background:transparent;color:var(--ink-3);font-size:14px;line-height:1;cursor:pointer;padding:0}
+.rd-tx:hover{background:color-mix(in srgb,var(--ink) 12%,transparent);color:var(--ink)}
+.rd-tadd{flex:none;align-self:center;width:26px;height:26px;border:1px solid var(--rule-2);border-radius:7px;background:var(--surface);color:var(--ink-2);font-size:16px;line-height:1;cursor:pointer;padding:0;margin-bottom:3px}
+.rd-tadd:hover{border-color:var(--teal);color:var(--teal)}
+.rd-tsp{flex:1}
+.rd-tbtn{flex:none;align-self:center;border:0;background:transparent;color:var(--ink-2);font-size:14px;line-height:1;padding:5px 7px;border-radius:6px;cursor:pointer;margin-bottom:3px}
+.rd-tbtn:hover{background:color-mix(in srgb,var(--ink) 8%,transparent);color:var(--ink)}
+/* a free pane of a split */
+.rd-empty{display:grid;place-items:center;background:color-mix(in srgb,var(--ink) 4%,var(--paper));min-width:0;min-height:0;overflow:auto;padding:16px}
+.rd-empty-in{display:grid;gap:8px;justify-items:start;max-width:320px;font-size:13px}
+.rd-elist{display:grid;gap:4px;width:100%}
+.rd-eopt{display:flex;align-items:center;gap:7px;width:100%;text-align:left;border:1px solid var(--rule);background:var(--surface);border-radius:7px;padding:6px 9px;font-size:12.5px;color:var(--ink);cursor:pointer;min-width:0}
+.rd-eopt:hover{border-color:var(--teal)}
+/* the note taken to where the paper is */
+.box.rd-lit{box-shadow:0 0 0 3px color-mix(in srgb,var(--teal) 50%,transparent),var(--shadow)!important;transition:box-shadow .3s}
+/* Cited in: the button, the line under the bar, the list */
+.rcx-btn.on{color:var(--teal);border-color:color-mix(in srgb,var(--teal) 45%,transparent)}
+.rcx-strip{display:flex;align-items:center;gap:5px;padding:4px 10px;border-bottom:1px solid var(--rule);background:var(--surface);overflow-x:auto;scrollbar-width:none;flex:none;white-space:nowrap}
+.rcx-sk{font-family:var(--f-m);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);flex:none}
+.rcx-chip{flex:none;display:inline-flex;align-items:center;gap:5px;border:1px solid var(--rule-2);background:var(--paper);border-radius:999px;padding:1px 9px;font-size:11.5px;color:var(--ink);cursor:pointer;max-width:220px;overflow:hidden;text-overflow:ellipsis}
+.rcx-chip:hover{border-color:var(--teal);color:var(--teal)}
+.rcx-chip span{font-family:var(--f-m);font-size:10px;color:var(--ink-3)}
+.pop.rcx-pop{width:min(420px,92vw);max-height:min(70vh,520px);overflow:auto}
+.rcx-ref{font-size:12.5px;color:var(--ink-2);margin:0 8px 8px;line-height:1.4}
+.rcx-list{display:grid;gap:8px;padding:0 4px 6px}
+.rcx-note{display:grid;gap:3px}
+.rcx-nt{font-size:12.5px;font-weight:600;padding:0 4px;display:flex;align-items:baseline;gap:6px;min-width:0}
+.rcx-nt span{font-weight:400;font-size:11px;color:var(--ink-3);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rcx-row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:1px 8px;align-items:baseline;text-align:left;border:1px solid var(--rule);background:var(--surface);border-radius:7px;padding:5px 8px;cursor:pointer;color:var(--ink);font-size:12.5px}
+.rcx-row:hover{border-color:var(--teal)}
+.rcx-row b{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rcx-k{font-family:var(--f-m);font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--teal);white-space:nowrap}
+.rcx-k.emb{color:var(--ink-3)}
+.rcx-w{grid-column:1/-1;font-family:var(--f-b);font-size:12.5px;color:var(--ink-2);line-height:1.4}
+.rcx-none{font-size:12.5px;color:var(--ink-3);padding:4px 8px 8px}
+.rcx-side{border-bottom:1px solid var(--rule);padding-bottom:10px;margin-bottom:10px}
+.rcx-side .rcx-list{padding:6px 0 0}
+.rd-libtabs{border:0;background:transparent;padding:0;min-height:0;flex:0 1 auto;min-width:0;align-items:center}
+.rd-libtabs .rd-tab{border:1px solid var(--rule);border-radius:7px;padding:3px 9px;margin:0}
+.rd-libtabs .rd-tab.act{margin:0}
+/* where a quote is from: the citation band (like a bridge's band, 24-kinds.css), in its own colour */
+.origin.or-cite{--orc:var(--cite,#3b5bdb);display:flex;flex-direction:column;gap:2px;margin:4px 10px 7px;padding:5px 6px 5px 10px;border-radius:6px;background:color-mix(in srgb,var(--orc) 9%,var(--surface));border:1px solid color-mix(in srgb,var(--orc) 28%,transparent);border-left:3px solid var(--orc);font-family:var(--f-d);color:var(--ink);line-height:1.35;cursor:pointer;font-style:normal}
+.refbody .origin.or-cite,.refwidget .origin.or-cite{--orc:var(--cite,#3b5bdb);margin:-3px 0 9px}
+.refwidget .origin.or-cite{margin:-2px 12px 8px}
+.origin.or-cite:hover{background:color-mix(in srgb,var(--orc) 15%,var(--surface))}
+.origin.or-cite .or-pg{flex:none;font-family:var(--f-m);font-size:11px;color:color-mix(in srgb,var(--orc) 75%,var(--ink))}
+.origin.or-cite.or-gone{cursor:default}
+:root[data-theme="dark"] .origin.or-cite{--orc:color-mix(in srgb,var(--cite,#3b5bdb) 62%,#fff)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .origin.or-cite{--orc:color-mix(in srgb,var(--cite,#3b5bdb) 62%,#fff)}}
+.box.q-box.q-cited{border-left-color:var(--cite,#3b5bdb)}
+/* off: what each switch takes away (20a-features.js guards the rest) */
+body.f-off-citedin .rcx-btn,body.f-off-citedin .rcx-strip,body.f-off-citedin .rcx-side{display:none}
+body.f-off-rsplit .rd-tsplit{display:none}
+/* the previews (Settings → Features) */
+.pv-rd{display:grid;grid-template-columns:var(--pvc,1fr 1fr);gap:0;border:1px solid var(--rule);border-radius:8px;overflow:hidden;background:var(--paper);min-height:150px}
+.pv-rd.w-narrow{--pvc:2fr 3fr} .pv-rd.w-wide{--pvc:3fr 2fr}
+.pv-rd-dock{display:flex;flex-direction:column;border-right:1px solid var(--rule);min-width:0}
+.pv-rd-tabs{display:flex;align-items:flex-end;gap:2px;padding:4px 4px 0;background:color-mix(in srgb,var(--ink) 5%,var(--paper));border-bottom:1px solid var(--rule);overflow:hidden}
+.pv-rd-tab{display:flex;align-items:center;gap:4px;min-width:0;max-width:46%;padding:2px 6px;font-size:10.5px;color:var(--ink-2);border-radius:6px 6px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv-rd-tab.act{background:var(--paper);border:1px solid var(--rule);border-bottom:0;color:var(--ink);font-weight:600;margin-bottom:-1px}
+.pv-rd-tab i{font-style:normal;font-family:var(--f-m);font-size:7.5px;border:1px solid var(--rule-2);border-radius:2px;padding:0 2px;color:var(--ink-3)}
+.pv-rd-tab b{font-weight:400;color:var(--ink-3)}
+.pv-rd-add{font-size:13px;color:var(--ink-2);padding:0 5px 2px}
+.pv-rd-dock .pv-page{margin:8px;flex:1}
+.pv-rd-note{padding:8px;display:grid;align-content:start;gap:6px;min-width:0;background:var(--surface)}
+.pv-rd-nt{font-size:11px;font-weight:600;color:var(--ink-2)}
+.pv-rd-card{font-size:11px;border:1px solid var(--rule);border-radius:6px;padding:6px 7px;background:var(--paper);color:var(--ink-2)}
+.pv-rd-card i{font-style:normal;font-family:var(--f-m);font-size:8px;border:1px solid var(--rule-2);border-radius:2px;padding:0 2px}
+.pv-rd-card.lit{box-shadow:0 0 0 2px color-mix(in srgb,var(--teal) 55%,transparent);color:var(--ink)}
+.pv-rs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.pv-rs > div{display:grid;gap:4px;justify-items:center;font-size:10.5px;color:var(--ink-3)}
+.pv-rs-g{width:100%;aspect-ratio:4/3;display:grid;gap:2px;padding:2px;border:1px solid var(--rule);border-radius:6px;background:var(--rule)}
+.pv-rs-g.n2{grid-template-columns:1fr 1fr} .pv-rs-g.n2.rows{grid-template-columns:1fr;grid-template-rows:1fr 1fr} .pv-rs-g.n4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+.pv-rs-g span{background:var(--paper);border-radius:3px;display:grid;place-items:center;font-family:var(--f-m);font-size:8.5px;color:var(--ink-3);overflow:hidden}
+.pv-rs-g span.on{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--teal) 55%,transparent);color:var(--ink)}
+.pv-rs > div.cur{color:var(--ink);font-weight:600}
+.pv-cx{border:1px solid var(--rule);border-radius:8px;overflow:hidden;background:var(--paper)}
+.pv-cx-bar{display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--surface);border-bottom:1px solid var(--rule);font-size:11px}
+.pv-cx-bar b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pv-cx-bar span{border:1px solid color-mix(in srgb,var(--teal) 45%,transparent);color:var(--teal);border-radius:5px;padding:0 6px}
+.pv-cx .rcx-strip{background:var(--surface)}
+.pv-cx .pv-page{margin:8px}
+.pv-cb{display:grid;gap:10px}
+.pv-cb .pvb .origin.or-cite{margin:4px 8px 6px}
+.pv-cb .pv-q .pvb-tx{font-style:italic}
+.pv-cb .refbody{padding:0 8px 8px}
+.pv-cb .refbody .origin{margin:6px 0 6px}
