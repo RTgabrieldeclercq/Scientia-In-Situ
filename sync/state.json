@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "77c62d00651aef38851666a1b97fda295309a625",
-  "subject": "V3.998: Scientia — zooming keeps the words in components sharp",
+  "commit": "66c4da5d13f0ee0590b4581dde6cf7b755fef2e0",
+  "subject": "V3.1002: Scientia — the reader beside a note as tabs (any note's PDFs and HTML pages, + to open more), split up to 2×2; Cited in while you read; a quote shows where it is from in a band, and a bridged quote carries both bands",
   "date": "2026-11-14"
  },
- "cut": "4225e6f57bbaa71dadc8e729c4e4edfcccec3016",
+ "cut": "2bfde8e278ec892d0563c948466511a5057a6c59",
  "names": [
   "DESKLAB",
   "LABSYNC",
