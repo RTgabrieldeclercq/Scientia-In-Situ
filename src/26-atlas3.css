@@ -1,0 +1,155 @@
+/* ---------- 14f · the Atlas on three axes (V4.0): a room in 3D, each axis sorting by one thing; dots are glass beads that open into the term page's bubbles ---------- */
+:root{--a3-component:#A87C00;--a3-panel:#A87C00;--a3-page:#8C6D3F;--a3-data:#2F6FB0;--a3-note:#3F7FD0;--a3-term:#4E9A2E;--a3-paper:#D9822B;--a3-person:#7C5CD6;--a3-ax0:var(--teal);--a3-ax1:var(--mag);--a3-ax2:#8A5A00}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--a3-component:#D9B04A;--a3-panel:#D9B04A;--a3-page:#C4A276;--a3-data:#7FA9DA;--a3-note:#86AEE6;--a3-term:#8DC46F;--a3-paper:#EBAE70;--a3-person:#AE97EA;--a3-ax2:#D9A64A}}
+:root[data-theme="dark"]{--a3-component:#D9B04A;--a3-panel:#D9B04A;--a3-page:#C4A276;--a3-data:#7FA9DA;--a3-note:#86AEE6;--a3-term:#8DC46F;--a3-paper:#EBAE70;--a3-person:#AE97EA;--a3-ax2:#D9A64A}
+/* the bar's second row: three axes and the presets */
+.a3-axes{display:flex;align-items:center;gap:6px 8px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid var(--rule)}
+.a3-axl{font:10.5px var(--f-m);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)} .a3-axl.p{margin-left:8px}
+.a3-axp{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--rule-2);border-radius:8px;padding:1px 2px 1px 6px;background:var(--surface)}
+.a3-axp b{font:700 10px var(--f-m);color:var(--paper);background:var(--ac);border-radius:4px;padding:0 4px}
+.a3-axp select{border:0;background:transparent;font:12px var(--f-d);color:var(--ink);padding:3px 2px;min-width:0;box-shadow:none}
+.a3-pre{display:inline-flex;gap:4px;flex-wrap:wrap}
+/* the room */
+.a3-wrap{gap:0}
+.a3-room{position:relative;flex:1;min-height:320px;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;outline:none;border-radius:10px;background:radial-gradient(120% 90% at 50% 38%,color-mix(in srgb,var(--ink) 3%,var(--paper)) 0%,var(--paper) 62%,color-mix(in srgb,var(--ink) 6%,var(--paper)) 100%)}
+.a3-room:focus-visible{box-shadow:inset 0 0 0 2px var(--teal)}
+.a3-room.dragging{cursor:grabbing}
+.a3-room.crowd .a3-bd{display:none} .a3-room.crowd.over{cursor:pointer}
+.a3-cv{position:absolute;inset:0;width:100%;height:100%}
+.a3-lab,.a3-dots{position:absolute;inset:0}
+.a3-lab{pointer-events:none;z-index:0} .a3-dots{z-index:1}
+.a3-probe{position:absolute;width:0;height:0;overflow:hidden;visibility:hidden}
+.a3-tk{position:absolute;left:0;top:0;font:10.5px var(--f-m);color:var(--ink-2);white-space:nowrap;background:color-mix(in srgb,var(--paper) 72%,transparent);border-radius:4px;padding:0 3px}
+.a3-tt{position:absolute;left:0;top:0;font:600 11.5px var(--f-d);color:var(--ac);white-space:nowrap;display:flex;align-items:center;gap:5px}
+.a3-tt i{font:700 10px var(--f-m);font-style:normal;color:var(--paper);background:var(--ac);border-radius:4px;padding:0 4px}
+.a3-tools{position:absolute;right:10px;top:10px;z-index:2;display:flex;gap:4px}
+.a3-tools button{width:30px;height:30px;border-radius:50%;border:1px solid var(--rule-2);background:color-mix(in srgb,var(--surface) 88%,transparent);cursor:pointer;font:600 14px var(--f-m);color:var(--ink-2);display:grid;place-items:center;box-shadow:var(--shadow)}
+.a3-tools button:hover{color:var(--ink);border-color:var(--ink-3)}
+.a3-hint{position:absolute;left:12px;bottom:10px;z-index:2;font:11px var(--f-m);color:var(--ink-3);pointer-events:none;max-width:calc(100% - 24px)}
+/* a dot: a glass bead far off; a label closer; the term page's bubble (14e) when you point at it or come close */
+.a3-dot{position:absolute;left:0;top:0;width:0;height:0}
+.a3-bd{position:absolute;left:-12px;top:-12px;width:24px;height:24px;border-radius:50%;cursor:pointer;transform-origin:50% 50%;
+  background:radial-gradient(circle at 50% 56%,var(--kc) 0 26%,color-mix(in srgb,var(--kc) 30%,transparent) 28% 50%,transparent 52%),
+    radial-gradient(circle closest-side,var(--bb-v0) 0%,var(--bb-v1) 56%,var(--bb-v2) 84%,var(--bb-v3) 95%,var(--bb-v4) 99%,transparent 100%);
+  box-shadow:inset 0 0 0 1px var(--bb-edge),0 0 0 .5px color-mix(in srgb,var(--ink) 24%,transparent),0 7px 8px -6px var(--bb-ground)}
+.a3-bd::before{content:"";position:absolute;inset:-7px;border-radius:50%}
+.a3-bd::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;opacity:var(--bb-spec);background:radial-gradient(ellipse 30% 17% at 32% 25%,rgba(255,255,255,.92),transparent 72%),radial-gradient(ellipse 12% 7% at 41% 37%,rgba(255,255,255,.6),transparent 72%)}
+.a3-bd.img{background:radial-gradient(circle closest-side,transparent 0 58%,var(--bb-v3) 90%,var(--bb-v4) 99%,transparent 100%),var(--im) center/160% no-repeat}
+.a3-bd.note{box-shadow:inset 0 0 0 2px var(--kc),inset 0 0 0 3px var(--bb-edge),0 0 0 .5px color-mix(in srgb,var(--ink) 24%,transparent),0 7px 8px -6px var(--bb-ground)}
+.a3-bd.term,.a3-bd.person{background:radial-gradient(circle at 50% 56%,transparent 0 15%,var(--kc) 17% 29%,transparent 31%),radial-gradient(circle closest-side,var(--bb-v0) 0%,var(--bb-v1) 56%,var(--bb-v2) 84%,var(--bb-v3) 95%,var(--bb-v4) 99%,transparent 100%)}
+.a3-bd.paper{border-radius:30%}
+.a3-dot.lit .a3-bd{box-shadow:0 0 0 2.5px color-mix(in srgb,var(--teal) 70%,transparent),inset 0 0 0 1px var(--bb-edge)}
+.a3-al{position:absolute;left:0;top:0;white-space:nowrap;font:10.5px var(--f-m);color:var(--ink-2);background:color-mix(in srgb,var(--paper) 84%,transparent);padding:0 5px;border-radius:4px;pointer-events:none}
+.a3-ob{position:absolute;left:0;top:0;width:0;height:0;transform-origin:0 0;will-change:transform,opacity}
+.a3-ob .bb-cap{display:none} .a3-ob .bb-pop{gap:0}
+.a3-dot.pin .bb-glass{box-shadow:0 0 0 2.5px color-mix(in srgb,var(--teal) 55%,transparent),inset 0 0 0 1px var(--bb-edge)}
+.a3-ob .a3-on{outline:1.5px solid color-mix(in srgb,var(--ink) 70%,transparent);outline-offset:1px;border-radius:2px}
+.a3-cap{position:absolute;left:0;top:0;white-space:nowrap;text-align:center;display:grid;gap:1px;pointer-events:none;max-width:280px}
+.a3-cap b{font:650 12.5px var(--f-d);overflow:hidden;text-overflow:ellipsis} .a3-cap span{font:10.5px var(--f-m);color:var(--ink-3)}
+.a3-arcl{position:absolute;left:0;top:0;z-index:50000;display:grid;justify-items:center;gap:1px;white-space:nowrap;font:10.5px var(--f-m);color:var(--ink-2);background:color-mix(in srgb,var(--paper) 92%,transparent);border:1px solid var(--rule);border-radius:10px;padding:3px 10px 4px;box-shadow:var(--shadow);pointer-events:none}
+.a3-arcl .l1{color:var(--ink);font-weight:500;display:flex;align-items:center;gap:5px} .a3-arcl .term-demo{font-size:11.5px}
+/* the foot: the notebook growing */
+.a3-foot{display:flex;align-items:center;gap:10px;height:40px;padding:0 6px;font:11.5px var(--f-m);color:var(--ink-3)}
+.a3-play{width:28px;height:28px;border-radius:50%;border:1px solid var(--rule-2);background:var(--surface);cursor:pointer;display:grid;place-items:center;font-size:11px;color:var(--ink-2);flex:none}
+.a3-time{flex:1;min-width:60px;accent-color:var(--a3-ax0)}
+.a3-out{white-space:nowrap}
+/* the side panel */
+.a3-side{display:flex;flex-direction:column;gap:16px}
+.a3-sec{display:grid;gap:7px}
+.a3-sh{display:flex;align-items:baseline;justify-content:space-between;gap:8px} .a3-sh h3{font:650 13px var(--f-d);margin:0} .a3-sh span{font:11px var(--f-m);color:var(--ink-4)}
+.a3-sp{font-size:12px;color:var(--ink-3);line-height:1.45;margin:0}
+.a3-axr{display:grid;grid-template-columns:20px minmax(0,1fr);gap:1px 8px;align-items:baseline}
+.a3-axr i{grid-row:1/span 2;font:700 10px var(--f-m);font-style:normal;color:var(--paper);background:var(--ac);border-radius:4px;padding:1px 0;text-align:center}
+.a3-axr b{font-size:13px} .a3-axr span{font-size:11.5px;color:var(--ink-3);line-height:1.35}
+.a3-chs{display:flex;flex-wrap:wrap;gap:4px}
+.a3-kc{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--rule-2);background:var(--surface);border-radius:999px;padding:2px 9px 2px 7px;font:12px var(--f-d);color:var(--ink-2);cursor:pointer}
+.a3-kc::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--kc)} .a3-kc em{font:normal 10.5px var(--f-m);color:var(--ink-4)}
+.a3-kc.off{opacity:.5;text-decoration:line-through} .a3-kc.off::before{background:transparent;box-shadow:inset 0 0 0 1.5px var(--kc)}
+.a3-hid{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--ink-2);background:var(--surface);border:1px dashed var(--rule-2);border-radius:8px;padding:6px 8px}
+.a3-selc{display:grid;gap:6px;background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--kc);border-radius:0 8px 8px 0;padding:8px 10px}
+.a3-selc .k{font:10.5px var(--f-m);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)} .a3-selc .sub{font:11px var(--f-m);color:var(--ink-3)}
+.a3-tt2{font:14px/1.4 var(--f-b);color:var(--ink)}
+.a3-coords{display:grid;gap:3px} .a3-coords div{display:grid;grid-template-columns:18px 80px minmax(0,1fr);gap:6px;align-items:baseline;font-size:12px}
+.a3-coords i{font:700 9.5px var(--f-m);font-style:normal;color:var(--paper);background:var(--ac);border-radius:3px;text-align:center} .a3-coords span{color:var(--ink-3)} .a3-coords b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.a3-cons{display:grid;gap:2px;max-height:220px;overflow:auto}
+.a3-cons button{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px;align-items:baseline;border:0;background:none;border-radius:6px;padding:3px 5px;text-align:left;cursor:pointer;font-size:12px;color:var(--ink-2)}
+.a3-cons button:hover{background:var(--surface-2)} .a3-cons em{font:normal 10px var(--f-m);color:var(--ink-4)} .a3-cons span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-left:3px solid var(--kc);padding-left:5px}
+.a3-acts{display:flex;gap:6px;flex-wrap:wrap}
+.a3-key{display:grid;gap:5px;font-size:11.5px;color:var(--ink-3)} .a3-key div{display:flex;align-items:center;gap:8px}
+.a3-key .k-bead{width:12px;height:12px;border-radius:50%;flex:none;background:radial-gradient(circle at 50% 56%,var(--teal) 0 26%,transparent 30%),var(--surface);box-shadow:inset 0 0 0 1px var(--rule-2)}
+.a3-key .k-bub{width:16px;height:16px;border-radius:50%;flex:none;background:radial-gradient(circle at 34% 28%,rgba(255,255,255,.8),transparent 46%),var(--surface);box-shadow:inset 0 0 0 1.2px color-mix(in srgb,var(--teal) 50%,transparent)}
+.a3-key .k-th{width:18px;height:0;border-top:1.4px solid var(--ink-3);opacity:.6;flex:none} .a3-key .k-sp{width:18px;height:0;border-top:1.4px dashed var(--ink-3);flex:none}
+.a3-key .k-arc{width:18px;height:3px;border-radius:2px;flex:none;background:linear-gradient(90deg,var(--k-barrier,#B2361F),var(--k-resolution,#1B7A43))}
+/* the settings preview */
+.pv-a3{position:relative;height:160px;overflow:hidden}
+.pv-a3 canvas{position:absolute;left:0;top:0;width:300px;height:156px;max-width:100%}
+.pv-a3 .bb{position:absolute}
+.pv-a3 .bb-cap{display:none}
+.pv-a3-ax{position:absolute;left:4px;top:4px;display:flex;gap:6px;flex-wrap:wrap;font:10px var(--f-m);color:var(--ink-2)}
+.pv-a3-ax span{display:inline-flex;align-items:center;gap:3px} .pv-a3-ax b{font-weight:700;color:var(--paper);background:var(--ac);border-radius:3px;padding:0 3px}
+.pv-a3-say{position:absolute;left:4px;bottom:2px;font:10px var(--f-m);color:var(--ink-3)}
+/* the panel below the room on narrow screens; the room keeps a height */
+@media (max-width:900px){
+  .atlas.a3 .at-main{flex-direction:column}
+  .atlas.a3 .at-panel{display:flex;width:auto;flex:0 0 auto;max-height:44vh;border-left:0;border-top:1px solid var(--rule);margin-top:6px}
+}
+@media (max-width:700px){
+  .atlas.a3{height:auto;min-height:0}
+  .atlas.a3 .at-main{flex:none}
+  .a3-room{flex:none;height:62vh;min-height:340px}
+  .a3-hint{display:none}
+  .a3-axes .a3-axl.p{display:none}
+  .a3-axp select{max-width:96px}
+  /* one line each, scrolled sideways, so the room starts near the top */
+  .atlas.a3 .at-bar,.a3-axes{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .atlas.a3 .at-bar::-webkit-scrollbar,.a3-axes::-webkit-scrollbar{display:none}
+  .atlas.a3 .at-bar > *,.a3-axes > *,.a3-pre{flex:none} .a3-pre{flex-wrap:nowrap}
+  .atlas.a3 .at-chips,.atlas.a3 .at-acts{flex-wrap:nowrap}
+  .atlas.a3 .at-q{width:170px}
+}
+@media (prefers-reduced-motion:reduce){.a3-ob .bb-pop{animation:none}}
+/* ---------- Gabe's notes on the Atlas (V4.0): resting on a dot opens it (a ring closes in meanwhile); a thread's popup ---------- */
+.a3-dot::before{content:"";position:absolute;left:0;top:0;width:calc(var(--rs,10px) * 2 + 10px);height:calc(var(--rs,10px) * 2 + 10px);border-radius:50%;border:1.6px solid var(--kc);pointer-events:none;transform:translate(-50%,-50%);opacity:0}
+.a3-dot.wait::before{opacity:.9;animation:a3wait var(--hd,1s) linear both}
+@keyframes a3wait{from{opacity:0;transform:translate(-50%,-50%) scale(1.75)}to{opacity:.9;transform:translate(-50%,-50%) scale(1)}}
+.a3-room.onth{cursor:pointer}
+.a3-tp{position:absolute;z-index:60000;width:min(580px,calc(100% - 16px));max-height:calc(100% - 16px);overflow:auto;background:color-mix(in srgb,var(--paper) 97%,transparent);border:1px solid var(--rule-2);border-radius:12px;box-shadow:var(--shadow-lg);padding:10px 12px 12px;display:grid;gap:8px;cursor:default;touch-action:pan-y;user-select:text;-webkit-user-select:text}
+.a3-tp[hidden]{display:none}
+.a3-tp.narrow{width:auto}
+.a3-tph{display:flex;align-items:center;gap:8px;min-width:0}
+.a3-tpk{display:inline-flex;align-items:center;gap:6px;font:600 12.5px var(--f-d);color:var(--ink);white-space:nowrap} .a3-tpk i{width:18px;height:4px;border-radius:2px;background:var(--pc)}
+.a3-tpw{font:11px var(--f-m);color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+.a3-tpx{border:0;background:none;font-size:19px;line-height:1;color:var(--ink-3);cursor:pointer;padding:0 4px} .a3-tpx:hover{color:var(--ink)}
+.a3-tpy{font:13px/1.4 var(--f-b);color:var(--ink-2)}
+.a3-tpr{display:grid;grid-template-columns:minmax(0,1fr) 56px minmax(0,1fr);align-items:center;gap:4px}
+.a3-tps{display:grid;justify-items:center;gap:2px;text-align:center;min-width:0}
+.a3-tps > b{font-size:12px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .a3-tps > span{font:10.5px var(--f-m);color:var(--ink-3);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.a3-tpb{position:relative} .a3-tpo{position:absolute;left:50%;top:50%;width:0;height:0;transform-origin:0 0} .a3-tpo .bb-cap{display:none} .a3-tpo .bb-pop{gap:0}
+.a3-tpa svg{display:block;width:56px;height:24px;overflow:visible} .a3-tpa .ln{fill:none;stroke:var(--pc);stroke-width:2.4;stroke-linecap:round;stroke-dasharray:5 6;animation:a3flow 1.1s linear infinite} .a3-tpa .hd{fill:var(--pc)}
+@keyframes a3flow{to{stroke-dashoffset:-22}}
+.a3-tp.still .a3-tpa .ln{animation:none;stroke-dasharray:none}
+.a3-tpl{display:grid;gap:2px;max-height:132px;overflow:auto;border-top:1px dashed var(--rule-2);padding-top:6px}
+.a3-tpl h4{margin:0 0 2px;font:500 10.5px var(--f-m);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.a3-tpl button{display:grid;grid-template-columns:54px minmax(0,auto) minmax(0,1fr);gap:8px;align-items:baseline;text-align:left;border:0;background:none;border-radius:6px;padding:3px 6px;cursor:pointer;color:var(--ink);font:inherit}
+.a3-tpl button:hover{background:var(--surface)}
+.a3-tpl em{font:normal 10.5px var(--f-m);color:var(--bridge)} .a3-tpl b{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .a3-tpl span{font-size:11.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:600px){ .a3-tpr{grid-template-columns:minmax(0,1fr) 34px minmax(0,1fr)} .a3-tpa svg{width:34px} .a3-tpl button{grid-template-columns:46px minmax(0,1fr)} .a3-tpl button span{grid-column:2} }
+@media (prefers-reduced-motion:reduce){ .a3-tpa .ln{animation:none;stroke-dasharray:none} .a3-dot.wait::before{animation:none} }
+.a3-tk.rul{background:color-mix(in srgb,var(--paper) 90%,transparent);box-shadow:0 0 0 1px var(--rule);color:var(--ink)}
+/* a bridge's copy in its note: the bridges' green band round its bead */
+.a3-dot.brc .a3-bd{outline:2px solid var(--bridge);outline-offset:1px}
+/* V4.0 (third round): the thread's popup is big — over most of the room, centred (a phone: all of it) — and each end is a large bubble; the list below, the popup scrolling */
+.a3-tp{left:6%;top:6%;width:88%;height:88%;max-height:none;display:flex;flex-direction:column;gap:10px;padding:12px 16px 14px}
+.a3-tp.narrow{left:8px;right:8px;top:8px;bottom:8px;width:auto;height:auto}
+.a3-tp .a3-tpr{grid-template-columns:minmax(0,1fr) 80px minmax(0,1fr);align-items:start;gap:6px;flex:none}
+.a3-tp .a3-tpa{align-self:center} .a3-tp:not(.narrow) .a3-tpa svg{width:76px;height:30px}
+.a3-tp.narrow .a3-tpr{grid-template-columns:minmax(0,1fr);justify-items:center}
+.a3-tp.narrow .a3-tpa{transform:rotate(90deg);margin:-4px 0}
+.a3-tp .a3-tps{gap:4px} .a3-tp .a3-tps > b{font-size:13.5px} .a3-tp .a3-tps > span{font-size:11.5px}
+.a3-tpm{font:normal 10.5px var(--f-m);color:var(--ink-3)}
+.a3-tp .a3-tpy{font-size:13px}
+.a3-tp .a3-tpl{max-height:none;flex:none}
+/* Shift+drag moves the room */
+.a3-room.panning{cursor:move}
+/* the room keeps its height whatever the panel under it shows (narrow windows): the panel scrolls, the room never resizes with it */
+@media (max-width:900px){ .atlas.a3{height:auto;min-height:0} .atlas.a3 .at-main{flex:none} .a3-room{flex:none;height:62vh;min-height:340px} }

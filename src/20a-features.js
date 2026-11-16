@@ -134,13 +134,40 @@ const PV = {
     preview: () => [h('div.pv-kinds', KINDS.slice(0, 8).map(k => h('div', h('kbd', k.key.toUpperCase()), PV.st(k.id, k.label.toLowerCase() + ' — ' + ({ claim: 'collapsed at 10 ng/mL', barrier: 'gels tear above 40 kPa', question: 'is batch 14 too stiff?', evidence: '3 of 3 fields', result: 'traction 1.2 kPa' }[k.id] || 'as marked'))))),
       PV.cap('Select words, press ' + keyLabel(settings().structKey) + ', then the letter.')] });
 
-  D({ id: 'terms', group: 'structures', label: 'Terms', tab: 'terms', desc: 'Words you mark as terms of the project, outlined in bold and found by themselves in every note that uses them, with the Terms tab and their nests. Off: no outline, no scanning, no Terms tab; the terms stay.',
+  D({ id: 'terms', group: 'structures', label: 'Terms', tab: 'terms', desc: 'Words you mark as terms of the project, outlined in bold and found by themselves in every note that uses them, with the Terms tab — every term with its uses, its last twelve weeks, its structures and open barriers, to find, sort and jump through — and each term’s bubbles. Off: no outline, no scanning, no Terms tab; the terms stay.',
     tune: [T('key', 'Mark a term', 'seg', Object.assign({ opts: [['alt+w', 'Alt+W'], ['alt+shift+w', 'Alt+Shift+W']], d: 'Ctrl+W in Focus mode' }, B('termKey'))),
-      T('lit', 'Mentions in lit reviews', 'seg', { isNew: true, def: 'out', opts: [['out', 'Left out'], ['counted', 'Counted']], d: 'Left out of the Terms tab and the term’s page; a term used only in lit reviews isn’t listed' })],
-    preview: () => { const lit = tune('terms', 'lit') === 'counted';
+      T('lit', 'Mentions in lit reviews', 'seg', { isNew: true, def: 'out', opts: [['out', 'Left out'], ['counted', 'Counted']], d: 'Left out of the Terms tab and the term’s page; a term used only in lit reviews isn’t listed' }),
+      T('sort', 'The Terms tab opens sorted', 'seg', { isNew: true, def: 'used', opts: [['used', 'Most used'], ['rising', 'Rising'], ['recent', 'Recent'], ['az', 'A–Z']], d: 'The switch over the list changes it there; each sort cuts the list into groups the rail jumps to' })],
+    preview: () => { const lit = tune('terms', 'lit') === 'counted', so = tune('terms', 'sort') || 'used';
+      const L = [{ n: 'traction force', u: lit ? 12 : 9, d: 3, a: 1 }, { n: '30 kPa gel', u: 4, d: 0, a: 5 }, { n: 'bead drift', u: 6, d: 4, a: 0 }].concat(lit ? [{ n: 'traction stress', u: 2, d: 0, a: 20 }] : []);
+      L.sort(so === 'rising' ? (x, y) => y.d - x.d : so === 'recent' ? (x, y) => x.a - y.a : so === 'az' ? (x, y) => x.n.localeCompare(y.n) : (x, y) => y.u - x.u);
       return [PV.box({ num: 'Block', label: 'Gels', body: ['Every ', on('terms') ? h('span.term-demo', 'traction force') : 'traction force', ' map on the ', on('terms') ? h('span.term-demo', '30 kPa gel') : '30 kPa gel', ' drifted.'] }),
-        h('div.pv-list', [['traction force', lit ? '7 notes · 12 uses' : '5 notes · 9 uses'], ['30 kPa gel', '3 notes · 4 uses'], lit ? ['traction stress', 'lit reviews only · 2 uses'] : null].filter(Boolean).map(([a, b]) => h('div', h('span.term-demo', a), h('span', b)))),
-        PV.cap('Mark one with ' + keyLabel(settings().termKey) + '; it is found in every other note too. ' + (lit ? 'Lit reviews are counted in the Terms tab.' : 'Lit reviews are left out of the Terms tab.'))]; } });
+        h('div.pv-tlist', L.map(x => h('div', h('span.term-demo', x.n), h('span.n', x.u), h('span.n', so === 'rising' ? (x.d ? '▲ ' + x.d : '–') : so === 'recent' ? (x.a ? x.a + ' d' : 'today') : '')))),
+        PV.cap('Mark one with ' + keyLabel(settings().termKey) + '; it is found in every other note too. The Terms tab opens ' + ({ used: 'with the most used first', rising: 'with the rising ones first', recent: 'with the most recent first', az: 'from A to Z' })[so] + '. ' + (lit ? 'Lit reviews are counted there.' : 'Lit reviews are left out of it.'))]; } });
+
+  D({ id: 'bubbles', group: 'structures', label: 'Term bubbles', needs: 'terms', presets: { simple: true }, desc: 'A term opens as glass bubbles: each component that uses it, with every neighbour around it, a portal into its note. Pointing closes a ring and ports in (a click does it at once); a small bubble on the note brings you back. They float a little. Off: the same neighbourhoods in plain round trays that stay still; a click opens the note.',
+    tune: [T('order', 'Bubbles arranged', 'seg', { isNew: true, def: 'note', opts: [['note', 'By note'], ['time', 'By time'], ['size', 'Busiest first']], d: 'How a term opens; the switch over its bubbles changes it there' }),
+      T('float', 'Float', 'switch', { isNew: true, def: true, d: 'Each bubble drifts slowly on its own; they hold still while you scroll, and with reduced motion' }),
+      T('amount', 'How far they float', 'range', { isNew: true, def: 4, min: 1, max: 10, step: 1, unit: ' px' }),
+      T('ring', 'Pointing ports in', 'switch', { isNew: true, def: true, d: 'A ring closes round the bubble you point at, then you are in its note. Off: only a click' }),
+      T('ringMs', 'The ring takes', 'range', { isNew: true, def: 1000, min: 400, max: 2500, step: 100, unit: ' ms' }),
+      T('glass', 'The glass bends its edge', 'range', { isNew: true, def: 16, min: 0, max: 30, step: 1, unit: ' %', zero: 'flat glass' })],
+    preview: () => {
+      const tf = () => h('span.tm', 'traction force'), sp = (id, head, label, kids, len) => ({ id, head, label, body: h('div.bb-t', kids), imgs: [], len, open: false });
+      const P = { run: { c: sp('pv1', 'Step 2', 'Run 3', ['The ', tf(), ' rose to 1.2 kPa.'], 34), a: [{ spec: sp('pv2', 'Block', 'Batch 14', ['Stiffer gels.'], 13), rel: 'supported by' }, { spec: sp('pv3', 'Block', 'Drift', ['Under 0.2 µm.'], 13), rel: '' }], note: '30 kPa series', when: '4 Nov', n: 3 },
+        seed: { c: sp('pv4', 'Block', 'Seeding', ['Denser cells, more ', tf(), '.'], 34), a: [{ spec: sp('pv5', 'Block', 'Sweep', ['20k–80k/cm².'], 12), rel: 'follows' }], note: 'Seeding notes', when: '28 Oct', n: 2 },
+        map: { c: sp('pv6', 'Block', 'Map 12', ['Peak ', tf(), ' at the rim.'], 30), a: [], note: 'Analysis', when: '7 Nov', n: 1 } };
+      const ord = tune('bubbles', 'order') || 'note', seq = ord === 'time' ? ['seed', 'run', 'map'] : ord === 'size' ? ['run', 'seed', 'map'] : ['run', 'map', 'seed'];
+      const f = h('div.pv-bbf');
+      seq.forEach((k, i) => { const x = P[k], el = BUBBLE.el({ key: 'pv' + k, centre: x.c, around: x.a, S: .36, caption: { title: x.note, sub: ord === 'time' ? x.when : x.n + (x.n === 1 ? ' component' : ' components') }, onPort: () => { } });
+        el.style.left = (18 + i * 32) + '%'; el.style.top = '54%'; f.append(el); });
+      if (ord === 'note') f.append(h('div.tbb-grp', { style: { left: '4%', top: '8px', width: '30%' } }, h('b', '30 kPa series'), h('i')), h('div.tbb-grp', { style: { left: '37%', top: '8px', width: '28%' } }, h('b', 'Analysis'), h('i')), h('div.tbb-grp', { style: { left: '68%', top: '8px', width: '28%' } }, h('b', 'Seeding notes'), h('i')));
+      if (ord === 'time') f.append(h('div.tbb-rail', { style: { left: '6%', top: '20px', width: '88%' } }, h('span.tk', { style: { left: '15%' } }, h('span', '28 Oct')), h('span.tk', { style: { left: '50%' } }, h('span', '4 Nov')), h('span.tk', { style: { left: '85%' } }, h('span', '7 Nov'))));
+      const ring = on('bubbles') && tune('bubbles', 'ring') !== false; f.append(h('span.pv-bbr', ring ? 'pointing: a ring of ' + (tune('bubbles', 'ringMs') / 1000).toFixed(1) + ' s, then in' : 'a click ports in'));
+      BUBBLE.motion(f);
+      if (ring) { const first = f.querySelector('.bb'); if (first) { first.style.setProperty('--ring', tune('bubbles', 'ringMs') + 'ms'); requestAnimationFrame(() => requestAnimationFrame(() => first.classList.add('dwell'))); } }
+      const still = !on('bubbles') || tune('bubbles', 'float') === false;
+      return [f, PV.cap(on('bubbles') ? ({ note: 'By note: a note’s bubbles together, under its name. ', time: 'By time: oldest first, each one dated. ', size: 'Busiest first: the bubbles with the most around them first. ' })[ord] + (still ? 'They hold still. ' : 'They float ' + tune('bubbles', 'amount') + ' px. ') + (+tune('bubbles', 'glass') ? 'The glass bends its edge.' : 'Flat glass.') : 'Off: plain round trays, still; a click opens the note.')]; } });
 
   D({ id: 'investigate', group: 'structures', label: 'Needs investigation', desc: 'A structure that stays open until investigated: a dot in its component’s header, a breathing dot in the Portfolio, its list on Today above Recent notes.',
     preview: () => [run3({ stamp: null, head: [h('span.inv-dot', { title: 'Needs investigation' })], body: ['Why do the ', PV.st('investigate', 'beads drift'), ' after 40 frames?'] }),
@@ -205,6 +232,48 @@ const PV = {
     preview: () => { const m = settings().citeMode, c = m === 'author' ? '(Style et al., 2014)' : m === 'number' ? '[3]' : 'Traction force microscopy in physics and biology';
       return [PV.box({ num: 'Block', label: 'Background', body: ['Cells pull on soft gels as they move ', h('span.pv-cite', c), '.'] })]; } });
 
+  /* V4.1 — the Library overhaul (17e search, 17d shelves and foci, 17f shelf map and sheet) */
+  D({ id: 'libsearch', group: 'reading', needs: 'library', label: 'Library search', isNew: true, presets: { simple: true },
+    desc: 'One search box for the Library with fields (author:, year:2010-2016, shelf:, focus:, cited:"run 3", hl:, quote:, text:, is:unread…), "phrases", -left-out words and OR; it says why each paper matched. Off: the plain filter, as before.',
+    tune: [T('inside', 'Plain words look inside the papers too', 'switch', { isNew: true, def: true, d: 'Their highlights, the quotes taken from them and the notes on them; off: only the papers’ own details' }),
+      T('facets', 'Facets under the search', 'switch', { isNew: true, def: true, d: 'Years, reading, journals and shelves of the results; a click adds one to the search' }),
+      T('suggest', 'Suggestions while typing', 'switch', { isNew: true, def: true, d: 'Fields, then their values (shelves, foci, journals, authors, notes); Tab or Enter takes one' }),
+      T('pdftext', 'Offer to search inside the PDFs’ text', 'switch', { isNew: true, def: true, d: 'A box under the search: each PDF’s words are read once in a session' }),
+      T('sort', 'Results sorted by', 'select', { isNew: true, def: 'rel', opts: LSEARCH.SORTS })],
+    preview: () => { const ins = FEAT.tune('libsearch', 'inside') !== false, srt = (LSEARCH.SORTS.find(s => s[0] === FEAT.tune('libsearch', 'sort')) || LSEARCH.SORTS[0])[1];
+      return [h('div.pv-lq', h('span', '⌕'), h('code', 'author:engler year:>2005 matrix')),
+        FEAT.tune('libsearch', 'suggest') !== false ? h('div.pv-lsug', h('b', 'focus:'), h('span', 'in a focus (shelf › focus)')) : null,
+        FEAT.tune('libsearch', 'facets') !== false ? h('div.pv-lfac', [['Reading', 'Read 2'], ['Journal', 'Cell 1'], ['Shelf', 'Mechanobiology 2']].map(([a, b]) => h('span', h('b', a), b))) : null,
+        h('div.pv-lres', h('i', 'Matrix elasticity directs stem cell lineage specification'), h('div', 'Engler, A. J., … — Cell, 2006'),
+          h('div.pv-lwhy', h('b', ins ? 'highlight · p. 4' : 'author'), h('span', ins ? ['soft ', h('mark', 'matrices'), ' that mimic brain are neurogenic'] : 'Adam J. Engler'))),
+        PV.cap('Sorted by ' + srt.toLowerCase() + (FEAT.tune('libsearch', 'pdftext') !== false ? ' · the PDFs’ text when you tick it' : '') + '.')]; } });
+
+  D({ id: 'libmap', group: 'reading', needs: 'library', label: 'Shelf map', isNew: true,
+    desc: 'The Library as shelves you can see: each shelf a board in its colour, its foci standing on it as spines, one per paper; a search raises what it finds. Drag a spine onto a focus to add it there. Off: the list only.',
+    tune: [T('start', 'The Library opens on', 'seg', { isNew: true, def: 'auto', opts: [['auto', 'The map; the list once you search'], ['map', 'The shelf map'], ['list', 'The list']] }),
+      T('marks', 'Dots on the spines', 'switch', { isNew: true, def: true, d: 'Yellow: it has highlights · light: a note cites it' })],
+    preview: () => { const st = FEAT.on('libread') && FEAT.tune('libread', 'cards') !== false, mk = FEAT.tune('libmap', 'marks') !== false;
+      const sp = (s, hgt, hl, ct) => h('span.lm-sp.lm-' + (st ? s : 'none'), { style: { height: hgt + 'px' } }, mk && hl ? h('span.lm-hl') : null, mk && ct ? h('span.lm-ct') : null);
+      return [h('div.lm.pv-lm', h('section.lm-shelf', { style: { '--sh': '205' } }, h('div.lm-h', h('span.lm-sn', 'Traction methods')),
+          h('div.lm-board', h('div.lm-focus', h('span.lm-fl', 'FTTC & regularization', h('span.lm-n', '5')), h('div.lm-sps', sp('read', 60, 1, 1), sp('read', 70, 0, 1), sp('reading', 54, 1, 0), sp('unread', 64), sp('unread', 50))),
+            h('div.lm-focus', h('span.lm-fl', 'Reviews', h('span.lm-n', '2')), h('div.lm-sps', sp('read', 68, 1, 1), sp('reading', 58)))))),
+        PV.cap({ auto: 'Opens on the map; the list as soon as you search.', map: 'Opens on the shelf map.', list: 'Opens on the list.' }[FEAT.tune('libmap', 'start')] || '')]; } });
+
+  D({ id: 'libsmart', group: 'reading', needs: 'library', label: 'Smart foci', isNew: true,
+    desc: 'A focus that is a saved search: it holds every paper that matches, now and later. ✶ Save as smart focus under the search, or ⋯ on a shelf. Off: smart foci keep only the papers put in by hand.',
+    tune: [T('hand', 'Papers put in by hand stay too', 'switch', { isNew: true, def: true, d: 'Off: a smart focus holds only what its search finds' })],
+    preview: () => [h('aside.lg-side.pv-lgs', h('div.lg-theme', { style: { '--sh': '300' } }, h('div.lg-row.lg-t', h('span.lg-fold', '▾'), h('span.lg-sw'), h('span.lg-n', 'Mechanobiology'), h('span.lg-c', '13')),
+        h('div.lg-kids', h('div.lg-row.lg-g', h('span.lg-ic', '▤'), h('span.lg-n', 'Rigidity sensing'), h('span.lg-c', '7')), h('div.lg-row.lg-g.lg-smart', h('span.lg-ic.lg-star', '✶'), h('span.lg-n', 'Unread since 2018'), h('span.lg-c', FEAT.tune('libsmart', 'hand') === false ? '5' : '6'))))),
+      PV.cap('✶ Unread since 2018 = is:unread year:>2017' + (FEAT.tune('libsmart', 'hand') === false ? '' : ', with the paper you put in it') + '.')] });
+
+  D({ id: 'libread', group: 'reading', needs: 'library', label: 'Reading state', isNew: true,
+    desc: 'Each paper not opened, reading or read: on its sheet, its card and its spine, a small bar of how much of each focus is read, and is:unread / is:read in the search. Off: no states shown.',
+    tune: [T('auto', 'Opening a paper’s PDF makes it “reading”', 'switch', { isNew: true, def: true, d: '“Read” is always yours to set, on the paper’s sheet' }),
+      T('cards', 'Show it on the papers and the spines', 'switch', { isNew: true, def: true })],
+    preview: () => { const on = FEAT.tune('libread', 'cards') !== false;
+      return [h('div.pv-lst', ['unread', 'reading', 'read'].map(k => h('div', { style: { '--sh': '160' } }, h('span.lm-sp.lm-' + (on ? k : 'none'), { style: { height: '46px' } }), on ? h('span.lib-st.lib-st-' + k, LIBSTATE.LABEL[k]) : h('span.tiny.muted', '—')))),
+        PV.cap(FEAT.tune('libread', 'auto') !== false ? 'Opening the PDF turns “not opened” into “reading”.' : 'Set by hand on the paper’s sheet.')]; } });
+
   D({ id: 'eqcap', group: 'reading', needs: 'library', label: 'Equation capture', desc: '∑ Capture equation in the Library’s reader: draw a box round an equation on the page, check it, name it — registered with its paper and page.',
     preview: () => [h('div.pv-page', h('div.pv-pl'), h('div.pv-pl.s'), h('div.pv-eqbox', 'E = 3G(1 + ν)'), h('div.pv-pl'), h('div.pv-pl.s')), PV.cap('∑ Capture equation, then a box round it.')] });
 
@@ -214,6 +283,51 @@ const PV = {
   D({ id: 'webcap', group: 'reading', label: 'Web capture', inserts: ['website'], desc: 'A web page kept as it was the moment it was saved, in a note: + Insert → Website…, or a page saved from the browser. Off: it leaves + Insert; pages already captured stay.',
     preview: () => [h('div.pvb', h('div.pvb-h', h('span.pvb-n', 'Website'), h('b', 'Traction force microscopy — Wikipedia'), h('span.sp'), h('span.pvb-st', 'kept 13 Nov')), h('div.pv-page', { style: { margin: '0 10px 10px' } }, h('div.pv-pl'), h('div.pv-pl.s'), h('div.pv-pl'), h('div.pv-pl.s')))] });
 
+
+  /* ---------- V4.2 — the reader beside a note: tabs, split, Cited in, where a quote is from (13zzb, 17e, 25-reader.css) ---------- */
+  const rdRedraw = () => { try { if (RDOCK.wrap) { RDOCK.layout(); RDOCK.tabsRow(); } } catch (e) { } };
+  const rdRebuild = () => { try { if (RDOCK.wrap) RDOCK.remount(); } catch (e) { } };
+  const rdPage = () => h('div.pv-page', h('div.pv-pl'), h('div.pv-pl.s'), h('div.pv-pl'), h('div.pv-pl.s'));
+  D({ id: 'rtabs', group: 'reading', label: 'Reading tabs', desc: 'Several papers and pages open at once beside the note, as tabs, with + to open another — the PDFs and HTML pages of any note, and the papers of the Library. Clicking a tab takes the note to where that paper is embedded. Kept on this device, from note to note. Off: one paper at a time, belonging to its note.',
+    changed: v => { try { if (!RDOCK.wrap) return; const S = RDOCK.S_, id = S.show[S.act] || S.show.find(Boolean); if (!v) { RDOCK.close(true); if (id && M.block(id)) RDOCK.open(M.block(id)); } else rdRedraw(); } catch (e) { } },
+    tune: [T('follow', 'Clicking a tab takes the note to where the paper is', 'switch', { isNew: true, def: true, d: 'The note goes to the component that embeds it, lit. Off: the note stays where it is.' }),
+      T('names', 'Tabs are named by', 'seg', { isNew: true, def: 'ref', opts: [['ref', 'Short reference'], ['title', 'Title']], d: 'A paper of the Library: “Style et al., 2014” or its title. Others: their label.', changed: rdRedraw }),
+      T('width', 'The reader takes', 'seg', { isNew: true, def: 'half', opts: [['narrow', 'Two fifths'], ['half', 'Half'], ['wide', 'Three fifths']], d: 'of the window, the note the rest', changed: rdRedraw }),
+      T('max', 'Tabs kept open', 'seg', { isNew: true, def: 12, opts: [[6, '6'], [12, '12'], [24, '24']], d: 'One more closes the oldest that isn’t showing' }),
+      T('libtabs', 'The Library’s reader shows the tabs too', 'switch', { isNew: true, def: true, d: 'Click one there: the note it is in, with the paper beside it' })],
+    preview: () => { const follow = tune('rtabs', 'follow') !== false, title = tune('rtabs', 'names') === 'title', w = tune('rtabs', 'width') || 'half';
+      const tabs = [['PDF', title ? 'Traction force microscopy in physics and biology' : 'Style et al., 2014', true], ['Page', 'Traction force microscopy — Wikipedia', false], ['PDF', title ? 'Mapping the forces of focal adhesions' : 'Plotnikov et al., 2014', false]];
+      return [h('div.pv-rd.w-' + w, h('div.pv-rd-dock', h('div.pv-rd-tabs', tabs.map(([k, n, a]) => h('span.pv-rd-tab' + (a ? '.act' : ''), h('i', k), n, h('b', '×'))), h('span.pv-rd-add', '+')), rdPage()),
+        h('div.pv-rd-note', h('div.pv-rd-nt', '30 kPa series'), h('div.pv-rd-card' + (follow ? '.lit' : ''), h('i', 'PDF'), ' ', title ? 'Traction force microscopy…' : 'Style et al., 2014', ' — reading beside'), PV.box({ num: 'Step 2', label: 'Run 3', body: 'The edge collapsed.' }))),
+        PV.cap((follow ? 'A tab clicked: the note goes to where its paper is, lit. ' : 'A tab clicked: the note stays where it is. ') + 'The reader takes ' + ({ narrow: 'two fifths', half: 'half', wide: 'three fifths' }[w] || 'half') + ' of the window; ' + tune('rtabs', 'max') + ' tabs at most.')]; } });
+
+  D({ id: 'rsplit', group: 'reading', needs: 'rtabs', label: 'Split the reader', desc: '◫ on the reader’s tab row: one paper, two (side by side, or one over the other) or a quadrant (2×2) of your tabs, like ◫ Split on a note. Each pane has its own page, zoom and highlights. Off: one pane.',
+    changed: v => { try { if (!v && RDOCK.wrap) RDOCK.setN(1); else rdRedraw(); } catch (e) { } },
+    tune: [T('two', 'Two papers sit', 'seg', { isNew: true, def: 'cols', opts: [['cols', 'Side by side'], ['rows', 'One over the other']], d: 'In half the window, one over the other leaves each its width', changed: rdRebuild })],
+    preview: () => { const rows = tune('rsplit', 'two') === 'rows', n = (() => { try { return RDOCK.S_.n; } catch (e) { return 1; } })(), sp = (t, on) => h('span' + (on ? '.on' : ''), t);
+      return [h('div.pv-rs', h('div' + (n === 1 ? '.cur' : ''), h('div.pv-rs-g', sp('Style 2014', true)), 'One'), h('div' + (n === 2 ? '.cur' : ''), h('div.pv-rs-g.n2' + (rows ? '.rows' : ''), sp('Style 2014', true), sp('Wikipedia')), rows ? 'One over the other' : 'Side by side'),
+        h('div' + (n === 4 ? '.cur' : ''), h('div.pv-rs-g.n4', sp('Style', true), sp('Wiki'), sp('Plotnikov'), sp('+')), 'Quadrant (2×2)')), PV.cap('◫ on the tab row. A free pane offers your other tabs and +.')]; } });
+
+  D({ id: 'citedin', group: 'reading', label: 'Cited in', desc: 'While you read a paper — beside a note or in the Library’s reader — the notes that cite it, and the other notes it is in, are offered as places to go: a line of them under the bar, and Cited in · N.',
+    changed: rdRebuild,
+    tune: [T('strip', 'A line of the notes under the bar', 'switch', { isNew: true, def: true, d: 'Off: just the Cited in button, with the list', changed: rdRebuild }),
+      T('embeds', 'Also the notes the paper is embedded in', 'switch', { isNew: true, def: true, d: 'Besides the notes that cite it (/cite)', changed: rdRebuild })],
+    preview: () => { const strip = tune('citedin', 'strip') !== false, emb = tune('citedin', 'embeds') !== false, n = emb ? 3 : 2;
+      return [h('div.pv-cx', h('div.pv-cx-bar', h('b', 'Style et al., 2014'), h('span', 'Cited in · ' + n), h('span', { style: { color: 'var(--ink-3)', borderColor: 'var(--rule-2)' } }, 'Highlights')),
+        strip ? h('div.rcx-strip', h('span.rcx-sk', 'Cited in'), h('span.rcx-chip', '30 kPa series', h('span', '2')), h('span.rcx-chip', 'Seeding density notes'), emb ? h('span.rcx-chip', 'Analysis — traction maps') : null) : null, rdPage()),
+        PV.cap((strip ? 'The notes under the bar, ' : 'Cited in · ' + n + ' on the bar, ') + 'click one to go there; the paper stays beside you.' + (emb ? ' Notes it is embedded in count too.' : ''))]; } });
+
+  D({ id: 'citeband', group: 'reading', label: 'Where a quote is from', desc: 'A quote shows its paper in a band, like a bridge’s: the reference, the page, the title and the note it is embedded in. Bridged to another note it carries both bands — the bridge’s and the citation’s. Click the band: the paper opens beside the note, at the quote.',
+    changed: () => { try { RDX.color(); App.refresh(); } catch (e) { } },
+    tune: [T('color', 'Colour', 'color', { isNew: true, def: '#3b5bdb', opts: [['#3b5bdb', 'Ink blue'], ['#b7791f', 'Amber'], ['#0d675e', 'Teal'], ['#9c36b5', 'Plum'], ['#475569', 'Slate']], changed: () => { try { RDX.color(); } catch (e) { } } }),
+      T('detail', 'The band shows', 'seg', { isNew: true, def: 'full', opts: [['full', 'Reference, page and title'], ['short', 'Reference and page']], changed: () => { try { App.refresh(); } catch (e) { } } }),
+      T('click', 'Clicking it', 'seg', { isNew: true, def: 'beside', opts: [['beside', 'Opens the paper beside the note'], ['card', 'Shows it in its card']], d: 'Alt+click does the other' })],
+    preview: () => { const col = tune('citeband', 'color') || '#3b5bdb', full = tune('citeband', 'detail') !== 'short', beside = tune('citeband', 'click') !== 'card';
+      const band = (k, extra) => h('div.origin.or-cite', h('div.or-top', h('span.or-k', k), h('a.or-note', 'Style et al., 2014'), h('span.or-pg', 'p. 4'), h('button.or-go', { type: 'button', tabindex: '-1' }, '◧')), full ? h('div.or-path', ['Traction force microscopy in physics and biology', extra].filter(Boolean).join(' · ')) : null);
+      return [h('div.pv-cb', { style: { '--cite': col } },
+        h('div.pvb.pv-q', { style: { borderLeft: '4px solid ' + col } }, h('div.pvb-h', h('span.pvb-n', 'Quote'), h('span.sp'), h('span.pvb-st', 'p. 4')), band('❝ Quoted from'), h('div.pvb-tx', '❝ Cells pull hardest at the leading edge, where adhesions mature.')),
+        h('div.pvb.pv-bridge', h('div.pvb-h', h('span.pvb-n', 'Bridge'), h('span.sp')), h('div.refbody', h('div.origin.or-bridge', h('div.or-top', h('span.or-k', '⇄ Bridged from'), h('a.or-note', 'Reading: Style 2014'), h('span.or-cmp', 'Quote'))), band('❝ Quoted from', 'in Reading: Style 2014'), h('div.serif', { style: { fontSize: '13px', fontStyle: 'italic' } }, 'Cells pull hardest at the leading edge, where adhesions mature.')))),
+        PV.cap('A quote, and the same quote bridged to another note: the bridge’s band, then the citation’s. Click it: ' + (beside ? 'the paper opens beside the note, at the quote.' : 'its card scrolls to the quote.'))]; } });
   /* =============================== Widgets =============================== */
   const W = (id, label, desc, rows, pv, o = {}) => D(Object.assign({ id, group: 'widgets', label, desc: desc + ' Off: it leaves + Insert and the / commands; those already in your notes stay.', inserts: rows, preview: pv }, o));
   W('equations', 'Equations', '∑ Equation in a note, or in the text, and the registered equations shared by every note.', ['equation', 'equation-reg'],
@@ -238,8 +352,22 @@ const PV = {
   /* =============================== Tabs & overview =============================== */
   const TabF = (id, tab, label, desc, pv, o = {}) => D(Object.assign({ id, group: 'tabs', tab, label, desc: desc + ' Off: the tab leaves the row; its page still opens from links and search.', preview: () => [PV.tabs(tab), ...pv()] }, o));
   TabF('tasks', 'tasks', 'Tasks', 'The Tasks tab: everything to do, from every note.', () => [h('div.pv-list', [['Order fibronectin', 'Seeding notes'], ['Re-image field 3', 'Run 3']].map(([a, b]) => h('div', h('input', { type: 'checkbox', tabindex: '-1' }), h('b', a), h('span', b))))], { presets: { simple: true } });
-  TabF('atlas', 'atlas', 'Atlas', 'The Atlas: the notebook as one map in 3D — notes, components, structures, terms, people and papers.', () => [PV.svg(300, 80, '<g fill="var(--teal)"><circle cx="60" cy="40" r="9"/><circle cx="150" cy="22" r="6"/><circle cx="160" cy="60" r="7" fill="var(--mag)"/><circle cx="240" cy="38" r="9"/></g><g stroke="var(--rule-2)"><line x1="60" y1="40" x2="150" y2="22"/><line x1="60" y1="40" x2="160" y2="60"/><line x1="150" y1="22" x2="240" y2="38"/></g>')],
-    { tune: [T('ctrlk', 'Ctrl+K opens the Atlas', 'switch', { d: 'Off: Ctrl+K opens the list, as before', get: () => ATLAS.on(), set: v => saveSettings({ labs: Object.assign({}, settings().labs, { atlas: v }) }) })] });
+  TabF('atlas', 'atlas', 'Atlas', 'The Atlas: the notebook in a room in 3D with three axes, each sorting by one thing you pick — time (oldest at the origin, newer outward), kind, project, note, note type, term, people, status or connections. Drag turns it, Shift+drag moves it. Each dot is a glass bead that opens into the term page’s bubble only when you rest the pointer on it a moment, tap it or pin it; a click visits it in its note, and a small bubble there brings you back. Bridges and connections are threads with an arrow and a light running from where they start; resting on one shows both its ends. The axes tighten as you go further: days close up, months far off.', () => [ATLAS3.preview()],
+    { tune: [T('ctrlk', 'Ctrl+K opens the Atlas', 'switch', { d: 'Off: Ctrl+K opens the list, as before', get: () => ATLAS.on(), set: v => saveSettings({ labs: Object.assign({}, settings().labs, { atlas: v }) }) }),
+      T('start', 'It starts on', 'select', { isNew: true, def: 'last', opts: [['last', 'The axes I used last'], ['story', 'Story over time'], ['loops', 'Open loops'], ['who', 'Who did what'], ['terms', 'Terms across notes'], ['busy', 'Most connected'], ['mine', 'These three ↓']], d: 'The first visit is Story over time: time × kind × project' }),
+      ...[0, 1, 2].map(a => T('ax' + a, 'XYZ'[a] + ' axis (with “These three”)', 'select', { isNew: true, def: ['time', 'kind', 'project'][a], opts: Object.entries(ATLAS3.DIMS).map(([k, D]) => [k, D.label]) })),
+      T('cap', 'Bubbles that open as you come close', 'range', { isNew: true, def: 0, min: 0, max: 8, step: 1, zero: 'never — only the one you rest on, tap or pin', d: 'Off by default: a bubble opens only when you ask for it. Above 0, the nearest dots open by themselves once the room has been still a moment, at most this many (pinned ones count)' }),
+      T('near', 'With bubbles opening as you come close: they open when a dot looks', 'range', { isNew: true, def: 5, min: 3, max: 9, step: 1, unit: ' % of the room', d: 'Smaller: they open from further away' }),
+      T('hoverMs', 'Resting on a dot opens it after', 'range', { isNew: true, def: 1000, min: 0, max: 2000, step: 100, unit: ' ms', zero: 'at once', d: 'A ring closes in round the dot meanwhile, so moving through the room never pops bubbles open. Coming close waits as long for the room to be still, and so does a thread’s popup' }),
+      T('float', 'Float', 'switch', { isNew: true, def: true, d: 'The dots and bubbles drift a little, each on its own; still with reduced motion. With many dots only the open bubbles drift' }),
+      T('amount', 'How far they float', 'range', { isNew: true, def: 3, min: 1, max: 8, step: 1, unit: ' px' }),
+      T('bridges', 'Bridges as threads', 'switch', { isNew: true, def: true, d: 'Dashed, from the component to where it shows in the other note, with an arrow' }),
+      T('wires', 'Connections as threads', 'switch', { isNew: true, def: true, d: 'Wires and links between components, with an arrow' }),
+      T('pulses', 'A light runs along each thread', 'switch', { isNew: true, def: true, d: 'From where it starts to where it goes, in the colour of its kind of component or structure. Off, or with reduced motion: a dot of that colour where it starts' }),
+      T('pulseSpeed', 'How fast the light runs', 'range', { isNew: true, def: 2, min: 1, max: 5, step: 1 }),
+      T('ticks', 'The axes tighten as you go further', 'switch', { isNew: true, def: true, d: 'Days close up, then weeks, months, quarters and years as you scroll away; long names shorten. Off: the ticks stay as the span gives them' }),
+      T('room', 'Floor and walls', 'switch', { isNew: true, def: true, d: 'The two far walls with their grid, and the lines across to them from the dot you point at. Off: only the floor' }),
+      T('labels', 'Labels beside the dots', 'seg', { isNew: true, def: 'few', opts: [['none', 'None'], ['few', 'A few'], ['many', 'Many']], d: 'Never over another label or an open bubble' })] });
   TabF('activity', 'activity', 'Activity', 'The Activity tab: the heatmap of your days, themes and weekly numbers.', () => [h('div.pv-heat', Array.from({ length: 42 }, (_, i) => h('i', { style: { background: `var(--hm-${[0, 1, 2, 3, 0, 4, 2][i % 7]})` } })))]);
   TabF('materials', 'materials', 'Materials', 'The Materials tab: gel batches, cell lines, antibody lots and the notes that used them.', () => [h('div.pv-list', [['PAA gel batch 15', '8 kPa · bench 3'], ['MDCK p12', 'LN2 box 2']].map(([a, b]) => h('div', h('b', a), h('span', b))))]);
   TabF('canvas', 'canvas', 'Spatial canvases (lab)', 'Canvases where components, structures, papers and datasets are arranged freely; drawn lines become real connections; export as JSON Canvas. An experiment: presets leave it as it is.', () => [PV.cap('A Canvas tab in the row.')],

@@ -1,12 +1,35 @@
 /* ==========================================================================
    14 · Terms & the lens — how a term's components chain together.
-   V3.969 (Gabe: "The Atlas reshaping should apply to terms"): the lens opens
-   as the Atlas's nests (14d) — the term is the outer sphere, its themes
-   inside (the linked projects too), the notes inside those with the
-   components that use it as dots, the other terms and the papers they carry
-   orbiting the note they belong to, and the connections between them drawn
-   in the lens's inks. Chain, beside Nests in the bar, is the board of boxes
-   as before (lanes by theme or note, columns by day).
+   V3.999 (Gabe: "any component containing the term appears as a realistic
+   bubble portal look that shows the neighboring links or components to that
+   component. If that term reappears within that bubble, then it does not
+   create a new bubble centered around it. Terms mentioned in lit reviews do
+   not appear in the terms tab … bridges of components containing that term
+   to other notes … show up in a clever way … Terms linked to other terms
+   within a same component or phrase or links between components are listed
+   as a side panel list of synergies … Hovering over a bubble allows you to
+   port into it to see the note, and you can click a little bubble button to
+   go back"; "Let the user choose the order of bubbles. Holding Control key to
+   select multiple synergies should work as well. Update the Terms homepage
+   as well to navigate a long list of terms more easily along with their
+   stats. I still want highlights of barriers leading to a resolution or
+   observations leading to takeaways with the help of other terms … that does
+   not add more to complexity or as a new feature"; "Bubbles is the only way
+   to view it. I want the bubbles to be slightly dynamic with a clean
+   animation.")
+   • The Terms page (TermsView): find (/ · ↑ ↓ · Enter), sorts (most used,
+     rising, recent, A–Z) cutting the list into groups whose heads stay put,
+     the rail that jumps to a group, a project and an open-barrier filter;
+     each term's uses, last twelve weeks, structures by kind, open barriers,
+     arcs and last use; the side: at a glance, rising, open barriers, key.
+   • The term (LensView, #/lens/<term>[/<synergies>[/all]]): bubbles only
+     (14e) — a component that uses it with every neighbour, in the order you
+     pick (note · time · size); synergies to pick (Ctrl/⌘+click several) and
+     look through together; bridges folded into beads; arcs — a barrier and
+     its resolution, an observation and its takeaway — on the thread between
+     their bubbles, with the days and the term that joined them (TARC).
+     Nests and Chain left the term (14d stays for the Atlas; the chain board
+     below stays for Export chain).
    ========================================================================== */
 /** V3.997 (Gabe: "Terms mentioned in lit reviews do not appear in the terms tab"): a mention in a lit review (a literature note, or a Lit review) is left out of the
     Terms tab and the term's page — Settings → Features → Terms can count them again. */
@@ -15,119 +38,405 @@ const TERMLIT = {
   counted: () => typeof FEAT !== 'undefined' && FEAT.tune('terms', 'lit') === 'counted',
   occ(termId) { const all = IX.termOcc.get(termId) || []; return TERMLIT.counted() ? all : all.filter(o => !TERMLIT.is(M.doc(o.docId))); },
 };
-const TermsView = {
-  render() {
-    let onlyLit = 0;
-    const terms = DB.all('terms').map(t => { const occ = TERMLIT.occ(t.id), ks = {}; if (!occ.length && (IX.termOcc.get(t.id) || []).length) { onlyLit++; return null; }
-      occ.forEach(o => o.itemIds.forEach(i => { const it = M.item(i); if (it) ks[it.kind] = (ks[it.kind] || 0) + 1; }));
-      return { t, occ, ks, notes: new Set(occ.map(o => o.docId)).size, last: Math.max(0, ...occ.map(o => +new Date(M.blockTime(M.block(o.blockId)) || 0))) }; })
-      .filter(Boolean).sort((a, b) => b.occ.length - a.occ.length);
-    return h('div.page', h('div.eyebrow', 'Repository'), h('div.row', { style: { alignItems: 'baseline' } }, h('h1.title', 'Terms'), h('span.spacer'), h('button.btn.sm', { title: 'Look through every component in every note and mark each use of each term', on: { click: () => TERMSCAN.rescan() } }, '⟳ Rescan terms')),
-      h('p.stand', `Mark a word or phrase with ${keyLabel(settings().termKey)} inside any note. Each term accumulates the structures it appears with — the claim it sat in, the barrier that sentence became, the resolution that closed it — with provenance.`),
-      h('div.list', terms.length ? terms.map(({ t, occ, ks, notes, last }) => h('div.li.click', { on: { click: () => App.go('#/lens/' + t.id) } },
-        h('span', { style: { width: '220px', flex: 'none', fontSize: '15px' } }, h('span.term-demo', t.label)),
-        h('span.t', h('span.row', Object.entries(ks).map(([k, n]) => kchip(k, `${KIND[k].label} ${n}`))), h('span.s', `${(M.project(t.projectId) || { name: 'General' }).name} · ${plural(notes, 'note')} · ${plural(occ.length, 'occurrence')}${last ? ' · last ' + fmtWhen(last) : ''}`)),
-        t.importedFrom ? h('span.pill.mag', 'imported') : null)) : h('div.empty', 'No terms yet')),
-      TERMLIT.counted() ? null : h('p.tiny.muted', { style: { marginTop: '12px' } }, 'Mentions in lit reviews are not counted' + (onlyLit ? ' · ' + plural(onlyLit, 'term') + ' used only there ' + (onlyLit === 1 ? 'is' : 'are') + ' not listed' : '') + ' — Settings → Features → Terms counts them.'));
+
+/** V3.999 · Arcs: a barrier that found its resolution, an observation that became a takeaway. Nothing new to mark — they come from the structures made
+    with Ctrl+Enter: a resolution's `resolves`, or a connection between a component holding the one and a component holding the other (an Insight counts
+    as a takeaway). `through`: the other terms both ends share — the term that joined them. */
+const TARC = {
+  kinds(id) { const b = M.block(id), ks = new Set(); (IX.blockItems.get(id) || []).forEach(i => { const it = M.item(i); if (it) ks.add(it.kind); }); (IX.origin.get(id) || []).forEach(it => ks.add(it.kind)); if (b && b.ckind === 'insight') ks.add('takeaway'); return ks; },
+  K: { br: ['barrier', 'resolution', 'resolved'], ot: ['observation', 'takeaway', 'became a takeaway'] },
+  _c: null, _at: -1,
+  all() {
+    const stamp = DB.all('items').length + ':' + DB.all('wires').length; if (TARC._c && TARC._at === stamp && TARC._ix === IX.wOut) return TARC._c;
+    const out = [], seen = new Set(), live = id => { const b = M.block(id); if (!b || b.status === 'removed') return null; const d = M.doc(b.docId); return d && !d.deleted && (TERMLIT.counted() || !TERMLIT.is(d)) ? b : null; };
+    const add = (from, to, k) => { if (!from || !to || from === to) return; const key = from + '>' + to + k; if (seen.has(key)) return; const a = live(from), z = live(to); if (!a || !z) return; seen.add(key);
+      out.push({ from, to, k, days: Math.max(0, Math.round((+new Date(M.blockTime(z)) - +new Date(M.blockTime(a))) / 864e5)) }); };
+    DB.all('items').forEach(it => { if (it.kind === 'resolution' && it.resolves) { const bi = M.item(it.resolves); if (bi) add(bi.originBlockId, it.originBlockId, 'br'); } });
+    DB.all('wires').forEach(w => { const A = TARC.kinds(w.from), Z = TARC.kinds(w.to);
+      for (const k of ['br', 'ot']) { const [a, z] = TARC.K[k]; if (A.has(a) && Z.has(z)) add(w.from, w.to, k); else if (Z.has(a) && A.has(z)) add(w.to, w.from, k); } });
+    TARC._at = stamp; TARC._ix = IX.wOut; return (TARC._c = out);
   },
-  importDialog(projectId) {
-    const m = modal({ title: 'Import a term into ' + M.project(projectId).name, actions: [{ label: 'Cancel' }], body: h('div', h('p.tiny.muted', { style: { marginTop: 0 } }, 'An imported term stays linked to its source. In the lens, “include linked projects” chains occurrences across both.'),
-      optionPicker({ placeholder: 'Search terms in other projects…', items: q => DB.where('terms', t => t.projectId !== projectId && (!q || t.label.toLowerCase().includes(q))),
-        render: t => h('div', h('span.term-demo', t.label), h('span.s', (M.project(t.projectId) || { name: 'General' }).name + ' · ' + plural((IX.termOcc.get(t.id) || []).length, 'occurrence'))),
-        onPick: t => { m.close(); M.importTerm(t.id, projectId); toast('Imported “' + t.label + '”'); } })) });
+  terms: id => IX.blockTerms.get(id) || new Set(),
+  through(a, ts) { const Z = TARC.terms(a.to); return [...TARC.terms(a.from)].filter(t => Z.has(t) && !ts.includes(t) && M.term(t)); },
+  /** For the Terms page: what a term did in each arc — the barrier's (or observation's) own term, "through" the others; or the term that joined them. */
+  roles(termId) {
+    const out = [], seen = new Set();
+    TARC.all().forEach(a => { const A = TARC.terms(a.from), Z = TARC.terms(a.to); if (!A.has(termId)) return;
+      let r; if (!Z.has(termId)) r = { k: a.k, via: TARC.through(a, [termId]).map(t => M.term(t).label) };
+      else { const on = [...A].filter(t => !Z.has(t) && M.term(t)); r = on.length ? { k: a.k, of: M.term(on[0]).label } : { k: a.k, via: [] }; }
+      const key = r.k + (r.of ? 'o' + r.of : 'v' + r.via.join()); if (seen.has(key)) return; seen.add(key); r.a = a; out.push(r); });
+    return out;
+  },
+  dot: k => h('span.ad', { 'aria-hidden': 'true', style: { '--a': `var(--k-${TARC.K[k][0]})`, '--b': `var(--k-${TARC.K[k][1]})` } }),
+  line(r) { const [ka] = TARC.K[r.k];
+    return h('div', TARC.dot(r.k), r.of ? [r.k === 'br' ? 'helped resolve a barrier on ' : 'took an observation on ', h('span.term-demo', r.of), r.k === 'br' ? '' : ' to a takeaway']
+      : [r.k === 'br' ? 'barrier resolved' : 'observation became a takeaway', r.via.length ? [' through ', h('span.term-demo', r.via[0])] : (' in ' + plural(r.a.days, 'day'))]); },
+};
+
+/* ---------- the Terms page ---------- */
+const TSTAT = {
+  week0() { const d = dayStart(new Date()); const dow = (d.getDay() + 6) % 7; return +d - dow * 864e5 - 11 * 7 * 864e5; },
+  rows() {
+    let onlyLit = 0; const w0 = TSTAT.week0(), now = Date.now();
+    const rows = DB.all('terms').map(t => {
+      const occ = TERMLIT.occ(t.id).filter(o => { const b = M.block(o.blockId); return b && b.status !== 'removed'; });
+      if (!occ.length && (IX.termOcc.get(t.id) || []).length) { onlyLit++; return null; }
+      const ks = {}, opens = [], wk = new Array(12).fill(0); let last = 0;
+      occ.forEach(o => { o.itemIds.forEach(i => { const it = M.item(i); if (!it) return; ks[it.kind] = (ks[it.kind] || 0) + 1; if (it.kind === 'barrier' && IX.status(it) === 'open' && !opens.includes(it)) opens.push(it); });
+        const tm = +new Date(M.blockTime(M.block(o.blockId)) || 0); if (tm > last) last = tm; const wi = Math.floor((tm - w0) / (7 * 864e5)); if (wi >= 0 && wi < 12) wk[wi]++; });
+      const sum = (a, z) => wk.slice(a, z).reduce((x, y) => x + y, 0);
+      return { t, occ, uses: occ.length, notes: new Set(occ.map(o => o.docId)).size, ks, opens, open: opens.length, wk, d4: sum(8, 12) - sum(4, 8), last, ago: last ? Math.floor((now - last) / 864e5) : 9999,
+        proj: (M.project(t.projectId) || { name: 'General' }).name, projId: t.projectId || '', isNew: t.created && +new Date(t.created) > now - 30 * 864e5, arcs: TARC.roles(t.id) };
+    }).filter(Boolean);
+    return { rows, onlyLit };
+  },
+  groups(rows, sort) {
+    let defs, key;
+    if (sort === 'rising') { defs = [['a', 'Rising', 'Rising'], ['b', 'Steady', 'Steady'], ['c', 'Quieter', 'Quieter']]; key = r => r.d4 >= 2 ? 'a' : r.d4 <= -2 ? 'c' : 'b'; rows.sort((a, b) => b.d4 - a.d4 || b.uses - a.uses); }
+    else if (sort === 'recent') { defs = [['a', 'This week', 'Week'], ['b', 'This month', 'Month'], ['c', 'Earlier', 'Earlier']]; key = r => r.ago <= 6 ? 'a' : r.ago <= 30 ? 'b' : 'c'; rows.sort((a, b) => a.ago - b.ago || b.uses - a.uses); }
+    else if (sort === 'az') { defs = ['#', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'].map(c => [c, c === '#' ? 'Numbers and signs' : c, c]); key = r => { const c = (r.t.label || '?')[0].toUpperCase(); return /[A-Z]/.test(c) ? c : '#'; }; rows.sort((a, b) => a.t.label.localeCompare(b.t.label, undefined, { sensitivity: 'base' })); }
+    else { const top = Math.max(1, ...rows.map(r => r.uses)), hi = Math.max(3, Math.ceil(top * .5)), mid = Math.max(2, Math.ceil(top * .2));
+      const span = mid === hi - 1 ? String(mid) : mid + '–' + (hi - 1); defs = [['a', hi + '+ uses', hi + '+'], ['b', span + (span === '1' ? ' use' : ' uses'), span], ['c', 'Under ' + mid, '<' + mid]]; key = r => r.uses >= hi ? 'a' : r.uses >= mid ? 'b' : 'c'; rows.sort((a, b) => b.uses - a.uses || a.t.label.localeCompare(b.t.label)); }
+    return defs.map(([k, label, short]) => ({ k, label, short, rows: rows.filter(r => key(r) === k) }));
+  },
+  ago: d => d >= 9999 ? '—' : d <= 0 ? 'today' : d < 7 ? d + ' d' : d < 60 ? Math.round(d / 7) + ' w' : Math.round(d / 30) + ' mo',
+  KORDER: ['claim', 'observation', 'result', 'takeaway', 'evidence', 'question', 'barrier', 'resolution'],
+  spark(r, W, H) {
+    const mx = Math.max(2, ...r.wk), X = i => 2 + i * (W - 4) / 11, Y = v => H - 2.5 - v / mx * (H - 6), d = r.wk.map((v, i) => (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1)).join(' ');
+    const s = h('span.tl-spk', { role: 'img', 'aria-label': r.t.label + ', uses a week over twelve weeks: ' + r.wk.join(', '),
+      html: `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><path class="ln" d="${d}"/><circle class="end" cx="${X(11)}" cy="${Y(r.wk[11])}" r="2.2"/><circle class="hov" cx="${X(11)}" cy="${Y(r.wk[11])}" r="3"/></svg>` });
+    const w0 = TSTAT.week0();
+    s.addEventListener('pointermove', e => { const q = s.getBoundingClientRect(), i = clamp(Math.round((e.clientX - q.left - 2) / (q.width - 4) * 11), 0, 11), c = s.querySelector('.hov');
+      c.setAttribute('cx', X(i)); c.setAttribute('cy', Y(r.wk[i])); TSTAT.tip(e, plural(r.wk[i], 'use'), 'week of ' + fmtDay(w0 + i * 7 * 864e5)); });
+    s.addEventListener('pointerleave', () => TSTAT.untip());
+    return s;
+  },
+  _tip: null,
+  tip(e, a, b) { let t = TSTAT._tip; if (!t || !t.isConnected) { t = TSTAT._tip = h('div.tl-tip', { role: 'tooltip' }); document.body.append(t); } t.replaceChildren(h('b', a), b); t.classList.add('on'); const w = t.offsetWidth; t.style.left = clamp(e.clientX + 12, 8, innerWidth - w - 8) + 'px'; t.style.top = Math.max(8, e.clientY - 46) + 'px'; },
+  untip() { if (TSTAT._tip) TSTAT._tip.classList.remove('on'); },
+};
+const TermsView = {
+  canvas: true, title: true,
+  st: { q: '', sort: null, proj: 'all', open: false, act: 0, scroll: 0, jump: null, side: null },
+  sort() { return TermsView.st.sort || (typeof FEAT !== 'undefined' && FEAT.tune('terms', 'sort')) || 'used'; },
+  render() {
+    const S = TermsView.st, { rows, onlyLit } = TSTAT.rows(); TermsView._rows = rows; TermsView._onlyLit = onlyLit;
+    const uses = rows.reduce((n, r) => n + r.uses, 0), notes = new Set(rows.flatMap(r => r.occ.map(o => o.docId))).size;
+    App.setTitle('Terms', [h('span', plural(rows.length, 'term') + ' · ' + plural(uses, 'use') + ' in ' + plural(notes, 'note')), TERMLIT.counted() ? null : h('span', 'lit reviews not counted')]);
+    if (S.side == null) S.side = innerWidth >= 820;
+    const q = h('input#tl-q', { type: 'search', placeholder: 'Find a term', 'aria-label': 'Find a term', autocomplete: 'off', value: S.q,
+      on: { input: e => { S.q = e.target.value; S.act = 0; TermsView.list(true); }, keydown: e => TermsView.nav(e) } });
+    const projs = [...new Map(rows.map(r => [r.projId, r.proj])).entries()];
+    const side = h('aside.insp.tl-side.nopan.scrolly' + (S.side ? '.open' : ''), h('button.ib.x', { title: 'Hide', on: { click: () => { S.side = false; side.classList.remove('open'); tog.hidden = false; host.classList.remove('side-open'); } } }, '✕'));
+    const tog = h('button.btn.sm.tl-tog.nopan', { hidden: S.side, on: { click: () => { S.side = true; side.classList.add('open'); tog.hidden = true; host.classList.add('side-open'); } } }, 'At a glance');
+    const host = h('div.canvas-host.tl-host' + (S.side ? '.side-open' : ''),
+      h('div.tl-main',
+        h('div.tl-tools',
+          h('label.tl-q', h('span.ico', { 'aria-hidden': 'true' }, '⌕'), q, h('kbd', '/')),
+          h('div.seg.tl-sort', { role: 'group', 'aria-label': 'Sort' }),
+          projs.length > 1 ? (projs.length <= 4 ? h('div.tl-chips', { role: 'group', 'aria-label': 'Project' }) : h('select.inp.tl-psel', { 'aria-label': 'Project', on: { change: e => { S.proj = e.target.value; S.act = 0; TermsView.list(true); } } }, h('option', { value: 'all' }, 'All projects'), projs.map(([id, n]) => h('option', { value: id, selected: S.proj === id }, n)))) : null,
+          h('button.chip.tl-obf', { type: 'button', title: 'Only the terms with a barrier that has no resolution yet', on: { click: () => { S.open = !S.open; S.act = 0; TermsView.list(true); } } }, 'Open barriers'),
+          h('span.spacer'),
+          h('button.btn.sm', { title: 'Look through every component in every note and mark each use of each term', on: { click: () => TERMSCAN.rescan() } }, '⟳ Rescan terms')),
+        h('div.tl-body', h('nav.tl-rail', { 'aria-label': 'Jump to a group' }),
+          h('div.tl-list.scrolly', { on: { scroll: () => { S.scroll = $('.tl-list').scrollTop; TermsView.spy(); }, wheel: () => { S.jump = null; }, touchstart: () => { S.jump = null; } } }))),
+      side, tog);
+    TermsView._projs = projs; TermsView._host = host;
+    TermsView.sidePanel(side, rows, onlyLit);
+    return host;
+  },
+  after() { TermsView.list(false); const L = $('.tl-list'); if (L) { L.scrollTop = TermsView.st.scroll || 0; TermsView.spy(); } },
+  filtered() { const S = TermsView.st, q = S.q.trim().toLowerCase(); return TermsView._rows.filter(r => (S.proj === 'all' || r.projId === S.proj) && (!S.open || r.open) && (!q || r.t.label.toLowerCase().includes(q) || (typeof TFORMS !== 'undefined' && TFORMS.forms(r.t).some(f => f.toLowerCase().includes(q))))); },
+  list(top) {
+    const S = TermsView.st, host = TermsView._host; if (!host || !host.isConnected) return;
+    const sort = TermsView.sort(), setSort = k => { S.sort = k; S.act = 0; TermsView.list(true); };
+    $('.tl-sort', host).replaceChildren(...[['used', 'Most used'], ['rising', 'Rising'], ['recent', 'Recent'], ['az', 'A–Z']].map(([k, l]) => h('button' + (sort === k ? '.on' : ''), { type: 'button', 'aria-pressed': String(sort === k), on: { click: () => setSort(k) } }, l)));
+    const chips = $('.tl-chips', host); if (chips) chips.replaceChildren(...[['all', 'All projects'], ...TermsView._projs].map(([k, l]) => h('button.chip' + (S.proj === k ? '.on' : ''), { type: 'button', 'aria-pressed': String(S.proj === k), on: { click: () => { S.proj = k; S.act = 0; TermsView.list(true); } } }, l)));
+    const ob = $('.tl-obf', host); ob.classList.toggle('on', S.open); ob.setAttribute('aria-pressed', String(S.open));
+    const G = TSTAT.groups(TermsView.filtered(), sort), L = $('.tl-list', host), maxU = Math.max(1, ...TermsView._rows.map(r => r.uses));
+    TermsView._flat = G.flatMap(g => g.rows); S.act = Math.min(S.act, Math.max(0, TermsView._flat.length - 1));
+    const cols = h('div.tl-cols', ...[['az', 'Term'], ['used', 'Uses'], ['rising', 'Last 12 weeks'], [null, 'Structures'], ['recent', 'Last', '.r']].map(([k, l, c]) => k ? h('button' + (c || '') + (sort === k ? '.on' : ''), { type: 'button', title: 'Sort by this', on: { click: () => setSort(k) } }, l) : h('span', l)));
+    let i = 0;
+    const secs = G.filter(g => g.rows.length).map(g => h('section.tl-sec', { 'data-g': g.k }, h('div.tl-g', g.label, h('span', plural(g.rows.length, 'term'))), g.rows.map(r => TermsView.row(r, i++, maxU))));
+    const n = TermsView._flat.length;
+    L.replaceChildren(cols, ...secs, n ? h('div.tl-end', 'Showing ' + n + ' of ' + plural(TermsView._rows.length, 'term') + '.') : h('div.empty', S.q ? 'No term matches “' + S.q + '”.' : TermsView._rows.length ? 'No term here.' : 'No terms yet'),
+      TERMLIT.counted() ? null : h('p.tiny.muted.tl-foot', 'Mentions in lit reviews are not counted' + (TermsView._onlyLit ? ' · ' + plural(TermsView._onlyLit, 'term') + ' used only there ' + (TermsView._onlyLit === 1 ? 'is' : 'are') + ' not listed' : '') + ' — Settings → Features → Terms counts them.'));
+    $('.tl-rail', host).replaceChildren(...G.map(g => h('button', { type: 'button', 'data-g': g.k, disabled: !g.rows.length, title: g.label + ' · ' + g.rows.length,
+      on: { click: () => { S.jump = g.k; const s = $(`.tl-sec[data-g="${CSS.escape(g.k)}"]`, L); if (s) L.scrollTo({ top: s.offsetTop - cols.offsetHeight, behavior: RM() ? 'auto' : 'smooth' }); TermsView.spy(); } } }, g.short)));
+    S.jump = null; if (top) L.scrollTop = 0; TermsView.spy();
+  },
+  row(r, i, maxU) {
+    const S = TermsView.st, ks = TSTAT.KORDER.filter(k => r.ks[k] && KIND[k]);
+    return h('div.tl-row' + (i === S.act ? '.act' : ''), { role: 'link', tabindex: '0', 'data-i': i, 'data-term': r.t.id, 'aria-label': `${r.t.label}: ${plural(r.uses, 'use')} in ${plural(r.notes, 'note')}, last ${TSTAT.ago(r.ago)}`,
+      on: { click: e => TermsView.open(r, e), keydown: e => { if (e.key === 'Enter') TermsView.open(r, e); }, mousemove: () => { if (S.act !== i) TermsView.act(i, false); } } },
+      h('div.tl-t', h('span.term-demo', TermsView.mark(r.t.label)), h('span.tl-sub', r.proj + ' · ' + plural(r.notes, 'note') + (r.isNew ? ' · new this month' : '') + (r.t.importedFrom ? ' · imported' : ''))),
+      h('div.tl-u', h('b', r.uses), h('span.tl-bar', h('i', { style: { width: Math.max(3, r.uses / maxU * 100) + '%' } }))),
+      h('div.tl-w', TSTAT.spark(r, 92, 22), h('span.tl-d', { title: 'Uses in the last 4 weeks against the 4 before' }, r.d4 > 0 ? '▲ ' + r.d4 : r.d4 < 0 ? '▼ ' + -r.d4 : '–')),
+      h('div.tl-s', h('div.tl-kds', ks.map(k => h('span.tl-kd', { style: { '--kc': `var(--k-${k})` }, title: r.ks[k] + ' × ' + KIND[k].label.toLowerCase() }, r.ks[k])), r.open ? h('span.tl-ob', { title: 'A barrier with no resolution yet' }, r.open + ' open') : null),
+        r.arcs.length ? h('div.tl-arcs', r.arcs.slice(0, 2).map(TARC.line)) : null),
+      h('div.tl-l', TSTAT.ago(r.ago)));
+  },
+  mark(label) { const q = TermsView.st.q.trim(), i = q ? label.toLowerCase().indexOf(q.toLowerCase()) : -1; return i < 0 ? label : [label.slice(0, i), h('mark', label.slice(i, i + q.length)), label.slice(i + q.length)]; },
+  open(r, e) { const L = $('.tl-list'); if (L) TermsView.st.scroll = L.scrollTop; App.go('#/lens/' + r.t.id); },
+  act(i, scroll) { const S = TermsView.st, L = $('.tl-list'); if (!L) return; S.act = i; $$('.tl-row.act', L).forEach(x => x.classList.remove('act')); const r = $(`.tl-row[data-i="${i}"]`, L); if (!r) return; r.classList.add('act');
+    if (scroll) { const t = r.offsetTop - 66, b = r.offsetTop + r.offsetHeight - L.clientHeight + 8; if (L.scrollTop > t) L.scrollTop = t; else if (L.scrollTop < b) L.scrollTop = b; } },
+  nav(e) { const n = (TermsView._flat || []).length; if (!n) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); TermsView.act(Math.min(n - 1, TermsView.st.act + 1), true); } else if (e.key === 'ArrowUp') { e.preventDefault(); TermsView.act(Math.max(0, TermsView.st.act - 1), true); } else if (e.key === 'Enter') { e.preventDefault(); TermsView.open(TermsView._flat[TermsView.st.act], e); } },
+  spy() { const L = $('.tl-list'); if (!L) return; const y = L.scrollTop + 34, secs = $$('.tl-sec', L); let cur = secs.length ? secs[0].dataset.g : null; secs.forEach(s => { if (s.offsetTop <= y) cur = s.dataset.g; }); if (TermsView.st.jump) cur = TermsView.st.jump; $$('.tl-rail button').forEach(b => b.classList.toggle('on', b.dataset.g === cur)); },
+  sidePanel(side, rows, onlyLit) {
+    const sum = (a, s, e) => a.slice(s, e).reduce((x, y) => x + y, 0), now = rows.reduce((n, r) => n + sum(r.wk, 8, 12), 0), before = rows.reduce((n, r) => n + sum(r.wk, 4, 8), 0), pct = before ? Math.round((now - before) / before * 100) : null;
+    const opens = rows.filter(r => r.open), resolved = rows.reduce((n, r) => n + r.arcs.filter(a => a.k === 'br' && !a.of && a.via.length).length, 0), rising = rows.filter(r => r.d4 > 0).sort((a, b) => b.d4 - a.d4 || b.uses - a.uses).slice(0, 4);
+    const go = r => App.go('#/lens/' + r.t.id);
+    side.append(
+      h('div.ins-h', h('div.k', 'At a glance'), h('div.tiny.muted', 'The last four weeks')),
+      h('div.ins-s', h('div.tl-tiles',
+        h('div.tl-tile.w', h('span.l', 'Uses'), h('span.v', now), h('span.s', pct == null ? 'none the four weeks before' : (pct >= 0 ? '▲ ' : '▼ ') + Math.abs(pct) + '% on the four weeks before')),
+        h('div.tl-tile', h('span.l', 'Terms'), h('span.v', rows.length), h('span.s', plural(rows.filter(r => r.isNew).length, 'new one', 'new ones'))),
+        h('div.tl-tile', h('span.l', 'Open barriers'), h('span.v', opens.reduce((n, r) => n + r.open, 0)), h('span.s', resolved + ' resolved through another term')))),
+      rising.length ? h('div.ins-s', h('h6', 'Rising', h('span.muted', 'on the four weeks before')), h('div.tl-rise', rising.map(r => h('button', { type: 'button', on: { click: () => go(r) } }, h('span.term-demo', r.t.label), TSTAT.spark(r, 64, 18), h('span.tl-d', '▲ ' + r.d4))))) : null,
+      opens.length ? h('div.ins-s', h('h6', 'Open barriers', h('span.muted', opens.length)), h('div.tl-obl', opens.slice(0, 8).map(r => h('button', { type: 'button', on: { click: () => go(r) } }, h('span.term-demo', r.t.label), h('span.q', snippet(r.opens[0].text, 90)))))) : null,
+      h('div.ins-s', h('h6', 'Key'), h('div.tl-key', TSTAT.KORDER.filter(k => KIND[k]).map(k => h('span.tl-kd', { style: { '--kc': `var(--k-${k})` } }, KIND[k].label))),
+        h('div.tl-key', h('span.tl-kd2', TARC.dot('br'), 'a barrier resolved'), h('span.tl-kd2', TARC.dot('ot'), 'an observation become a takeaway'))));
   },
 };
 
+/* ---------- a term: its bubbles ---------- */
+const TB = {
+  /** Same-note neighbours of a component: its connections, the components it links to, the rest of its region (at most eight). */
+  nb(id) {
+    const b = M.block(id), out = [], seen = new Set([id]); if (!b) return out;
+    const add = (oid, rel) => { if (seen.has(oid)) return; const o = M.block(oid); if (!o || o.docId !== b.docId || o.status === 'removed' || (o.status && o.status !== 'live') || o.kind === 'ink') return; seen.add(oid); out.push({ id: oid, rel }); };
+    const rl = r => (typeof REL !== 'undefined' && REL[r] && REL[r].label) || r || '';
+    (IX.wOut.get(id) || []).forEach(w => add(w.to, rl(w.rel))); (IX.wIn.get(id) || []).forEach(w => add(w.from, rl(w.rel)));
+    (IX.linksOut.get(id) || []).forEach(mk => mk.ref && add(mk.ref, 'links to'));
+    if (typeof REGION !== 'undefined') REGION.peers(id).forEach(o => add(o.id, ''));
+    return out.slice(0, 8);
+  },
+  data(t, ts, all, st) {
+    const fam = st.imported ? M.termFamily(t.id) : [t.id], others = ts.slice(1), NB = new Map(), nb = id => { if (!NB.has(id)) NB.set(id, TB.nb(id)); return NB.get(id); };
+    const live = id => { const b = M.block(id); if (!b || b.status === 'removed') return false; const d = M.doc(b.docId); return !!d && !d.deleted && (TERMLIT.counted() || !TERMLIT.is(d)); };
+    const uses = (id, x) => { const s = IX.blockTerms.get(id); return !!s && (x === t.id ? fam.some(f => s.has(f)) : s.has(x)); };
+    const usesAny = id => ts.some(x => uses(id, x)), meets = (id, x) => uses(id, x) || nb(id).some(n => uses(n.id, x));
+    const occ = new Set(); fam.forEach(f => TERMLIT.occ(f).forEach(o => occ.add(o.blockId)));
+    const time = id => +new Date(M.blockTime(M.block(id)) || 0);
+    const cands = [...occ].filter(live).filter(id => !others.length || (all ? others.every(x => meets(id, x)) : others.some(x => meets(id, x)))).sort((a, b) => nb(b).length - nb(a).length || time(a) - time(b));
+    const taken = new Set(), B = [];
+    const mk = (id, extra) => { const inside = nb(id); taken.add(id); inside.forEach(n => { if (usesAny(n.id)) taken.add(n.id); });
+      const outs = typeof BRIDGE !== 'undefined' ? BRIDGE.out(id) : [], docs = [...new Map(outs.map(x => [x.docId, x])).values()];
+      return Object.assign({ id, inside, beads: others.length ? [] : docs.map(x => ({ docId: x.docId, ref: x.id, why: x.why || '' })) }, extra || {}); };
+    cands.forEach(id => { if (!taken.has(id)) B.push(mk(id)); });
+    const where = id => B.find(o => o.id === id) || B.find(o => o.inside.some(n => n.id === id));
+    // arcs: a barrier and its resolution, an observation and its takeaway, one end of them using the term; the other end, wherever it is, joins as a bubble of its own
+    const arcs = TARC.all().filter(a => (where(a.from) || where(a.to)) && (usesAny(a.from) || usesAny(a.to)));
+    if (!others.length) arcs.forEach(a => [a.from, a.to].forEach(id => { if (!where(id) && live(id)) B.push(mk(id, { arcOnly: true })); }));   // in a lens of synergies only what meets them
+    return { t, ts, fam, B, arcs: arcs.filter(a => where(a.from) && where(a.to)), uses, usesAny, nb, where, time };
+  },
+  order(D, st) { return st.order || BUBBLE.opt('order') || 'note'; },
+  sorted(D, G, order) {
+    const B = D.B, idx = B.map((b, i) => i);
+    if (order === 'time') return idx.sort((i, j) => D.time(B[i].id) - D.time(B[j].id));
+    if (order === 'size') return idx.sort((i, j) => G[j].D - G[i].D);
+    const doc = i => M.block(B[i].id).docId, f = {}; idx.forEach(i => { f[doc(i)] = Math.min(f[doc(i)] ?? Infinity, D.time(B[i].id)); });
+    return idx.sort((i, j) => (f[doc(i)] - f[doc(j)]) || doc(i).localeCompare(doc(j)) || (D.time(B[i].id) - D.time(B[j].id)));
+  },
+  /** Rows of bubbles: a note's bubbles together under its name (Note), dated on a rail (Time), the busiest first (Size); two bubbles joined by an arc get room for its label. */
+  flow(B, G, W, mode, D) {
+    const GAP = 56, GG = 92, AG = 230, ext = i => B[i].beads.length ? 150 * G[i].S : 0, doc = i => M.block(B[i].id).docId, brk = i => mode === 'note' && i > 0 && doc(i) !== doc(i - 1);
+    const joined = i => i > 0 && D.arcs.some(a => { const p = D.where(a.from), q = D.where(a.to); return (p === B[i - 1] && q === B[i]) || (p === B[i] && q === B[i - 1]); });
+    const gapOf = i => i ? Math.max(brk(i) ? GG : GAP, joined(i) ? AG : 0) : 0;
+    const runW = i => { let w = G[i].D + ext(i), j = i + 1; while (mode === 'note' && j < B.length && !brk(j)) { w += gapOf(j) + G[j].D + ext(j); j++; } return w; };
+    const rows = []; let row = [], x = 0;
+    B.forEach((b, i) => { const w = G[i].D + ext(i), need = row.length ? gapOf(i) + w : w, run = brk(i) ? gapOf(i) + runW(i) : need;
+      if (row.length && (x + need > W - 32 || (x + run > W - 32 && runW(i) <= W - 32))) { rows.push(row); row = [i]; x = w; } else { row.push(i); x += need; } });
+    if (row.length) rows.push(row);
+    const P = [], groups = [], rails = []; let top = mode === 'size' ? 30 : 58;
+    rows.forEach(r => {
+      const gaps = r.map((i, k) => k ? gapOf(i) : 0), total = r.reduce((s, i, k) => s + gaps[k] + G[i].D + ext(i), 0), maxD = Math.max(...r.map(i => G[i].D));
+      let x = Math.max(16, (W - total) / 2);
+      r.forEach((i, k) => { x += gaps[k]; P[i] = { x: x + G[i].R, y: top + maxD / 2 }; x += G[i].D + ext(i); });
+      if (mode === 'note') { let s = 0; for (let k = 1; k <= r.length; k++) if (k === r.length || brk(r[k])) { const a = r[s], z = r[k - 1]; groups.push({ x0: P[a].x - G[a].R, x1: P[z].x + G[z].R + ext(z), y: top - 32, doc: doc(a), n: k - s }); s = k; } }
+      if (mode === 'time') { const a = r[0], z = r[r.length - 1]; rails.push({ x0: P[a].x - G[a].R, x1: P[z].x + G[z].R + ext(z), y: top - 16, ticks: r.map(i => ({ x: P[i].x, label: fmtDay(D.time(B[i].id)) })) }); }
+      top += maxD + (mode === 'size' ? 78 : 104);
+    });
+    return { P, H: top, groups, rails };
+  },
+  deco(F, L) {
+    $$('.tbb-deco', F).forEach(n => n.remove());
+    L.groups.forEach(g => { const d = M.doc(g.doc); F.append(h('div.tbb-grp.tbb-deco', { style: { left: g.x0 + 'px', top: g.y + 'px', width: (g.x1 - g.x0) + 'px' } }, h('b', (d && d.title) || 'Untitled'), g.n > 1 ? h('span', g.n + ' bubbles') : null, h('i'))); });
+    L.rails.forEach(r => F.append(h('div.tbb-rail.tbb-deco', { style: { left: r.x0 + 'px', top: r.y + 'px', width: (r.x1 - r.x0) + 'px' } }, r.ticks.map(k => h('span.tk', { style: { left: (k.x - r.x0) + 'px' } }, h('span', k.label))))));
+  },
+};
 const LensView = {
   canvas: true, title: true, state: {},
-  render(termId) {
-    const t = M.term(termId); if (!t) return h('div.canvas-host', h('div.empty-c', 'Term not found'));
-    const st = LensView.state[termId] || (LensView.state[termId] = { scope: 'project', scopeId: t.projectId, imported: false, view: 'nest' });
-    const occ = TERMLIT.occ(termId), docs = [...new Set(occ.map(o => o.docId))].map(M.doc).filter(Boolean);   // V3.997: lit reviews left out
-    const themes = [...new Set(docs.map(d => d.themeId).filter(Boolean))].map(M.theme).filter(Boolean);
-    if (st.scope === 'theme' && !themes.find(x => x.id === st.scopeId)) st.scopeId = themes[0] && themes[0].id;
-    if (st.scope === 'doc' && !docs.find(x => x.id === st.scopeId)) st.scopeId = (docs.find(d => prof(d.type).steps) || docs[0] || {}).id;
-    if (st.scope === 'project') st.scopeId = t.projectId;
-    const fam = M.termFamily(termId);
-    const G = st.scopeId ? IX.termGraph(termId, st.scope, st.scopeId, st.imported) : { nodes: [], edges: [], insights: [] };
-    LensView._G = G;
-    const setScope = s => { st.scope = s; st.scopeId = s === 'project' ? t.projectId : s === 'theme' ? (themes[0] || {}).id : (docs.find(d => prof(d.type).steps) || docs[0] || {}).id; App._mounted = false; App.refresh(); };
-    App.setTitle(t.label, [h('span', 'term lens · ' + (M.project(t.projectId) || { name: 'General' }).name), h('span', `${plural(docs.length, 'note')} · ${plural(occ.length, 'occurrence')} · ${plural(G.edges.filter(e => e.type !== 's').length, 'connection')}`), fam.length > 1 ? h('span.pill.mag', 'linked to ' + (fam.length - 1) + ' other project' + (fam.length > 2 ? 's' : '')) : null]);
-    const host = h('div.canvas-host'), chain = st.view === 'chain', P = chain ? makePaper(host, { minZ: .25 }) : null;
-    const B = chain ? LensView.board(G, st, t, P) : null; if (B) P.world.append(B.el); else host.append(LensView.nests(G, st, t));
-    const bar = h('div.lensbar.nopan',
-      h('div.seg.lens-view', [['nest', 'Nests', 'The term as nests: its themes, their notes, the components that use it, what they carry orbiting'], ['chain', 'Chain', 'The components as boxes: lanes by theme or note, columns by day']].map(([k, l, tip]) => h('button' + (st.view === k ? '.on' : ''), { title: tip, on: { click: () => { if (st.view === k) return; st.view = k; App._mounted = false; App.refresh(); } } }, l))),
-      h('div.seg', [['project', 'Project · large'], ['theme', 'Theme · medium'], ['doc', 'Experiment · small']].map(([k, l]) => h('button' + (st.scope === k ? '.on' : ''), { on: { click: () => setScope(k) } }, l))),
-      st.scope === 'theme' && themes.length ? h('select.inp', { on: { change: e => { st.scopeId = e.target.value; App._mounted = false; App.refresh(); } } }, themes.map(x => h('option', { value: x.id, selected: x.id === st.scopeId }, x.name))) : null,
-      st.scope === 'doc' && docs.length ? h('select.inp', { on: { change: e => { st.scopeId = e.target.value; App._mounted = false; App.refresh(); } } }, docs.map(x => h('option', { value: x.id, selected: x.id === st.scopeId }, prof(x.type).label + ' · ' + x.title))) : null,
-      fam.length > 1 ? h('label.switch', h('input', { type: 'checkbox', checked: st.imported, on: { change: e => { st.imported = e.target.checked; App._mounted = false; App.refresh(); } } }), 'chain across linked projects') : null,
-      h('span.spacer'),
-      h('button.btn.sm', { on: { click: () => { const others = DB.where('projects', p => p.id !== t.projectId); if (!others.length) return toast('No other project to import into'); pickModal('Import “' + t.label + '” into…', 'The imported term stays linked to this one, so the lens can chain across both projects.', others.map(p => ({ label: p.name, run: () => { M.importTerm(termId, p.id); toast('Imported into ' + p.name); } }))); } } }, 'Import into…'),
-      h('button.btn.sm', { on: { click: () => Exporter.chain(termId, st) } }, 'Export chain'));
-    const side = h('aside.insp.open.nopan.scrolly', h('button.ib.x', { title: 'Hide', on: { click: () => { side.classList.remove('open'); tog.hidden = false; } } }, '✕'), h('div.ins-h', h('div.k', 'What the wiring says'), h('div.tiny.muted', 'Inferred from directed connections between components that share this term.')),
-      G.insights.length ? G.insights.map(i => h('div.insight' + (i.cls ? '.' + i.cls : ''), { on: { mouseenter: () => LensView.hl(i.path), mouseleave: () => LensView.hl([]), click: () => App.openBlock(i.path[i.path.length - 1]) } }, h('b', i.title), i.body))
-        : h('div.empty', 'Connect components that use this term — chains, pivots and faulty assumptions surface here.'),
-      h('div.ins-s', h('h6', 'Occurrences', h('span.muted', occ.length)), LensView.occList(occ)),
-      B && B.legend, h('div.ins-s', h('h6', 'Key'), h('div.lkey', LensView.key('x', 'explicit connection'), LensView.key('r', 'pulled in / referenced'), LensView.key('v', 'via other components'), LensView.key('s', 'suggested — click to accept or dismiss'))));
-    const tog = h('button.btn.sm.lenstog.nopan', { hidden: true, on: { click: () => { side.classList.add('open'); tog.hidden = true; } } }, 'What the wiring says');
-    host.append(bar, side, tog); if (innerWidth < 820) { side.classList.remove('open'); tog.hidden = false; }
-    if (B) requestAnimationFrame(() => { const [w, hh] = B.layout(); const sv = LensView._view && LensView._view[termId + st.scope + st.scopeId]; if (sv) { Object.assign(P.view, sv); P.apply(); } else { P.fit({ x0: 0, y0: 0, x1: Math.min(w, 2400) + (innerWidth < 820 ? 20 : 340), y1: Math.min(hh, 1400) + 60 }, false); if (P.view.z < .62) { P.view.z = .62; P.view.x = 24; P.view.y = 70; P.apply(); } if (innerWidth < 820) { P.view.y += 150; P.apply(); } } });
-    if (P) P.o.onView = v => { (LensView._view = LensView._view || {})[termId + st.scope + st.scopeId] = { ...v }; };
+  st(termId) { return LensView.state[termId] || (LensView.state[termId] = { order: null, pick: [], imported: false, scroll: 0, side: null, _for: '' }); },
+  args(termId, withStr, mode) { const t = M.term(termId), others = String(withStr || '').split(',').filter(x => x && x !== termId && M.term(x)); return { t, others, all: mode === 'all' && others.length > 1, ts: [termId, ...others] }; },
+  hash(termId, others, all) { return '#/lens/' + termId + (others.length ? '/' + others.join(',') + (all && others.length > 1 ? '/all' : '') : ''); },
+  sig(termId) { const st = LensView.st(termId); return (st.imported ? M.termFamily(termId) : [termId]).map(f => TERMLIT.occ(f).map(o => o.blockId).join()).join('|') + '|' + TARC.all().length; },
+  update(termId, withStr, mode) { if (LensView._sig !== LensView.sig(termId)) { App._mounted = false; App.refresh(); } },
+  render(termId, withStr, mode) {
+    const A = LensView.args(termId, withStr, mode), t = A.t; if (!t) return h('div.canvas-host', h('div.empty-c', 'Term not found'));
+    const st = LensView.st(termId), key = A.ts.join() + (A.all ? '/all' : ''); if (st._for !== key) { st.pick = A.others.slice(); st._for = key; }
+    if (st.side == null) st.side = innerWidth >= 820;
+    LensView._specs = new Map(); const D = TB.data(t, A.ts, A.all, st); LensView._D = D; LensView._A = A; LensView._sig = LensView.sig(termId);
+    const notes = new Set(D.B.map(b => M.block(b.id).docId)), comps = new Set(D.B.flatMap(b => [b.id, ...b.inside.filter(n => D.usesAny(n.id)).map(n => n.id)])), folded = D.B.reduce((n, b) => n + b.beads.length, 0);
+    const litN = TERMLIT.counted() ? 0 : (IX.termOcc.get(termId) || []).filter(o => TERMLIT.is(M.doc(o.docId))).length;
+    App.setTitle(A.ts.map(x => M.term(x).label).join(A.others.length ? ' × ' : ''), [h('span', 'term · ' + (M.project(t.projectId) || { name: 'General' }).name),
+      h('span', D.B.length ? plural(comps.size, 'component') + ' · ' + plural(notes.size, 'note') + ' · ' + plural(D.B.length, 'bubble') + (folded ? ' · ' + plural(folded, 'bridge') + ' folded in' : '') : 'nothing here'), litN ? h('span', 'lit reviews not counted') : null]);
+    const order = TB.order(D, st), seg = (items, cur, set, cls) => h('div.seg' + (cls || ''), { role: 'group' }, items.map(([k, l, tip]) => h('button' + (cur === k ? '.on' : ''), { type: 'button', title: tip || '', 'aria-pressed': String(cur === k), on: { click: () => set(k) } }, l)));
+    const host = h('div.canvas-host.tbb-host' + (BUBBLE.on() ? '' : '.flat') + (st.side ? '.side-open' : ''));
+    const bar = h('div.tbb-bar',
+      h('div.tbb-crumb', h('button.chip', { type: 'button', on: { click: () => App.go('#/terms') } }, '← All terms'), A.others.length ? h('button.chip', { type: 'button', on: { click: () => App.go(LensView.hash(termId, [])) } }, '← ' + t.label) : null,
+        A.others.length ? h('span.tbb-terms', h('span.term-demo.x', { style: { '--tc': 'var(--teal)' } }, t.label), h('span.tbb-x', '×'), A.others.map((x, i) => [i ? h('span.tbb-x', '·') : null, h('span.term-demo.x', { style: { '--tc': BUBBLE.tcol(x, A.ts) } }, M.term(x).label)])) : null,
+        A.others.length > 1 ? h('span.tbb-anyall', 'meeting ', seg([['any', 'any'], ['all', 'all']], A.all ? 'all' : 'any', k => App.go(LensView.hash(termId, A.others, k === 'all')), '.mini')) : null),
+      h('div.tbb-ord', h('span', 'Order'), seg([['note', 'Note', 'The bubbles of one note together, under its name'], ['time', 'Time', 'Oldest first, each bubble dated'], ['size', 'Size', 'The busiest bubbles first']], order, k => { st.order = k; $$('.tbb-ord .seg button', host).forEach(b => { const on = b.textContent.toLowerCase() === k; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }); LensView.layout(true); })));
+    const field = h('div.tbb-field'), stage = h('div.tbb-stage', field), scroll = h('div.tbb-scroll.scrolly', { on: { scroll: () => { st.scroll = scroll.scrollTop; } } }, bar, stage);
+    const side = LensView.side(D, A, st, host), tog = h('button.btn.sm.tbb-tog.nopan', { hidden: st.side, on: { click: () => { st.side = true; side.classList.add('open'); tog.hidden = true; host.classList.add('side-open'); setTimeout(() => LensView.layout(false), 260); } } }, 'Synergies');
+    side.querySelector('.ib.x').addEventListener('click', () => { st.side = false; side.classList.remove('open'); tog.hidden = false; host.classList.remove('side-open'); setTimeout(() => LensView.layout(false), 260); });
+    host.append(scroll, side, tog);
+    LensView._host = host; LensView._field = field; LensView._scroll = scroll; LensView._els = null;
     return host;
   },
-  /** V3.969 · the lens as nests (14d): the term the outer sphere; its themes (a linked project's notes in a group of their own) inside;
-   *  each note with the components that use it (and those it reaches through, faint) as dots; the other terms, people and papers
-   *  they carry orbiting the note they belong to; the connections between the components drawn in the lens's inks, with arrows. */
-  nests(G, st, t) {
-    const stage = h('div.lens-nest'), card = h('div.lens-card.nopan', { hidden: true }), css = getComputedStyle(document.documentElement), ink = n => css.getPropertyValue('--' + n).trim();
-    const STY = { x: { col: ink('mag') || '#B5179E' }, r: { col: ink('teal') || '#0FA3B1' }, v: { col: ink('mag') || '#B5179E', dash: [2, 3] }, s: { col: ink('ink-3') || '#8a8f98', dash: [6, 4] } };
-    const fam = new Set(M.termFamily(t.id)), N = [], E = [], seen = new Map(), add = (id, o) => { if (!seen.has(id)) { const v = Object.assign({ id }, o); seen.set(id, v); N.push(v); } return seen.get(id); };
-    add('T', { kind: 'term', label: t.label });
-    G.nodes.forEach(n => { const b = n.b, d = b && M.doc(b.docId); if (!d) return; const k = IX.kindsOf(b)[0];
-      add(d.id, { kind: 'note', label: d.title || 'Untitled', sub: M.docPath(d) });
-      add(b.id, { kind: 'cmp', label: M.blockName(b) + (b.body && b.body.text ? ' — ' + snippet(b.body.text.split(OBJ).join(''), 40) : ''), doc: d.id, via: !!n.via, color: k ? (ink('k-' + k) || KIND[k].color) : null });
-      E.push({ a: b.id, b: d.id, kind: 'in', rel: 'in' }); if (!n.via) E.push({ a: b.id, b: 'T', kind: 'term', rel: 'uses' });
-      LensView.termsIn(b).forEach(id => { const x = !fam.has(id) && M.term(id); if (!x) return; add(id, { kind: x.kind === 'person' ? 'person' : 'term', label: x.label }); E.push({ a: b.id, b: id, kind: 'term', rel: 'mentions' }); });
-      ((b.body && b.body.marks) || []).forEach(m => { const r = m.type === 'cite' && M.lib(m.ref); if (r) { add(r.id, { kind: 'paper', label: r.title || r.url || 'Paper' }); E.push({ a: b.id, b: r.id, kind: 'cite', rel: 'cites' }); } }); });
-    G.edges.forEach(e => E.push(Object.assign({ a: e.from, b: e.to, kind: 'wire', type: e.type, dir: true, lens: e,
-      rel: e.type === 's' ? 'suggested: ' + e.rel : e.type === 'v' ? 'via ' + plural((e.via || []).length, 'component') : (REL[e.rel] || { label: e.rel || 'connection' }).label }, STY[e.type] || STY.x)));
-    const group = d => d.projectId !== t.projectId && st.scope === 'project' ? { id: 'P:' + d.projectId, name: 'Linked · ' + ((M.project(d.projectId) || {}).name || 'another project'), none: true } : NEST.GROUP.theme(d);
-    const I = NEST.make({ center: 'T', rootLabel: t.label, group, groupWord: 'theme', links: true, sel: st.sel || (st.sel = { focus: null, path: [], time: 1 }),
-      panel: I => LensView.card(I, card), moved: (I, n) => { st.nest = n.id; },
-      open: (I, hv) => { const v = hv.o.v; if (hv.kind === 'nest') { if (hv.o.doc) App.go('#/doc/' + hv.o.id); return; } if (!v) return;
-        if (v.kind === 'cmp') return App.openBlock(v.id); if ((v.kind === 'term' || v.kind === 'person') && M.term(v.id)) return App.go('#/lens/' + v.id); if (v.kind === 'paper' && M.lib(v.id)) App.go('#/read/' + v.id); } });
-    I.G = NEST.graph(N, E); LensView._nest = I;
-    stage.append(card, h('div.lens-foot.tiny.muted', 'click a nest: fly in · click outside: fly out · click a dot: what it is · drag: turn · wheel: closer · hover: its threads · double-click: open'));
-    NEST.mount(I, stage, 0);
-    setTimeout(() => { if (!stage.isConnected) return; NEST.size(I); NEST.show(I, st.nest); LensView.card(I, card); }, 0);
-    return stage;
+  after() { LensView.layout(false); const sc = LensView._scroll, st = LensView._A && LensView.st(LensView._A.t.id); if (sc && st) sc.scrollTop = st.scroll || 0; },
+  /** Draw (or move) the bubbles for the stage's width and the order. glide: the same bubbles move to their new places. */
+  layout(glide) {
+    const D = LensView._D, A = LensView._A, F = LensView._field, host = LensView._host; if (!D || !F || !F.isConnected) return;
+    const st = LensView.st(A.t.id), W = F.clientWidth || F.parentNode.clientWidth, narrow = W < 700, order = TB.order(D, st);
+    F.classList.toggle('narrow', narrow);
+    if (!D.B.length) { F.replaceChildren(h('div.tbb-empty', h('p', A.others.length ? (A.all ? 'No component meets all of them. Try “any”.' : 'Nothing here meets them.') : 'No component uses “' + A.t.label + '” here yet' + (TERMLIT.counted() ? '.' : ' (lit reviews are not counted).')))); F.style.minHeight = ''; return; }
+    const S = narrow ? Math.min(1, (W - 28) / Math.max(...D.B.map(b => LensView.geo(b, 1).D))) : 1;
+    const G0 = D.B.map(b => LensView.geo(b, S)), idx = TB.sorted(D, G0, order), B = idx.map(i => D.B[i]), G = idx.map(i => G0[i]);
+    const L = narrow ? null : TB.flow(B, G, W, order, D), sig = W + '|' + S;
+    if (glide && L && LensView._els && LensView._elsSig === sig) {
+      F.classList.add('gliding'); B.forEach((b, i) => { const el = LensView._els.get(b.id); if (el) { el.style.left = L.P[i].x + 'px'; el.style.top = L.P[i].y + 'px'; } });
+      TB.deco(F, L); clearTimeout(F._gl); F._gl = setTimeout(() => { F.classList.remove('gliding'); LensView.threads(B); }, 640);
+    } else {
+      const els = new Map(), svg = h('div.tbb-threads'); F.replaceChildren(svg);
+      B.forEach((b, i) => { const doc = M.block(b.id).docId; if (narrow && order === 'note' && (!i || doc !== M.block(B[i - 1].id).docId)) F.append(h('div.tbb-grp-n', (M.doc(doc) || {}).title || 'Untitled'));
+        const el = LensView.bubble(b, G[i], D, A); if (L) { el.style.left = L.P[i].x + 'px'; el.style.top = L.P[i].y + 'px'; } F.append(el); els.set(b.id, el); });
+      LensView._els = els; LensView._elsSig = sig;
+      if (L) TB.deco(F, L);
+      // the threads once the bubbles have come in (their entrance scales them; the labels must keep clear of where they end up)
+      BUBBLE.motion(F); clearTimeout(F._th); F._th = setTimeout(() => LensView.threads(B), RM() ? 0 : 560 + Math.min(B.length - 1, 14) * 45);
+    }
+    F.style.minHeight = narrow ? '' : Math.max(560, L.H) + 'px';
+    LensView.applyPick();
   },
-  /** What the picked node is, over the map: a component's words and connections (a suggested one asks to be accepted), a term's lens, a paper. */
-  card(I, el) {
-    const G = I.G, id = I.sel.focus, v = id && G && G.byId.get(id); if (!v) { el.hidden = true; el.replaceChildren(); return; }
-    const pill = (txt, col) => h('span.pill', { style: { background: col, color: '#fff' } }, txt), acts = [], body = [];
-    if (v.kind === 'cmp') { const b = M.block(v.id), d = b && M.doc(b.docId), links = G.edges.filter(e => e.kind === 'wire' && (e.a === v.id || e.b === v.id));
-      body.push(h('div.row', { style: { gap: '4px' } }, (b ? IX.kindsOf(b) : []).map(k => kchip(k)), v.via ? h('span.pill', { title: 'It does not use the term; a chain between two that do runs through it' }, 'via') : null),
-        h('b', b ? M.blockName(b) : v.label), d ? h('div.tiny.muted', M.docPath(d)) : null, b ? h('div.lc-t', snippet(String((b.body && b.body.text) || '').split(OBJ).join(''), 260)) : null,
-        links.length ? h('div.at-edges', links.map(e => { const o = G.byId.get(e.a === v.id ? e.b : e.a); return h('div.at-edge', { title: e.type === 's' ? 'Accept or dismiss this suggestion' : 'Go to it', on: { click: ev => e.type === 's' ? LensView.suggest(e.lens, ev.clientX, ev.clientY + 10) : NEST.focusOn(I, o.id, true) } },
-          h('i', { style: { background: e.col } }), h('span.s', (e.a === v.id ? '→ ' : '← ') + e.rel), h('span', snippet(o.label.split(' — ')[0], 50))); })) : h('div.tiny.muted', 'Not connected to another component that uses the term.'));
-      if (b) acts.push(h('button.btn.xs.pri', { type: 'button', title: 'Open its note at it · Alt+click: beside', on: { click: e => App.jump(v.id, e) } }, 'Open'));
-    } else if (v.kind === 'note') { const d = M.doc(v.id); body.push(pill('Note', NEST.pal().note), h('b', v.label), d ? h('div.tiny.muted', M.docPath(d)) : null, h('div.tiny.muted', plural(G.nodes.filter(x => x.kind === 'cmp' && x.doc === v.id && !x.via).length, 'component') + ' using it')); acts.push(h('a.btn.xs.pri', { href: '#/doc/' + v.id }, 'Open the note'));
-    } else { const uses = (G.adj.get(v.id) || []).filter(x => (G.byId.get(x) || {}).kind === 'cmp').length;
-      body.push(pill(v.kind === 'paper' ? 'Paper' : v.kind === 'person' ? 'Person' : 'Term', NEST.pal()[v.kind]), h('b', v.label), h('div.tiny.muted', 'in ' + plural(uses, 'component') + ' that use “' + I.o.rootLabel + '”'));
-      if ((v.kind === 'term' || v.kind === 'person') && M.term(v.id)) acts.push(h('a.btn.xs.pri', { href: '#/lens/' + v.id }, 'Its lens')); if (v.kind === 'paper' && M.lib(v.id)) acts.push(h('a.btn.xs.pri', { href: '#/read/' + v.id }, 'Read')); }
-    acts.push(h('button.btn.xs.ghost', { type: 'button', on: { click: () => NEST.focusOn(I, null, false) } }, 'Unfocus'));
-    el.replaceChildren(...body, h('div.row', { style: { gap: '6px', marginTop: '8px', flexWrap: 'wrap' } }, acts)); el.hidden = false;
+  geo(b, S) { const D = LensView._D; if (!b._g || b._gS !== S) { b._sp = b._sp || { centre: LensView.spec(b.id), around: b.inside.map(n => ({ spec: LensView.spec(n.id), rel: n.rel })) }; b._g = BUBBLE.geometry(b._sp.centre, b._sp.around, S); b._gS = S; } return b._g; },
+  spec(id) { const c = LensView._specs || (LensView._specs = new Map()), k = id + '|' + LensView._A.ts.join(); if (!c.has(k)) c.set(k, BUBBLE.spec(id, { terms: LensView._A.ts })); const s = c.get(k); return Object.assign({}, s, { body: s.body ? s.body.cloneNode(true) : null }); },
+  bubble(b, g, D, A) {
+    const blk = M.block(b.id), d = M.doc(blk.docId), rg = typeof REGION !== 'undefined' && REGION.of(b.id), sp = b._sp;
+    const nUses = 1 + b.inside.filter(n => D.usesAny(n.id)).length, arcNear = {};
+    D.arcs.forEach(a => { if (a.from === b.id && b.inside.some(n => n.id === a.to)) arcNear[a.to] = TARC.K[a.k][1]; if (a.to === b.id && b.inside.some(n => n.id === a.from)) arcNear[a.from] = TARC.K[a.k][1]; });
+    const arcNotes = TARC.all().filter(a => D.arcs.includes(a)).map(a => LensView.arcNote(a, b, D)).filter(Boolean);
+    const el = BUBBLE.el({ key: b.id, centre: sp.centre, around: sp.around, S: g.S, label: 'Port into ' + ((d && d.title) || 'the note') + (blk.label ? ' at ' + blk.label : ''),
+      region: rg ? { name: rg.r.name, ids: b.inside.filter(n => { const x = REGION.of(n.id); return x && x.r.id === rg.r.id; }).map(n => n.id) } : null,
+      caption: { title: (d && d.title) || 'Untitled', sub: (d ? prof(d.type).label.toLowerCase() : '') + (rg ? ' · region ' + rg.r.name : '') + ' · ' + plural(1 + b.inside.length, 'component') + ' · ' + fmtDay(D.time(b.id)), extra: [b.arcOnly ? h('span.tbb-joined', 'joined through another term') : null, ...arcNotes] },
+      badge: nUses > 1 ? nUses + ' uses' : null, uses: b.inside.filter(n => D.usesAny(n.id)).map(n => n.id), arcNear,
+      beads: b.beads.map(x => { const dd = M.doc(x.docId); return { text: '⇄', label: (dd && dd.title) || 'a note', title: '⇄ bridged to “' + ((dd && dd.title) || 'a note') + '”' + (x.why ? ' — ' + x.why : '') + ' · click: go there · Alt+click: beside', on: e => App.jump(x.ref, e) }; }),
+      onPort: (glass, e) => LensView.port(b.id, glass, e) });
+    if (b.arcOnly) el.classList.add('arc-only');
+    return el;
   },
-  occList(occ) {
-    const rows = occ.map(o => ({ o, b: M.block(o.blockId) })).filter(x => x.b).sort((a, b) => +new Date(M.blockTime(b.b)) - +new Date(M.blockTime(a.b)));
-    return h('div', rows.slice(0, 40).map(({ o, b }) => { const d = M.doc(b.docId), th = d.themeId && M.theme(d.themeId), s = b.stamp.sessionId && M.session(b.stamp.sessionId);
-      return h('div.occ', { on: { click: () => App.openBlock(b.id) } }, h('div.row', { style: { gap: '4px' } }, o.itemIds.map(M.item).filter(Boolean).map(it => kchip(it.kind)), o.direct ? null : h('span.pill', 'carried'), h('span.spacer'), h('span.mono.tiny.muted', fmtDay(M.blockTime(b)) + ' ' + fmtTime(M.blockTime(b)))),
-        h('div', { style: { fontSize: '12.5px', fontWeight: 600 } }, M.blockName(b)), h('div.tiny.muted', prof(d.type).label + ' · ' + d.title + (th ? ' · ' + th.name : '') + (s ? ` · during timer +${fmtDur(b.stamp.offsetMs || 0)}` : b.manualSec ? ' · manual ' + fmtDur(b.manualSec * 1000) : ''))); }));
+  /** Port in: visit the note itself, at the component; the back bubble on it (or Esc, or Alt+←) comes back here. Alt+click: beside the note you were in. */
+  port(id, glass, e) {
+    const b = M.block(id); if (!b) return; const A = LensView._A;
+    if (e && e.altKey) { const last = BUBBLE.lastDoc; if (last && last !== b.docId && M.doc(last) && typeof SplitView !== 'undefined') { PANES[1] && (PANES[1].pendingFocus = { reveal: id }); return App.go(SplitView.route([last, b.docId], id)); } return App.openBlock(id); }
+    const st = LensView.st(A.t.id); if (LensView._scroll) st.scroll = LensView._scroll.scrollTop;
+    BUBBLE.back.arm({ hash: location.hash, label: A.ts.map(x => M.term(x).label).join(' × ') });
+    BUBBLE.port(glass, () => App.openBlock(id));
   },
-  key(type, label) { const sw = { x: 'var(--mag)', r: 'var(--teal)', v: 'var(--mag)', s: 'var(--ink-3)' }[type], da = { x: '', r: '', v: '2 3', s: '6 4' }[type];
-    return h('span.row', { style: { gap: '6px' }, html: `<svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" stroke="${sw}" stroke-width="1.6" stroke-dasharray="${da}"/></svg>${esc(label)}` }); },
-  hl(path) { $$('.lbox').forEach(n => n.classList.toggle('hl', path.includes(n.dataset.id))); const I = LensView._nest; if (I && I.cv && I.cv.isConnected) { I.lit = path.length ? new Set(path) : null; NEST.draw(I); } },
+  arcNote(a, b, D) {
+    const mine = id => id === b.id || b.inside.some(n => n.id === id); if (mine(a.from) === mine(a.to)) return null;
+    const [ka, kb, verb] = TARC.K[a.k], other = M.doc(M.block(mine(a.from) ? a.to : a.from).docId), via = TARC.through(a, D.ts);
+    return h('span.tbb-arcn', TARC.dot(a.k), mine(a.from) ? `${KIND[ka].label} ${verb} in ${plural(a.days, 'day')}, in ${(other && other.title) || 'another note'}` : `${KIND[kb].label} of ${ka === 'observation' ? 'an' : 'a'} ${ka} in ${(other && other.title) || 'another note'}`, via.length ? [' · through ', h('span.term-demo', M.term(via[0]).label)] : null);
+  },
+  /** The threads between bubbles: bridges (dashed, green), connections between notes, and the arcs (the two kinds' colours, an arrow, the days and the term that joined them). */
+  threads(B) {
+    const F = LensView._field, D = LensView._D; if (!F || !F.isConnected) return; $$('.tbb-arc-l', F).forEach(n => n.remove()); const holder = $('.tbb-threads', F); if (!holder) return;
+    if (F.classList.contains('narrow')) { holder.replaceChildren(); return; }
+    const R = F.getBoundingClientRect(), P = id => { const el = LensView._els && LensView._els.get(id), g = el && $('.bb-g', el); if (!g) return null; const r = g.getBoundingClientRect(); return { x: r.left - R.left + r.width / 2, y: r.top - R.top + r.height / 2, r: r.width / 2 }; };
+    const isArc = (x, y) => D.arcs.some(a => (a.from === x && a.to === y) || (a.from === y && a.to === x)), paths = [], defs = [];
+    B.forEach(b => b.beads.forEach((s, k) => { const tb = B.find(o => M.block(o.id).docId === s.docId), el = LensView._els.get(b.id), bead = el && $(`.bb-bead[data-k="${k}"]`, el); if (!tb || !bead) return; const a = bead.getBoundingClientRect(), q = P(tb.id); if (!q) return;
+      const ax = a.left - R.left + a.width / 2, ay = a.top - R.top + a.height / 2, ang = Math.atan2(ay - q.y, ax - q.x), bx = q.x + Math.cos(ang) * q.r, by = q.y + Math.sin(ang) * q.r;
+      paths.push(`<path class="br" d="M${ax} ${ay} Q${(ax + bx) / 2} ${(ay + by) / 2 - 40} ${bx} ${by}"/>`); }));
+    const seenW = new Set();
+    B.forEach(b => [b.id, ...b.inside.map(n => n.id)].forEach(id => (IX.wOut.get(id) || []).forEach(w => { const z = M.block(w.to), a0 = M.block(id); if (!z || !a0 || z.docId === a0.docId || isArc(id, w.to)) return;
+      const ba = D.where(id), bc = D.where(w.to); if (!ba || !bc || ba === bc || seenW.has(w.id)) return; seenW.add(w.id); const p = P(ba.id), q = P(bc.id); if (!p || !q) return;
+      const ang = Math.atan2(q.y - p.y, q.x - p.x), sx = p.x + Math.cos(ang) * p.r, sy = p.y + Math.sin(ang) * p.r, ex = q.x - Math.cos(ang) * q.r, ey = q.y - Math.sin(ang) * q.r, rel = (typeof REL !== 'undefined' && REL[w.rel] && REL[w.rel].label) || w.rel || '';
+      paths.push(`<path class="wi" d="M${sx} ${sy} L${ex} ${ey}"/><text x="${(sx + ex) / 2 + 6}" y="${(sy + ey) / 2 - 4}">${esc(rel)}</text>`); })));
+    const labs = [];
+    D.arcs.forEach((arc, k) => { const ba = D.where(arc.from), bb = D.where(arc.to); if (!ba || !bb || ba === bb) return; const p = P(ba.id), q = P(bb.id); if (!p || !q) return;
+      const [ka, kb, verb] = TARC.K[arc.k], ang = Math.atan2(q.y - p.y, q.x - p.x), sx = p.x + Math.cos(ang) * p.r, sy = p.y + Math.sin(ang) * p.r, ex = q.x - Math.cos(ang) * (q.r + 3), ey = q.y - Math.sin(ang) * (q.r + 3);
+      const len = Math.hypot(ex - sx, ey - sy) || 1, bend = Math.min(46, len * .22), cx = (sx + ex) / 2 - (ey - sy) / len * bend, cy = (sy + ey) / 2 + (ex - sx) / len * bend;
+      defs.push(`<linearGradient id="tbag${k}" gradientUnits="userSpaceOnUse" x1="${sx}" y1="${sy}" x2="${ex}" y2="${ey}"><stop offset="0" style="stop-color:var(--k-${ka})"/><stop offset="1" style="stop-color:var(--k-${kb})"/></linearGradient>`);
+      const ta = Math.atan2(ey - cy, ex - cx), pt = (u, v) => `${(ex - Math.cos(ta) * u - Math.sin(ta) * v).toFixed(1)} ${(ey - Math.sin(ta) * u + Math.cos(ta) * v).toFixed(1)}`;
+      paths.push(`<path class="arc" d="M${sx} ${sy} Q${cx} ${cy} ${ex} ${ey}" stroke="url(#tbag${k})"/><path class="arc-h" d="M${ex} ${ey} L${pt(10, 5.5)} L${pt(10, -5.5)}Z" style="fill:var(--k-${kb})"/>`);
+      const via = TARC.through(arc, D.ts), lab = h('div.tbb-arc-l', { on: { mouseenter: () => LensView.litArc(arc, true), mouseleave: () => LensView.litArc(arc, false) } },
+        h('span.l1', TARC.dot(arc.k), `${KIND[ka].label} ${verb}`), h('span.l2', 'in ' + plural(arc.days, 'day'), via.length ? [h('span.vi', ' · through '), h('span.term-demo', M.term(via[0]).label)] : null));
+      labs.push({ lab, x0: (sx + 2 * cx + ex) / 4, y0: (sy + 2 * cy + ey) / 4, nx: -(ey - sy) / len, ny: (ex - sx) / len }); });
+    holder.replaceChildren(BUBBLE.svg('svg', { width: R.width, height: R.height, viewBox: `0 0 ${R.width} ${R.height}` }, (defs.length ? `<defs>${defs.join('')}</defs>` : '') + paths.join('')));
+    // each label at its curve's middle; moved along it, off any bubble, caption or other label
+    const circles = B.map(b => P(b.id)).filter(Boolean);
+    labs.forEach(({ lab, x0, y0, nx, ny }) => { F.append(lab); const lw = lab.offsetWidth, lh = lab.offsetHeight;
+      const boxes = $$('.bb-cap, .tbb-grp, .tbb-arc-l', F).filter(e => e !== lab).map(e => { const q = e.getBoundingClientRect(); return { l: q.left - R.left - 4, t: q.top - R.top - 4, r: q.right - R.left + 4, b: q.bottom - R.top + 4 }; });
+      const clear = (x, y) => !circles.some(c => { const qx = clamp(c.x, x - lw / 2, x + lw / 2), qy = clamp(c.y, y - lh / 2, y + lh / 2); return Math.hypot(qx - c.x, qy - c.y) < c.r - 2; }) && !boxes.some(q => x - lw / 2 < q.r && x + lw / 2 > q.l && y - lh / 2 < q.b && y + lh / 2 > q.t);
+      let at = [x0, y0]; for (let s = 0; s <= 30; s++) { const a = [x0 + nx * s * 8, y0 + ny * s * 8], c = [x0 - nx * s * 8, y0 - ny * s * 8]; if (clear(...a)) { at = a; break; } if (clear(...c)) { at = c; break; } }
+      lab.style.left = clamp(at[0], lw / 2 + 6, R.width - lw / 2 - 6) + 'px'; lab.style.top = at[1] + 'px'; });
+  },
+  litArc(a, on) { const D = LensView._D; [a.from, a.to].forEach(id => { $$(`.tbb-field .bb-c[data-id="${id}"]`).forEach(m => m.classList.toggle('glow', on)); const b = D && D.where(id), el = b && LensView._els && LensView._els.get(b.id); if (el) el.classList.toggle('lit', on); }); },
+  /* ---------- the side: synergies, bridges folded in, what the wiring says, the key ---------- */
+  synergies(D) {
+    const t = D.t, fam = new Set(D.fam), out = new Map(), add = (x, k) => { if (fam.has(x) || !M.term(x)) return; const s = out.get(x) || { t: x, kinds: {}, n: 0, arcs: [] }; if (k) { s.kinds[k] = (s.kinds[k] || 0) + 1; s.n++; } out.set(x, s); return s; };
+    const ids = new Set(); D.B.forEach(b => [b.id, ...b.inside.map(n => n.id)].forEach(id => { if (D.uses(id, t.id)) ids.add(id); }));
+    ids.forEach(id => { const b = M.block(id), tx = (b.body && b.body.text) || '', ms = ((b.body && b.body.marks) || []).filter(m => m.type === 'term' && m.ref);
+      const sents = ms.filter(m => fam.has(m.ref)).map(m => sentenceAround(tx, m.from, m.to));
+      ms.filter(m => !fam.has(m.ref)).forEach(m => add(m.ref, sents.some(([a, z]) => m.from >= a && m.to <= z) ? 'same phrase' : 'same component'));
+      [...TB.nb(id), ...(IX.wOut.get(id) || []).map(w => ({ id: w.to })), ...(IX.wIn.get(id) || []).map(w => ({ id: w.from }))].forEach(n => (IX.blockTerms.get(n.id) || new Set()).forEach(x => add(x, 'linked components'))); });
+    D.arcs.forEach(a => TARC.through(a, [t.id]).forEach(x => { const s = add(x); if (s && !s.arcs.includes(a)) s.arcs.push(a); }));
+    return [...out.values()].filter(s => s.n || s.arcs.length).sort((a, b) => b.n - a.n);
+  },
+  side(D, A, st, host) {
+    const t = A.t, SY = LensView.synergies(D), lensSet = new Set(A.others), differs = () => st.pick.length !== lensSet.size || st.pick.some(x => !lensSet.has(x));
+    const side = h('aside.insp.tbb-side.nopan.scrolly' + (st.side ? '.open' : ''), h('button.ib.x', { title: 'Hide' }, '✕'));
+    const syn = h('div.ins-s.tbb-syn'), draw = () => {
+      const bar = differs() && (st.pick.length > 1 || (A.others.length && st.pick.length)) ? h('div.tbb-pickbar', h('b', st.pick.length + ' picked'),
+        h('button.btn.xs.pri', { type: 'button', on: { click: () => App.go(LensView.hash(t.id, st.pick, A.all)) } }, '◎ Lens on ' + (st.pick.length > 1 ? 'them together' : 'it')), h('button.btn.xs.ghost', { type: 'button', title: 'Esc', on: { click: () => { st.pick = A.others.slice(); draw(); LensView.applyPick(); } } }, 'Clear')) : null;
+      syn.replaceChildren(h('h6', 'Synergies', h('span.muted', plural(SY.length, 'term'))),
+        h('p.tiny.muted.tbb-sp', SY.length ? 'Terms that meet “' + t.label + '”: in the same phrase, the same component, or a linked one. Click to pick one; Ctrl+click (⌘+click) picks several. The bubbles they meet stay lit; the lens opens them on their own.' : 'No other term meets this one yet.'),
+        bar, h('div.tbb-syns', { role: 'group', 'aria-label': 'Synergies' }, SY.map(s => LensView.synRow(s, A, st, draw))));
+    };
+    draw(); LensView._drawSyn = draw;
+    const folded = D.B.flatMap(b => b.beads.map(x => ({ b, x })));
+    const G = IX.termGraph(t.id, 'project', t.projectId, st.imported), fam = M.termFamily(t.id);
+    side.append(h('div.ins-h', h('div.k', 'Synergies and threads'), h('div.tiny.muted', 'What meets “' + t.label + '”, and what its components led to.')), syn,
+      folded.length && !A.others.length ? h('div.ins-s', h('h6', 'Bridges folded in', h('span.muted', folded.length)), h('div.tiny.muted', { style: { marginBottom: '6px' } }, 'A bridged component shows once, with a green bead for each note it went to.'),
+        h('div.tbb-fold', folded.map(({ b, x }) => { const a = M.doc(M.block(b.id).docId), z = M.doc(x.docId); return h('div.tbb-fr', { on: { mouseenter: () => LensView.lite(b.id, true), mouseleave: () => LensView.lite(b.id, false), click: e => App.jump(x.ref, e) } }, h('span', (a && a.title) || '—'), h('i', ' ⇄ '), h('span', (z && z.title) || '—')); }))) : null,
+      G.insights.length ? h('div.ins-s', h('h6', 'What the wiring says', h('span.muted', G.insights.length)), G.insights.map(i => h('div.insight' + (i.cls ? '.' + i.cls : ''), { on: { mouseenter: () => i.path.forEach(id => LensView.lite(id, true)), mouseleave: () => i.path.forEach(id => LensView.lite(id, false)), click: () => App.openBlock(i.path[i.path.length - 1]) } }, h('b', i.title), i.body))) : null,
+      h('div.ins-s', h('h6', 'Key'), h('div.tbb-key', h('div', h('span.k-b'), 'a component and its neighbours, in glass'), h('div', h('span.k-s'), 'bridged to another note'), h('div', h('span.k-l'), 'the bridge, to that note’s bubble'), h('div', h('span.k-w'), 'a connection between notes'), h('div', h('span.k-a'), 'a barrier resolved or a takeaway reached, through another term'))),
+      h('div.ins-s.tbb-acts', fam.length > 1 ? h('label.switch', h('input', { type: 'checkbox', checked: st.imported, on: { change: e => { st.imported = e.target.checked; App._mounted = false; App.refresh(); } } }), 'with linked projects') : null,
+        h('button.btn.sm', { on: { click: () => { const others = DB.where('projects', p => p.id !== t.projectId); if (!others.length) return toast('No other project to import into'); pickModal('Import “' + t.label + '” into…', 'The imported term stays linked to this one, so the lens can chain across both projects.', others.map(p => ({ label: p.name, run: () => { M.importTerm(t.id, p.id); toast('Imported into ' + p.name); } }))); } } }, 'Import into…'),
+        h('button.btn.sm', { on: { click: () => Exporter.chain(t.id, { scope: 'project', scopeId: t.projectId, imported: st.imported }) } }, 'Export chain')),
+      TERMLIT.counted() ? null : (n => n ? h('div.ins-s.tiny.muted', plural(n, 'mention') + ' in lit reviews ' + (n === 1 ? 'is' : 'are') + ' not shown here — Settings → Features → Terms counts them.') : null)((IX.termOcc.get(t.id) || []).filter(o => TERMLIT.is(M.doc(o.docId))).length));
+    return side;
+  },
+  synRow(s, A, st, draw) {
+    const on = st.pick.includes(s.t), many = on && st.pick.length > 1, mod = e => e.ctrlKey || e.metaKey || e.shiftKey, x = M.term(s.t);
+    const tog = e => { const add = mod(e); if (add) { st.pick = on ? st.pick.filter(y => y !== s.t) : [...st.pick, s.t]; } else st.pick = st.pick.length === 1 && on ? [] : [s.t]; draw(); LensView.applyPick(); const r = $(`.tbb-sr[data-t="${s.t}"]`); if (r) r.focus({ preventScroll: true }); };
+    return h('div.tbb-sr' + (on ? '.on' : ''), { role: 'button', tabindex: '0', 'aria-pressed': String(on), 'data-t': s.t, title: 'Click to pick · Ctrl+click (⌘+click) to pick several',
+      on: { click: e => { if (e.target.closest('.tbb-lens')) return; tog(e); }, keydown: e => { if ((e.key === ' ' || e.key === 'Enter') && e.target === e.currentTarget) { e.preventDefault(); tog(e); } },
+        mouseenter: () => s.arcs.forEach(a => LensView.litArc(a, true)), mouseleave: () => s.arcs.forEach(a => LensView.litArc(a, false)) } },
+      h('span.nm', h('span.term-demo', x.label)),
+      h('button.tbb-lens', { type: 'button', title: many ? 'Lens: “' + A.t.label + '” with the ' + st.pick.length + ' picked terms' : 'Lens: “' + A.t.label + '” with “' + x.label + '”', 'aria-label': many ? 'Lens on the picked terms' : 'Lens on ' + x.label,
+        on: { click: e => { e.stopPropagation(); App.go(LensView.hash(A.t.id, many ? st.pick : [s.t], A.all)); } } }, '◎'),
+      h('div.ks', ...s.arcs.map(a => h('span.arc', { title: 'It joins ' + (a.k === 'ot' ? 'an observation' : 'a barrier') + ' on “' + A.t.label + '” to its ' + TARC.K[a.k][1] }, TARC.dot(a.k), TARC.K[a.k][0] + ' → ' + TARC.K[a.k][1])), ...Object.entries(s.kinds).map(([k, n]) => h('span', k + ' ' + n))));
+  },
+  applyPick() {
+    const F = LensView._field, A = LensView._A, D = LensView._D; if (!F || !A) return; const st = LensView.st(A.t.id), lensSet = new Set(A.others), act = st.pick.length > 0 && (st.pick.length !== lensSet.size || st.pick.some(x => !lensSet.has(x)));
+    F.classList.toggle('picking', act);
+    (LensView._els || new Map()).forEach((el, id) => { const b = D.B.find(o => o.id === id); el.classList.toggle('meet', act && !!b && st.pick.some(x => D.uses(b.id, x) || b.inside.some(n => D.uses(n.id, x)))); });
+  },
+  lite(id, on) { const D = LensView._D, b = D && D.where(id), el = b && LensView._els && LensView._els.get(b.id); if (el) el.classList.toggle('lit', on); },
+  /* ---------- the chain board, kept for Export chain (21-export) ---------- */
   TERMCOL: ['#E07A1F', '#3A6FE0', '#2E9E5B', '#B5179E', '#C9A227', '#0FA3B1'],
   termsIn: b => [...new Set(((b && b.body && b.body.marks) || []).filter(m => m.type === 'term' && m.ref).map(m => m.ref))],
   /** The lens as boxes: every component in full, under a header naming its note; lanes by theme or note, columns by day.
@@ -250,3 +559,13 @@ const LensView = {
   },
 };
 VIEWS.terms = TermsView; VIEWS.lens = LensView;
+{
+  // the Terms page: / finds a term (the navigation bar's / everywhere else); on a term, Esc lets the picked synergies go
+  document.addEventListener('keydown', e => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return; const t = e.target, typing = t && t.closest && t.closest('input,textarea,select,[contenteditable="true"],[contenteditable="plaintext-only"]');
+    if (e.key === '/' && App.route.name === 'terms' && !typing && !$('.ovl') && !$('.pop')) { const q = $('#tl-q'); if (q) { e.preventDefault(); e.stopImmediatePropagation(); q.focus(); q.select(); } return; }
+    if (e.key === 'Escape' && App.route.name === 'lens' && !typing && !$('.ovl') && !$('.pop') && LensView._A) { const A = LensView._A, st = LensView.st(A.t.id); if (st.pick.length !== A.others.length || st.pick.some(x => !A.others.includes(x))) { st.pick = A.others.slice(); LensView._drawSyn && LensView._drawSyn(); LensView.applyPick(); } }
+  }, true);
+  // a term's bubbles follow the window's width
+  addEventListener('resize', debounce(() => { if (App.route.name === 'lens' && LensView._field && LensView._field.isConnected) { const w = LensView._field.clientWidth; if (Math.abs(w - (LensView._w || 0)) > 4) { LensView._w = w; LensView.layout(false); } } }, 160));
+}

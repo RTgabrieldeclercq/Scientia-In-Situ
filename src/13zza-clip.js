@@ -213,7 +213,7 @@ const CLIP = {
   },
   /** The page a paper is showing: the paper read beside the note, else its card (the page across the top third of its stage). */
   pageOf(id) {
-    if (typeof RDOCK !== 'undefined' && RDOCK.st && RDOCK.st.id === id) return RDOCK.page();
+    if (typeof RDOCK !== 'undefined' && RDOCK.paneOf && RDOCK.paneOf(id)) return RDOCK.page(RDOCK.paneOf(id));   // V4.2: whichever pane of the reader shows it
     const b = M.block(id), cur = b ? (b.cur || 0) + 1 : 0, box = $(`.box[data-id="${id}"]`), st = box && $('.pdf-stage', box);
     if (!st || !b || b.view === 'page' || $('.pdfw.pdf-far', box)) return cur;
     const y = st.getBoundingClientRect().top + st.clientHeight * .3, sl = $$('.pdf-slot', st).find(x => x.getBoundingClientRect().bottom > y); return sl ? +sl.dataset.p : cur;

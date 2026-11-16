@@ -11,4 +11,8 @@ src/13zzd-board.js	engine keeps in Firestore on the lab site) are kept in the `b
 src/13zzi-kinds.js	if (c === 'material') return b.kind === 'matcard' || b.kind === 'matsheet' || !!b.inventoryId;
 src/13zzi-kinds.js	if (c === 'paper') return b.kind === 'rmpaper' || b.kind === 'pdf' || marks.some(m => m.type === 'cite');
 src/14b-atlas.js	if (b.kind === 'rmpaper' && b.paperId && M.lib(b.paperId)) { const r = M.lib(b.paperId); add(r.id, 'paper', r.title || 'Paper', { t: r.added, go: () => App.go('#/read/' + r.id) }); edge(b.id, r.id, 'paper', 'cite'); }
+src/14e-bubble.js	if (!BUBBLE.on() || (typeof RM === 'function' && RM())) { go(); return; }
+src/14e-bubble.js	still: () => (typeof RM === 'function' && RM()) || !BUBBLE.opt('float') || !BUBBLE.on(),
 src/15c-litreviews.js	const ps = DB.all('projects').filter(p => !have.has(p.id) && !p.deleted && p.status !== 'archived' && !(p.rm && p.rmAssigned === false));
+src/17e-readtabs.js	/** The Library's entry for an embedded paper or page: linked by hand, the same file, the paper record an older notebook may carry (rmPaper, read only), the page's address. */
+src/17e-readtabs.js	return all.find(l => l.pdf && b.media && l.pdf === b.media) || (b.rmPaper ? all.find(l => String(l.rmId || l.id) === String(b.rmPaper)) : null) || (u ? all.find(l => l.url && RDX.sameUrl(l.url, u)) : null) || null;
