@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "791a29e0a7fe40f29ea11677ea85478694f99584",
-  "subject": "V4.2: Scientia — the reader beside a note as tabs (any note's PDFs and HTML pages, + to open more), split up to 2×2; Cited in while you read; a quote shows where it is from in a band, and a bridged quote carries both bands",
-  "date": "2026-11-14"
+  "commit": "f0caa7a8013486be4a57dbaf0cdb41076713076b",
+  "subject": "V4.3: Scientia — the lab notebook keeps the reshaped Library page: the lab's papers, RM highlights and RM actions go into it instead of the lab's own list",
+  "date": "2026-11-15"
  },
- "cut": "131f96c097983f061f631014c684d0ef87ea4412",
+ "cut": "bf6493b940a8229d1a1792fe0919da80d423142e",
  "names": [
   "DESKLAB",
   "LABSYNC",

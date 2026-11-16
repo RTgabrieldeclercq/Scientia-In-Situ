@@ -53,7 +53,7 @@ const LMAP = {
 
 const LSHEET = {
   id: null,
-  open(r) { LSHEET.id = r.id; LSHEET.redraw(true); },
+  open(r) { LSHEET.id = r.id; LSHEET.redraw(true); LSEARCH.warm([r]); },   // V4.3: an added source fetches what it still has to
   close() { LSHEET.id = null; const el = $('#lib-sheet'); if (el) { el.classList.remove('open'); setTimeout(() => { if (!LSHEET.id) el.remove(); }, 320); } },
   redraw(fresh) {
     const r = LSHEET.id && M.lib(LSHEET.id); if (!r || !/^#\/library/.test(location.hash)) return LSHEET.close();
@@ -61,7 +61,7 @@ const LSHEET = {
     let el = $('#lib-sheet'); if (!el) { el = h('aside#lib-sheet.lib-sheet', { 'aria-label': 'Paper' }); document.body.append(el); requestAnimationFrame(() => el.classList.add('open')); } else el.classList.add('open');
     const go = (id, e) => { App.jump(id, e); };
     const sec = (title, kids) => kids && kids.length ? h('div.ls-sec', h('h5', title), ...kids) : null;
-    const flag = M.flagFor('library', r.id);
+    const flag = M.flagFor('library', r.id), ex = (typeof LibraryView !== 'undefined' && LibraryView.ext && LibraryView.ext.sheet && LibraryView.ext.sheet(r, f)) || {};   // V4.3: a build's own sections and actions, if it adds them
     el.replaceChildren(
       h('button.ls-x', { type: 'button', title: 'Close (Esc)', 'aria-label': 'Close', on: { click: LSHEET.close } }, '×'),
       h('div.ls-top', LIB.sigil(r), h('div', { style: { minWidth: 0 } }, h('div.ls-ti', r.kind === 'link' ? h('a', { href: r.url, target: '_blank', rel: 'noopener' }, r.title || r.url) : (r.title || 'Untitled')),
@@ -71,10 +71,13 @@ const LSHEET = {
       h('div.ls-sec', h('h5', 'Foci'), LGROUP.chips(r)),
       sec(f.cites.length ? 'Cited in ' + plural(f.cites.length, 'note') : 'Cited in', f.cites.length ? f.cites.map(d => { const b = f.citeIds.map(M.block).find(x => x && x.docId === d.id); return h('a.ls-ln', { title: (M.docPath ? M.docPath(d) : d.title) + ' — click: go to the citation · Alt+click: beside', on: { click: e => go(b ? b.id : d.id, e) } }, h('span', '↗'), h('span', d.title || 'Untitled')); }) : [h('div.tiny.muted', 'No note cites it yet.')]),
       sec('Embedded in', f.embeds.map(b => { const d = M.doc(b.docId); return d ? h('a.ls-ln', { on: { click: e => go(b.id, e) } }, h('span', '▤'), h('span', d.title || 'Untitled')) : null; }).filter(Boolean)),
-      sec('Highlights', f.hl.slice().sort((a, b) => (a.page || 0) - (b.page || 0)).map(x => h('a.ls-q.ls-hl', { href: '#/read/' + r.id + (x.page ? '/' + x.page : ''), style: { '--qc': READER.COLORS[(x.b.anchor && x.b.anchor.color) || 'yellow'] || READER.COLORS.yellow } }, snippet(x.text, 220), h('small', 'p. ' + x.page)))),
+      sec('Highlights', f.hl.slice().sort((a, b) => (a.page || 0) - (b.page || 0)).map(x => x.ext   // an added source's highlight opens where it says
+        ? h('a.ls-q.ls-hl', { href: '#', style: { '--qc': x.hex || READER.COLORS.yellow }, on: { click: e => { e.preventDefault(); if (x.open) x.open(); } } }, snippet(x.text, 220), h('small', [x.src ? x.src : '', x.page != null ? 'p. ' + x.page : '', x.by || ''].filter(Boolean).join(' · ')))
+        : h('a.ls-q.ls-hl', { href: '#/read/' + r.id + (x.page ? '/' + x.page : ''), style: { '--qc': READER.COLORS[(x.b.anchor && x.b.anchor.color) || 'yellow'] || READER.COLORS.yellow } }, snippet(x.text, 220), h('small', 'p. ' + x.page)))),
       sec('Quoted in notes', f.quotes.map(x => h('a.ls-q.ls-qt', { on: { click: e => go(x.b.id, e) } }, snippet(x.text, 220), h('small', ((x.doc && x.doc.title) || 'a note') + (x.page ? ' · p. ' + x.page : ''))))),
       sec('Notes on it', f.notes.map(x => h('div.ls-q', snippet(x.text, 220), h('small', (x.it ? 'a structure' : 'a note') + (x.page ? ' · p. ' + x.page : ''))))),
-      h('div.ls-acts', r.kind !== 'link' ? (r.pdf ? h('a.btn.sm.pri', { href: '#/read/' + r.id }, 'Read') : h('button.btn.sm', { on: { click: () => READER.attach(r) } }, '+ PDF')) : h('a.btn.sm', { href: r.url, target: '_blank', rel: 'noopener' }, 'Open the page'),
+      ...(ex.secs || []),
+      h('div.ls-acts', ex.acts ? ex.acts : r.kind !== 'link' ? (r.pdf ? h('a.btn.sm.pri', { href: '#/read/' + r.id }, 'Read') : h('button.btn.sm', { on: { click: () => READER.attach(r) } }, '+ PDF')) : h('a.btn.sm', { href: r.url, target: '_blank', rel: 'noopener' }, 'Open the page'),
         h('button.btn.sm', { on: { click: async () => { try { await navigator.clipboard.writeText(LIB.apa(r)); toast('Reference copied (APA)'); } catch (e) { toast(LIB.apa(r)); } } } }, 'Copy reference'),
         h('button.btn.sm' + (flag ? '.on' : ''), { title: 'Flag for the weekly review', on: { click: () => M.toggleFlag('library', r.id) } }, flag ? '⚑ Flagged' : '⚐ Flag')));
     if (fresh) { const x = $('.ls-x', el); if (x) setTimeout(() => x.focus({ preventScroll: true }), 30); }
