@@ -104,7 +104,9 @@ const SYNC = {
   /* ---------- whole-record moves ---------- */
   /** The computer's record replaced what this device had seen (another notebook, a restore): send what's waiting, then load it. */
   async reset() {
-    if (SYNC.loading) return; if (SYNC.outbox.size) await SYNC.push(true);
+    if (SYNC.loading) return;
+    // V3.964: everything waiting goes first, batch after batch (one push sends 400); a push that fails keeps this device as it is
+    for (let n = 0; SYNC.outbox.size && n < 50; n++) { const before = SYNC.outbox.size; if (!(await SYNC.push(true)) || SYNC.outbox.size >= before) return false; }
     await SYNC.fullLoad(); return false;
   },
   async fullLoad() {
@@ -112,6 +114,9 @@ const SYNC = {
     try {
       const r = await fetch('api/sync/state' + (SYNC.local ? '' : '?journal=0'), { cache: 'no-store' }); if (!r.ok) throw new Error('could not read the record');
       const data = await r.json();
+      // V3.964: an empty record never replaces a device's notes on its own — a notebook the computer could not read looks empty
+      const mine = DB.all('documents').filter(d => !d.deleted).length, theirs = (data.stores.documents || []).filter(d => !d.deleted).length;
+      if (mine && !theirs) { SYNC.held = `The computer's notebook is empty while this device holds ${plural(mine, 'note')} — nothing was replaced. Check the computer (Settings → Notebook folder, The lab), then reload.`; SYNC.on = false; SYNC.loading = false; SYNC.online = false; SYNC.error = SYNC.held; SYNC.paintDot(); toast(SYNC.held, 10000); return false; }
       if (SYNC.local && !DISK.isEmpty()) await DISK.keep('browser-before-load');
       // what belongs to this device stays: browser-kept files, data-folder handles
       if (DB.mode === 'idb') { const blobs = await DB._getAll('blobs'), ds = await DB._getAll('datasets'), byId = new Map((data.stores.datasets || []).map(x => [x.id, x])); ds.forEach(x => byId.set(x.id, x)); data.stores.blobs = blobs; data.stores.datasets = [...byId.values()]; }
@@ -200,7 +205,7 @@ const SYNC = {
     if (!SYNC.on && !SYNC.error) { b.style.display = 'none'; return; } b.style.display = '';
     const n = SYNC.outbox.size, st = SYNC.conflicts ? 'conf' : SYNC.online === false ? 'off' : n ? 'pend' : 'ok';
     b.className = 'ib sy-' + st; b.replaceChildren(st === 'conf' ? '⚠' : h('i.sy-dot'), n && st !== 'conf' ? h('span.sy-n', n) : null);
-    b.title = st === 'conf' ? `${plural(SYNC.conflicts, 'thing')} to decide` : st === 'off' ? `Can’t reach your computer — ${plural(n, 'change')} waiting` : n ? `Sending ${plural(n, 'change')}…` : 'In sync with your computer';
+    b.title = SYNC.held ? SYNC.held : st === 'conf' ? `${plural(SYNC.conflicts, 'thing')} to decide` : st === 'off' ? `Can’t reach your computer — ${plural(n, 'change')} waiting` : n ? `Sending ${plural(n, 'change')}…` : 'In sync with your computer';
   },
   menu(e) {
     const n = SYNC.outbox.size;

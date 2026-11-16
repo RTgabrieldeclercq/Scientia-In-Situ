@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "cdbe26cc532a02dcc5c82fb30603917d1668b456",
-  "subject": "V3.963: Scientia — terms in one note, the lab's Library adds / pulls / pushes papers, paper shelves and foci",
+  "commit": "a9eb8d24cefd3ba1b62e4a4083d424acbb117480",
+  "subject": "V3.964: Scientia — one copy per port, a sealed notebook refused, a device keeps its notes, the hub gets room",
   "date": "2026-11-09"
  },
- "cut": "ec2d26485cb4c0e8f86dca6ff1865923d1d7fb32",
+ "cut": "01971ed260e018a09b3f6c5d47d3b70a1d2f0a4f",
  "names": [
   "DESKLAB",
   "LABSYNC",
