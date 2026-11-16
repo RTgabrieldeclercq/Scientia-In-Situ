@@ -24,7 +24,12 @@
    - The dome rises from the bottom edge of the canvas, its base on that edge,
      and fades into the note through a gradient of the note's own paper; the
      glass is clear (no fill): a bright rim, the rim bending what lies behind
-     it (BUBBLE.warp, where the browser can), two small highlights. The floats
+     it (where the browser can), two small highlights. V4.9 (Gabe: "not a
+     hemisphere, but an extended view of the tip of a hemisphere, spanning the
+     whole horizontal space, and maybe 3/4 of the vertical space"): it is a
+     spherical cap — a circular segment whose chord is the pane's whole bottom
+     edge (W) and whose height is ¾ of V4.7's dome (h = ¾ · D/2); the sphere's
+     radius Rs = (h² + (W/2)²) / 2h (FLOATS.capEdge / capSpec / capWarp). The floats
      drift inside as glass beads — coloured by kind (or where they came from,
      or age), oldest lowest — turning slowly, still while the pointer is in
      the dome. Rest 1 s on one (or click it) for its preview: Place here, Open
@@ -108,24 +113,56 @@ const FLOATS = {
     const pane = (ctx && ctx.pane && ctx.pane.paper) ? ctx.pane : App.panes().find(p => p && p.paper && p.docId);
     if (!pane || !pane.paper) return toast('Open a note, then /float');
     FLOATS.close(); const host = pane.paper.el, r = host.getBoundingClientRect();
-    const D = Math.max(220, Math.round(Math.min(r.width * .74, r.height * .8, 820) / 8) * 8), RR = D / 2;   // most of the note stays free to drop on
-    const Dm = { pane, host, D, RR, rot: 0, hold: false, hot: null, rest: 0, prev: null, drag: null, q: '', beads: new Map(), raf: 0, last: 0 };
-    const spec = BUBBLE.svg ? BUBBLE.svg('svg', { class: 'fl-spec', viewBox: '0 0 200 100', 'aria-hidden': 'true' },
-      '<ellipse cx="44" cy="27" rx="9" ry="3" transform="rotate(-26 44 27)" fill="url(#bb-hl)" opacity=".8"/><ellipse cx="53" cy="32.5" rx="3.2" ry="1.2" transform="rotate(-26 53 32.5)" fill="url(#bb-hl)" opacity=".55"/>') : null;
+    // V4.9 (Gabe: "not a hemisphere, but an extended view of the tip of a hemisphere, spanning the whole horizontal space, and maybe 3/4 of the vertical space"):
+    // a spherical cap — the top of a much larger sphere — whose chord is the pane's whole bottom edge; its height is ¾ of the V4.7 dome's (D/2)
+    const D = Math.max(220, Math.round(Math.min(r.width * .74, r.height * .8, 820) / 8) * 8), W = Math.max(120, Math.round(r.width)), hh = Math.max(84, Math.round(D / 2 * .75)), Rs = (hh * hh + (W / 2) * (W / 2)) / (2 * hh);
+    const Dm = { pane, host, D, W, h: hh, Rs, RR: hh, rot: 0, hold: false, hot: null, rest: 0, prev: null, drag: null, q: '', beads: new Map(), raf: 0, last: 0 };
     try { BUBBLE.defs(); } catch (e) { }
-    const wid = FLOATS.canBackdrop && BUBBLE.warp ? BUBBLE.warp(D) : null;
+    const spec = FLOATS.capSpec(W, hh, Rs), edge = FLOATS.capEdge(W, hh, Rs);
+    const wid = FLOATS.canBackdrop ? FLOATS.capWarp(W, hh, Rs) : null;
     const field = h('div.fl-field'), q = h('input.fl-q', { type: 'search', placeholder: 'Search the floats', 'aria-label': 'Search the floats', autocomplete: 'off', on: { input: e => { Dm.q = e.target.value.trim().toLowerCase(); FLOATS.build(); }, keydown: e => { if (e.key === 'Escape') { e.preventDefault(); FLOATS.close(); } } } });
     const dome = h('div.fl-dome', { style: wid ? { '--bd': `url(#${wid})` } : {}, on: { pointerenter: () => { Dm.hold = true; }, pointerleave: () => { Dm.hold = false; FLOATS.unhot(); }, pointermove: e => FLOATS.move(e), pointerdown: e => e.stopPropagation(), wheel: e => e.stopPropagation() } },
-      h('div.fl-glass'), spec, field);
+      h('div.fl-glass'), edge, spec, field);
     const ui = h('div.fl-ui', { on: { pointerdown: e => e.stopPropagation() } }, FLOATS.cloud(), h('b.fl-n'), q, h('button.fl-x', { type: 'button', title: 'Close (Esc)', 'aria-label': 'Close the floats', on: { click: () => FLOATS.close() } }, '×'));
-    const wrap = h('div.fl-wrap', { style: { '--D': D + 'px', '--R': RR + 'px' }, role: 'dialog', 'aria-label': 'Floats' }, h('div.fl-skirt'), dome, ui);
+    const wrap = h('div.fl-wrap', { style: { '--D': D + 'px', '--R': hh + 'px', '--h': hh + 'px', '--Rs': Rs.toFixed(1) + 'px' }, role: 'dialog', 'aria-label': 'Floats' }, h('div.fl-skirt'), dome, ui);
     Dm.wrap = wrap; Dm.dome = dome; Dm.field = field; Dm.ui = ui; FLOATS.D = Dm; host.append(wrap);
     FLOATS.build(); FLOATS.loop(); requestAnimationFrame(() => wrap.classList.add('up'));
     return Dm;
   },
+  /** V4.9 — the cap's outline: y (from its top) of the arc above x, for a chord W, height h, sphere radius Rs. */
+  arcY: (x, W, Rs) => Rs - Math.sqrt(Math.max(0, Rs * Rs - (x - W / 2) * (x - W / 2))),
+  /** The fine edge along the arc: a white line inside, a faint ink line outside (the clip keeps the inner half of each). */
+  capEdge(W, hh, Rs) {
+    if (!BUBBLE.svg) return null; const p = `M0 ${hh} A ${Rs.toFixed(1)} ${Rs.toFixed(1)} 0 0 1 ${W} ${hh}`;
+    return BUBBLE.svg('svg', { class: 'fl-edge', viewBox: `0 0 ${W} ${hh}`, preserveAspectRatio: 'none', 'aria-hidden': 'true' },
+      `<path d="${p}" fill="none" stroke="rgba(255,255,255,.62)" stroke-width="3"/><path d="${p}" fill="none" class="fl-edge-o" stroke-width="1.6"/>`);
+  },
+  /** Two small highlights near the upper left of the arc, along its tangent. */
+  capSpec(W, hh, Rs) {
+    if (!BUBBLE.svg) return null; const x1 = W * .25, r1 = Math.max(12, Math.min(34, W * .028)), y1 = FLOATS.arcY(x1, W, Rs) + Math.max(9, hh * .1);
+    const ang = Math.atan2(x1 - W / 2, Math.sqrt(Math.max(1, Rs * Rs - (x1 - W / 2) * (x1 - W / 2)))) * 180 / Math.PI, x2 = x1 + r1 * 1.15, y2 = FLOATS.arcY(x2, W, Rs) + Math.max(9, hh * .1) + r1 * .42;
+    return BUBBLE.svg('svg', { class: 'fl-spec', viewBox: `0 0 ${W} ${hh}`, preserveAspectRatio: 'none', 'aria-hidden': 'true' },
+      `<ellipse cx="${x1.toFixed(1)}" cy="${y1.toFixed(1)}" rx="${r1.toFixed(1)}" ry="${(r1 * .32).toFixed(1)}" transform="rotate(${ang.toFixed(1)} ${x1.toFixed(1)} ${y1.toFixed(1)})" fill="url(#bb-hl)" opacity=".8"/>` +
+      `<ellipse cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" rx="${(r1 * .36).toFixed(1)}" ry="${(r1 * .13).toFixed(1)}" transform="rotate(${ang.toFixed(1)} ${x2.toFixed(1)} ${y2.toFixed(1)})" fill="url(#bb-hl)" opacity=".55"/>`);
+  },
+  /** The rim's bend for the cap (BUBBLE.warp's is for a disc): a displacement map W×h pulling outward near the arc. */
+  _capW: {},
+  capWarp(W, hh, Rs) {
+    const k = typeof BUBBLE.opt === 'function' ? +BUBBLE.opt('glass') || 0 : 14; if (!k) return null;
+    const key = W + 'x' + hh + '_' + k; if (FLOATS._capW[key]) return FLOATS._capW[key]; const id = 'flw' + W + 'x' + hh + '_' + k;
+    const defs = BUBBLE.defs(); if (!defs) return null; if (document.getElementById(id)) return (FLOATS._capW[key] = id);
+    // a thin band at the rim, and a strength that can never fold what is behind it over itself (the map's slope stays under ½: scale ≤ band / 3)
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = hh; const x = cv.getContext('2d'), im = x.createImageData(W, hh), band = Math.max(18, Math.min(hh * .3, 42)), sc = Math.max(2, Math.min(Math.round(band / 3), Math.round(hh * k / 100 * .6)));
+    for (let j = 0; j < hh; j++) for (let i = 0; i < W; i++) { const dx = i + .5 - W / 2, dy = j + .5 - Rs, r = Math.hypot(dx, dy); let s = 0;
+      if (r <= Rs && r > .001) { const t = Math.min(1, Math.max(0, 1 - (Rs - r) / band)); s = t * t * (3 - 2 * t); s *= s; }
+      const o = (j * W + i) * 4; im.data[o] = 128 + (r > .001 ? dx / r : 0) * s * 127; im.data[o + 1] = 128 + (r > .001 ? dy / r : 0) * s * 127; im.data[o + 2] = 128; im.data[o + 3] = 255; }
+    x.putImageData(im, 0, 0);
+    defs.insertAdjacentHTML('beforeend', `<filter id="${id}" x="0" y="0" width="${W}" height="${hh}" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feImage href="${cv.toDataURL()}" x="0" y="0" width="${W}" height="${hh}" preserveAspectRatio="none" result="m"/><feDisplacementMap in="SourceGraphic" in2="m" scale="${sc}" xChannelSelector="R" yChannelSelector="G"/></filter>`);
+    return (FLOATS._capW[key] = id);
+  },
   close() { const Dm = FLOATS.D; if (!Dm) return; cancelAnimationFrame(Dm.raf); clearTimeout(Dm.rest); FLOATS.unprev(); if (Dm.drag && Dm.drag.ghost) Dm.drag.ghost.remove(); Dm.wrap.remove(); FLOATS.D = null; },
   redraw() { const Dm = FLOATS.D; if (!Dm) return; if (!Dm.host.isConnected) return FLOATS.close(); FLOATS.build(); },
-  /** The beads: the floats there are (minus this note's own), placed on the hemisphere — golden-angle round it, oldest lowest. */
+  /** The beads: the floats there are (minus this note's own), placed on the cap — golden-angle round it, oldest lowest. */
   build() {
     const Dm = FLOATS.D; if (!Dm) return; const here = Dm.pane.docId;
     const all = FLOATS.waiting(), L = all.filter(b => b.docId !== here && (!Dm.q || (M.blockName(b) + ' ' + ((b.body && b.body.text) || '') + ' ' + ((M.doc(b.docId) || {}).title || '')).toLowerCase().includes(Dm.q)));
@@ -134,7 +171,7 @@ const FLOATS = {
     const n = L.length;
     L.forEach((b, i) => {
       const k = n > 1 ? i / (n - 1) : .5, old = FLOATS.isOld(b), el0 = Dm.beads.get(b.id);
-      const e = (old ? .06 : .14) + (old ? .32 : 1.02) * k, a = i * 2.39996;   // elevation (rad): oldest lowest; azimuth: the golden angle
+      const e = (old ? .03 : .12) + (old ? .3 : .82) * k, a = i * 2.39996;   // elevation (0 base … 1 under the arc): oldest lowest; azimuth: the golden angle
       if (el0) { Object.assign(el0, { e, a, old }); el0.el.classList.toggle('old', old); return; }
       const days = FLOATS.old(b), el = h('button.fl-b' + (old ? '.old' : ''), { type: 'button', 'data-id': b.id, 'aria-label': M.blockName(b) + ' — a float from ' + ((M.doc(b.docId) || {}).title || 'a note'), style: { '--kc': FLOATS.colour(b) },
         on: { pointerdown: ev => FLOATS.down(ev, b), click: ev => { ev.stopPropagation(); if (Dm.drag && Dm.drag.moved) return; FLOATS.preview(b); } } }, old && days != null ? h('span.fl-age', days + ' d') : null);
@@ -144,12 +181,15 @@ const FLOATS = {
     else { const em = Dm.field.querySelector('.fl-empty'); if (em) em.remove(); }
     FLOATS.frame(true);
   },
-  /** Where each bead is now: the hemisphere turned by rot, seen a little from above; nearer is larger and on top. */
+  /** Where each bead is now: on the cap's face, the sphere turned by rot (the beads drift across), nearer larger and on top;
+      across the width where the cap is tall enough, between the base and the arc by elevation (oldest lowest). */
   frame(force) {
-    const Dm = FLOATS.D; if (!Dm) return; const RR = Dm.RR, rx = RR * .84, ry = RR * .84;
+    const Dm = FLOATS.D; if (!Dm) return; const W = Dm.W, hh = Dm.h, Rs = Dm.Rs, m = 40, k0 = Rs - hh + m;
+    const half = Math.sqrt(Math.max(0, Rs * Rs - k0 * k0));   // half the width over which the cap is at least m tall
     Dm.beads.forEach(o => {
-      const az = o.a + Dm.rot, ce = Math.cos(o.e), x = ce * Math.cos(az), z = ce * Math.sin(az), y = Math.sin(o.e), dep = (z + 1) / 2;
-      const px = RR + x * rx, py = RR - y * ry - z * RR * .08, d = Math.round((o.old ? 22 : 28) * (.72 + .5 * dep));
+      const az = o.a + Dm.rot, u = Math.cos(az), z = Math.sin(az), dep = (z + 1) / 2, d = Math.round((o.old ? 22 : 28) * (.72 + .5 * dep));
+      const px = W / 2 + u * Math.max(0, half - d / 2 - 6), top = FLOATS.arcY(px, W, Rs) + d / 2 + 6, bot = hh - d / 2 - 4;
+      const py = Math.min(bot, Math.max(top, bot - o.e * Math.max(0, bot - top) - z * hh * .03));
       if (!force && o.px === px && o.py === py) return; o.px = px; o.py = py; o.d = d;
       const s = o.el.style; s.left = px.toFixed(1) + 'px'; s.top = py.toFixed(1) + 'px'; s.setProperty('--d', d + 'px'); s.zIndex = String(10 + Math.round(dep * 50)); s.opacity = (o.old ? .5 : .62) + .38 * dep;
     });
@@ -196,7 +236,7 @@ const FLOATS = {
   spot() {
     const Dm = FLOATS.D; const P = Dm && Dm.pane.paper; if (!P) return null; const r = P.rect();
     if (FLOATS.opt('place', 'drop') === 'centre' && typeof CLIPX !== 'undefined' && CLIPX.spot) return CLIPX.spot(Dm.pane);
-    return P.toWorld(r.left + r.width / 2 - 196, r.top + Math.max(40, (r.height - Dm.RR) * .38));
+    return P.toWorld(r.left + r.width / 2 - 196, r.top + Math.max(40, (r.height - Dm.h) * .38));
   },
   /* dragging a bead out onto the note */
   down(e, b) {
@@ -212,8 +252,8 @@ const FLOATS = {
       setTimeout(() => { if (FLOATS.D === Dm) Dm.drag = null; }, 0); };
     addEventListener('pointermove', mv, true); addEventListener('pointerup', up, true);
   },
-  /** Inside the dome's glass (the half disc), not just its box. */
-  inDome(cx, cy) { const Dm = FLOATS.D; if (!Dm) return false; const r = Dm.dome.getBoundingClientRect(), x = cx - (r.left + r.width / 2), y = r.bottom - cy; return y >= 0 && Math.hypot(x, y) <= Dm.RR; },
+  /** Inside the cap's glass (the circular segment), not just its box. */
+  inDome(cx, cy) { const Dm = FLOATS.D; if (!Dm) return false; const r = Dm.dome.getBoundingClientRect(), x = cx - r.left, y = cy - r.top; return x >= 0 && x <= r.width && y >= 0 && y <= r.height && Math.hypot(x - r.width / 2, y - Dm.Rs) <= Dm.Rs; },
 };
 {
   // the card: a cloud and "afloat" while it waits; "assigned float" once placed; a placed float's bridge says "Float · from" and can go back

@@ -22,19 +22,20 @@
 body.f-off-floats .box > .fl-mark,body.f-off-floats .fl-bulk,body.f-off-floats .fl-back{display:none}
 body.f-off-floats .box.is-float{outline:0}
 
-/* the dome: its base on the canvas's bottom edge, the note's paper fading up into it, the glass clear */
-.fl-wrap{position:absolute;left:0;right:0;bottom:0;height:calc(var(--R) + 60px);pointer-events:none;z-index:40}
-.fl-skirt{position:absolute;left:0;right:0;bottom:0;height:calc(var(--R) * .62);pointer-events:none;
+/* the dome — V4.9 a wide cap: the top of a much larger sphere, its chord the canvas's whole bottom edge (--Rs: that sphere's radius,
+   --h: the cap's height); the note's paper fading up into it along the full width; the glass clear */
+.fl-wrap{position:absolute;left:0;right:0;bottom:0;height:calc(var(--h,var(--R)) + 60px);pointer-events:none;z-index:40}
+.fl-skirt{position:absolute;left:0;right:0;bottom:0;height:calc(var(--h,var(--R)) * .85);pointer-events:none;
   background:linear-gradient(to top,color-mix(in srgb,var(--paper) 78%,transparent) 0%,color-mix(in srgb,var(--paper) 42%,transparent) 45%,transparent 100%);opacity:0;transition:opacity .45s ease}
 .fl-wrap.up .fl-skirt{opacity:1}
-.fl-dome{position:absolute;left:50%;bottom:0;width:var(--D);height:var(--R);border-radius:var(--R) var(--R) 0 0;pointer-events:auto;touch-action:none;
-  transform:translate(-50%,100%);transition:transform .55s cubic-bezier(.2,.9,.3,1);-webkit-backdrop-filter:var(--bd,none);backdrop-filter:var(--bd,none)}
-.fl-wrap.up .fl-dome{transform:translate(-50%,0)}
-.fl-glass{position:absolute;inset:0;border-radius:inherit;pointer-events:none;overflow:hidden;
-  background:radial-gradient(ellipse 50% 100% at 50% 100%,transparent 80%,color-mix(in srgb,var(--float) 9%,transparent) 91%,rgba(255,255,255,.30) 97.5%,transparent 100%),
-    radial-gradient(ellipse 47% 94% at 45% 100%,transparent 90%,rgba(255,255,255,.16) 96%,transparent 100%);
-  border:1px solid rgba(255,255,255,.55);border-bottom:0}
-.fl-glass::after{content:"";position:absolute;inset:-1px;border-radius:inherit;border:1px solid color-mix(in srgb,var(--ink) 13%,transparent);border-bottom:0}
+.fl-dome{position:absolute;left:0;right:0;bottom:0;height:var(--h);pointer-events:auto;touch-action:none;clip-path:circle(var(--Rs) at 50% var(--Rs));
+  transform:translateY(100%);transition:transform .55s cubic-bezier(.2,.9,.3,1);-webkit-backdrop-filter:var(--bd,none);backdrop-filter:var(--bd,none)}
+.fl-wrap.up .fl-dome{transform:translateY(0)}
+.fl-glass{position:absolute;inset:0;pointer-events:none;overflow:hidden;
+  background:radial-gradient(circle var(--Rs) at 50% var(--Rs),transparent calc(var(--Rs) - var(--h) * .24),color-mix(in srgb,var(--float) 9%,transparent) calc(var(--Rs) - var(--h) * .1),rgba(255,255,255,.30) calc(var(--Rs) - 3px),transparent var(--Rs)),
+    radial-gradient(circle calc(var(--Rs) * .985) at 47% var(--Rs),transparent calc(var(--Rs) * .985 - var(--h) * .12),rgba(255,255,255,.14) calc(var(--Rs) * .985 - var(--h) * .05),transparent calc(var(--Rs) * .985))}
+.fl-edge{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.fl-edge .fl-edge-o{stroke:color-mix(in srgb,var(--ink) 16%,transparent)}
 .fl-glass::before{content:"";position:absolute;top:0;bottom:0;left:-40%;width:28%;transform:skewX(-18deg);
   background:linear-gradient(90deg,transparent,rgba(255,255,255,.16),transparent);animation:flsheen 7.5s ease-in-out 1.2s infinite}
 @keyframes flsheen{0%,62%{left:-40%}100%{left:120%}}
@@ -53,14 +54,14 @@ body.f-off-floats .box.is-float{outline:0}
 .fl-age{position:absolute;bottom:calc(100% + 2px);left:50%;transform:translateX(-50%);font:600 9px var(--f-m);color:var(--ink-3);white-space:nowrap;pointer-events:none}
 .fl-empty{position:absolute;left:50%;bottom:28%;transform:translateX(-50%);display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-3);white-space:nowrap}
 .fl-empty .fl-cl{color:var(--float)}
-.fl-ui{position:absolute;left:50%;bottom:calc(var(--R) + 10px);transform:translateX(-50%);display:flex;align-items:center;gap:8px;pointer-events:auto;
+.fl-ui{position:absolute;left:50%;bottom:calc(var(--h,var(--R)) + 10px);transform:translateX(-50%);display:flex;align-items:center;gap:8px;pointer-events:auto;
   background:color-mix(in srgb,var(--surface) 84%,transparent);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid var(--rule);border-radius:999px;padding:4px 5px 4px 10px;box-shadow:var(--shadow);opacity:0;transition:opacity .35s .2s}
 .fl-wrap.up .fl-ui{opacity:1}
 .fl-ui > .fl-cl{color:var(--float-ink)} .fl-ui > .fl-cl svg{width:16px;height:16px}
 .fl-n{font:600 12px var(--f-m);color:var(--ink-2);white-space:nowrap}
 .fl-q{width:170px;border:0;background:transparent;font:13px var(--f-d);color:var(--ink);outline:0;padding:3px 4px}
 .fl-x{width:24px;height:24px;border-radius:50%;border:1px solid var(--rule-2);background:var(--surface);cursor:pointer;color:var(--ink-2);font:15px/1 var(--f-d)}
-.fl-prev{position:absolute;left:50%;bottom:calc(var(--R) * .32);transform:translateX(-50%);width:min(380px,92%);pointer-events:auto;z-index:90;display:grid;gap:6px;
+.fl-prev{position:absolute;left:50%;bottom:calc(var(--h,var(--R)) * .2);transform:translateX(-50%);width:min(380px,92%);pointer-events:auto;z-index:90;display:grid;gap:6px;
   background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--float);border-radius:10px;box-shadow:var(--shadow-lg);padding:10px 12px 11px}
 .fl-ph{display:flex;align-items:center;gap:6px;font:600 10px var(--f-m);letter-spacing:.08em;text-transform:uppercase;color:var(--float-ink)} .fl-ph .sp{flex:1}
 .fl-pk{display:inline-flex;align-items:center;gap:4px;color:var(--kc);letter-spacing:.06em} .fl-pk::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--kc)}
@@ -73,7 +74,7 @@ body.f-off-floats .box.is-float{outline:0}
 .fl-ghost .fl-cl{color:var(--float-ink);grid-row:span 2} .fl-ghost b{font-weight:600} .fl-ghost span:last-child{color:var(--ink-3);font-size:11px}
 .fl-ghost.back{opacity:.45}
 .paper.fl-drop{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--float) 55%,transparent)}
-@media (max-width:760px){ .fl-q{width:110px} .fl-prev{bottom:calc(var(--R) * .12)} }
+@media (max-width:760px){ .fl-q{width:110px} .fl-prev{bottom:calc(var(--h,var(--R)) * .06)} }
 @media (prefers-reduced-motion:reduce){ .fl-dome,.fl-skirt,.fl-ui{transition:none} .fl-glass::before{animation:none;display:none} .fl-b{transition:none} .fl-b.rest::after{animation-duration:.01ms} }
 
 /* Settings → Features → Floats: a mini canvas with its dome */
@@ -81,8 +82,10 @@ body.f-off-floats .box.is-float{outline:0}
   background-image:linear-gradient(to right,var(--grid-line) 0 1px,transparent 1px),linear-gradient(to bottom,var(--grid-line) 0 1px,transparent 1px);background-size:14px 14px;border:1px solid var(--rule)}
 .pv-fl .pv-flcard{position:absolute;left:14px;top:14px;display:inline-flex;align-items:center;gap:4px;font:600 10px var(--f-m);color:var(--float-ink);background:var(--float-soft);border:1px solid color-mix(in srgb,var(--float) 65%,transparent);border-radius:999px;padding:2px 8px 2px 6px}
 .pv-fl .pv-flsk{position:absolute;left:0;right:0;bottom:0;height:60px;background:linear-gradient(to top,color-mix(in srgb,var(--paper) 80%,transparent),transparent)}
-.pv-fl .pv-fld{position:absolute;left:50%;bottom:0;width:260px;height:120px;transform:translateX(-50%);border-radius:130px 130px 0 0;border:1px solid rgba(255,255,255,.6);border-bottom:0;
-  background:radial-gradient(ellipse 50% 100% at 50% 100%,transparent 80%,color-mix(in srgb,var(--float) 10%,transparent) 92%,rgba(255,255,255,.3) 98%,transparent 100%);box-shadow:0 0 0 1px color-mix(in srgb,var(--ink) 10%,transparent)}
+/* V4.9: the preview's cap spans the mini canvas; an elliptic segment through both bottom corners (its centre 1.5 heights below the base) */
+.pv-fl .pv-fld{position:absolute;left:0;right:0;bottom:0;height:90px;clip-path:ellipse(62.5% 250% at 50% 250%);
+  background:radial-gradient(62.5% 250% at 50% 250%,transparent 90%,color-mix(in srgb,var(--float) 10%,transparent) 96%,rgba(255,255,255,.34) 99.3%,transparent 100%)}
+.pv-fl .pv-fld::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(62.5% 250% at 50% 250%,transparent 99.2%,color-mix(in srgb,var(--ink) 14%,transparent) 99.6%,transparent 100%)}
 .pv-fl .pv-fld i{position:absolute;width:var(--d);height:var(--d);margin:calc(var(--d) / -2) 0 0 calc(var(--d) / -2);border-radius:50%;
   background:radial-gradient(circle at 33% 28%,rgba(255,255,255,.9),transparent 40%),radial-gradient(circle at 52% 62%,color-mix(in srgb,var(--kc) 58%,transparent),color-mix(in srgb,var(--kc) 22%,transparent) 72%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.6)}
 .pv-fl .pv-fld i.old{filter:saturate(.5);opacity:.7}
