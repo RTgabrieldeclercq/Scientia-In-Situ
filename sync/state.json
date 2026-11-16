@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "378a65ab4cb64166447d40e2e22ef76239cd005a",
-  "subject": "V4.10: Scientia — the Quick cast's Label: Float and Reference behind one button; the cursor becomes the label, a click labels a component (Ctrl keeps it)",
+  "commit": "21ccd5d298854e823a9eb66eb721f73374611f91",
+  "subject": "V4.9: Scientia — the Quick cast's Label: Float and Reference behind one button; the cursor becomes the label, a click labels a component (Ctrl keeps it)",
   "date": "2026-11-16"
  },
- "cut": "9ac2b703a1675ca479dd050124b709f1d3160646",
+ "cut": "837dbcc5d8e985395c0b8693ee03db4b2fbbf13f",
  "names": [
   "DESKLAB",
   "LABSYNC",
