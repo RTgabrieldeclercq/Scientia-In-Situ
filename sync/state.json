@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "c6829e61ddae04bb9f3103b4c42afc249b33b793",
-  "subject": "V4.9: Scientia — the float dome is a wide cap spanning the foot of the canvas",
+  "commit": "378a65ab4cb64166447d40e2e22ef76239cd005a",
+  "subject": "V4.10: Scientia — the Quick cast's Label: Float and Reference behind one button; the cursor becomes the label, a click labels a component (Ctrl keeps it)",
   "date": "2026-11-16"
  },
- "cut": "8f902563c1149f7f72a915347ff8ef915bd22f8b",
+ "cut": "9ac2b703a1675ca479dd050124b709f1d3160646",
  "names": [
   "DESKLAB",
   "LABSYNC",

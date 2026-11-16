@@ -182,6 +182,17 @@ const PV = {
         h('div.pv-fld', B.map(([x, y, d, o], i) => h('i' + (o ? '.old' : ''), { style: { left: (x * 100) + '%', top: (y * 100) + '%', '--d': d + 'px', '--kc': cols[i] } })))),
         PV.cap('Floats in the dome, coloured by ' + (by === 'origin' ? 'where they came from' : by === 'age' ? 'age' : 'kind') + '; the oldest lowest. Drag one onto the note.')];
     } });
+  // V4.10 (14i): a label in hand — the Quick cast's Label (lab) or /label: the cursor is the label, a click labels a component
+  D({ id: 'labels', group: 'structures', label: 'Labels', isNew: true, desc: 'Float and Reference by clicking, with /label: the cursor becomes the label — the sky-lavender cloud or the golden tag — and a click on a component labels it, then the cursor is yours again; hold Ctrl to label several. Esc, Done or a click on the empty canvas puts it down. Off: no /label; the floats and references you made stay.',
+    tune: [T('keep', 'Ctrl keeps the label in hand', 'switch', { isNew: true, def: true, d: 'Ctrl+click labels a component and keeps the label for the next; off, every click puts it down' }),
+      T('size', 'The cursor', 'seg', { isNew: true, def: '32', opts: [['24', 'Small'], ['32', 'Large']], d: 'The label as the cursor over the canvas' })],
+    preview: () => {
+      const K = typeof LABELS !== 'undefined' ? [{ id: 'float' }, { id: 'reference' }] : [], big = (FEAT.tune('labels', 'size') || '32') === '32', keep = FEAT.tune('labels', 'keep') !== false;
+      const ic = id => { const i = h('i'); i.innerHTML = LABELS.svg(id); return i; }, tag = h('i.on'); tag.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z"/><path d="M6 6h.008v.008H6V6Z"/></svg>';
+      const cur = h('span.cur', { style: { width: (big ? 26 : 19) + 'px', height: (big ? 26 : 19) + 'px' } }); cur.innerHTML = LABELS.svg('float', big ? 26 : 19);
+      return [h('div.pv-lbl', h('div.pv-lbl-row', tag, ...K.map(k => ic(k.id))), h('div.pv-lbl-card', 'Try a stiffer gel next run', cur)),
+        PV.cap('Label → Float: the cursor is the cloud; a click makes the component a float' + (keep ? ' (Ctrl keeps the cloud for the next).' : '.'))];
+    } });
 
   D({ id: 'terms', group: 'structures', label: 'Terms', tab: 'terms', desc: 'Words you mark as terms of the project, outlined in bold and found by themselves in every note that uses them, with the Terms tab — every term with its uses, its last twelve weeks, its structures and open barriers, to find, sort and jump through — and each term’s bubbles. Off: no outline, no scanning, no Terms tab; the terms stay.',
     tune: [T('key', 'Mark a term', 'seg', Object.assign({ opts: [['alt+w', 'Alt+W'], ['alt+shift+w', 'Alt+Shift+W']], d: 'Ctrl+W in Focus mode' }, B('termKey'))),
