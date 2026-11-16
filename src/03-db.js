@@ -7,6 +7,7 @@
 const S = Object.fromEntries(AUTHORED.map(n => [n, new Map()]));
 const DB = {
   mode: 'memory', idb: null, pending: 0, durable: null, lastError: null, group: 0, undoStack: [], redoStack: [], _replaying: false,
+  rev: 0, revOf: {},   // V3.965: counts every write, per store too — the periodic sweeps and the backup look at it before doing anything
 
   async open() {
     try {
@@ -77,7 +78,7 @@ const DB = {
     this._replaying = false; this.undoStack.push({ group: g.group, entries: back }); return g; },
   async journalSince(iso) { if (this.mode !== 'idb') return []; const all = await this._getAll('journal'); return all.filter(e => e.ts >= iso); },
   _write(store, fn) {
-    if (store !== 'journal' && typeof DISK !== 'undefined') DISK.touch();
+    if (store !== 'journal') { this.rev++; this.revOf[store] = this.rev; if (typeof DISK !== 'undefined') DISK.touch(store); }
     if (this.mode !== 'idb') return;
     try {
       this.pending++;
@@ -149,13 +150,14 @@ const BACKUP = {
   async restore() { if (DB.mode !== 'idb') return; try { const r = await new Promise(res => { const q = DB._tx('blobs').get('_backupHandle'); q.onsuccess = () => res(q.result); q.onerror = () => res(null); }); if (r && r.handle) this.handle = r.handle; } catch { } },
   async snapshot(force) {
     if (!this.handle) return false;
+    if (!force && this.lastRev === DB.rev) return false;   // V3.965: nothing changed since the last copy
     try {
       const perm = await this.handle.queryPermission({ mode: 'readwrite' });
       if (perm !== 'granted') { if (!force) { this.error = 'permission needed — click “Snapshot now”'; return false; } if (await this.handle.requestPermission({ mode: 'readwrite' }) !== 'granted') return false; }
       const data = await DB.exportAll(); data.stores.blobs = (data.stores.blobs || []).filter(b => b.id !== '_backupHandle');
       const name = `scientia-${localDate(new Date())}-${pad(new Date().getHours())}${pad(new Date().getMinutes())}.json`;
       const fh = await this.handle.getFileHandle(name, { create: true }), w = await fh.createWritable(); await w.write(JSON.stringify(data)); await w.close();
-      this.last = new Date(); this.error = null; return true;
+      this.last = new Date(); this.lastRev = DB.rev; this.error = null; return true;
     } catch (e) { this.error = String(e.message || e); return false; }
   },
 };

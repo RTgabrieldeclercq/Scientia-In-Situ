@@ -136,13 +136,15 @@ class Transcriber:
         except Exception: pass
 
     def _worker(self):
+        pause = 3.0
         while True:
             with self.cv:
                 while not self.queue: self.cv.wait()
                 name = self.queue[0]
-            if not self.libs():  # wait for the install; the job stays queued
+            if not self.libs():  # wait for the install; the job stays queued (V3.965: looking less and less often, up to every five minutes)
                 if self.state == 'unknown': self.status()
-                time.sleep(3); continue
+                time.sleep(pause); pause = min(300.0, pause * 2); continue
+            pause = 3.0
             with self.cv: self.queue.pop(0); self.current = name; self.pct = 0
             try:
                 self._run(name)

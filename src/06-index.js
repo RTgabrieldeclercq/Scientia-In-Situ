@@ -112,8 +112,10 @@ const IX = {
       if (b.manualSec) { const D = get(localDate(M.blockTime(b))), d = M.doc(b.docId); D.manual += b.manualSec * 1000; const t = d && d.themeId || '_'; D.byTheme[t] = (D.byTheme[t] || 0) + b.manualSec * 1000; }
     }
     for (const D of days.values()) { D.raw = sum(D.iv.map(x => x.e - x.s)); D.union = TIMER.union(D.iv); D.multi = D.raw - D.union; D.total = D.union + D.manual; }
-    this.days = days;
+    this.days = days; this._daysRev = DB.rev; this._daysDate = localDate(now);
   },
+  /** V3.965: is the day index behind — a write since it was built, a timer running, or a new day? */
+  daysStale(now = Date.now()) { return this._daysRev !== DB.rev || this._daysDate !== localDate(now) || TIMER.runningAll().length > 0; },
   day(d) { return this.days.get(typeof d === 'string' ? d : localDate(d)) || { date: localDate(d), total: 0, union: 0, multi: 0, manual: 0, byTheme: {}, edits: 0, open: 0 }; },
   level(ms) { const m = ms / 6e4; return m <= 0 ? 0 : m < 45 ? 1 : m < 105 ? 2 : m < 165 ? 3 : m < 240 ? 4 : 5; },
 

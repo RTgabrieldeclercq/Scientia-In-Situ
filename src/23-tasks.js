@@ -172,5 +172,5 @@ VIEWS.tasks = TasksView;
       rows.length ? h('div.list', rows.map(({ b, at }) => h('div.li.click', { on: { click: e => App.jump(b.id, e) } }, h('span.mono.tiny', fmtStamp(at)), h('span.t', '✓ ' + TASK.text(b), h('span.s', M.docPath(M.doc(b.docId))))))) : h('div.tiny.muted', 'Nothing ticked off yet.'));
     return el; };
   // a task's words changed: its reminder follows
-  setInterval(() => { TASK.all().forEach(b => { const r = DB.get('reminders', 'rt_' + b.id); if (r && r.title !== TASK.text(b)) TASK.syncRem(b); }); }, 15000);
+  setInterval(() => { if (DB.revOf.blocks === TASK._rev) return; TASK._rev = DB.revOf.blocks; TASK.all().forEach(b => { const r = DB.get('reminders', 'rt_' + b.id); if (r && r.title !== TASK.text(b)) TASK.syncRem(b); }); }, 15000);   // V3.965: only after a block changed
 }
