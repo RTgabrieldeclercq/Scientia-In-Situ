@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "21ccd5d298854e823a9eb66eb721f73374611f91",
-  "subject": "V4.9: Scientia — the Quick cast's Label: Float and Reference behind one button; the cursor becomes the label, a click labels a component (Ctrl keeps it)",
+  "commit": "0efb7cc6717b384d863760ede86016acba286ddc",
+  "subject": "V4.10: Scientia — the side panel of highlights and notes folds, beside a maximised PDF, HTML page or saved website and in the Library's reader",
   "date": "2026-11-16"
  },
- "cut": "837dbcc5d8e985395c0b8693ee03db4b2fbbf13f",
+ "cut": "c8e67c8a9e71c0f3a08edb33bcdf84d0cfcdccb4",
  "names": [
   "DESKLAB",
   "LABSYNC",
