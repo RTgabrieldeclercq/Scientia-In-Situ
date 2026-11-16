@@ -177,12 +177,12 @@ const PV = {
       const cols = by === 'origin' ? ['hsl(20 55% 58%)', 'hsl(200 55% 58%)', 'hsl(120 45% 50%)', 'hsl(280 50% 62%)', 'hsl(40 60% 55%)', 'hsl(330 50% 60%)']
         : by === 'age' ? ['var(--float)', 'var(--float)', 'color-mix(in srgb, var(--ink-4) 30%, var(--float))', 'color-mix(in srgb, var(--ink-4) 55%, var(--float))', 'var(--float)', 'color-mix(in srgb, var(--ink-4) 75%, var(--float))']
         : ['#B5761B', '#1E5E8C', '#6B4FA3', '#9E2A62', 'var(--float)', '#2F6FB0'];
-      const B = [[.16, .82, 18, 1], [.3, .56, 22], [.5, .42, 26], [.66, .58, 22], [.84, .8, 18, 1], [.42, .8, 16]];   // V4.9: inside the wide cap
+      const B = [[.16, .82, 18, 1], [.3, .56, 22], [.5, .42, 26], [.66, .58, 22], [.84, .8, 18, 1], [.42, .8, 16]];   // inside the wide cap
       return [h('div.pv-fl' + (still ? '.still' : ''), h('span.pv-flcard', FLOATS.cloud(), 'afloat'), h('div.pv-flsk'),
         h('div.pv-fld', B.map(([x, y, d, o], i) => h('i' + (o ? '.old' : ''), { style: { left: (x * 100) + '%', top: (y * 100) + '%', '--d': d + 'px', '--kc': cols[i] } })))),
         PV.cap('Floats in the dome, coloured by ' + (by === 'origin' ? 'where they came from' : by === 'age' ? 'age' : 'kind') + '; the oldest lowest. Drag one onto the note.')];
     } });
-  // V4.10 (14i): a label in hand — the Quick cast's Label (lab) or /label: the cursor is the label, a click labels a component
+  // V4.9 (14i): a label in hand — the Quick cast's Label (lab) or /label: the cursor is the label, a click labels a component
   D({ id: 'labels', group: 'structures', label: 'Labels', isNew: true, desc: 'Float and Reference behind one Label button (the Quick cast pill on the website, /label everywhere): the cursor becomes the label — the sky-lavender cloud or the golden tag — and a click on a component labels it, then the cursor is yours again; hold Ctrl to label several. Esc, Done or a click on the empty canvas puts it down. Off: no Label button and no /label; the floats and references you made stay.',
     tune: [T('keep', 'Ctrl keeps the label in hand', 'switch', { isNew: true, def: true, d: 'Ctrl+click labels a component and keeps the label for the next; off, every click puts it down' }),
       T('size', 'The cursor', 'seg', { isNew: true, def: '32', opts: [['24', 'Small'], ['32', 'Large']], d: 'The label as the cursor over the canvas' })],

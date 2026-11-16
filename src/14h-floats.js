@@ -24,7 +24,7 @@
    - The dome rises from the bottom edge of the canvas, its base on that edge,
      and fades into the note through a gradient of the note's own paper; the
      glass is clear (no fill): a bright rim, the rim bending what lies behind
-     it (where the browser can), two small highlights. V4.9 (Gabe: "not a
+     it (where the browser can), two small highlights. The cap (Gabe: "not a
      hemisphere, but an extended view of the tip of a hemisphere, spanning the
      whole horizontal space, and maybe 3/4 of the vertical space"): it is a
      spherical cap — a circular segment whose chord is the pane's whole bottom
@@ -113,7 +113,7 @@ const FLOATS = {
     const pane = (ctx && ctx.pane && ctx.pane.paper) ? ctx.pane : App.panes().find(p => p && p.paper && p.docId);
     if (!pane || !pane.paper) return toast('Open a note, then /float');
     FLOATS.close(); const host = pane.paper.el, r = host.getBoundingClientRect();
-    // V4.9 (Gabe: "not a hemisphere, but an extended view of the tip of a hemisphere, spanning the whole horizontal space, and maybe 3/4 of the vertical space"):
+    // the cap (Gabe: "not a hemisphere, but an extended view of the tip of a hemisphere, spanning the whole horizontal space, and maybe 3/4 of the vertical space"):
     // a spherical cap — the top of a much larger sphere — whose chord is the pane's whole bottom edge; its height is ¾ of the V4.7 dome's (D/2)
     const D = Math.max(220, Math.round(Math.min(r.width * .74, r.height * .8, 820) / 8) * 8), W = Math.max(120, Math.round(r.width)), hh = Math.max(84, Math.round(D / 2 * .75)), Rs = (hh * hh + (W / 2) * (W / 2)) / (2 * hh);
     const Dm = { pane, host, D, W, h: hh, Rs, RR: hh, rot: 0, hold: false, hot: null, rest: 0, prev: null, drag: null, q: '', beads: new Map(), raf: 0, last: 0 };
@@ -129,7 +129,7 @@ const FLOATS = {
     FLOATS.build(); FLOATS.loop(); requestAnimationFrame(() => wrap.classList.add('up'));
     return Dm;
   },
-  /** V4.9 — the cap's outline: y (from its top) of the arc above x, for a chord W, height h, sphere radius Rs. */
+  /** The cap's outline: y (from its top) of the arc above x, for a chord W, height h, sphere radius Rs. */
   arcY: (x, W, Rs) => Rs - Math.sqrt(Math.max(0, Rs * Rs - (x - W / 2) * (x - W / 2))),
   /** The fine edge along the arc: a white line inside, a faint ink line outside (the clip keeps the inner half of each). */
   capEdge(W, hh, Rs) {

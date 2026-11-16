@@ -1,5 +1,5 @@
 /* ==========================================================================
-   14i · Labels (V4.10). Gabe: "Add a label button in the quick cast pill, which
+   14i · Labels (V4.9). Gabe: "Add a label button in the quick cast pill, which
    contains the float and reference into it. … Clicking on it makes your cursor
    that label's symbol, and clicking on a component labels it and goes back to
    the regular cursor, unless you are holding Control key."

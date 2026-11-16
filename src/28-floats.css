@@ -22,7 +22,7 @@
 body.f-off-floats .box > .fl-mark,body.f-off-floats .fl-bulk,body.f-off-floats .fl-back{display:none}
 body.f-off-floats .box.is-float{outline:0}
 
-/* the dome — V4.9 a wide cap: the top of a much larger sphere, its chord the canvas's whole bottom edge (--Rs: that sphere's radius,
+/* the dome — a wide cap: the top of a much larger sphere, its chord the canvas's whole bottom edge (--Rs: that sphere's radius,
    --h: the cap's height); the note's paper fading up into it along the full width; the glass clear */
 .fl-wrap{position:absolute;left:0;right:0;bottom:0;height:calc(var(--h,var(--R)) + 60px);pointer-events:none;z-index:40}
 .fl-skirt{position:absolute;left:0;right:0;bottom:0;height:calc(var(--h,var(--R)) * .85);pointer-events:none;
@@ -82,7 +82,7 @@ body.f-off-floats .box.is-float{outline:0}
   background-image:linear-gradient(to right,var(--grid-line) 0 1px,transparent 1px),linear-gradient(to bottom,var(--grid-line) 0 1px,transparent 1px);background-size:14px 14px;border:1px solid var(--rule)}
 .pv-fl .pv-flcard{position:absolute;left:14px;top:14px;display:inline-flex;align-items:center;gap:4px;font:600 10px var(--f-m);color:var(--float-ink);background:var(--float-soft);border:1px solid color-mix(in srgb,var(--float) 65%,transparent);border-radius:999px;padding:2px 8px 2px 6px}
 .pv-fl .pv-flsk{position:absolute;left:0;right:0;bottom:0;height:60px;background:linear-gradient(to top,color-mix(in srgb,var(--paper) 80%,transparent),transparent)}
-/* V4.9: the preview's cap spans the mini canvas; an elliptic segment through both bottom corners (its centre 1.5 heights below the base) */
+/* the preview's cap spans the mini canvas; an elliptic segment through both bottom corners (its centre 1.5 heights below the base) */
 .pv-fl .pv-fld{position:absolute;left:0;right:0;bottom:0;height:90px;clip-path:ellipse(62.5% 250% at 50% 250%);
   background:radial-gradient(62.5% 250% at 50% 250%,transparent 90%,color-mix(in srgb,var(--float) 10%,transparent) 96%,rgba(255,255,255,.34) 99.3%,transparent 100%)}
 .pv-fl .pv-fld::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(62.5% 250% at 50% 250%,transparent 99.2%,color-mix(in srgb,var(--ink) 14%,transparent) 99.6%,transparent 100%)}
