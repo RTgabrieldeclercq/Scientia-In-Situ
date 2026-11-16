@@ -21,7 +21,7 @@ Object.assign(DocView, {
       h('button.dk', { title: 'Pull an unresolved barrier, a structure or a component from another note', on: { click: () => this.pullMenu(d) } }, '⤓ Pull in'),
       h('button.dk' + (flag ? '.on' : ''), { title: 'Flag this note for the weekly review', on: { click: () => M.toggleFlag('doc', d.id) } }, flag ? '⚑' : '⚐'),
       h('button.dk', { title: 'Fit (Ctrl+0)', on: { click: () => this.paper.fit(this.bbox()) } }, '⤢'),
-      h('button.dk' + (document.fullscreenElement ? '.on' : ''), { title: 'Focus mode (Ctrl+.) — fullscreen; frees Ctrl+W for terms', on: { click: () => App.toggleFocus() } }, '⛶'));
+      h('button.dk' + (document.fullscreenElement ? '.on' : ''), { title: document.fullscreenElement ? 'Leave full screen (Ctrl+.)' : 'Full screen (Ctrl+.)', on: { click: () => App.toggleFocus() } }, '⤢'));
   },
   renderHint(d, live) {
     const s = settings(); this.hint.replaceChildren(live.length && live.some(b => b.body.text.trim() || b.kind === 'ref') ? h('span', `${keyLabel(s.structKey)} says what a phrase is · Ctrl+W term (Focus) · Ctrl+I or /cite cite · drag ● to connect`)
@@ -85,6 +85,7 @@ Object.assign(DocView, {
       live && next ? { label: 'Merge with next', sub: `with “${snippet(M.blockName(next), 30)}”`, run: () => M.mergeBlocks(b, next) } : null,
       { label: 'Connect to a component in another note…', run: () => this.crossWire(b.id) },
       b.status === 'live' && (b.kind !== 'ref' || BRIDGE.is(b)) ? { label: 'Bridge to another note…', sub: 'It shows there, live, with a caption saying why', run: () => BRIDGE.to(b) } : null,
+      live && String((b.body && b.body.text) || '').trim() ? { label: 'Needs investigation', sub: 'Its words become that structure: a dot here, breathing in the Portfolio, on Today', run: () => INVEST.mark(b) } : null,
       live && !b.parent && i > 0 ? { label: 'Make it a substep of the one above', sub: 'Nested, numbered as a sub-step', run: () => { const prev = d.blockIds.slice(0, i).reverse().map(M.block).find(x => x && x.status === 'live' && x.kind === 'component' && !x.parent); if (prev) M.nestUnder(b, prev.id); } } : null,
       live && b.parent ? { label: 'Un-nest', run: () => M.nestUnder(b, null) } : null,
       live ? { label: 'Fields…', sub: 'Typed key/value rows, charted across runs', run: () => this.fieldsDialog(b) } : null,

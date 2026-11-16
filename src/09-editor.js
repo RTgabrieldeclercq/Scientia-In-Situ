@@ -342,6 +342,7 @@ const ED = {
       it.kind === 'resolution' ? { label: it.resolves ? 'Resolves: ' + snippet((M.item(it.resolves) || {}).text, 40) : 'Which barrier does it resolve?', run: () => ED.resolvePicker(it, { left: x, bottom: y }) } : null,
       it.kind === 'barrier' && st === 'resolved' ? { label: 'Close barrier', sub: 'No longer offered when pulling barriers; still searchable', run: () => { M.closeItem(it); toast('Barrier closed'); } } : null,
       it.kind === 'barrier' && st === 'open' ? { label: 'Close unresolved', run: () => M.closeItem(it) } : null,
+      it.kind === 'investigate' && st === 'open' ? { label: 'Investigated ✓', sub: 'Its dot goes from the note, the Portfolio and Today', run: () => INVEST.done(it) } : null,   // V3.992 (13zzw)
       st === 'closed' ? { label: 'Reopen', run: () => M.reopenItem(it) } : null,
       { label: !EDIT.locks() || localDate(it.created) === localDate(new Date()) ? 'Edit wording…' : 'Add a correction…', sub: !EDIT.locks() ? null : localDate(it.created) === localDate(new Date()) ? 'Allowed until the day turns' : 'Recorded on ' + fmtDay(it.created) + ' — the original stays', run: () => ED.correctDialog(it) },
       'sep',

@@ -177,7 +177,7 @@ const DocView = {
       const rel = REL[w.rel] || REL.related; chips.push(h('button.wchip.cross', { title: M.docPath(M.doc(other.docId)) + ' · Alt+click: open beside', on: { click: e => go && App.jump(go, e) } }, (w.directed ? (out ? '→ ' : '← ') : '↔ ') + (out ? rel.label : rel.inv) + ' · ⇱ ' + snippet(M.endName(oid), 28))); }
     // V3.981: a component bridged elsewhere shows it by its underline or its "bridged" tag (13zzu); this chip is for its structures pulled in elsewhere
     const refs = IX.itemsOf(b.id).flatMap(i => IX.refsOfItem.get(i.id) || []).map(M.block).filter(x => x && x.docId !== b.docId && x.status !== 'removed');
-    if (refs.length) chips.push(h('button.wchip.teal', { on: { click: e => metaPop(e.clientX, e.clientY + 8, 'Appears in', [...new Set(refs.map(r => r.docId))].map(id => ({ label: M.doc(id).title, sub: M.docPath(M.doc(id)), date: M.doc(id).modified, note: M.doc(id).title, run: ev => App.jump(refs.find(r => r.docId === id).id, ev) }))) } }, `⇲ in ${plural(new Set(refs.map(r => r.docId)).size, 'other note')}`));
+    if (refs.length) chips.push(h('button.wchip.teal', { on: { click: e => metaPop(e.clientX, e.clientY + 8, 'Appears in', [...new Set(refs.map(r => r.docId))].map(id => ({ label: M.doc(id).title, sub: M.docPath(M.doc(id)), date: M.doc(id).modified, note: M.doc(id).title, run: ev => { BWAY.arm(b.docId, id, 'r'); App.jump(refs.find(r => r.docId === id).id, ev); } }))) } }, `⇲ in ${plural(new Set(refs.map(r => r.docId)).size, 'other note')}`));
     const bl = IX.backlinks(b.id); if (bl.length) chips.push(h('button.wchip', { on: { click: e => metaPop(e.clientX, e.clientY + 8, 'Linked from', bl.filter(x => x.blockId && M.block(x.blockId)).map(x => ({ label: M.blockName(M.block(x.blockId)), sub: M.docPath(M.doc(M.block(x.blockId).docId)), date: M.block(x.blockId).modified, note: (M.doc(M.block(x.blockId).docId) || {}).title, run: ev => App.jump(x.blockId, ev) }))) } }, `↩ linked from ${bl.length}`));
     for (const it of IX.itemsOf(b.id).filter(i => i.kind === 'barrier')) { const st = IX.status(it); chips.push(h('span.pill' + (st === 'open' ? '.bad' : st === 'resolved' ? '.ok' : ''), 'barrier ' + st)); }
     if (b.anchor && b.anchor.source) chips.push(h('button.dschip.pdf', { title: 'Open the paper at this highlight', on: { click: e => { e.stopPropagation(); App.go('#/read/' + b.anchor.source + '/' + b.anchor.page); } } }, '📄 p. ' + b.anchor.page + ' ↗'));
@@ -186,7 +186,7 @@ const DocView = {
   },
   refCard(b, d) {
     const it = b.refItemId && M.item(b.refItemId), ob = M.block(b.refBlockId), od = ob && M.doc(ob.docId);
-    const origin = h('div.origin', it ? 'from ' : 'bridged from ', h('a', { title: 'Alt+click: open beside', on: { click: e => ob && App.jump(ob.id, e) } }, od ? M.docPath(od) : 'missing'), ob ? ' › ' + M.blockName(ob) : '', ' · ', ob ? fmtDay(ob.created) : '');
+    const origin = h('div.origin', it ? 'from ' : 'bridged from ', h('a', { title: 'Alt+click: open beside', on: { click: e => { if (!ob) return; BWAY.arm(d.id, ob.docId, 'l'); App.jump(ob.id, e); } } }, od ? M.docPath(od) : 'missing'), ob ? ' › ' + M.blockName(ob) : '', ' · ', ob ? fmtDay(ob.created) : '');
     if (it) {
       const st = IX.status(it), res = (IX.resolutions.get(it.id) || []).map(M.item).filter(Boolean);
       return h('div.refbody', { style: { '--kc': `var(--k-${it.kind})` } }, h('div.row', kchip(it.kind), st ? h('span.pill' + (st === 'open' ? '.bad' : st === 'resolved' ? '.ok' : ''), st) : null), origin,
@@ -279,12 +279,12 @@ const DocView = {
       const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); document.body.classList.remove('resizing'); b.w = Math.round(b.w / 14) * 14; box.style.width = b.w + 'px'; DB.put('blocks', b); DB.beginGroup(); this.drawWires(); };
       addEventListener('pointermove', mv); addEventListener('pointerup', up); return; }
     if (e.target.closest('.ed,input,textarea,select,button,a,label,.chips,.ghosts,.refs,.tags,.ptext.edit,.obsn,.itdot,.wplate,.wlegend,.fg-cell')) { if (id[0] !== '_') this.select(id, true); return; }
-    // drag the box by its frame or header
+    // drag the box by its frame or header (V3.992: with Shift held, a grid cell at a time)
     e.preventDefault(); if (id[0] !== '_') this.select(id, true);
     const d = M.doc(this.docId), rec = id === '_head' ? d.layout.head : id === '_synth' ? (d.layout.synth = d.layout.synth || { x: box.offsetLeft, y: box.offsetTop }) : M.block(id);
     const sx = e.clientX, sy = e.clientY, ox = rec.x || 0, oy = rec.y || 0; let moved = false, shift = { x: 0, y: 0 };
     const mv = ev => { const dx = (ev.clientX - sx) / P.view.z + shift.x, dy = (ev.clientY - sy) / P.view.z + shift.y; if (!moved && Math.abs(dx) + Math.abs(dy) < 3) return; if (!moved) { moved = true; box.classList.add('dragging'); hideHover(); }
-      rec.x = ox + dx; rec.y = oy + dy; box.style.left = rec.x + 'px'; box.style.top = rec.y + 'px'; this.drawWires(); P.edgePan(ev, (ddx, ddy) => { shift.x -= ddx / P.view.z; shift.y -= ddy / P.view.z; mv(ev); }); };
+      const g = ev.shiftKey; rec.x = g ? Math.round((ox + dx) / 14) * 14 : ox + dx; rec.y = g ? Math.round((oy + dy) / 14) * 14 : oy + dy; box.style.left = rec.x + 'px'; box.style.top = rec.y + 'px'; this.drawWires(); P.edgePan(ev, (ddx, ddy) => { shift.x -= ddx / P.view.z; shift.y -= ddy / P.view.z; mv(ev); }); };
     const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); P.stopEdgePan(); if (!moved) return; box.classList.remove('dragging');
       const nx = Math.round(rec.x / 14) * 14, ny = Math.round(rec.y / 14) * 14, ddx = rec.x - nx, ddy = rec.y - ny; rec.x = nx; rec.y = ny; box.style.left = nx + 'px'; box.style.top = ny + 'px';
       box.animate && !RM() && box.animate([{ transform: `translate(${ddx}px,${ddy}px)` }, { transform: 'none' }], { duration: 240, easing: 'cubic-bezier(.34,1.4,.64,1)' });
