@@ -27,6 +27,7 @@ const SLASH = {
     const at = sel.from - (m[2].length + m[3].length);
     // /cite typed in full opens the citation picker at once, as it has since V3.9xx: the paper picked takes its place, Esc leaves it
     if (m[2] === '/' && m[3].toLowerCase() === 'cite') { SLASH.close(); ED.citePicker(el, b, sel, '/cite'); return true; }
+    if (m[2] === '/' && m[3].toLowerCase() === 'author-cite') { SLASH.close(); ED.citePicker(el, b, sel, '/author-cite', 'author'); return true; }   // V4.6
     if (m[2] === '@') SLASH.open(el, b, at, m[3], sel.rect, true); else SLASH.open(el, b, at, m[3], sel.rect, false);
     return true;
   },
@@ -73,6 +74,7 @@ const SLASH = {
     if (kind) { const body = ED.read(el, M.block(b.id).body.marks), sen = SLASH.sentence(body.text, at); if (!sen) throw new Error('write the phrase first, then /' + slash + ' at its end'); const text = body.text.slice(sen[0], sen[1]); ED.makeStructure(el, b, { from: sen[0], to: sen[1], rect: SLASH.rect(el) }, slash, text); return; }
     if (slash === 'term') return ED.markTerm(el, b, null);
     if (slash === 'cite') return ED.citePicker(el, b, ED.selection(el));
+    if (slash === 'author-cite') return ED.citePicker(el, b, ED.selection(el), null, 'author');   // V4.6
     if (slash === 'sym') { if (typeof EBAR !== 'undefined') { EBAR.show(el); EBAR.symbols(SLASH.rect(el)); } return; }
     if (slash === 'mention') { const body = ED.read(el, []), w = ED.wordAt(body.text, at) || SLASH.sentence(body.text, at); if (!w) throw new Error('write the words first'); return ED.mentionPicker(el, b, { from: w[0], to: w[1], rect: SLASH.rect(el) }); }
     if (slash === 'date') { document.execCommand('insertText', false, fmtDayLong(new Date())); return; }

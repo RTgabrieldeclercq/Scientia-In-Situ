@@ -126,6 +126,8 @@ const DEFAULT_SETTINGS = {
   maxTimers: 2,
   idleMinutes: 15,
   citeMode: 'title',
+  citeStyle: 'number',   // V4.6: how citations show in every note that has not chosen its own: number ([1], superscript) | author (Style et al.) | title
+  citeYear: false,       // V4.6: author citations add the year (Style et al., 2014)
   theme: 'auto',
   autoReplace: { arrows: true, science: true, scripts: true, typo: true }, // typing replacements in components (13u)
   lockAfterDay: false,          // off: everything stays editable; on: recorded structures lock when the day turns

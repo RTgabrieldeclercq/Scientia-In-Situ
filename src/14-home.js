@@ -51,7 +51,7 @@ const HomeView = {
       DISK.paused && DISK.error ? h('div.callout.nbwarn', DISK.error) : null,
       h('p.stand', D.total ? `${fmtDur(D.total)} recorded so far${D.multi ? `, ${fmtDur(D.multi)} of it multitasking (counted once)` : ''}. ` : 'No time recorded yet today. ', `${plural(blocks.length, 'component')} written or stamped today.`),
       h('div.row', { style: { marginBottom: '6px' } }, h('button.btn.pri', { on: { click: () => App.newDoc() } }, '+ New note'), h('button.btn', { on: { click: () => Search.open() } }, 'Search ', h('kbd', 'Ctrl K')),
-        pend.length ? h('button.btn.mag', { on: { click: () => App.go('#/review/' + pend[pend.length - 1].id) } }, `◇ ${plural(pend.length, 'weekly review')} waiting`) : null),
+        pend.length ? h('button.btn.mag', { on: { click: () => App.go('#/review/' + pend[pend.length - 1].id) } }, `◇ ${plural(pend.length, typeof MONTHLY !== 'undefined' && MONTHLY.on() ? 'monthly review' : 'weekly review')} waiting`) : null),
       h('div', { style: { display: 'grid', gridTemplateColumns: 'minmax(0,1.4fr) minmax(0,1fr)', gap: '28px', alignItems: 'start' } },
         h('div', h('div.sec-h', h('h2', 'Timeline'), h('span.k', 'stamped & timed, in order')),
           ev.length ? h('div.tl', ev.map(e => h('div.tle' + (e.sess ? '.sess' : ''), { style: { '--kc': e.kind ? `var(--k-${e.kind})` : null, cursor: 'pointer' }, on: { click: e.go } }, h('span.tm0', fmtTime(e.t)), e.el)))

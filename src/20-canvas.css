@@ -88,6 +88,7 @@ body.wiring .box .port{border-color:var(--mag)} body.wiring .box.cmp{cursor:cros
 .synth-in{display:block;width:100%;border:0;background:transparent;resize:none;font-family:var(--f-b);font-size:14.5px;line-height:1.55;padding:4px 14px 12px;outline:0;color:var(--ink);overflow:hidden}
 .box.synth .refs{padding:0 14px 10px;font-family:var(--f-b);font-size:12.5px;color:var(--ink-2)}
 .box.synth .refs ol{padding-left:20px;margin:4px 0}
+.box.synth .refs ul.refs-au{padding-left:20px;margin:2px 0;list-style:'– '}   /* V4.6: papers cited only by author, unnumbered */
 
 /* ---------- wires on the paper ---------- */
 svg.wires{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none}
