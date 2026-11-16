@@ -37,16 +37,16 @@ This manual covers everything the notebook can do, from first launch to the pen 
 1. **Start it.** Double-click `launch.bat`. Your browser opens `http://localhost:8766/scientia.html`.
    - Use Chrome or Edge.
    - Never change the port: the browser keeps your data per address.
-2. **Choose your notebook folder** in **Settings → Notebook folder → Browse… → Connect**. Pick an empty folder, or one you already use with Obsidian.
+2. **Choose your notebook folder** in **Settings → Notebook & devices → Notebook folder → Browse… → Connect**. Pick an empty folder, or one you already use with Obsidian.
    - Everything you make is saved there a few seconds after each change.
    - Today shows a banner until a folder is chosen.
 3. **Try the demo** (optional). The demo is a Traction Force–ELISA project.
-   - **Settings → Import** loads an exported record.
-   - **Settings → Start empty** clears the browser.
+   - **Settings → Data & storage → Import** loads an exported record.
+   - **Settings → Data & storage → Start empty** clears the browser.
 4. **Updating the app** never touches your data. Replace `scientia.html` or the whole app folder. To check which build you're running, hover the **SiS** logo.
 5. **Reload** with ⟳ in the header, or with Ctrl+R / F5.
 
-> **Moving from the old hub (port 8765):** in the old hub, use Settings → Export everything (JSON). Then in this app, use Settings → Import… and pick that file.
+> **Moving from the old hub (port 8765):** in the old hub, use Settings → Data & storage → Export everything (JSON). Then in this app, use Settings → Data & storage → Import… and pick that file.
 
 ---
 
@@ -56,14 +56,15 @@ This manual covers everything the notebook can do, from first launch to the pen 
 |---|---|
 | **Project** | A fundable, publishable whole (e.g. "Traction Force–ELISA"). |
 | **Theme** | A line of attack inside a project. **Aims** sit on themes, with weighted milestones. |
-| **Note** | One session of work. A note has a **type**, such as Planning, Experiment (Run), Analysis, Reflection, Meeting, Reading, Resource (material), Day or Review. Types are editable in Settings. |
+| **Note** | One session of work. A note has a **type**, such as Planning, Experiment (Run), Analysis, Synthesis, Meeting, Reading, Resource (material), Day or Review. Types are editable in Settings. |
 | **Component** | A box on a note's paper: text, a widget, ink… Everything you write is a component. |
 | **Structure** | A marked phrase inside a component with a *kind*: claim, evidence, barrier… (§6). |
 | **Term** | A word or phrase you track across all notes (§7). |
 | **Connection** | A directed, typed wire between two components (§8). |
 
-- A note belongs to one project and one theme. It can also be **General** (no project): use + Note → Project: *No project (general)*. General notes sit at the top of the Portfolio, and their header lists the projects they touch.
+- A note belongs to one project and one theme. It can also be **General** (no project): use + Note → Project: *No project (general)*. General notes are **General** in the Portfolio's list, and their header lists the projects they touch.
 - To move a note, use ⋯ → **Project & theme…**.
+- **Delete a project:** **Delete project…** on the project's page. Choose **keep its notes** (they stay, with everything in them, outside any project; move each where you like) or **delete its notes too**. Its themes and aims go either way, and a lit review that served it serves it no more. **Ctrl+Z** brings everything back; with a notebook folder a copy is kept first. Not offered for a project another person shared with you (it is theirs), or one that came from the lab.
 
 ---
 
@@ -73,9 +74,9 @@ This manual covers everything the notebook can do, from first launch to the pen 
 
 | Tab | What it shows |
 |---|---|
-| **Today** | The day's timeline, the Capture box, what's coming up, chores, a resurfaced claim or question. |
+| **Today** | The day's timeline, the Capture box, what's coming up, chores, what needs investigating and a resurfaced claim or question. |
 | **Tasks** | Every open task: Overdue / Today / Upcoming / No date, plus Done lately. |
-| **Portfolio** | The map of projects → themes → notes, plus General notes. Each project has its own page, with its tasks. |
+| **Portfolio** | Your projects in a list, most relevant first, with the notes outside any project; the open one beside the list, its themes and notes. Each project has its own page, with its tasks. |
 | **Review** | The weekly review (it opens on the weekend). |
 | **Activity** | Heatmap, theme small multiples, weekly numbers, the Done list. |
 | **Terms** | Every term, with its forms and lens. |
@@ -85,6 +86,8 @@ This manual covers everything the notebook can do, from first launch to the pen 
 | **Materials** | Cell lines, antibodies, gels, reagents… |
 | **Canvas** | Only shown when the spatial-canvas lab is on. |
 | **Settings** | All settings (§23). |
+
+Switching tabs, the page slides in from the side of the tab you chose and the underline glides under it.
 
 **Header controls:**
 
@@ -101,10 +104,10 @@ This manual covers everything the notebook can do, from first launch to the pen 
 ---
 
 ### The Atlas
-- **What it shows:** every note, component (with its kind), structure, term, person and paper under the lens, as dots sized by how connected they are; wires (with their relation), structures in a component, terms in the text, citations, note cards, pull-ins, @names and which note a component is in, as lines. Components with a kind keep the kind's colour.
+- **What it shows:** the notebook as nests in three dimensions. The notebook is a sphere; your projects are spheres packed inside it; each note is a sphere packed inside its project, holding its components (with their kinds' colours) and structures as dots. A **term, a paper or a person orbits the nest it belongs to most** — the note that holds most of its mentions, else the project, else the notebook — on a ring just outside it; the faint threads from a satellite to the dots inside say why it orbits there.
 - **The lens** (top left): the whole notebook, one project, or a lens of your own: **+ Lens**, name it, pick the notes. The chips show or hide each kind; **Days** adds the day notes and reviews.
-- **Moving around:** drag to pan, wheel to zoom. **Hover** a dot and its neighbours stay lit while the rest fades. **Click** it: it is focused, its neighbours settle in a ring around it, and the side panel lists its edges (click one to walk there). **Double-click** opens it. **Shift+click** a second dot: the shortest path between the two lights up. The slider at the bottom replays the map growing by date.
-- **Search lives here.** Ctrl+K (or `/find`) opens the Atlas with your words lit, for the note you came from; the box at the top filters as you type, Enter focuses the first match. The **Quick** chip (or Ctrl+Shift+K, `/quick`) is the list search as before. Settings → Atlas turns the Ctrl+K routing off if you prefer the list.
+- **Moving around:** **click a nest to fly into it**, one level at a time (a project, then a note); **click the space around it to fly back out**; the crumbs at the top are the levels and ⤢ is the whole notebook. **Drag** turns the camera round what you are looking at, the **wheel** (or a pinch) comes closer, **+ / −** too. **Hover** a dot or a satellite and its threads light up (a term's components, a component's terms, papers, people and wires) while the rest fades; **click** it and the side panel lists its edges (click one to walk there). **Double-click** opens it. **Esc** unfocuses, then flies out. The slider at the bottom replays the notebook growing by date.
+- **Search lives here.** Ctrl+K (or `/find`) opens the Atlas with your words lit, for the note you came from; the box at the top filters as you type, Enter focuses the first match. The **Quick** chip (or Ctrl+Shift+K, `/quick`) is the list search as before. Settings → Features → Atlas turns the Ctrl+K routing off if you prefer the list.
 - **The action chips** say what a pick (double-click, or the button in the panel) does for the note you came from: **Open** · **Reference the note** (a note card there) · **Reference the component** / **Pull in** (a reference there) · **Connect** (a wire from the component you had selected to the one you pick).
 - **A collection:** `/collection html image pdf` opens the Atlas with just the components of the types you name, across the whole notebook. Each type has its own colour and every dot is labelled.
   - The row above the map shows each type with how many there are. **×** takes one out, **+ Add** adds another, **Show everything** goes back to the whole notebook. The Notes chip brings back the notes that hold them.
@@ -134,7 +137,7 @@ A note has a **header box** (title, type, profile fields, tags, ✎ for note det
 
 ### Components
 - **Select:** click. Then click again, or press Enter, to type.
-- **Move:** drag by the header. Boxes snap to 14 px and never overlap.
+- **Move:** drag by the header. Boxes snap to 14 px and never overlap. Hold **Shift** while dragging to move one grid cell (14 px) at a time — a component, a region by its title, or a lasso selection.
 - **Resize:** drag the right edge or the corner grip — as large as you like, there is no limit. Image panels and slides keep their shape: drag their corner down and they grow both ways; PDFs, HTML pages and tables take any width and height.
 - **Title:** each component has a title line. **Tab** or **Enter** in the title moves to the text.
 - **Stamp:** each component shows its full date and time (e.g. 16 Oct 2026 14:32). Click the stamp to move it to any date and time.
@@ -142,10 +145,22 @@ A note has a **header box** (title, type, profile fields, tags, ✎ for note det
 - **Delete:** select the component and press **Delete**, or use ⋯ → Delete component. It goes at once, with no question — Ctrl+Z brings it back (the note says what went with it).
 - **Several at once:** **Ctrl+click** components (⌘ on a Mac) to select them together; Ctrl+click again takes one out. Drag any of them to move them all; Delete removes them all; the bar under them copies or duplicates. Esc lets go.
 - **Undo:** **Ctrl+Z** outside a text box undoes deletions and other changes.
-- **The hint line** at the bottom of a note has a ×: close it and it stays closed; ⋯ → **Shortcuts…** lists the keys instead. A note with more than a hundred components lets the browser skip the boxes far off screen, so it pans smoothly.
+- **The hint line** at the bottom of a note has a ×: close it and it stays closed; ⋯ → **Shortcuts…** lists the keys instead. A note with more than a hundred components lets the browser skip the boxes far off screen when you are zoomed in (from 60 %), so it pans smoothly; zoomed out, every box is drawn, so nothing flickers at the rim.
+- **Pages, PDFs and whiteboards stay loaded.** An edit elsewhere in the note, or moving them, does not load them again: an HTML page or a website keeps its place and what you left it at, a PDF stays where you scrolled it, a whiteboard stays drawn. A change to the component itself draws it again.
+- **Nothing flickers when the note is drawn again.** A paper's wires to the quotes of pages it isn't showing stay faint (they used to flash bright and fade back on every click or edit, so a lit review flickered all over), and an image panel's or an equation's header stays on its two rows instead of jumping to one for a moment.
 - **Tidy layout** (⋯ beside the title, or `/tidy`) lays the note out by its connections: each chain of wired components from its origin downwards, rows ordered so the wires cross as little as they can, neighbours far enough apart to read the arrow and its label, regions as pieces of their own. Then everything — the chains and the components with no connections alike — is packed into the smallest near-square area (a little wider than tall, like the window, so Fit gives the highest zoom), with room between the pieces to read and to move about. Ctrl+Z undoes it. **Flow in order** (⋯) is the old tidy: the boxes in order, two columns.
 - **Folding moves the neighbours.** ▾ on a component (or a region's fold) brings what sits below it up by the height that went, and what sits to its right left by the width that went; unfolding pushes them back. A box you moved in between stays where you put it. Ink never moves.
-- **The Portfolio's layout is yours:** where you put its cards, and which are folded, follows you to every computer.
+- **Gravity.** What a component or a region pushed out of its way — unfolding, or growing as you type — comes back by exactly as much when it folds or shrinks again (emptied, its earlier versions closed), and what that pushed comes with it. Settings → Features → Writing in components turns it off.
+- **An unfolding region moves the other regions aside, whole** — what lies right of its middle to the right, left of it to the left — instead of pushing their components about; folding it brings them back. Settings → Features → Regions.
+- **The Portfolio is two panes.** On the left, your projects in a list, **most relevant first** (the most activity in the last four weeks; **Recent** and **A–Z** at the top of the list change the order), and the notes outside any project (**General**). Each row has the project's activity for four weeks and its dots. Click one (or ↑ ↓ in the list) and it opens on the right; the Portfolio opens it again next time.
+- **The open project** shows its themes, each with its question, its state (aims, exploratory or stalled), its activity, and its **Experiments** beside its other **Notes**; then the **Project-wide** notes; then its **Lit reviews** (every literature note of the project and the reviews linked to it, never under a theme). Its name opens the project's page. **+ Note**, **+ Theme** and **⇅** (the order of its notes) sit under the title.
+  - **The switch** (All · Experiments · Notes · Lit reviews, each with its count) shows only that kind; with two themes or more, **chips** narrow it to one theme.
+  - **An experiment is one row**: its name, its stages (Planning, Run, Analysis, Synthesis; a stage opens its note), its dots and its dates. **▸** unfolds it into its notes, and it stays unfolded on this computer until you fold it.
+  - **Notes in the order of their date**, the day a note is about, newest first. **⇅** changes it: oldest first, recent changes, most active, or title.
+  - **Dots on each note** for its **takeaways**, **open barriers** and **evidence**, in their colours from Settings, with the count inside. Hover a dot (or tap it) and it opens onto the words marked. An Insight component counts as a takeaway, a Result as evidence, and an Anomaly nothing explains yet as an open barrier.
+  - **↔ n** on a note: it is tied to n other notes (wires, pulled-in components, protocol runs, links). Hover it and those notes light up, and so do the projects in the list that hold them.
+- **On a narrow screen** the list comes first; a project slides in over it, and **‹ Projects** goes back.
+- **Health is activity**, not time recorded. A note earns activity only in the **two weeks from its date**: a component made scores 1, a structure marked 3, a **takeaway** or a **result** 10. Lit reviews earn none. A theme's line and the open project say "activity N · 4 wk" (the last four weeks), the heatmap shows each day's activity, and a theme with none for three weeks is *stalled*. A theme's own page shows the same: activity over four weeks, the eight-week activity map, and each note's activity ("open" while its two weeks run).
 
 ### Editing the note itself
 - **Note details** (✎ on the header box, or ⋯ → Note details…): title, type, project, theme, date. Changing the date moves every component's stamp with it, unless you untick that option.
@@ -160,31 +175,34 @@ A note has a **header box** (title, type, profile fields, tags, ✎ for note det
 **The editor bar.** While you write in a component, a bar sits just above its top border. It is never wider than the component (it wraps), and every button is the same size.
 - **Bold · Italic · Underline**, the **three lists** (bullet, numbered, checkbox: the line, or every line you selected), **Make it…** (what the selected phrase is: a claim, a barrier, a question…), **∑ Symbols**, your quick-cast symbols, and a dotted **+**.
 - A button lights up when the caret or the selection is already in that style or list.
-- **+** adds more: **Link to a note**, **Citation**, **Term**, **Equation** (an equation here in the text, as an equation component: its terms can be wired and solved like an Equation box), **Existing structure**, **Strikethrough**. Settings → Writing → Editor bar offers the same.
+- **+** adds more: **Bridge to a note**, **Citation**, **Term**, **Equation** (an equation here in the text, as an equation component: its terms can be wired and solved like an Equation box), **Existing structure**, **Strikethrough**. Settings → Features → Editing bar offers the same.
 - **∑ Symbols:** Greek letters, mathematics, science (°C, µ, superscripts…), arrows and typography. Click one to type it. **☆** makes it a favourite, shown first next time; the **bolt** on a favourite makes it a button of its own in the bar.
 - **It steps aside** while a menu covers it: an Alt+click menu on a structure or a term, a hover card, the selection's bar. It comes back when the menu goes. Its own menus (∑, +) open clear of it. A hover card closes when a menu opens, and none opens over an open menu.
 
-**Copy and paste.** Paste lands where the pointer last was on the canvas.
-- **Text copied inside a component** remembers where it came from. Paste it on another note's canvas (click the paper, then Ctrl+V) and it is pulled in: a reference to that component. Paste it on the same note and it is a copy, with its structures, terms and styles.
+**Letting a selection go.** A click anywhere else on the note — the paper, or a component you didn't select — lets go of a lasso or Ctrl+click selection; dragging to pan keeps it, and Ctrl or Shift add to it.
+
+**Copy and paste.** Paste lands at the centre of what you are looking at, on top of what is there, until you move it — so do a PDF, an HTML file or anything else you insert (Settings → Features → Writing in components: or where the pointer was, making room).
+- **Text copied inside a component** remembers where it came from. Paste it on another note's canvas (click the paper, then Ctrl+V) and **just those words** are **bridged** there (see *Node bridges*): an **excerpt**, live, that shows only that passage of the component, with its terms and structures, a caption under it asking why, and the band at its top (**Passage from** the note) opens the original. When the original's words change, so does the excerpt; text added before it does not lose it; if the passage is deleted from the original, the excerpt keeps showing it as it read and says so. Copy the whole text and the whole component is bridged. Paste on the same note, or with **Ctrl+Shift+V** anywhere, and it is a copy, with its structures, terms and styles.
 - **Text copied from a PDF or an HTML page**, pasted on a canvas, becomes a quote wired to the file. Any other text pasted on a canvas becomes a new component.
-- **Components:** select one (click it) or several (the lasso, or Ctrl+click), and press Ctrl+C with no text highlighted. Ctrl+V on another note pulls them in: a reference to each, placed as they sat relative to each other. On their own note they are copied, and **Ctrl+Shift+V** copies them anywhere.
+- **Components:** select one (click it) or several (the lasso, or Ctrl+click), and press Ctrl+C with no text highlighted. Ctrl+V on another note bridges them there: a bridge each, placed as they sat relative to each other. On their own note they are copied, and **Ctrl+Shift+V** copies them anywhere.
 - **From outside the notebook:** a picture (a screenshot, an image copied from a web page) becomes an image panel; several pictures at once make one panel. A PDF, an HTML file, a spreadsheet or a PowerPoint copied in the Explorer becomes that component, just as + Insert makes it.
   - Pictures pasted while you write in a component go under it.
   - A copy from Word or a web page brings a picture of itself along; its text is what gets pasted.
 - **Inside a text**, paste is plain text, as before.
 
 **/ and @ in a component.** Type `/` at the start of a word and a menu opens at the caret; keep typing to filter it, ↑ ↓ to choose, Enter runs, Esc leaves what you typed. The typed word goes.
-- `/claim`, `/barrier`, `/question`, `/result`… make the sentence before the caret that structure. `/term` marks the word at the caret; `/link` links it to a note; `/cite` inserts a citation; `/mention` points the words at a structure recorded elsewhere; `/sym` opens the symbols; `/date` and `/time` type the day and the hour; `/connect` connects this component to one you pick.
+- `/claim`, `/barrier`, `/question`, `/result`… make the sentence before the caret that structure. `/term` marks the word at the caret; `/bridge` bridges this component to a note you pick (and asks why); `/cite` inserts a citation; `/mention` points the words at a structure recorded elsewhere; `/sym` opens the symbols; `/date` and `/time` type the day and the hour; `/connect` connects this component to one you pick.
 - `/paper`, `/protocol`, `/material`, `/task`, `/figure`, `/pdf`… (every row of + Insert) insert below the component.
 - Type `@` and the people already named in this notebook are listed; pick one, or type a new name and press Enter: the name becomes a chip and is kept for next time. ⋯ → **People mentioned…** (or `/people`) lists who is named in the note and where. Nobody is notified.
 
 ### The navigation bar
 A slim grey bar lies along the bottom of the window. It shows where you are (project › theme › note), what the last command said, and **←** to go back to the previous note (Alt+←; Alt+→ forward). It is nearly invisible until you click it, or press `/` on the canvas with no text focused and no component selected.
 - Awake, it is a command line for the whole notebook: `/go <note>`, `/today`, `/day yesterday`, `/split <note>`, `/tab library`, `/read <paper>`, `/beside <component>`, `/find <text>`, `/collection html image pdf`, `/new experiment <title>`, `/rename`, `/move`, `/iteration`, `/connect`, `/flag`, `/tidy`, `/fold all`, `/region`, `/timer start`, `/pen` `/hl` `/lasso` `/erase` `/pan`, `/zoom 50` `/zoom fit`, `/colour`, `/width`, `/sync`, `/settings`, `/macro`, `/close`, and every + Insert row. `?` or `/help` lists them all with their arguments.
+- **While you write with the pen** — a pen hand (pen, highlighter, eraser, lasso), or the pen near the screen — a touch on the bar does nothing, so the hand resting on it neither opens it nor goes back. The pen itself and the mouse still work it.
 - As you type, the commands are offered; Enter on one that takes arguments completes it and offers them (a note by its title, a component, a term…); Tab completes; Enter runs. ↑ ↓ recall what you ran before. Esc puts the bar back to sleep.
   - The list sits over the word you are typing, and the rest of the highlighted completion shows in grey after it. Tab takes it.
   - A command that takes several words, like `/collection html image pdf`, keeps its list open after each pick, without the ones already on the line. Click a row or Tab it in; Enter on the space after the last one runs the command.
-- **Commands of your own** (Settings → Commands): a slash that inserts a row, runs a built-in with preset arguments (`/half` → `/zoom 50`), or runs a **macro** — steps behind one slash, from a `.sis-macro.json` file you import there (on the desktop, files in the notebook folder's `macros/` are listed). The `scientia-macro` skill writes such files; `python scripts/scientia_macro.py list` prints every command, `check <file>` says what is wrong with a macro.
+- **Commands of your own** (Settings → Keys & commands): a slash that inserts a row, runs a built-in with preset arguments (`/half` → `/zoom 50`), or runs a **macro** — steps behind one slash, from a `.sis-macro.json` file you import there (on the desktop, files in the notebook folder's `macros/` are listed). The `scientia-macro` skill writes such files; `python scripts/scientia_macro.py list` prints every command, `check <file>` says what is wrong with a macro.
 
 | To get | Type |
 |---|---|
@@ -197,7 +215,7 @@ A slim grey bar lies along the bottom of the window. It shows where you are (pro
 | Style for what you type next | Press the style key with nothing selected. Press it again, or type `:`, to stop. |
 | New line inside a list item | Shift+Enter |
 
-**Auto-replace as you type.** Backspace right after a replacement puts back what you typed. Each group can be switched off in Settings → Writing.
+**Auto-replace as you type.** Backspace right after a replacement puts back what you typed. Each group can be switched off in Settings → Features → Writing in components.
 
 | Group | Examples |
 |---|---|
@@ -222,7 +240,7 @@ Esc, or a click without Ctrl, lets them go.
 
 **Citations and links.**
 - **Ctrl+I** cites from the Library.
-- **Ctrl+Enter → L** links the selection to a note or component. A link shows ↗, or ○ while the target isn't written yet.
+- **Ctrl+Enter → N** (or L) **Bridge to a note…**: the selected words are bridged to another note (see *Node bridges*). Links made before bridges still open: they are underlined like bridged words (dashed while the note isn't written yet), with no ↗, and a double-click offers to go there or open it beside.
 
 ---
 
@@ -238,6 +256,7 @@ Select text, press **Ctrl+Enter**, then a letter:
 | r | Resolution | i | Idea |
 | s | Result | v | Deviation |
 | o | Observation | m | **Reminder** |
+| x | **Needs investigation** | | |
 
 The same strip has three more keys: `/` reuses an existing structure, **W** marks a term, and **L** makes a link.
 
@@ -247,8 +266,13 @@ The same strip has three more keys: `/` reuses an existing structure, **W** mark
   - flags its component for the next weekly review;
   - puts a 🔔 badge on every component connected to it, in any note;
   - click the badge to read the reminder, go to it, or mark it **Done ✓**.
-- **Colours** and the *text colour vs highlight* style per kind are set in **Settings → Structures** (RGB picker).
-- **Edit wording…** (click a structure) changes it in place. If **Settings → Timing → Lock wording once the day turns** is on, corrections become new records that point at the old one.
+- **Needs investigation (x):** something to look into. Its words are highlighted, and it stays open until you mark it **Investigated ✓**.
+  - **Make one:** select words, **Ctrl+Enter → X** (or `/investigate`), or right-click a text component → **Needs investigation** (all its words).
+  - **A dot** in its component's header opens it; **Investigated ✓** is there, and in the structure's own menu (Alt+click).
+  - **In the Portfolio**, its note (and project) has a dot that glows in and out, with how many; point at it to read them, click one to go there.
+  - **On Today** the open ones are listed above Recent notes, oldest first, with the resurfaced claim.
+- **Colours** and the *text colour vs highlight* style per kind are set in **Settings → Features → Structures** (RGB picker).
+- **Edit wording…** (click a structure) changes it in place. If **Settings → Features → Lock the wording after the day** is on, corrections become new records that point at the old one.
 - **Lineage:** revise, split and merge keep the old wording greyed inside the new component.
 
 ---
@@ -267,22 +291,31 @@ The same strip has three more keys: `/` reuses an existing structure, **W** mark
   - Forms with capitals match only with those capitals, plus an optional plural s.
   - Other forms match any case.
   - Hovering a mark shows which form was written.
-- **The term lens** (click a term) shows every component that uses it, as full boxes:
+- **The term lens** (click a term) opens as **Nests**, the Atlas's shape:
+  - the term is the outer sphere; its themes are inside it (a linked project's notes get a sphere of their own), each theme holds its notes, and each note holds the components that use the term as dots;
+  - the other terms, people and papers those components carry orbit the note they belong to;
+  - the connections between the components are drawn in the lens's inks with arrows: explicit, pulled in, via other components (dotted), suggested (dashed);
+  - click a theme or a note to fly into it, the space around to fly back out; the crumbs at the top are the levels. Drag turns it, the wheel comes closer;
+  - click a dot for its card: its words, its connections (a suggested one asks you to accept or dismiss it) and **Open**. Double-click a component to open it;
+  - hovering an insight in the side panel lights its components on the map;
+  - three scales: project, theme, experiment (one note, so the map opens in it).
+- **Chain**, beside Nests in the lens bar, shows every component as a full box instead:
   - lanes by theme or note, columns by day;
-  - three scales: project, theme, experiment;
   - inferred chains: claim → barrier → resolution → result;
   - terms that share a box are pulled in, in their own colours (toggle them in the side panel);
-  - click a box's header to open that note.
+  - click a box's header to open that note. **Export chain** writes this board.
 - A component inside a **region** gives its term "secondary sources": the region's other components, shown as a dashed card.
+
+**Lit reviews aren't counted.** The Terms tab and a term's page leave out mentions in lit reviews; a term used only there isn't listed (Settings → Features → Terms → Mentions in lit reviews counts them).
 
 ### Terms in one note
 - **+ Insert → Term in this note…** (or `/noteterm`) makes a term that lives in this note only. Type how it is written; add its other forms on the component (**+ another way it is written**, Enter). Forms follow the same rules as a term's other forms: with capitals they match only with those capitals.
 - **Where it comes from:** **Theme**, **Project** or **Notebook** — the note's own theme or project, or everything. A scope the note doesn't have is greyed out.
-- **⟳ Fetch** pulls every component there that uses one of the forms and draws them as a small Atlas in the component: the term in the middle, its components around it, the notes they sit in, and the terms and papers those components carry.
+- **⟳ Fetch** pulls every component there that uses one of the forms and draws them as a small Atlas in the component, in the Atlas's nests: the term is the outer sphere, its themes are inside it (its projects, when it comes from the whole notebook), the notes inside those with the components that use it as dots, and the terms and papers those components carry orbit the note they belong to. With one theme the map opens in it.
   - It is a snapshot. Nothing changes it but another **Fetch**: a component that starts using the term later is not on the map until you fetch. When you change the words or the scope, the component says so and **Fetch** lights up.
   - At most the 150 components that use it most are on the map; the line under the scopes says how many there were.
-- **Diving in:** click a dot to focus it (a component's words, with the form lit, are in the side panel, with **Open** and **Pull in here**). Double-click a note (or click it in the side panel) to dive into it; the line above the map says where you are and takes you back. Double-click a component to open it. Drag to pan, drag a dot to move it, wheel to zoom. **⤢** opens the map on the whole window (Esc comes back).
-- **↺ Reload** brings the map back to how the last Fetch left it: no dive, no focus, every dot where it was. So does opening the note again.
+- **Flying in:** click a theme or a note to fly into it (or click a note in the side panel), the space around to fly back out; the crumbs at the top say where you are and take you back. Click a dot to focus it (a component's words, with the form lit, are in the side panel, with **Open** and **Pull in here**). Double-click a component to open it. Drag turns the map, the wheel comes closer. **⤢** opens the map on the whole window (Esc comes back); a note you fly into there is where the map in the component is too.
+- **↺ Reload** brings the map back to how the last Fetch left it: on the term, nothing focused, the camera as it was. So does opening the note again.
 - It is not one of the notebook's terms: it marks nothing anywhere. Only this note shows its forms, underlined in dots while it is there.
 
 ---
@@ -293,7 +326,8 @@ The same strip has three more keys: `/` reuses an existing structure, **W** mark
 - **Make one:** drag a component's **●** onto another component, then choose the relation:
   - **follows · leads to · caused · resolves · supports · contradicts · comments on · needs · related**;
   - or type your own words (e.g. "calibrates") and press Enter.
-- **Each relation has its own colour.** Wires route around boxes. Where a wire must cross a box, it's drawn faintly over it, lifted, so the text stays readable.
+- **Each relation has its own colour.** A wire takes the **shortest way round**: from a side of one component to a side of the other, through the empty paper, bending only at the corners of what is in its way, leaving and arriving square-on, with rounded corners. Nothing in the way: a straight run. Wires leaving one side are spread along it in the order they head off; wires rounding the same corner are drawn a little apart. Move a component and the wires near it find their way again.
+  - Only a wire that can't get through (its end boxed in) is drawn as a curve, faintly over what it crosses, lifted, so the text stays readable.
 - **Click a wire** to change its type, reverse it, or delete it.
 - **Quick chaining:** drop the ● on **empty paper**. Two panels open:
   - **left:** the relation (keys 1–9; Tab flips the direction);
@@ -307,12 +341,20 @@ The same strip has three more keys: `/` reuses an existing structure, **W** mark
 - **Deleting a region** keeps its components.
 
 ### Kinds of component
-- **Double-click the small label** left of a component's title (it reads "Block") to make the component a **Hypothesis**, a **Question**, a **Verdict**, a **Method**, a **Meeting**, **Feedback** or a **Story** (or a kind of your own, Settings → Component kinds). **Iteration** in the same list makes the component's next version (see Iterations below). Standard means no kind. The component keeps its shape and fill; its header takes the kind's colour and its label the kind's name.
-- **A kind says the only ways it links.** Each way is a relation, what it is with, and which way round: a Hypothesis *fuels* a question; evidence (an observation, a result, an image panel, a paper…) *supports* or *contradicts* a hypothesis; a Method *tests* it; a Verdict *resolves* it; it *predicts* a result; it *refines* another hypothesis. A Question is fuelled by a hypothesis, *leads to* a hypothesis or a method, is *answered* by a verdict, evidence or a claim. A Method *tests*, *follows* a protocol, *needs* a material, *produces* a run or evidence. A Meeting *leads to* decisions, tasks, questions; Feedback *comments on* anything and *leads to* a task. Settings → Component kinds lists every way in words; so does the kind's menu.
+- **Double-click the small label** left of a component's title (it reads "Block") to make the component a **Hypothesis**, a **Question**, a **Verdict**, a **Method**, a **Meeting**, **Feedback**, a **Story**, or one of the results kinds below (or a kind of your own, Settings → Features → Structures → Kinds of component). **Iteration** in the same list makes the component's next version (see Iterations below). Standard means no kind. The component keeps its shape and fill; its header takes the kind's colour and its label the kind's name.
+- **A kind says the only ways it links.** Each way is a relation, what it is with, and which way round: a Hypothesis *fuels* a question; evidence (an observation, a result, an image panel, a paper…) *supports* or *contradicts* a hypothesis; a Method *tests* it; a Verdict *resolves* it; it *predicts* a result; it *refines* another hypothesis. A Question is fuelled by a hypothesis, *leads to* a hypothesis or a method, is *answered* by a verdict, evidence or a claim. A Method *tests*, *follows* a protocol, *needs* a material, *produces* a run or evidence. A Meeting *leads to* decisions, tasks, questions; Feedback *comments on* anything and *leads to* a task. Settings → Features → Structures → Kinds of component lists every way in words; so does the kind's menu.
 - **A drop goes one of those ways or not at all.** Drag a wire between two components of which one has a kind: if there is one way, it connects at once (the toast says which); if there are several, the popover offers just those (1–9, Enter takes the first — the one you used last from that kind); if there is none, nothing is made and the toast says what the kind links to — give the other component a kind, or a structure (a question mark in its text makes it a question; an observation mark makes it evidence). A wire's label menu changes it only to another of their ways. Two standard components link as they always did, any way.
 - **The drop on empty paper** from a kinded component lists the kind's ways on the left (→ it does, ← done to it); the new component becomes what the way names — *fuels* from a Hypothesis makes a Question.
 - **Kinds sit on top of structures.** Drag a wire and drop it on a claim, an observation or a question *inside* a component: the wire ends on that structure, not on the whole component, and the structure's hover card says what ends there. So a hypothesis stems from this observation, not from the whole meeting note.
-- **Your own kind** (Settings → Component kinds → + Kind): a name, then its ways one per line — `→ fuels: question` (it does) or `← supports: evidence, claim` (done to it); a relation word of your own is kept as it is.
+- **The results kinds.** A **Result** is what was measured or found, with its numbers. A Method or a protocol run *produces* it; it *supports* or *contradicts* a Hypothesis, a Mechanism or a claim; it *correlates with* another Result or data; it *reveals* an Insight; it *replicates* an earlier Result; it *answers* a question; a Control *validates* it, a Caveat *qualifies* it, a Mechanism *explains* it, an image panel *illustrates* it.
+  - An **Insight** is what a result means: a Result, an observation or an Anomaly *reveals* it; it *fuels* a question or a Hypothesis, *leads to* a decision, a task or a Method, *refines* an earlier Insight.
+  - A **Mechanism** is a proposed explanation: it *explains* a Result, an Insight or an Anomaly and *predicts* a Result; a Method *tests* it.
+  - A **Control** is the baseline that makes a result believable: it *validates* a Result or a Method.
+  - An **Anomaly** is a result that doesn't fit: it *contradicts* a Hypothesis or a Mechanism, *fuels* a question, *reveals* an Insight; until a Mechanism *explains* it, the Portfolio counts it as an open barrier.
+  - A **Caveat** is a limit on what a result can claim: it *qualifies* a Result, an Insight or a claim and *leads to* the Method or task that would lift it.
+  - **Correlation is a link, not a kind.** *Correlates with* has no arrow. It never becomes *caused* by itself; that stays a wire you choose.
+  - A Result counts as **evidence** wherever evidence is asked for (a Hypothesis, a Verdict, an aim's milestone, the Portfolio's evidence dot) and an Insight as a **takeaway**; the Synthesis gathers both (an Insight among the takeaways, a Result among the results). A component that carries a Result structure links as a result too. From a Method, the drop on empty paper offers *produces*, and the new component is a Result.
+- **Your own kind** (Settings → Features → Structures → Kinds of component → + Kind): a name, then its ways one per line — `→ fuels: question` (it does) or `← supports: evidence, claim` (done to it); a relation word of your own is kept as it is.
 
 ### Stories
 A **Story** is a kind of component for telling — a talk, a paper's thread, a lesson — one beat a component.
@@ -324,15 +366,41 @@ A **Story** is a kind of component for telling — a talk, a paper's thread, a l
 ### Iterations
 An **Iteration** is the next version of a component: Run 2 of a report, the figure redone, the hypothesis reworded.
 - **Make one:** the component's ⋯ → **New iteration**, or Iteration in the kind label's list (double-click it), or `/iteration` with the component selected.
-- **What you get:** a blank component of the same type and kind, beside it on the right, wired from it with **next version**. It has the same size and label: an image panel keeps its grid, a table starts empty. An HTML page, a PDF or slides ask for the new version's file, and that file keeps its own name.
+- **What you get:** a blank component of the same type and kind, and the component now shows **one version at a time**, with all of them as **slides** in a column inside its left edge, like PowerPoint. It has the same size and label: an image panel keeps its grid, a table starts empty. An HTML page, a PDF or slides ask for the new version's file, and that file keeps its own name.
+- **The slides:** each shows a small picture of its version as it looks (its words, its images; a page or a PDF by its name), with v1, v2… above it. **Click a slide** to bring that version up; the column scrolls when there are many. **+** at its foot makes the next version. With the component selected, **↑ ↓** (or ← →) go through them. Picking a version in the version tag's menu brings it up too. The component is the slides' width wider, so the text keeps its room.
+- **Delete a version:** **×** on its slide, or right-click the slide → **Delete**. It goes at once and the others close up, numbered again: delete the first and the second becomes the first; with one left it is an ordinary component again. **Ctrl+Z** brings it back. With a pen hand, a touch on × does nothing (the palm).
+- **One size:** resize the component and every version takes the same width (and height, for a page or a PDF).
+- The version tag's menu offers **Spread out** (every version beside the one before, wired **next version**, each keeping its own size) and **Show as slides** to bring them back.
 - **How it improved:** under the new version, like an image panel's caption, is the question "How did v2 improve on v1?"; the caret waits there. What you write is kept with that version.
 - **Which version:** each version shows **v1**, **v2**, **v3**… in its header. Click it to list every version, with how each improved, to go to one, or to make the next.
 - `/collection iteration` shows every version in the Atlas.
+- **Troubleshooting** is a component kind made for this: set it on an empty component and it starts with **Problem / Tried / Outcome**; each attempt is a new version, its slide named "attempt 2" (**+** under the slides for the next). It resolves a barrier and leads to a resolution, a decision or a method.
 
 ### Several at once
 Select components with the lasso or Ctrl+click and their bar offers, besides Copy, Duplicate and Delete. The bar is one row and sits where it covers no other component: under them, else beside them, else above. A Ctrl+click on a component's text selects it without leaving the caret there.
-- **Region** around them · **Move to…** another note (a small note stays behind: "Moved to …", linked to them) · **Pull into…** another note (references there) · **Tidy ▾** (align left, stack, grid) · **Connect all…** to one component you pick, with one relation · **Make them…** all a claim, a barrier, a question… (each one, whole) · **Fold / Unfold**.
+- **Region** around them · **Move to…** another note (a small note stays behind: "Moved to …", linked to them) · **Bridge to…** another note (a bridge each, with one reason for all) · **Tidy ▾** (align left, stack, grid) · **Connect all…** to one component you pick, with one relation · **Make them…** all a claim, a barrier, a question… (each one, whole) · **Fold / Unfold**.
 - **One drop wires them all:** drag a wire from the socket of any selected component onto another; the relation you choose makes a wire from every selected one.
+
+### Node bridges
+A **bridge** is a component, or some words of one, shown in another note: live (as the original changes, so does the bridge), with a caption under it saying **why** it was bridged there.
+- **Make one:**
+  - **Copy and paste:** words copied inside a component, or components copied with Ctrl+C, pasted on another note become bridges. On their own note, or with **Ctrl+Shift+V**, they are copies.
+  - **Words:** select them, then **Ctrl+Enter → N** (*Bridge to a note…*), the editing bar's **Bridge to a note**, or right-click the selection.
+  - **Any component** (an image panel, an HTML page, a PDF, a table, text…): right-click it, or ⋯, → **Bridge to another note…**.
+  - **`/bridge <component> <note> [why]`** in the bar; typed in a component, the component is that one.
+  - The selection bar's **Bridge to…** (several at once), or drag a component into another pane.
+  - Picking the note asks why: the answer is the caption. Leave it empty and say it later.
+- **In the note it went to:** its kind reads **bridge**, its left edge is green, and a green band at its top says where it comes from: **Bridged from** (or **Passage from**) **the note**, in bold (click it to go to the component there; Alt+click, or ↗, opens it beside), the component, the project and the day. A pulled-in structure has the same band (**Pulled from**), in its kind's colour. The caption under it (*Why is it bridged here?*) pulses when it arrives. Click it to write; Enter keeps it.
+- **In its own note:** the bridged words are **underlined in green**, and the component is green too: a **green right edge** (its bridges go out to the right, like the circles at the note's edge) and a green **bridged to <note>** chip under it. **Double-click** the underline, or click the chip: **Go to the note** it is bridged to, or **Open it beside this note**. Bridged to several notes, the menu lists each, with its reason.
+- **The colour:** Settings → Features → **Bridges** (green by default).
+- **At a note's edges:** each note it is bridged with is a circle in the faded margin. **Left:** the notes what is bridged or pulled into this note comes from. **Right:** the notes its components are bridged (or pulled) to. The number is how many; a dashed ring means structures pulled in only. A circle sits level with its component and moves with the paper; when the component is out of view it waits at the top or bottom.
+  - **Point at one:** the note's name, and a thread to each of its components. **Click:** go there, landing on the bridge (in a split, in that pane). **Alt+click:** open it beside. **Right-click:** choose which bridge to land on. On a touchscreen: tap to see it, tap again to go.
+  - In a window they are half-moons, half under the edge. In full screen they are beads, a little inside it, since the screen's edge pans the note there.
+- **The bridge bar** (under the tabs): it opens when you cross a bridge — a circle, *Go to* on an underline, the note in a bridge's band — and in a note of your three most-used bridges.
+  - **The trail:** the notes you crossed to, on a line, with the way you crossed between each (→ to where it went, ← back to where it came from). ‹ › walk it; click a note to go there.
+  - **Most used:** the three pairs of notes you cross between most, counted over two weeks (from Monday 9 November 2026, starting again every other Monday), the same on all your devices.
+  - Going to another tab closes it; **Alt+←** or **Alt+→** back to a note of the trail brings it back. **×** closes it until tomorrow. Settings → Features → **Bridge bar** turns it off.
+- Bridges replace *Link to a note*, *Embed in another note* and *Pull into*. Links made before still work, underlined the same way. Structures pulled in (a barrier, a claim) are as before.
 
 ### Linking by hand
 - **The relation you used last comes first.** On a drop, the popover offers first (lit) the relation you last used from that kind of component; Enter with nothing typed takes it.
@@ -341,11 +409,12 @@ Select components with the lasso or Ctrl+click and their bar offers, besides Cop
   - Drop it on a component there to connect them.
   - Drop it on that note's empty paper to pick one of its components.
 - **One image of a panel:** each image has its own ● at its bottom edge, so a wire can leave from that image only.
-- **Embed into another note** (side by side):
+- **Bridge into another note** (side by side):
   - Drag a component into the other pane, or press and hold a highlight with the pen and drag it.
-  - It's embedded **live**: it follows the original. Dropped onto a component, the two are also connected.
-  - Embedded widgets (image panels, plates, PDFs…) show the real thing, with "embedded from <note>".
-  - Hold **Alt** while dragging to **move** the component instead of embedding it.
+  - It's bridged **live**: it follows the original. Dropped onto a component, the two are also connected.
+  - Bridged widgets (image panels, plates, PDFs…) show the real thing, with the band naming the note they are bridged from.
+  - A labelled image of a panel (a result, evidence…), or a whole panel labelled, pulled in as a structure shows its picture (the image as cropped there, or the panel) above its label and words. Edit it where it lives.
+  - Hold **Alt** while dragging to **move** the component instead of bridging it.
 - **A note inside a note:** **+ Insert → A note…** places a card with the note's title, location and synthesis. You can highlight one of its components on the card.
 
 ### Moving components to another note
@@ -360,12 +429,25 @@ Select components with the lasso or Ctrl+click and their bar offers, besides Cop
 
 ### Experiment stages
 **+ Experiment** asks for a project, theme, name and date, then creates the **Planning** note.
-- **Next: Run** (bottom right of the canvas) creates the next stage: **Planning → Run → Analysis → Reflection**.
+- **Next: Run** (bottom right of the canvas) creates the next stage: **Planning → Run → Analysis → Synthesis**.
   - Once a stage exists, the button reads **Open …** instead.
   - Ctrl+click opens the stage beside the current note.
 - The note's header shows the stage strip; click a stage to go there.
 - **Run a protocol** (at creation) lays that protocol out in the Run note.
-- **Iterate:** Next from a finished Reflection, or the ▾ menu, makes "…, run N", linked to its parent.
+- **Iterate:** Next from a finished Synthesis, or the ▾ menu, makes "…, run N", linked to its parent.
+
+### Synthesis
+The last stage of an experiment is its **Synthesis**: one note in the project that holds what the experiment established. The process lives in Planning, Run and Analysis; the Synthesis gathers it.
+- **Gathered on its own** when the note is made (Next from the Analysis): every **claim, evidence, result, takeaway, barrier and resolution** of the experiment's notes is pulled in as a reference, in a column per kind (no heading component — only the things themselves); what each stage's note "adds up to" comes along as a component. Nothing is copied: a reference points at the original and follows it.
+- **⟲ Gather** (the dock) pulls in what the notes have gained since.
+- **☰ The rest** (the dock) opens a scrollable panel of every other component of the experiment, by stage, each with **Pull in**, so you can bring anything else across. Then build and rearrange the note as you like.
+- A Reflection note made before is a Synthesis too: open it and press ⟲ Gather.
+- **A synthesis of any notes**, outside an experiment: `/synthesis`, or **A synthesis of this note and others…** in a note's ⋯ menu. Pick the notes one after another (Cancel when done); a Synthesis note is made in the first note's project and gathers them as above. Only what is **marked** in them comes in: a takeaway marked in two lines of a long component arrives as that takeaway alone, not the component around it.
+- **± Notes** (the dock, or the Synthesis note's ⋯ menu) lists the notes it synthesizes: **+ Add notes…** brings more in and gathers them; click one to take it out of the list (what it already gave stays). An experiment's Synthesis can take more notes this way too.
+- ± Notes, ⟲ Gather and ☰ The rest are in the note's ⋯ menu as well.
+- **Notes to synthesize:** every Synthesis note has a component that lists the notes it synthesizes (an experiment's are marked "the experiment"), with **+ Add notes…**, **⟲ Gather**, and × to take one out. A new Synthesis note opens with it, asking which notes you would like to synthesize, and so does a note whose type you change to Synthesis, at once.
+- **Flag for synthesis:** a component → right-click → **Flag for synthesis** (the whole component), or select components and type **/synthesize** (it asks which Synthesis note); words → select them, **Ctrl+Enter → F** (a live excerpt of just those words). Only the thing itself comes in — no component saying what it is; with more than one Synthesis to go to, it asks which. Settings → Features → Flag for synthesis.
+- **Lit reviews give only what you flag.** Their claims, evidence, results and takeaways are not gathered, and ☰ The rest leaves them out: flag what should come in.
 
 ### Protocols
 A protocol is one box, with its steps on a rail.
@@ -403,6 +485,7 @@ Open it with **+ Insert** on the bar at the bottom of the note, or right-click t
 | **Calculator** | Also via the **Calculator** button at the top right of every canvas. |
 | **Equation** | Also via **∑ Equation**. An equation box with a legend of its terms. |
 | **HTML file…** | An exported plot, report or page, sandboxed. |
+| **Website…** | A web page saved in the note as it is now, kept even if the site goes away (see Websites, below). |
 | **PDF…** | Pages drawn by the app; text is selectable and searchable. |
 | **Slides (PowerPoint)…** | One picture per slide, with speaker notes. Needs PowerPoint on Windows. |
 | **Recording** | Microphone + transcript (§18). |
@@ -412,7 +495,7 @@ Open it with **+ Insert** on the bar at the bottom of the note, or right-click t
 | **Material… / New material…** | A material card (§15). |
 | **A note…** | A note card (§8). |
 | **Pull in…** | Unresolved barriers, any structure or any component from elsewhere. |
-| **Term in this note…** | A term that lives in this note, pulled from its theme, its project or the notebook as a small Atlas (§7). |
+| **Term in this note…** | A term that lives in this note, pulled from its theme, its project or the notebook as a small Atlas of nests (§7). |
 
 ### Working with plates
 - **Select wells:** drag across them, click a row or column header, Shift+click one well, or Shift+drag to add a range.
@@ -442,6 +525,8 @@ Open it with **+ Insert** on the bar at the bottom of the note, or right-click t
 ### Equations
 - **Legend:** each term gets a name and unit.
 - **Register…** shares the equation everywhere: edit it once and every note updates. **Unlink from the registry** keeps a private copy.
+- **Capture one from a paper:** in the Library's reader, **∑ Capture equation**, then draw a box round the equation on the page. Type it in the editor, checking it against the snip, name it, and it is registered, with its paper and page. The reader's side panel lists the equations registered from that paper.
+- **∑ Equation → Registered equation…** shows the paper (and page) each was captured from.
 - **🖩 Solve in calculator** (or wire the equation to a calculator):
   - type the values you know and the rest are solved;
   - wire several equations that share terms to solve them as a system;
@@ -470,6 +555,17 @@ Open it with **+ Insert** on the bar at the bottom of the note, or right-click t
   - On an HTML page a snip ends clip mode, and a snip made in the maximised page brings you back to the note, where the new panel is. (An equation brings you back once you press Done in the equation editor.)
   - On an HTML page a figure is a chart (SVG or canvas), a picture, a table or a `<figure>`, with its legend. Its heading becomes the label and its caption the text. A page that draws its charts with its own scripts (an exported report or plot) works once they are drawn. A display equation written with KaTeX goes into the equation editor as its own LaTeX.
   - An equation becomes an equation component: you type it in the equation editor against the snip (a KaTeX equation arrives already typed), checked by you first.
+
+### Websites
+- **+ Insert → Website…** (or `/website`) asks for an address. The page is saved **once, as it is now**, in your notebook folder: its text, styles, pictures and fonts in one file, with the site's scripts and frames left out. It becomes a page component like an HTML page (quoting, snips and ink labels work the same). An address that is a PDF becomes a PDF component.
+- **The site is never visited again.** Opening the note shows the saved copy, and the copy is not allowed to load anything from the internet. If the site changes or goes away, the note still shows the page as it was when you saved it.
+- **The strip under the header** says when and from where it was saved. **↗ Live page** opens the site in your browser, only when you click it. **⟳ Capture again** saves the page anew as the next version, shown with the earlier copy as a slide beside it, kept beneath.
+- **Where it works:** from an address, on the computer that runs the app and the devices paired with it (the computer fetches the page).
+- **A site that keeps the app out** (most journals answer a program with "403", "429" or a check for robots): the link **opens in your own browser** on the computer, and a card waits in the corner of the note. If the site asks whether you are a person, or to sign in, answer it there; then press **Ctrl+S** and save it as **"Webpage, Single File"**. The page comes into the note **by itself** (the computer finds the file in Downloads, Desktop or Documents) and the card goes; × on the card stops waiting. The app never steers your browser: it only reads the file you saved, which stays where you saved it. The same when **⟳ Capture again** is refused: the saved page is the next version. Chrome or Edge (Firefox does not save a page as one file).
+- **A page saved in your browser** works on every device (no computer has to fetch it), and is the way for sites that let only a person at a browser in (most journals answer a program with "403", "429" or a check for robots; the app says so). Open the page in Chrome or Edge, press **Ctrl+S** and save it as **"Webpage, Single File"** (an `.mhtml` file), then **drop that file on the note**, paste it, or choose it under **+ Insert → Website… → Add a page saved in the browser**. It becomes the same component, as you saw it (signed in, past the cookie banner), with its pictures, styles and fonts inside it and nothing of the site's that runs; the strip says "in the browser". Dropped on a website component, it becomes that component's next version.
+- **Files dropped on a note** become what they are, as when you paste them: pictures (one image panel), PDFs, HTML pages, spreadsheets, slides, saved pages.
+- Pages built by scripts in the browser come as the HTML the site sends, which can be bare for some sites.
+- `/collection website` shows every saved page in the Atlas.
 
 ### Slides
 - **Browse:** ‹ › or ← → (with the mouse over the deck) go slide by slide. **Grid** shows them all.
@@ -522,14 +618,14 @@ Open it with **+ Insert** on the bar at the bottom of the note, or right-click t
   - the **timeline** of everything written today, in any note, including backdated entries and edits (marked "entered for…" / "edited · from…");
   - **Coming up** (next 7 days);
   - chores;
-  - the **resurfaced** card.
+  - **Needs investigation**, above Recent notes: the open structures of that kind, oldest first, and with them the **resurfaced** card.
 - **The resurfaced card** is one claim or question older than two weeks. Answer it with Still holds / Explore lane / Answered / Contest / Another.
 - **Capture** (✎, **Ctrl+Shift+Space**, or the Capture box) adds a timestamped entry to **today's day note**. You can give it a kind: observation, idea, question, barrier, reminder or result.
 - **Day notes** (one per date) also show time recorded, notes touched, chores and what's due.
 - **Filing never moves an entry.**
   - ⋯ → **File to a component…** creates a structure there that points back to the entry.
   - **Assign to a theme…** tags the entry with a theme.
-- **Recurring chores** (Settings → Labs): every N days or on chosen weekdays. They're reminders, not tasks.
+- **Recurring chores** (Settings → Features): every N days or on chosen weekdays. They're reminders, not tasks.
 
 ---
 
@@ -639,7 +735,7 @@ A view is a saved query that updates as your notes change.
 - **Formulas** use a small built-in language: `+ - * / % ^`, comparisons, `and or not`, `c ? a : b`, `if round min max days now contains lower len`. Example: `round(minutes / 60, 1)`.
 - **Edit view…** changes everything. **Save as a reusable view** keeps it for other notes. Nine presets are available to start from.
 
-### Spatial canvas (Settings → Labs)
+### Spatial canvas (Settings → Features)
 - A free board of **references**: components, structures, library entries, datasets, groups. Their text is always current.
 - An edge drawn between two components is a real connection; other edges stay on the canvas.
 - **JSON Canvas** exports the board for Obsidian.
@@ -652,12 +748,12 @@ A view is a saved query that updates as your notes change.
 - **Pen settings follow the hand.** Choosing Pen or Highlighter (in the ink bar, or `/pen`, `/hl`) opens the pen settings (colours, widths, eraser, fill, pressure); Move, Zoom or Lasso closes them.
 - **Pen zooms in.** Switching to Pen or Highlighter goes to 200 % if the note was under it; leaving them comes back to 100 % (only if that switch changed it).
 - **P** switches to Move (outside a text). `/pen`, `/hl`, `/lasso`, `/erase` and `/pan` do the rest.
-- **The edge pans.** In Move, with the mouse or a hovering pen (not fingers). The note's edge is where it starts: a dashed line shows on it as the pointer comes near, and nothing moves until the pointer touches it. Touching it, the note pans slowly that way. Keep moving the mouse on past the edge and it goes faster and faster. Hold still and the speed holds. Move back at all and it stops at once. A band along the edge tints as the speed rises.
-  - Past the top edge, the pointer goes on over the header, through the tabs and buttons, as long as it keeps moving up. Resting on a tab or a button, or sliding along them, stops the pan, so reaching for a tab moves the note only a little. The bottom edge works the same way over the faint navigation bar.
-  - At the screen's edge the cursor itself stops, and a browser hears nothing more from it. The app asks Windows, through the server on this computer, how far the mouse itself keeps moving, so pushing on still speeds the pan up. The same goes past the bottom of the window onto the taskbar.
+- **The edge pans — in full screen.** In Move, with the mouse or a hovering pen (not fingers), and only in full screen (Focus mode, **Ctrl+.**, or the browser's own **F11**), where the note's edges are the screen's. Rest the pointer at the screen's very edge: after a moment the note pans that way, easing in. Push the mouse on and it goes faster; hold still and the speed holds; move off the edge and it stops at once. A flick to the edge, or overshooting a button there, moves nothing. A dashed line shows on the edge as the pointer comes near, and a band along it tints as the speed rises. In a window the edges do nothing (drag with the Move hand, or use the wheel).
+  - At the screen's edge the cursor itself stops, and a browser hears nothing more from it. The app asks Windows, through the server on this computer, how far the mouse itself keeps moving, so pushing on still speeds the pan up (onto another screen too).
   - From another device (the iPad, a phone), or with the pen, nothing past the screen's edge can be read. There the speed rises for as long as the pointer stays at the edge.
+  - Not over the ink bar, the dock or the other controls.
 - **Zoom** reaches 1 % (Ctrl+scroll, pinch, `/zoom 1`); below 10 % the components show as flat tiles.
-- **The pen's button** (on the computer that runs the app). The Slim Pen's tail button is a Windows setting (it opens OneNote by default). Settings → The pen's button shows the steps: run `pen-button\Build ScientiaPen.cmd` once (it builds `ScientiaPen.exe` with the C# compiler Windows ships), then Windows Settings → Pen & Windows Ink → Pen shortcut button → "Launch a classic app" → `pen-button\ScientiaPen.exe`. One press switches to the pen; a press in Pen goes back to the hand you had before. The switch follows the press at once: the helper speaks to the app over one plain connection, and the app's waiting request is woken by the press itself.
+- **The pen's button** (on the computer that runs the app). The Slim Pen's tail button is a Windows setting (it opens OneNote by default). Settings → Features → Pen & touch shortcuts shows the steps: run `pen-button\Build ScientiaPen.cmd` once (it builds `ScientiaPen.exe` with the C# compiler Windows ships), then Windows Settings → Pen & Windows Ink → Pen shortcut button → "Launch a classic app" → `pen-button\ScientiaPen.exe`. One press switches to the pen; a press in Pen goes back to the hand you had before. The switch follows the press at once: the helper speaks to the app over one plain connection, and the app's waiting request is woken by the press itself.
 - **Esc** puts the navigation bar to sleep first, then closes a popover; dialogs, the maximised views and the reader's full screen answer their own Esc.
 
 ### Fingers (iPad, Surface, any touch screen)
@@ -698,14 +794,14 @@ A view is a saved query that updates as your notes change.
   - drag inside the selection to move it;
   - corner handles scale it, side handles stretch it, the round top handle rotates it (snaps every 15°);
   - the selection bar has Copy, Duplicate, ⇋ ⇵ flip, pen ↔ highlighter, ◧ Fill/Unfill, colours, **Convert to text**, **Connect… / Merge** (for two ink components), and Delete;
-  - **paste:** hold the button and tap anywhere. Copied text becomes a new component, or goes into a component's text where you tap. Components copied from another note are pulled in.
+  - **paste:** hold the button and tap anywhere. Copied text becomes a new component, or goes into a component's text where you tap. Components copied from another note are bridged.
 - **No right-click menu** opens from the pen while the ink bar is on.
 
 ### Handwriting → text
 - **Convert to text:** ⋯ on an ink component, or lasso some strokes → **Convert to text**. The ink becomes a text component in its place.
 - **The ink is kept:** ⋯ → **Show the handwriting** / **Back to ink**.
 - **How it's read:** by **Windows' own handwriting recognizer** on your computer. Cursive works, it's offline, and there's nothing to install. iPad ink is read by the computer too.
-- **Settings → Handwriting** shows the recognizer and lets you pick a language. Add languages in Windows: Settings → Time & language → Language & region → ⋯ → Language options → Handwriting.
+- **Settings → Notebook & devices → Handwriting** shows the recognizer and lets you pick a language. Add languages in Windows: Settings → Time & language → Language & region → ⋯ → Language options → Handwriting.
 
 ---
 
@@ -719,7 +815,7 @@ A view is a saved query that updates as your notes change.
   - A red pill in the header shows the time while you're elsewhere in the app.
 - **The file** goes to your notebook folder's `recordings/`. If the computer is unreachable, it waits on the device.
 - **Transcript:**
-  - Install once: **Settings → Recordings → Install the transcriber**. Whisper runs offline on your computer.
+  - Install once: **Settings → Notebook & devices → Recordings → Install the transcriber**. Whisper runs offline on your computer.
   - The transcript lands as ordinary text, one sentence per line, with times in the margin and a clock time every 30 s.
   - Click a time (or Alt+click a line) to play from there; the line being spoken is highlighted.
 - **Playback:** ▶ / ❚❚, click the bar to jump. Bookmarks show as diamonds on the bar and as chips you can label.
@@ -764,7 +860,7 @@ The review opens on the weekend for the past week (Sat→Fri) and stays open unt
 
 ## 21. Phones and tablets (sync)
 
-Your computer is the hub. Open **Settings → Devices** and follow the steps:
+Your computer is the hub. Open **Settings → Notebook & devices → Devices** and follow the steps:
 
 1. Install **Tailscale** on the computer and the device, signed in to the same account.
 2. **Turn on Tailscale access.** This gives a private https address.
@@ -776,7 +872,7 @@ Your computer is the hub. Open **Settings → Devices** and follow the steps:
 - **Syncing:** changes sync within a second or two.
 - **Offline:** with the computer off, an installed device keeps working ("offline · N"). Its changes go to the computer when it's back.
 - **Conflicts:** changes that can merge are merged automatically. When two devices changed the same field, **⚠** shows both versions; keep one.
-- **⟳ Full sync** (Settings → Devices on a device) reloads everything from the computer.
+- **⟳ Full sync** (Settings → Notebook & devices → Devices on a device) reloads everything from the computer.
 - **The phone layout** has five screens:
   - **Today**;
   - **Search**;
@@ -784,7 +880,7 @@ Your computer is the hub. Open **Settings → Devices** and follow the steps:
   - **Timers**;
   - **Reminders**.
 - **Notes on the phone** open as a single column. ⋯ → **Use the full layout** switches to the canvas; tablets get it by default.
-- **Remove** a device in Settings → Devices to stop it at once.
+- **Remove** a device in Settings → Notebook & devices → Devices to stop it at once.
 - **Done only on the computer:** importing, starting empty and switching notebooks.
 
 ---
@@ -795,7 +891,7 @@ Your computer is the hub. Open **Settings → Devices** and follow the steps:
 - **Obsidian mirror:** the folder holds one Markdown file per component, with terms and links as `[[wikilinks]]`, plus pages for Terms, Library, Days and Reminders.
   - The mirror is **one-way**: edit in the app; Obsidian edits are overwritten.
   - **Open in Obsidian** is in Settings.
-- **Settings → Notebook folder:** Save now, Reload from notebook, Switch, and recent folders.
+- **Settings → Notebook & devices → Notebook folder:** Save now, Reload from notebook, Switch, and recent folders.
 - **Exports:**
   - **Export everything (JSON):** the full record, with every store counted on import.
   - **Read-only HTML** of one note, one theme or one term chain.
@@ -807,20 +903,28 @@ Your computer is the hub. Open **Settings → Devices** and follow the steps:
 
 ## 23. Settings
 
+Settings has a sidebar: **Features** first, then **Look & feel**, **Keys & commands**, **Templates & note types**, **Notebook & devices** and **Data & storage**. **Search settings** (top right) finds a feature, one of its settings or a section by its words.
+
+**Features** lists every feature of the app with a switch, so the notebook can look as plain or as full as you like.
+
+- **Presets:** **Simple** (write and mark structures; bridges, timers, reminders, the Library, equations), **Standard** (the app without the parts most people never use) and **Everything**. A notebook made before this version is on Everything; **Start empty** begins on Standard. Change one switch and it reads "Standard + 1 change", with *back to Standard*.
+- **Off hides a feature's tools and decorations** — its button, chips, tab, its rows in + Insert and / — never what you made with it: that stays in your notes, the search and the export. Switch it on and it is all back.
+- **A tile per feature**, by group: Canvas & notes, Pen & touch, Structures, Bridges, Time & reminders, Reading & sources, Widgets, Tabs & overview. **Select a tile:** it opens across the board with its whole description and all its settings. *Always on* marks what is the notebook itself (writing, structures, bridges, the pen's shortcuts); a feature that needs another says so.
+- **The live preview** beside the board shows the feature in view — it changes as you scroll and stays beside you — or the one you opened, drawn as it is set now, following each setting as you change it. On a narrow screen it is inside the opened tile.
+- **This device keeps its own switches** (under the presets): a phone on Simple while the notebook is on Everything. Lock the wording and Spatial canvases stay the notebook's, and presets leave them as they are.
+- **The editing bar's starting size:** fixed, or following the zoom between two sizes (smaller zoomed out, larger zoomed in). It places itself where you are in the note, so its position isn't a setting.
+- **The bridge bar:** how many most-used bridges it shows (0–5; at 0 only the crossing you are on) and how long they are counted (1, 2 or 4 weeks, or never reset).
+
 | Section | What it holds |
 |---|---|
-| **Notebook folder** | Path, Browse, Connect/Switch, Save now, Reload from notebook, Open in Obsidian |
-| **Devices** | Tailscale, pairing, paired devices, install, ⟳ Full sync |
-| **Appearance** | Theme, citation display |
-| **Structures** | Colour and text/highlight style per kind |
-| **Writing** | Auto-replace groups on/off |
-| **Timing** | Day lock (off by default), timer rules |
-| **Keys** | Structure key and term key |
-| **Note types** | Types as data: fields (with options), next stage, templates |
-| **Handwriting** | Recognizer status and language |
-| **Recordings** | Install/repair the transcriber |
-| **Labs** | Spatial canvas, recurring chores |
-| **Import / Export / Start empty** | Moving or resetting data |
+| **Features** | Presets, a switch and the settings of every feature, the live preview |
+| **Look & feel** | Theme |
+| **Keys & commands** | Where the keys are, Ctrl+W and Focus mode, your own commands and macros |
+| **Templates & note types** | Templates per note type; note types as data (fields, next stage) |
+| **Notebook & devices** | Notebook folder, devices, handwriting, recordings |
+| **Data & storage** | Store, export, import, re-index, snapshots, Start empty |
+
+Where the settings went: structure colours and style, the structure key, classify and component kinds → **Structures**; the term key → **Terms**; typing replacements → **Writing in components**; the editor bar's buttons and favourite symbols → **Editing bar**; the bridge colour → **Bridges**; the bridge bar's switch → **Bridge bar**; week start → **Weekly review**; timer rules → **Timers**; lineage depth → **Earlier versions**; the day lock → **Lock the wording**; citation display → **Library**; spatial canvases and recurring chores → their own tiles.
 
 ---
 
@@ -859,11 +963,11 @@ Your computer is the hub. Open **Settings → Devices** and follow the steps:
 | Problem | Fix |
 |---|---|
 | I don't see recent changes | Close any old server window and run `launch.bat` again (it frees port 8766). Hover the SiS logo to check the build. |
-| The app is empty | Check the port is 8766. Settings → Notebook folder → Reload from notebook. |
+| The app is empty | Check the port is 8766. Settings → Notebook & devices → Notebook folder → Reload from notebook. |
 | Phone can't connect | Check Tailscale is on, on both devices. Run `diagnose-pairing.bat` on the computer and read `pairing-report.txt`. |
-| Device looks out of step | Settings → Devices → ⟳ Full sync. |
+| Device looks out of step | Settings → Notebook & devices → Devices → ⟳ Full sync. |
 | Three-finger tap does nothing | Turn off Windows' three-finger gestures (§17). Open the app with `#touchlog` at the end of the address to see what the screen reports. |
-| Transcription failed | Settings → Recordings → Repair, then **Try again** on the recording. |
+| Transcription failed | Settings → Notebook & devices → Recordings → Repair, then **Try again** on the recording. |
 | Convert to text finds nothing | Add a handwriting language in Windows (§17). |
 | Slides won't import | PowerPoint must be installed on the Windows computer. |
 | Data folder says "no access" | Click Rescan once to give the browser access again. |

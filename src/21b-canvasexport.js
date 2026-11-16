@@ -66,6 +66,9 @@ const CANVASX = {
     const js = JSON.stringify(data).replace(/</g, '\\u003c').replace(/[\u2028\u2029]/g, c => '\\u' + c.charCodeAt(0).toString(16));
     const html = src.replace(/<link rel="manifest"[^>]*>\s*/, '').replace(/<title>[^<]*<\/title>/, `<title>${esc(d.title)} · Scientia In Situ</title>`)
       .replace('<head>', `<head>\n<script>window.SIS_EXPORT = ${js};</script>`);
+    // the file must still carry the viewer and the boot (98, 99); otherwise it would open blank
+    if (!html.includes('const VIEWER = ' + 'window.SIS_EXPORT') || !html.includes('(async function ' + 'boot()'))
+      return toast('The export could not be built from this copy of the app — nothing was saved', 5000);
     Exporter.download(Exporter.slug(d.title || 'note') + '.html', html);
     toast(`Canvas exported · ${(html.length / 1048576).toFixed(1)} MB` + (g.missing.length ? ` · ${plural(g.missing.length, 'file')} couldn’t be read: ` + g.missing.slice(0, 3).join(', ') : ''), 4500);
   },

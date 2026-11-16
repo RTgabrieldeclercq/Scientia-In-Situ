@@ -28,7 +28,7 @@ const EBAR = {
   cur: null, over: false, popOpen: false,
   /** The optional buttons behind +, in the order they appear. */
   EXTRA: [
-    ['link', 'Link to a note', 'Link the selected words to a note or a component (or one not written yet)'],
+    ['link', 'Bridge to a note', 'Bridge the selected words to another note: they show there, live, and are underlined here'],
     ['cite', 'Citation', 'Insert a citation from the library (Ctrl+I, or type /cite)'],
     ['term', 'Term', 'Mark the word or phrase as a term of the project'],
     ['eq', 'Equation', 'An equation here in the text, as an equation component (its terms can be wired and solved)'],
@@ -57,8 +57,13 @@ const EBAR = {
   rebuild() { const c = EBAR.cur; if (!c) return; c.bar.replaceChildren(...EBAR.items()); EBAR.sync(); EBAR.place(); },
   place() {
     const c = EBAR.cur; if (!c) return; if (!c.el.isConnected) return EBAR.hide();
-    const box = c.el.closest('.box'), hd = $('#hd'), top = hd ? hd.getBoundingClientRect().bottom + 2 : 0;
-    FBAR.place(c.bar, box.getBoundingClientRect(), { top, min: 150, max: 760 });
+    const box = c.el.closest('.box'), hd = $('#hd'), top = hd ? hd.getBoundingClientRect().bottom + 2 : 0, r = box.getBoundingClientRect();
+    FBAR.place(c.bar, r, { top, min: 150, max: 760 });
+    // V3.995: its size (Settings → Features → Editing bar) — fixed, or eased between two sizes over the note's zoom; as wide on screen as before, the buttons bigger or smaller
+    let k = 1; try { const dv = DV(c.el), z = dv && dv.paper && dv.paper.view ? dv.paper.view.z : 1; k = FEAT.size('editbar', 'size', z); } catch (e) { }
+    if (Math.abs(k - 1) < .01) { c.bar.style.transform = ''; return; }
+    const w = parseFloat(c.bar.style.width) || r.width; c.bar.style.width = Math.round(w / k) + 'px'; c.bar.style.transformOrigin = '0 0'; c.bar.style.transform = 'scale(' + k + ')';
+    const hgt = c.bar.offsetHeight * k, above = r.top - hgt - 6; c.bar.classList.toggle('below', above < top); c.bar.style.top = Math.round(above >= top ? above : r.bottom + 6) + 'px';
   },
   /* ---------- the buttons ---------- */
   items() {
@@ -74,7 +79,7 @@ const EBAR = {
       B(I.box, 'Checkbox list — click a box to tick it', () => EBAR.list('box'), { cls: 'eb-box' }),
       FBAR.sep(),
       B(I.make, 'Make it… — what the selected phrase is: a claim, a barrier, a question…', () => EBAR.makeIt(), { key }),
-      x('link') ? B(I.link, 'Link to a note…', () => EBAR.pick('link')) : null,
+      x('link') ? B(I.link, 'Bridge to a note…', () => EBAR.pick('link')) : null,
       x('cite') ? B('❝', 'Citation…', () => EBAR.pick('cite'), { key: 'Ctrl+I' }) : null,
       x('term') ? B(h('span.bT', 'T'), 'Term — the word or phrase joins the project’s terms', () => EBAR.pick('term'), { key: keyLabel(settings().termKey) }) : null,
       x('eq') ? B(h('span.bFx', 'ƒx'), 'Equation — here in the text, as an equation component', () => EBAR.equation()) : null,
@@ -103,7 +108,7 @@ const EBAR = {
     if (what === 'term') return ED.markTerm(c.el, c.b, sel);
     if (what === 'cite') return ED.citePicker(c.el, c.b, ED.selection(c.el));
     if (sel.collapsed) return toast('Select the words first');
-    if (what === 'link') return ED.linkPicker(c.el, c.b, sel);
+    if (what === 'link') return BRIDGE.fromText(c.el, c.b, sel);   // V3.981: a bridge (13zzu)
     if (what === 'mention') return ED.mentionPicker(c.el, c.b, sel);
   },
   insert(sym) { const c = EBAR.cur; if (!c) return; EBAR.focus(); document.execCommand('insertText', false, sym); },
@@ -159,7 +164,5 @@ const EBAR = {
   const os = ED.openStrip; ED.openStrip = function () { EBAR.hide(); return os.apply(this, arguments); };
   new MutationObserver(() => { if (!EBAR.cur && !$('.strip')) { const el = EBAR.editorOf(document.activeElement); if (el) EBAR.show(el); } }).observe(document.body, { childList: true });
   // Settings → Writing gets the same choices (SettingsView is defined later in the build, so this waits for the load to finish)
-  setTimeout(() => { if (typeof SettingsView === 'undefined') return; const sr = SettingsView.render; SettingsView.render = function () { const out = sr.apply(this, arguments);
-    try { const h2 = [...out.querySelectorAll('.sec-h h2')].find(x => x.textContent === 'Writing'), sec = h2 && h2.closest('.sec-h'); let after = sec && sec.nextElementSibling; while (after && !after.classList.contains('grid2')) after = after.nextElementSibling; if (after) after.after(EBAR.settingsUI()); } catch (e) { console.warn('[editor bar]', e); }
-    return out; }; }, 0);
+  // V3.995: its settings are in Settings → Features → Editing bar (20a-features.js), no longer appended to the page
 }

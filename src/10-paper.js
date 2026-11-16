@@ -16,7 +16,11 @@ class Paper {
     this.lens = { x: null, y: null, raf: 0 }; this.ptrs = new Map(); this.mode = null; this.mom = null; this.tween = null; this.space = false;
     this._bind(); this.apply();
   }
-  apply() { const v = this.view; this.world.style.transform = `translate(${v.x}px,${v.y}px) scale(${v.z})`; this._lensKick(); this.o.onView && this.o.onView(v); }
+  apply() { const v = this.view, w = this.world; w.style.transform = `translate(${Math.round(v.x)}px,${Math.round(v.y)}px) scale(${v.z})`;
+    // V3.998 (Gabe: "Zooming in and out of a note should not make the words in a component grainy"): the world is a layer of its own (will-change) only while
+    // it moves, so panning and zooming stay smooth; once it rests it is drawn again at its own zoom — the words sharp at any zoom, not a stretched picture
+    if (!w.classList.contains('moving')) w.classList.add('moving'); clearTimeout(this._still); this._still = setTimeout(() => w.classList.remove('moving'), 160);
+    this._lensKick(); this.o.onView && this.o.onView(v); }
   _lensKick() { const v = this.view; if (this.lens.x == null || RM()) { this.lens.x = v.x; this.lens.y = v.y; return this._paint(); } if (!this.lens.raf) this.lens.raf = requestAnimationFrame(() => this._lensStep()); }
   _lensStep() { const v = this.view, L = this.lens, k = .14, M8 = 8; L.x += (v.x - L.x) * k; L.y += (v.y - L.y) * k; L.x = clamp(L.x, v.x - M8, v.x + M8); L.y = clamp(L.y, v.y - M8, v.y + M8);
     const done = Math.abs(v.x - L.x) < .05 && Math.abs(v.y - L.y) < .05; if (done) { L.x = v.x; L.y = v.y; } this._paint(); L.raf = done ? 0 : requestAnimationFrame(() => this._lensStep()); }

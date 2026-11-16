@@ -8,7 +8,8 @@
 .paper .grid{position:absolute;inset:0;pointer-events:none;
   background-image:linear-gradient(to right,var(--grid-line) 0 1px,transparent 1px),linear-gradient(to bottom,var(--grid-line) 0 1px,transparent 1px);
   background-size:var(--s) var(--s),var(--s) var(--s);background-position:var(--gx) var(--gy),var(--gx) var(--gy)}
-.paper .world{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+.paper .world{position:absolute;left:0;top:0;transform-origin:0 0}
+.paper .world.moving{will-change:transform}   /* V3.998: a layer only while it pans or zooms (10-paper apply); at rest it is drawn at its zoom, so words stay sharp */
 .paper .fade{position:absolute;inset:0;pointer-events:none;z-index:5;background:
   linear-gradient(to right,var(--paper),color-mix(in srgb,var(--paper) 0%,transparent)) left/5% 100% no-repeat,
   linear-gradient(to left,var(--paper),color-mix(in srgb,var(--paper) 0%,transparent)) right/5% 100% no-repeat,
@@ -67,8 +68,7 @@ body.wiring .box .port{border-color:var(--mag)} body.wiring .box.cmp{cursor:cros
 .box .rz:hover{background:linear-gradient(to right,transparent 3px,var(--ink-4) 3px 5px,transparent 5px)}
 .box.ref{border-style:dashed;border-left-style:solid;background:color-mix(in srgb,var(--surface) 82%,var(--paper))}
 .refbody{padding:2px 14px 10px 13px}
-.refbody .origin{font-family:var(--f-m);font-size:10px;color:var(--ink-3);margin:4px 0}
-.refbody .origin a{cursor:pointer;color:var(--ink-2)}
+/* .refbody .origin: where a bridge comes from — V3.994, in 24-kinds.css */
 .refbody .x{font-size:15px;margin:4px 0 6px;line-height:1.55}
 .refbody .res{font-size:12.5px;color:var(--ok);font-family:var(--f-b)}
 .refbody .ed{padding:2px 0}
@@ -153,7 +153,7 @@ svg.wires path.pl{fill:none;stroke:var(--mag);stroke-width:1.4;stroke-dasharray:
 .tcard{padding:10px 12px;cursor:pointer;background:color-mix(in srgb,var(--surface) 75%,var(--paper))}
 .tcard .tn{font-weight:600;font-size:13px;margin-bottom:4px;line-height:1.3}
 .tcard .ts{font-family:var(--f-m);font-size:10px;color:var(--ink-3);margin-bottom:6px}
-.dcard{padding:8px 11px;cursor:pointer;height:64px;overflow:hidden}
+.dcard{padding:8px 11px;cursor:pointer;min-height:64px;overflow:hidden}   /* V3.975: grows to its dots and an experiment's stages (both portfolios flow now) */
 .dcard:hover{border-color:var(--ink-3);transform:translateY(-1px)}
 .dcard .dn{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
 .dcard .ds{font-family:var(--f-m);font-size:10px;color:var(--ink-3)}
@@ -204,7 +204,7 @@ button.pnum.chk{cursor:pointer} button.pnum.chk:hover{background:var(--teal-soft
 .pfoot{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;padding-top:7px;border-top:1px solid var(--rule);font-size:11px;color:var(--ink-3)}
 .regdot{position:absolute;top:-46px;right:-6px;width:13px;height:13px;border-radius:50%;padding:0;border:0;cursor:pointer;background:var(--light);box-shadow:0 0 0 3px color-mix(in srgb,var(--light) 28%,transparent),0 0 12px 2px color-mix(in srgb,var(--light) 60%,transparent);animation:regpulse 2.8s ease-in-out infinite;z-index:3}
 .regdot:hover{animation-play-state:paused;opacity:1;transform:scale(1.15)}
-@keyframes regpulse{0%,100%{opacity:.28;box-shadow:0 0 0 1px color-mix(in srgb,var(--light) 20%,transparent),0 0 2px 0 color-mix(in srgb,var(--light) 30%,transparent)}50%{opacity:1;box-shadow:0 0 0 3px color-mix(in srgb,var(--light) 30%,transparent),0 0 14px 3px color-mix(in srgb,var(--light) 65%,transparent)}}
+@keyframes regpulse{0%,100%{opacity:.3}50%{opacity:1}}   /* V3.965: opacity only — the glow stays as it is */
 @media (prefers-reduced-motion:reduce){.regdot{animation:none;opacity:1}}
 .kpick{border:1px solid color-mix(in srgb,var(--kc) 45%,transparent);color:var(--kc);background:transparent;border-radius:10px;font-size:11px;padding:0 8px;line-height:19px;cursor:pointer}
 .kpick.on{background:var(--kc);color:var(--surface)}

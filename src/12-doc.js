@@ -50,11 +50,24 @@ const DocView = {
     $$(':scope > .nextbtn', this.host).forEach(x => x.remove()); { const nb = CHAIN.button(d, this); if (nb) this.host.append(nb); }
     if (!this.side) App.setTitle(d.title, [typechip(d.type), CHAIN.strip(d), h('span', M.docPath(d).replace(/ › [^›]*$/, '')), h('span', 'edited ' + fmtWhen(d.modified)), this.travel && !this.travel.viewer ? h('span.pill.warn', 'as it stood ' + fmtWhen(this.travel.at)) : null],
       { editable: !this.travel, onEdit: v => { if (v && v !== d.title) { d.title = v; M.touchDoc(d); changed(); } }, more: this.travel ? null : e => this.docMenu(d, e) });
-    $$(':scope > .box, :scope > .wl, :scope > .obsbox', w).forEach(x => x.remove());
+    // V3.980 (Gabe: "changing a thing or two in any note causes whiteboards, PDFs, or HTMLs to refresh/take time to reload"): a page,
+    // a PDF or a whiteboard whose box would be drawn exactly as it is — the same record, the same HTML (shape) — stays on the paper
+    // as it is, loaded; the others are drawn again
+    const kept = new Map(); if (!this.travel) $$(':scope > .box.cmp[data-id]', w).forEach(x => { if (x._shape) kept.set(x.dataset.id, x); });
+    $$(':scope > .box, :scope > .wl, :scope > .obsbox', w).forEach(x => { if (kept.get(x.dataset.id) !== x) x.remove(); });
     const src = this.travel || { doc: d, blocks: M.docBlocks(d.id) };
     w.append(this.headBox(src.doc));
-    const live = src.blocks.filter(b => b.status !== 'superseded' && b.status !== 'removed');
-    for (const b of live) w.append(this.box(b, src.doc, p));
+    const live = src.blocks.filter(b => b.status !== 'superseded' && b.status !== 'removed'), places = [];
+    for (const b of live) {
+      const old = kept.get(b.id), sh = !this.travel && DocView.heavy(b) ? this.shape(b, src.doc, p) : null;
+      if (old && sh && old._b === b && old._shape === sh) {
+        kept.delete(b.id); old.style.left = (b.x || 0) + 'px'; old.style.top = (b.y || 0) + 'px'; old.classList.toggle('sel', this.sel === b.id);
+        const ph = document.createComment(''); w.append(ph); places.push([old, ph]); continue;
+      }
+      const el = this.box(b, src.doc, p); if (sh) { el._shape = sh; el._b = b; } w.append(el);
+    }
+    kept.forEach(x => x.remove());   // drawn again (a PDF's viewer was taken into its new box), or gone from the note
+    places.forEach(([el, ph]) => { if (w.moveBefore) try { w.moveBefore(el, ph); } catch (e) { } ph.remove(); });   // back in its place among the others, still loaded (where the browser can move it so)
     PROTO.obsLayer(this, src.doc);
     w.append(this.synthBox(src.doc, live));
     this.drawWires(); this.renderDock(d); this.renderHint(d, live);
@@ -101,13 +114,26 @@ const DocView = {
       d.citeMode === 'number' && nums.size ? h('div.refs', h('div.lab', 'References'), h('ol', [...nums.keys()].map(id => h('li', LIB.apa(M.lib(id) || { title: 'missing' }))))) : null);
   },
 
+  /** V3.980 — a component that is slow to draw again: a page (an iframe), a PDF, an image panel with a whiteboard, or a copy of one. */
+  heavy(b) {
+    if (!b) return false; if (b.kind === 'html' || b.kind === 'pdf') return true;
+    if (b.kind === 'figure') return !!(b.fig && (b.fig.cells || []).some(c => c && c.board));
+    if (b.kind === 'ref') { const it = b.refItemId && M.item(b.refItemId), s = b.refItemId ? (it && it.figPanel ? M.block(it.originBlockId) : null) : M.block(b.refBlockId); return !!s && s !== b && s.kind !== 'ref' && DocView.heavy(s); }
+    return false;
+  },
+  /** V3.980 — the box as it would be drawn now, as HTML, without its place and its selection: a trial build (DocView.dry: a PDF gives its
+      viewer's signature, not the viewer). Equal to the shape it had when drawn: the box on the paper is still right. */
+  shape(b, d, p) {
+    let el; DocView.dry = true; try { el = this.box(b, d, p); } finally { DocView.dry = false; }
+    el.style.left = el.style.top = ''; el.classList.remove('sel'); return el.outerHTML;
+  },
   /* ---------------- one component box ---------------- */
   box(b, d, p) {
     const ro = !!this.travel, isRef = b.kind === 'ref', isP = PROTO.is(b), pdef = isP && PROTO.defOf(b), pEdit = isP && b.kind === 'protocol' && !ro && PROTO.editableIn(b, d.id), flag = M.flagFor('block', b.id), stamp = b.stamp || {}, s = stamp.sessionId && M.session(stamp.sessionId);
     const kinds = IX.kindsOf(b), accent = kinds[0], W = WIDGETS[b.kind];
     const el = h('div.box.cmp' + (isRef ? '.ref' : '') + (isP ? '.proto' + (b.kind === 'run' ? '.run' : '') + (b.kind === 'protocol' && !b.registered ? '.draft' : '') : '') + (this.sel === b.id ? '.sel' : '') + (b.boundTo ? '.bound' : '') + (W ? '.widget.w-' + b.kind : ''), { 'data-id': b.id, style: { left: (b.x || 0) + 'px', top: (b.y || 0) + 'px', width: (b.w || (isP ? 448 : W ? W.w : 392)) + 'px', '--kc': isP ? 'var(--teal)' : accent ? `var(--k-${accent})` : null } });
     const stepBox = p.steps && !isRef && !isP && !W && !ro ? h('button.step' + (b.step && b.step.checkedAt ? '.done' : ''), { title: TIMER.activeFor(d.id) ? 'Check off — records this step’s time inside the running timer' : 'Check off (start the timer to time steps)', on: { click: e => { e.stopPropagation(); TIMER.checkStep(b.id); } } }, b.step && b.step.checkedAt ? '✓' : '') : null;
-    const num = W ? W.label : isRef ? 'pulled in' : isP ? (b.kind === 'run' ? 'protocol run' : b.registered ? 'protocol' : b.localOnly ? 'protocol · local' : 'protocol · draft') : p.ordered ? `${p.noun} ${M.blockIndex(b)}` : p.noun;
+    const num = W ? W.label : isRef ? (b.refItemId || !b.refBlockId ? 'pulled in' : 'bridge') : isP ? (b.kind === 'run' ? 'protocol run' : b.registered ? 'protocol' : b.localOnly ? 'protocol · local' : 'protocol · draft') : p.ordered ? `${p.noun} ${M.blockIndex(b)}` : p.noun;
     // ▾ left of the title folds the component up to its title (b.collapsed)
     if (b.collapsed) el.classList.add('folded');
     const fold = b.kind === 'ink' ? null : h('button.cfold', { title: b.collapsed ? 'Unfold' : 'Fold it up — only its title shows', disabled: ro, on: { click: e => { e.stopPropagation(); b.collapsed = !b.collapsed || undefined; DB.put('blocks', b); changed(); } } }, b.collapsed ? '▸' : '▾');
@@ -123,7 +149,7 @@ const DocView = {
     if (isP) el.append(PROTO.body(b, d, this, ro));
     else if (W) el.append(W.body(b, d, this, ro));
     else if (isRef) el.append(this.refCard(b, d));
-    else { const ed = h('div.ed', { 'data-ph': `Write the ${p.noun.toLowerCase()}…` }); if (ro) { ED.render(ed, b, d); ed.contentEditable = 'false'; } else ED.attach(ed, b); el.append(ed); }
+    else { const ed = h('div.ed', { 'data-ph': `Write the ${p.noun.toLowerCase()}…`, 'data-own': b.id }); if (ro) { ED.render(ed, b, d); ed.contentEditable = 'false'; } else ED.attach(ed, b); el.append(ed); }
     if ((b.fields || []).length) el.append(h('div.fields', b.fields.map(f => h('div.fr', h('span', f.key), h('b', f.value)))));
     el.append(this.chipsFor(b, d));
     const anc = DocView.ancestors(b);
@@ -149,20 +175,35 @@ const DocView = {
     for (const w of wires) { const out = w.from === b.id, oid = out ? w.to : w.from, other = M.end(oid); if (!other || other.docId === b.docId) continue;
       const go = other.block ? oid : REGION.blocksOf(other.region)[0];   // a region in another note: open it at its first component
       const rel = REL[w.rel] || REL.related; chips.push(h('button.wchip.cross', { title: M.docPath(M.doc(other.docId)) + ' · Alt+click: open beside', on: { click: e => go && App.jump(go, e) } }, (w.directed ? (out ? '→ ' : '← ') : '↔ ') + (out ? rel.label : rel.inv) + ' · ⇱ ' + snippet(M.endName(oid), 28))); }
-    const refs = [...(IX.refsOfBlock.get(b.id) || []), ...IX.itemsOf(b.id).flatMap(i => IX.refsOfItem.get(i.id) || [])].map(M.block).filter(x => x && x.docId !== b.docId && x.status !== 'removed');
-    if (refs.length) chips.push(h('button.wchip.teal', { on: { click: e => metaPop(e.clientX, e.clientY + 8, 'Appears in', [...new Set(refs.map(r => r.docId))].map(id => ({ label: M.doc(id).title, sub: M.docPath(M.doc(id)), date: M.doc(id).modified, note: M.doc(id).title, run: ev => App.jump(refs.find(r => r.docId === id).id, ev) }))) } }, `⇲ in ${plural(new Set(refs.map(r => r.docId)).size, 'other note')}`));
+    // V3.981: a component bridged elsewhere shows it by its underline or its "bridged" tag (13zzu); this chip is for its structures pulled in elsewhere
+    const refs = IX.itemsOf(b.id).flatMap(i => IX.refsOfItem.get(i.id) || []).map(M.block).filter(x => x && x.docId !== b.docId && x.status !== 'removed');
+    if (refs.length) chips.push(h('button.wchip.teal', { on: { click: e => metaPop(e.clientX, e.clientY + 8, 'Appears in', [...new Set(refs.map(r => r.docId))].map(id => ({ label: M.doc(id).title, sub: M.docPath(M.doc(id)), date: M.doc(id).modified, note: M.doc(id).title, run: ev => { BWAY.arm(b.docId, id, 'r'); App.jump(refs.find(r => r.docId === id).id, ev); } }))) } }, `⇲ in ${plural(new Set(refs.map(r => r.docId)).size, 'other note')}`));
     const bl = IX.backlinks(b.id); if (bl.length) chips.push(h('button.wchip', { on: { click: e => metaPop(e.clientX, e.clientY + 8, 'Linked from', bl.filter(x => x.blockId && M.block(x.blockId)).map(x => ({ label: M.blockName(M.block(x.blockId)), sub: M.docPath(M.doc(M.block(x.blockId).docId)), date: M.block(x.blockId).modified, note: (M.doc(M.block(x.blockId).docId) || {}).title, run: ev => App.jump(x.blockId, ev) }))) } }, `↩ linked from ${bl.length}`));
     for (const it of IX.itemsOf(b.id).filter(i => i.kind === 'barrier')) { const st = IX.status(it); chips.push(h('span.pill' + (st === 'open' ? '.bad' : st === 'resolved' ? '.ok' : ''), 'barrier ' + st)); }
     if (b.anchor && b.anchor.source) chips.push(h('button.dschip.pdf', { title: 'Open the paper at this highlight', on: { click: e => { e.stopPropagation(); App.go('#/read/' + b.anchor.source + '/' + b.anchor.page); } } }, '📄 p. ' + b.anchor.page + ' ↗'));
     chips.push(...BINDS.chips(b), ...DAY.chips(b));
     return h('div.chips', chips);
   },
+  /** V3.994: where a bridge (or a pulled-in structure) comes from — a band at the top of its card instead of small dark text (Gabe: "Bridges should show their provenance more clearly"):
+   *  what it is (what: 'bridge' | 'passage' | 'pulled' | 'widget'), its note (click: go to the component there; Alt+click: beside), the component, the project and the day; ↗ opens it beside. Used by 13zzt and 13zx too. */
+  origin(d, ob, what, extra) {
+    const od = ob && M.doc(ob.docId), K = { bridge: '⇄ Bridged from', passage: '⇄ Passage from', pulled: '⇲ Pulled from', widget: '⇄ Bridged from' }[what] || '⇄ From';
+    if (!ob || !od) return h('div.origin.or-' + what + '.or-gone', h('div.or-top', h('span.or-k', K), h('span.or-note', 'a note that is no longer here')));
+    const cross = () => { try { if (d && d.id) BWAY.arm(d.id, ob.docId, 'l'); } catch (e) { } };
+    const path = M.docPath(od).split(' › ').slice(0, -1).join(' › ');
+    return h('div.origin.or-' + what,
+      h('div.or-top', h('span.or-k', K),
+        h('a.or-note', { title: M.docPath(od) + ' — click: go to it · Alt+click: open it beside', on: { click: e => { e.stopPropagation(); cross(); App.jump(ob.id, e); } } }, od.title || 'Untitled'),
+        h('span.or-cmp', M.blockName(ob)),
+        h('button.or-go', { type: 'button', title: 'Open “' + snippet(od.title || 'Untitled', 40) + '” beside this note', on: { click: e => { e.stopPropagation(); cross(); App.openSide(ob.id, e.currentTarget, false); } } }, '↗')),
+      h('div.or-path', [path, fmtDay(ob.created), extra].filter(Boolean).join(' · ')));
+  },
   refCard(b, d) {
-    const it = b.refItemId && M.item(b.refItemId), ob = M.block(b.refBlockId), od = ob && M.doc(ob.docId);
-    const origin = h('div.origin', 'from ', h('a', { title: 'Alt+click: open beside', on: { click: e => ob && App.jump(ob.id, e) } }, od ? M.docPath(od) : 'missing'), ob ? ' › ' + M.blockName(ob) : '', ' · ', ob ? fmtDay(ob.created) : '');
+    const it = b.refItemId && M.item(b.refItemId), ob = M.block(b.refBlockId);
+    const origin = this.origin(d, ob, it ? 'pulled' : 'bridge');
     if (it) {
       const st = IX.status(it), res = (IX.resolutions.get(it.id) || []).map(M.item).filter(Boolean);
-      return h('div.refbody', { style: { '--kc': `var(--k-${it.kind})` } }, h('div.row', kchip(it.kind), st ? h('span.pill' + (st === 'open' ? '.bad' : st === 'resolved' ? '.ok' : ''), st) : null), origin,
+      return h('div.refbody', { style: { '--kc': `var(--k-${it.kind})` } }, origin, h('div.row', kchip(it.kind), st ? h('span.pill' + (st === 'open' ? '.bad' : st === 'resolved' ? '.ok' : ''), st) : null),
         h('div.x.serif', h('span.st.st-' + it.kind + (st === 'closed' ? '.closed' : ''), it.text)),
         res.length ? h('div.res', res.map(r => h('div', '✓ ', snippet(r.text, 110), h('span.muted.mono', '  — ' + (M.doc(r.originDocId) || {}).title)))) : null,
         this.travel ? null : h('div.row', { style: { marginTop: '6px', gap: '6px' } },
@@ -170,7 +211,7 @@ const DocView = {
           it.kind === 'barrier' && st === 'resolved' ? h('button.btn.xs', { on: { click: () => { M.closeItem(it); toast('Closed — not offered for pulling any more; still searchable here'); } } }, 'Close barrier') : null,
           st === 'closed' ? h('span.tiny.muted', 'closed — still searchable here, no longer offered for pulling') : null));
     }
-    if (ob) { const pv = h('div.ed'); ED.render(pv, ob); pv.contentEditable = 'false'; return h('div.refbody', h('div.row', h('span.pill', 'component'), ob.label ? h('b', { style: { fontSize: '12.5px' } }, ob.label) : null), origin, pv); }
+    if (ob) { const pv = h('div.ed'); ED.render(pv, ob); pv.contentEditable = 'false'; return h('div.refbody', origin, pv); }   // V3.994: the band names the component (the "component" pill and label went)
     return h('div.refbody', 'Missing reference');
   },
   async resolveHere(refBlock, barrier) {
@@ -252,12 +293,12 @@ const DocView = {
       const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); document.body.classList.remove('resizing'); b.w = Math.round(b.w / 14) * 14; box.style.width = b.w + 'px'; DB.put('blocks', b); DB.beginGroup(); this.drawWires(); };
       addEventListener('pointermove', mv); addEventListener('pointerup', up); return; }
     if (e.target.closest('.ed,input,textarea,select,button,a,label,.chips,.ghosts,.refs,.tags,.ptext.edit,.obsn,.itdot,.wplate,.wlegend,.fg-cell')) { if (id[0] !== '_') this.select(id, true); return; }
-    // drag the box by its frame or header
+    // drag the box by its frame or header (V3.992: with Shift held, a grid cell at a time)
     e.preventDefault(); if (id[0] !== '_') this.select(id, true);
     const d = M.doc(this.docId), rec = id === '_head' ? d.layout.head : id === '_synth' ? (d.layout.synth = d.layout.synth || { x: box.offsetLeft, y: box.offsetTop }) : M.block(id);
     const sx = e.clientX, sy = e.clientY, ox = rec.x || 0, oy = rec.y || 0; let moved = false, shift = { x: 0, y: 0 };
     const mv = ev => { const dx = (ev.clientX - sx) / P.view.z + shift.x, dy = (ev.clientY - sy) / P.view.z + shift.y; if (!moved && Math.abs(dx) + Math.abs(dy) < 3) return; if (!moved) { moved = true; box.classList.add('dragging'); hideHover(); }
-      rec.x = ox + dx; rec.y = oy + dy; box.style.left = rec.x + 'px'; box.style.top = rec.y + 'px'; this.drawWires(); P.edgePan(ev, (ddx, ddy) => { shift.x -= ddx / P.view.z; shift.y -= ddy / P.view.z; mv(ev); }); };
+      const g = ev.shiftKey; rec.x = g ? Math.round((ox + dx) / 14) * 14 : ox + dx; rec.y = g ? Math.round((oy + dy) / 14) * 14 : oy + dy; box.style.left = rec.x + 'px'; box.style.top = rec.y + 'px'; this.drawWires(); P.edgePan(ev, (ddx, ddy) => { shift.x -= ddx / P.view.z; shift.y -= ddy / P.view.z; mv(ev); }); };
     const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); P.stopEdgePan(); if (!moved) return; box.classList.remove('dragging');
       const nx = Math.round(rec.x / 14) * 14, ny = Math.round(rec.y / 14) * 14, ddx = rec.x - nx, ddy = rec.y - ny; rec.x = nx; rec.y = ny; box.style.left = nx + 'px'; box.style.top = ny + 'px';
       box.animate && !RM() && box.animate([{ transform: `translate(${ddx}px,${ddy}px)` }, { transform: 'none' }], { duration: 240, easing: 'cubic-bezier(.34,1.4,.64,1)' });
@@ -306,22 +347,44 @@ const DocView = {
     if (!quiet) this.pendingFocus = { focus: nb.id, pos: 0 }; return nb;
   },
   /** Boxes placed automatically are nudged apart once their real heights are known. */
+  /** V3.980 — measured as drawn: in a big note the boxes far off screen are skipped (content-visibility) and report a placeholder
+      height, so "boxes never overlap" pushed boxes apart that did not overlap (and saved it). They are measured whole. */
   settle() {
+    const host = this.host, cv = !!(host && host.classList.contains('big')); if (cv) host.classList.add('cv-measure');
+    try { return this.settleNow(); } finally { if (cv) host.classList.remove('cv-measure'); }
+  },
+  settleNow() {
     const d = M.doc(this.docId); if (!d || this.travel || !this.paper) return false;
     // ink floats where it was written; so does a box put on top of another on purpose (`float` = that spot: a clip on its paper,
     // 13zza) until it is moved
     const floats = b => b.float && b.float.x === b.x && b.float.y === b.y;
     const live = M.liveBlocks(d.id).filter(b => b.x != null && b.kind !== 'ink' && !floats(b)), auto = live.filter(b => b.auto);
     const head = this.rectOf('_head'); let moved = false;
+    const put = b => { DB.put('blocks', b); const el = $(`.box[data-id="${b.id}"]`, this.paper.world); if (el) el.style.top = b.y + 'px'; };
+    // V3.996 — gravity (Gabe: "collapsing anything gravity pulls back any previously displaced by the same amount from the expansion of it"). A box pushed
+    // down here keeps it in REFLOW's list (13vb, b.shift): { by: the pusher, dy, at: where it landed, push: true, h: the pusher's height then }. When the
+    // pusher is shorter now — emptied, its earlier versions closed, hidden in a folded region, gone — the box comes back up by as much (never more than it
+    // was pushed), and what it pushed comes with it. A fold gives its pushes back itself (REFLOW, measured before and after); a box moved by hand since stays.
+    const grav = typeof FEAT === 'undefined' || FEAT.tune('writing', 'gravity') !== false, kids = new Map(), RP = typeof REFLOW !== 'undefined' ? REFLOW.pending : null;
+    if (RP && RP.pane === this && REGION.isRg(RP.id)) return false;   // a region folding or unfolding: REFLOW moves things first (to the side), then settles
+    const lastPush = b => { const S = Array.isArray(b.shift) ? b.shift : [], e = S[S.length - 1]; return e && e.push ? e : null; };
+    const drop = (b, e) => { b.shift = b.shift.filter(x => x !== e); if (!b.shift.length) delete b.shift; };
+    live.forEach(b => { const e = lastPush(b); if (!e) return; if (!grav || !e.at || e.at.x !== b.x || e.at.y !== b.y) { drop(b, e); DB.put('blocks', b); return; } if (!kids.has(e.by)) kids.set(e.by, []); kids.get(e.by).push(b); });
+    const back = (x, e, m) => { x.y -= m; e.dy -= m; e.at = { x: x.x, y: x.y }; if (e.dy <= 0) drop(x, e); moved = true; put(x); };
+    const lift = (id, k) => (kids.get(id) || []).forEach(x => { const e = lastPush(x); if (!e || e.by !== id) return; const m = Math.min(k, e.dy); if (m <= 0) return; back(x, e, m); lift(x.id, m); });
+    kids.forEach((xs, id) => { if (RP && RP.id === id) return; const r = this.rectOf(id), hNow = r ? r.h : 0;
+      xs.forEach(x => { const e = lastPush(x); if (!e || e.by !== id || e.h == null) return; const s = e.h - hNow; if (s < 7) return;
+        const m = Math.min(e.dy, Math.round(s / 14) * 14); e.h = hNow; if (m <= 0) return; back(x, e, m); lift(x.id, m); }); });
     // boxes never overlap: a box that grew (or was placed automatically) pushes the ones below it down
     const R = live.map(b => ({ b, r: this.rectOf(b.id) })).filter(x => x.r).sort((a, c) => a.b.y - c.b.y || d.blockIds.indexOf(a.b.id) - d.blockIds.indexOf(c.b.id));
     const placed = head ? [{ x: head.x, w: head.w, bottom: head.y + head.h }] : [];
     for (const { b, r } of R) {
       const hz = placed.filter(p => p.x < b.x + r.w && p.x + p.w > b.x); let mv = false;
       if (b.auto) { if (hz.length) { const ny = Math.ceil((Math.max(...hz.map(p => p.bottom)) + 28) / 14) * 14; if (ny !== b.y) { b.y = ny; mv = true; } } }
-      else { const over = hz.filter(p => b.y < p.bottom + 14 && b.y + r.h > (p.top == null ? -1e9 : p.top)); if (over.length) { const ny = Math.ceil((Math.max(...over.map(p => p.bottom)) + 14) / 14) * 14; if (ny > b.y) { b.y = ny; mv = true; } } }
-      if (mv) { moved = true; DB.put('blocks', b); const el = $(`.box[data-id="${b.id}"]`, this.paper.world); if (el) el.style.top = b.y + 'px'; }
-      placed.push({ x: b.x, w: r.w, top: b.y, bottom: b.y + r.h });
+      else { const over = hz.filter(p => b.y < p.bottom + 14 && b.y + r.h > (p.top == null ? -1e9 : p.top)); if (over.length) { const top = over.reduce((a, p) => p.bottom > a.bottom ? p : a), ny = Math.ceil((top.bottom + 14) / 14) * 14;
+        if (ny > b.y) { if (grav && top.id) { const e = lastPush(b), dy = ny - b.y; if (e && e.by === top.id) { e.dy += dy; e.at = { x: b.x, y: ny }; e.h = top.h; } else b.shift = [...(Array.isArray(b.shift) ? b.shift : []), { by: top.id, dx: 0, dy, at: { x: b.x, y: ny }, push: true, h: top.h }]; } b.y = ny; mv = true; } } }
+      if (mv) { moved = true; put(b); }
+      placed.push({ id: b.id, x: b.x, w: r.w, top: b.y, bottom: b.y + r.h, h: r.h });
     }
     auto.forEach(b => { b.auto = false; DB.put('blocks', b); }); if (moved || auto.length) DB.beginGroup();
     const sy = $('.box.synth', this.paper.world); if (sy && !d.layout.synth) { const bb = this.bboxOf(live); if (bb) sy.style.left = (bb.x1 + 80) + 'px'; }

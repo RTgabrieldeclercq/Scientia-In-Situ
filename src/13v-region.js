@@ -149,7 +149,7 @@ const REGION = {
       { label: 'Colour', sub: h('span.rg-sw', REGION.COLORS.map(c => h('button', { style: { background: c }, title: c, on: { click: ev => { ev.stopPropagation(); closePop(); r.color = c; REGION.save(d); changed(); } } }))), run: () => { } },
       { label: r.collapsed ? 'Unfold' : 'Fold it up', sub: r.collapsed ? null : 'Only its title shows; its connections end on it', run: () => REGION.fold(pane, d, r) },
       { label: 'Connect to a component in another note…', run: () => pane.crossWire(r.id) },
-      { label: 'Embed in another note…', sub: 'Its components appear there, the origin kept; its regions are re-made around them', run: () => REGION.copyDialog(d, r) },
+      { label: 'Bridge to another note…', sub: 'Its components are bridged there, the origin kept; its regions are re-made around them', run: () => REGION.copyDialog(d, r) },
       'sep', { label: 'Delete region', danger: true, sub: REGION.depth(d, r) ? 'Its components stay, in the region around it' : 'The components stay where they are', run: () => REGION.remove(d, r.id) }]);
   },
   /** Drag the region by its title: every member moves together, inner regions too. */
@@ -158,7 +158,8 @@ const REGION = {
     const P = pane.paper, sx = e.clientX, sy = e.clientY, start = REGION.blocksOf(r, d).map(M.block).filter(Boolean).map(b => ({ b, x: b.x || 0, y: b.y || 0, el: $(`:scope > .box[data-id="${b.id}"]`, P.world) }));
     const folds = [r, ...REGION.subRegions(d, r)].filter(x => x.at).map(x => ({ r: x, x: x.at.x, y: x.at.y }));
     let moved = false;
-    const mv = ev => { const dx = (ev.clientX - sx) / P.view.z, dy = (ev.clientY - sy) / P.view.z; if (!moved && Math.abs(dx) + Math.abs(dy) < 3) return; moved = true;
+    const mv = ev => { let dx = (ev.clientX - sx) / P.view.z, dy = (ev.clientY - sy) / P.view.z; if (!moved && Math.abs(dx) + Math.abs(dy) < 3) return; moved = true;
+      if (ev.shiftKey) { dx = Math.round(dx / 14) * 14; dy = Math.round(dy / 14) * 14; }   // V3.992: Shift moves it a grid cell at a time
       start.forEach(s => { s.b.x = s.x + dx; s.b.y = s.y + dy; if (s.el) { s.el.style.left = s.b.x + 'px'; s.el.style.top = s.b.y + 'px'; } }); folds.forEach(s => { s.r.at = { x: s.x + dx, y: s.y + dy }; }); pane.drawWires(); };
     const up = ev => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); if (!moved) return;
       if (REGION._stay) { REGION._stay = false; start.forEach(s => { s.b.x = s.x; s.b.y = s.y; if (s.el) { s.el.style.left = s.x + 'px'; s.el.style.top = s.y + 'px'; } }); folds.forEach(s => { s.r.at = { x: s.x, y: s.y }; }); pane.drawWires(); return; }   // embedded elsewhere (13zb): it stays here
@@ -211,7 +212,7 @@ const REGION = {
         removeEventListener('pointermove', mv); removeEventListener('pointerup', up); P.stopEdgePan && P.stopEdgePan(); REGION.rdown = false; document.body.classList.remove('rg-drawing');
         $$('.rg-pick', P.world).forEach(x => x.classList.remove('rg-pick'));
         if (band) { band.remove(); REGION.noMenu = Date.now(); const ids = [...pickedR.map(r => r.id), ...picked.map(x => x.dataset.id)];
-          if (ids.length) { const r = REGION.create(M.doc(pane.docId), ids); setTimeout(() => { const n = $(`.region[data-rg="${r.id}"] .rg-name`, P.world); n && REGION.rename(pane, M.doc(pane.docId), r, n); }, 60); }
+          if (ids.length) { const r = REGION.create(M.doc(pane.docId), ids); if (!r) return; setTimeout(() => { const n = $(`.region[data-rg="${r.id}"] .rg-name`, P.world); n && REGION.rename(pane, M.doc(pane.docId), r, n); }, 60); }
           else toast('Draw around at least one component'); return; }
         if (REGION.pending) { const [ce, cp] = REGION.pending; REGION.pending = null; REGION._menu.call(pane, ce, cp); }
       };
@@ -223,7 +224,7 @@ const REGION = {
   /** Kinds copied (their files and data shared); text components and the rest are embedded live, the origin kept. */
   CLONE: ['ink', 'figure', 'html', 'pdf', 'deck', 'table', 'plot', 'eq', 'calc', 'plate', 'view'],
   copyDialog(d, r) {
-    const m = modal({ title: 'Embed “' + snippet(r.name, 40) + '” in another note', wide: true, actions: [{ label: 'Cancel' }], body: optionPicker({ placeholder: 'Search notes…', sort: 'region-copy',
+    const m = modal({ title: 'Bridge “' + snippet(r.name, 40) + '” to another note', wide: true, actions: [{ label: 'Cancel' }], body: optionPicker({ placeholder: 'Search notes…', sort: 'region-copy',
       items: q => DB.where('documents', x => x.id !== d.id && !x.deleted && (!q || (x.title + ' ' + M.docPath(x)).toLowerCase().includes(q))).sort((x, y) => (y.modified || '').localeCompare(x.modified || '')),
       render: x => h('div', typechip(x.type), ' ', x.title, h('span.s', M.docPath(x))), onPick: x => { m.close(); REGION.copyTo(d, r, x.id); } }) });
   },

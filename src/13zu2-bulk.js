@@ -2,7 +2,7 @@
    13zu2 · The selection does more (V3.950, Gabe's SiS Shaping, Phase E).
    • Bulk actions on a lasso or Ctrl+click selection, in its bar: Region
      around them, Move to another note… (a stub stays behind saying where
-     they went), Pull into another note…, Tidy (align left · stack · grid),
+     they went), Bridge to another note… (V3.981, 13zzu; was Pull into…), Tidy (align left · stack · grid),
      Connect all to…, Make them all a…, Fold / Unfold.
    • Connect all from one socket: dragging a wire from any selected
      component draws one from every selected component; one relation,
@@ -34,7 +34,7 @@ const BULK = {
   ids: () => BULK.blocks().map(b => b.id),
   doc: () => { const p = BULK.pane(); return p && M.doc(p.docId); },
   keep() { const sel = INK.sel; if (sel && typeof LASSO2 !== 'undefined' && LASSO2.keep) LASSO2.keep(sel); },
-  region(name) { const d = BULK.doc(), ids = BULK.ids().filter(id => !REGION.isRg(id)); if (!d || !ids.length) return; const r = REGION.create(d, ids); if (name) r.name = name; REGION.save(d); changed(); toast('Region ' + r.name + ' · name it from its header'); },
+  region(name) { const d = BULK.doc(), ids = BULK.ids().filter(id => !REGION.isRg(id)); if (!d || !ids.length) return; const r = REGION.create(d, ids); if (!r) return; if (name) r.name = name; REGION.save(d); changed(); toast('Region ' + r.name + ' · name it from its header'); },
   async moveTo() { const ids = BULK.ids(); if (!ids.length) return; const dest = await CMD.pick({ name: 'note', kind: 'note', ask: 'Move ' + plural(ids.length, 'component') + ' to…' }, '', CMD.ctx()); if (dest) BULK.move(ids, dest); },
   /** Move, then a stub where they were: "Moved to <note>", linked to the first of them. */
   async move(ids, dest) {
@@ -45,9 +45,10 @@ const BULK = {
     const text = 'Moved to ' + dest.title, s = M.addBlock(src.id, null, { x: at.x, y: at.y, w: 300, label: '' });
     M.saveBlockBody(s, { text, marks: [{ id: uid('m'), type: 'link', from: 9, to: text.length, ref: first.id }] }); IX.rebuild(); changed();
   },
-  async pullTo() { const ids = BULK.ids().filter(id => !REGION.isRg(id)); if (!ids.length) return; const dest = await CMD.pick({ name: 'note', kind: 'note', ask: 'Pull ' + plural(ids.length, 'component') + ' into…' }, '', CMD.ctx()); if (!dest) return;
-    const d = BULK.doc(); if (dest.id === (d && d.id)) return toast('They are in this note already'); const p = MOVE.spot(dest); DB.beginGroup('pull');
-    ids.forEach((id, i) => M.addBlock(dest.id, null, { kind: 'ref', refItemId: null, refBlockId: id, x: p.x, y: p.y + i * 150, w: 392 })); changed(); toast(plural(ids.length, 'component') + ' pulled into ' + dest.title); },
+  /** V3.981 — bridges to another note: one note, one reason (the caption under each), a bridge each (13zzu). */
+  async pullTo() { const ids = BULK.ids().filter(id => !REGION.isRg(id)); if (!ids.length) return; const d = BULK.doc(); const dest = await BRIDGE.pickNote('Bridge ' + plural(ids.length, 'component') + ' to…', d && d.id); if (!dest) return;
+    const why = await BRIDGE.ask(dest, ids.length > 1 ? 'them' : 'it'); if (why == null) return; const p = MOVE.spot(dest); DB.beginGroup('bridge'); let n = 0;
+    ids.forEach(id => { if (BRIDGE.make(M.block(id), dest, { why, at: { x: p.x, y: p.y + n * 150 }, quiet: true })) n++; }); IX.rebuild(); changed(); if (n) BRIDGE.said(dest, n); else toast('Already bridged to “' + snippet(dest.title || 'that note', 40) + '”'); },
   tidy(mode) {
     const pane = BULK.pane(), B = BULK.blocks().filter(b => b.kind !== 'ink' && b.x != null); if (!pane || B.length < 2) return; DB.beginGroup('tidy');
     const x0 = Math.min(...B.map(b => b.x)), y0 = Math.min(...B.map(b => b.y)), W = Math.max(...B.map(b => b.w || 392)), order = B.slice().sort((a, b) => a.y - b.y || a.x - b.x);
@@ -101,7 +102,7 @@ const CLIPX = {
     const at = CLIPX.spot(pane); let j = null; try { j = raw && JSON.parse(raw); } catch (x) { }
     const C = CLIPX.copied(j, text); if (C) return CLIPX.pull(pane, at, C, Date.now() - CLIPX.shiftAt < 1500);
     if (useFiles) return CLIPX.addFiles(d, at, files);
-    if (j && j.kind === 'text' && M.block(j.blockId)) { const src = M.block(j.blockId); if (src.docId !== d.id && src.status === 'live') { M.addBlock(d.id, null, { kind: 'ref', refItemId: null, refBlockId: src.id, x: at.x, y: at.y, w: 392 }); changed(); toast('Pulled in from ' + ((M.doc(src.docId) || {}).title || 'its note')); return; } return CLIPX.component(d, at, j.text, src, j); }
+    if (j && j.kind === 'text' && M.block(j.blockId)) { const src = M.block(j.blockId); if (src.docId !== d.id && src.status === 'live' && !(Date.now() - CLIPX.shiftAt < 1500)) return EXCERPT.pull(d, at, src, j); return CLIPX.component(d, at, j.text, src, j); }   // V3.972: just the words copied (13zzt); Ctrl+Shift+V a copy
     const L = CLIPX.last; if (L && L.kind === 'quote' && text && CLIPX.norm(L.text) === CLIPX.norm(text) && M.block(L.sel.src)) return CLIPX.quote(d, at, L.sel);
     if (text) CLIPX.component(d, at, text.replace(/\r/g, ''), null, null);
   },
@@ -123,22 +124,24 @@ const CLIPX = {
     (C.refs || []).forEach(r => { const src = M.block(r.id), to = src && (src.kind === 'ref' ? M.block(src.refBlockId) : src); if (!to || to.status !== 'live' || src.status !== 'live') return; if (to.docId === d.id) { here++; return; }
       M.addBlock(d.id, null, { kind: 'ref', refItemId: src.kind === 'ref' ? src.refItemId || null : null, refBlockId: to.id, x: Math.round((r.x + dx) / 14) * 14, y: Math.round((r.y + dy) / 14) * 14, w: 392 }); n++; });
     M.touchDoc(d); IX.rebuild(); changed();
-    toast(n ? `Pulled in ${plural(n, 'component')} from “${(from && from.title) || 'their note'}”` + (here ? ` (${here} already here)` : '') + ' · Ctrl+Shift+V pastes copies instead' : here ? 'They are in this note already' : C.strokes.length ? 'Pasted the strokes' : 'Nothing to pull in: they were removed');
+    toast(n ? `Bridged ${plural(n, 'component')} from “${(from && from.title) || 'their note'}”` + (here ? ` (${here} already here)` : '') + ' — say why in the caption under each · Ctrl+Shift+V pastes copies instead' : here ? 'They are in this note already' : C.strokes.length ? 'Pasted the strokes' : 'Nothing to bridge: they were removed', 4500);
   },
   /** Files on the clipboard: a screenshot, an image copied from a page, files copied in the Explorer or the Finder. */
   files(cd) { let F = []; try { F = [...(cd.items || [])].filter(i => i.kind === 'file').map(i => i.getAsFile()).filter(Boolean); } catch (x) { } if (!F.length) try { F = [...(cd.files || [])]; } catch (x) { } return F; },
   sort(f) { const n = String(f.name || '').toLowerCase(), t = String(f.type || '').toLowerCase(), x = (n.match(/\.([a-z0-9]+)$/) || [])[1] || '';
+    if (x === 'mhtml' || x === 'mht' || t === 'multipart/related' || t === 'message/rfc822' && /\.mht/.test(n)) return 'mhtml';   // V3.977: a page saved in the browser (13zzs)
     if (t === 'application/pdf' || x === 'pdf') return 'pdf'; if (t === 'text/html' || x === 'html' || x === 'htm') return 'html';
     if (t.startsWith('image/') || t.startsWith('video/') || /^(png|jpe?g|gif|webp|bmp|avif|mp4|webm|mov|m4v)$/.test(x)) return 'image';
     if (/^(xlsx|xlsm|xls|ods|csv|tsv)$/.test(x) || /spreadsheet|ms-excel|text\/csv|tab-separated/.test(t)) return 'sheet'; if (/^(pptx|ppt|pptm|ppsx|odp)$/.test(x)) return 'deck'; return null; },
   /** Each file as what it is, made by its own + Insert code: images (and videos) together in one image panel, a PDF, an HTML page, a table, slides. */
   addFiles(d, at, files) {
-    const by = { image: [], pdf: [], html: [], sheet: [], deck: [] }, skip = []; files.forEach(f => { const k = CLIPX.sort(f); if (k) by[k].push(f); else skip.push(f.name || 'a file'); });
-    if (skip.length) toast('Can’t paste ' + skip.join(', ') + ': pictures, PDFs, HTML pages, spreadsheets and slides can be pasted', 4500);
+    const by = { image: [], pdf: [], html: [], sheet: [], deck: [], mhtml: [] }, skip = []; files.forEach(f => { const k = CLIPX.sort(f); if (k) by[k].push(f); else skip.push(f.name || 'a file'); });
+    if (skip.length) toast('Can’t add ' + skip.join(', ') + ': pictures, PDFs, HTML pages, pages saved in the browser, spreadsheets and slides can be', 4500);
     let p = { x: at.x, y: at.y }; const next = () => { const q = p; p = { x: p.x + 42, y: p.y + 42 }; return q; }; DB.beginGroup('paste');
     if (by.image.length) { const n = by.image.length, cols = n <= 4 ? n : 3, b = FIG.create(d, next(), Math.ceil(n / cols), cols, by.image.map(CLIPX.named)); b.fig.letters = n > 1; DB.put('blocks', b); toast(n > 1 ? plural(n, 'picture') + ' pasted as one image panel' : 'Pasted as an image panel'); }
     by.pdf.forEach(f => CLIPX.through([f], () => PDFW.insert(d, next()))); by.html.forEach(f => CLIPX.through([f], () => EMBED.insert(d, next())));
     by.sheet.forEach(f => CLIPX.through([f], () => TABLE.insert(d, next()))); by.deck.forEach(f => CLIPX.through([f], () => DECK.insert(d, next())));
+    by.mhtml.forEach(f => WEBCAP.fromMhtml(d, next(), f));
   },
   /** A screenshot is "image.png": it gets the day and time instead. */
   named(f) { if (f.name && !/^image\.(png|jpe?g|gif|webp|bmp)$/i.test(f.name)) return f; const ext = String((f.type || 'image/png').split('/')[1] || 'png').replace('jpeg', 'jpg').replace(/\W.*$/, ''), now = new Date();
@@ -146,7 +149,13 @@ const CLIPX = {
   /** An insert run with these files standing in for the file dialog it opens (PLATE.pickFiles), so a pasted file is made exactly as an inserted one. */
   through(files, run) { const pf = PLATE.pickFiles, stand = (cb, multiple) => { PLATE.pickFiles = pf; cb(multiple === false ? files.slice(0, 1) : files); }; PLATE.pickFiles = stand;
     try { return run(); } finally { setTimeout(() => { if (PLATE.pickFiles === stand) PLATE.pickFiles = pf; }, 1500); } },
-  spot(pane) { const A = CLIPX.at; if (A && A.pane === pane && Date.now() - A.t < 60000) return { x: Math.round(A.x / 14) * 14, y: Math.round(A.y / 14) * 14 }; const r = pane.paper.rect(), c = pane.paper.toWorld(r.left + r.width / 2, r.top + r.height / 2); return { x: Math.round((c.x - 196) / 14) * 14, y: Math.round((c.y - 60) / 14) * 14 }; },
+  /** V3.996 (Gabe: "When you copy and paste a component, insert a PDF or HTML, it pastes in the center of where you are in the canvas, superposing any
+      components that are there"): the centre of the view — and what lands there floats (b.float, 12 settle), on top of what is there until it is moved.
+      Settings → Features → Writing in components: or where the pointer was, making room, as before. */
+  centre: () => typeof FEAT === 'undefined' || FEAT.tune('writing', 'land') !== 'room',
+  landing: null, _made: null,
+  float(ids) { ids.forEach(id => { const b = M.block(id); if (b && b.x != null && b.kind !== 'ink') { b.float = { x: b.x, y: b.y }; DB.put('blocks', b); } }); },
+  spot(pane) { const A = CLIPX.at; if (!CLIPX.centre() && A && A.pane === pane && Date.now() - A.t < 60000) return { x: Math.round(A.x / 14) * 14, y: Math.round(A.y / 14) * 14 }; const r = pane.paper.rect(), c = pane.paper.toWorld(r.left + r.width / 2, r.top + r.height / 2); return { x: Math.round((c.x - 196) / 14) * 14, y: Math.round((c.y - 60) / 14) * 14 }; },
   /** A new component; from a component of this note, its structures, terms and styles over the copied range come along. */
   component(d, at, text, src, j) {
     const b = M.addBlock(d.id, null, { x: at.x, y: at.y, w: 392, label: '' }); let marks = [];
@@ -164,7 +173,7 @@ const CLIPX = {
   // the selection's bar
   const ps = INK.paintSel; INK.paintSel = function () { ps.apply(this, arguments); const sel = INK.sel, pane = sel && sel.pane; if (!pane || !pane.paper) return; const B = BULK.blocks(); if (!B.length) return;
     const bar = $('.ink-selbar', pane.paper.world); if (!bar || $('.bulk-g', bar)) return; const X = (lab, title, fn) => h('button.btn.xs', { title, on: { click: e => { e.stopPropagation(); fn(e); } } }, lab);
-    const g = h('span.bulk-g', X('Region', 'A region around them', () => BULK.region()), X('Move to…', 'Move them to another note; a stub stays here saying where they went', () => BULK.moveTo()), X('Pull into…', 'References to them in another note', () => BULK.pullTo()),
+    const g = h('span.bulk-g', X('Region', 'A region around them', () => BULK.region()), X('Move to…', 'Move them to another note; a stub stays here saying where they went', () => BULK.moveTo()), X('Bridge to…', 'Bridge them to another note: they show there, live, with a caption saying why', () => BULK.pullTo()),
       X('Tidy ▾', 'Align left · stack · grid', e => ctxMenu(e.clientX, e.clientY + 8, [{ label: 'Align left', run: () => BULK.tidy('left') }, { label: 'Stack', sub: 'One under the other', run: () => BULK.tidy('stack') }, { label: 'Grid', run: () => BULK.tidy('grid') }])),
       X('Connect all…', 'One relation from every selected component to one you pick', () => BULK.connectAll()), X('Make them…', 'Each one, whole, a claim, a barrier, a question…', () => BULK.makeAll()),
       X(B.every(b => b.collapsed) ? 'Unfold' : 'Fold', 'Fold them to their titles, or open them', () => BULK.fold(!B.every(b => b.collapsed))));
@@ -188,4 +197,19 @@ const CLIPX = {
   // V3.961 — Ctrl+C on components; beforecopy cancelled makes the copy event come with nothing selected; Ctrl+Shift+V pastes copies
   document.addEventListener('keydown', e => { try { CLIPX.keyCopy(e); } catch (x) { console.warn('[copy]', x); } if ((e.ctrlKey || e.metaKey) && (e.key || '').toLowerCase() === 'v') CLIPX.shiftAt = e.shiftKey ? Date.now() : 0; }, true);
   document.addEventListener('beforecopy', e => { if (CLIPX.armed && Date.now() - CLIPX.armed < 1000) e.preventDefault(); }, true);
+}
+{
+  // V3.996: what a paste or an insert makes lands where it was put and floats there (CLIPX.centre); a file picked later lands where the insert was asked
+  const ab = M.addBlock; M.addBlock = function (docId, afterId, init) { const b = ab.apply(this, arguments);
+    try { if (b && CLIPX.centre()) { if (CLIPX._made) CLIPX._made.push(b.id); else { const L = CLIPX.landing; if (L && L.docId === docId && init && init.x != null && Date.now() - L.t < 90000 && Math.abs(init.x - L.p.x) <= 14 && Math.abs((init.y || 0) - L.p.y) <= 14) CLIPX.float([b.id]); } } } catch (e) { }
+    return b; };
+  const pz = CLIPX.paste; CLIPX.paste = function (e) { const made = []; CLIPX._made = made;
+    try { const pane = CMD.ctx().pane; if (pane && pane.paper) CLIPX.landing = { docId: pane.docId, p: CLIPX.spot(pane), t: Date.now() }; return pz.apply(this, arguments); }
+    finally { CLIPX._made = null; if (made.length) CLIPX.float(made); } };
+  // + Insert, the slash, the navigation bar: each row's run is watched once (rows added later too, when the menu opens)
+  const watch = () => { if (typeof INSERTS === 'undefined') return; INSERTS.forEach(r => { if (!r || r._land || typeof r.run !== 'function') return; const run = r.run; r._land = true;
+    r.run = function (d, p) { const made = []; const outer = CLIPX._made; CLIPX._made = made; if (d && p && p.x != null) CLIPX.landing = { docId: d.id, p: { x: Math.round(p.x / 14) * 14, y: Math.round(p.y / 14) * 14 }, t: Date.now() };
+      try { return run.apply(this, arguments); } finally { CLIPX._made = outer; if (made.length) CLIPX.float(made); if (outer) outer.push(...made); } }; }); };
+  setTimeout(watch, 0);
+  if (typeof INSERT !== 'undefined') { const im = INSERT.menu; INSERT.menu = function () { watch(); return im.apply(this, arguments); }; }
 }

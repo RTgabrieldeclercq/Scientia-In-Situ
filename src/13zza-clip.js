@@ -196,6 +196,10 @@ const CLIP = {
         const b = EQ.create(M.doc(src.docId), at, { tex }); b.label = name; CLIP.lift(b); b.clip = clip;
         EQ.syncText(b); DB.put('blocks', b); M.wire(b.id, src.id, CLIP.REL, true); changed(); if (done) done(b); CLIP.fresh(b); toast(name + ' is on top of the ' + from + ': drag it where you want it');
       } catch (e) { toast('Could not add the equation: ' + (e.message || e)); } } });   // never leave the editor stuck open
+    CLIP.ocrHead(snip, from, ready);
+  },
+  /** The snip over the equation editor just opened, read into it (CLIP.read) where it can be, else "type it in" (shared with the Library reader, 17b). */
+  ocrHead(snip, from = 'paper', ready = '') {
     const ed = [...$$('.meditor')].pop(), mf = ed && $('math-field', ed), ta = ed && $('.mtex', ed); if (!ed) return;
     const note = h('div.clip-ocr'); ed.prepend(h('div.clip-eqhead', snip ? h('img.clip-snip', { src: snip, alt: 'The equation in the ' + from }) : null, note));
     if (ready) { note.textContent = ready; note.classList.add('ok'); return; }

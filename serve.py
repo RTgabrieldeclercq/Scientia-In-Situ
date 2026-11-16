@@ -93,6 +93,7 @@ import slides as SLIDES
 from sttread import Transcriber
 HW = Reader()
 from winink import WinInk
+import webcap   # V3.971: a website kept as it was
 INKR = WinInk()
 try:   # V3.960: the mouse's own movement while the edge pan pushes against the screen's edge (Windows; see rawmouse.py)
     from rawmouse import RawMouse
@@ -199,6 +200,12 @@ class H(http.server.SimpleHTTPRequestHandler):
         f = ACCESS.serve(self)   # a sealed image or recording, sent as it was
         return super().send_head() if f is False else f
     def log_message(self, *a): pass
+    def keep_capture(self, mid, r):
+        """A captured (or saved) page into images/ as the media file <id>.<ext> (as /api/media writes it): the answer stays small."""
+        ext = r['kind']; data = r.pop('data'); d = images_dir(); os.makedirs(d, exist_ok=True); path = os.path.join(d, f'{mid}.{ext}')
+        with ACCESS.create(path) as f: f.write(data)   # sealed in a locked notebook
+        return dict(r, ok=True, ext=ext, size=len(data), path=f'images/{mid}.{ext}')
+
     def is_local(self):
         a = self.client_address[0]
         if a not in ('127.0.0.1', '::1', '::ffff:127.0.0.1'): return False
@@ -393,6 +400,30 @@ class H(http.server.SimpleHTTPRequestHandler):
             try: return self._json(200, {'ok': True, 'lines': HW.read(lines[:80])})
             except Exception as e: return self._json(500, {'ok': False, 'error': str(e)})
         if u.path == '/api/media': return self.media(q)
+        if u.path == '/api/capture':   # V3.971: a website kept as it was — this computer and its paired devices; only this computer may reach its own network
+            _, obj = self._obj(64 * 1024); obj = obj or {}; mid = str(obj.get('id') or '')
+            if not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', mid): return self._json(400, {'ok': False, 'error': 'bad name'})
+            try: r = webcap.capture(str(obj.get('url') or ''), allow_private=self.is_local())
+            except webcap.Blocked as e: return self._json(200, {'ok': False, 'error': str(e), 'blocked': True})   # V3.979: the browser route
+            except webcap.Refused as e: return self._json(200, {'ok': False, 'error': str(e)})
+            except Exception as e: return self._json(200, {'ok': False, 'error': 'Could not capture it: ' + str(e)[:200]})
+            return self._json(200, self.keep_capture(mid, r))
+        if u.path == '/api/capture/watch':   # V3.979: a page only a person at a browser may have — opened in your browser, taken when you save it
+            _, obj = self._obj(64 * 1024); obj = obj or {}; mid = str(obj.get('id') or ''); op = obj.get('op') or 'poll'
+            if not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', mid): return self._json(400, {'ok': False, 'error': 'bad name'})
+            if op == 'stop': webcap.watch_stop(mid); return self._json(200, {'ok': True})
+            if op == 'start':
+                url = str(obj.get('url') or '')
+                if not re.match(r'^https?://', url, re.I): return self._json(200, {'ok': False, 'error': 'not a web address'})
+                webcap.watch_start(mid, url); opened = False
+                if self.is_local() and not os.environ.get('SIS_NOBROWSER'):   # this computer's own browser, as a click on the link would (a paired device's person is not at it)
+                    try: opened = bool(webbrowser.open(url, new=2))
+                    except Exception: opened = False
+                return self._json(200, {'ok': True, 'opened': opened, 'folders': webcap.saved_folders()})
+            try: r = webcap.watch_poll(mid)
+            except webcap.Refused as e: return self._json(200, {'ok': False, 'error': str(e)})
+            except Exception as e: return self._json(200, {'ok': False, 'error': 'Could not read the saved page: ' + str(e)[:200]})
+            return self._json(200, {'ok': False, 'waiting': True} if r is None else self.keep_capture(mid, r))
         if u.path == '/api/notebook/browse':
             r = browse()
             if isinstance(r, dict): return self._json(200, {'ok': False, 'error': 'No folder dialog here (' + r['error'] + ') — type the path instead'})
@@ -496,4 +527,4 @@ print(f'Scientia In Situ on http://localhost:{PORT}/scientia.html  (close this w
 print(f'Notebook folder: {notebook() or ACCESS.closed() or "not chosen yet — Settings → Notebook folder"}')
 print('Other devices: Settings → Devices (phones and tablets pair with this computer)')
 SYNC.ensure()
-srv.serve_forever()
+srv.serve_forever(poll_interval=2.0)   # V3.965: the stop check every 2 s, not twice a second

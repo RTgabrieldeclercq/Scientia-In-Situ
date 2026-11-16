@@ -61,7 +61,13 @@ const DISK = {
   },
   async browse() { const r = await fetch('api/notebook/browse', { method: 'POST' }); const j = await r.json(); if (!j.ok) { toast(j.error || 'No folder dialog'); return null; } return j.path; },
   /** Called on every write: the record and the Markdown follow a few seconds later. */
-  touch() { if (!DISK.on || DISK.paused) return; clearTimeout(DISK._t); DISK._t = setTimeout(async () => { await DISK.snapshot(); await VAULT.sync(); }, 3000); },
+  /** V3.965: stores the Markdown mirror never shows — a change there writes nothing to it. */
+  VAULT_SKIP: new Set(['sessions', 'timers', 'settings', 'profiles', 'journal', 'blobs', 'datasets']),
+  touch(store) { if (!DISK.on || DISK.paused) return; if (!DISK.VAULT_SKIP.has(store)) DISK._vault = true; clearTimeout(DISK._t);
+    // V3.965: with sync on, the computer already holds every change as it is made (SYNC.push) — the whole record is not sent
+    // again after each edit (it was: 25 MB serialised here, parsed there, the old file copied to kept/, the new one written)
+    const synced = typeof SYNC !== 'undefined' && SYNC.on && SYNC.local;
+    DISK._t = setTimeout(async () => { if (!synced) await DISK.snapshot(); if (DISK._vault) { DISK._vault = false; await VAULT.sync(); } }, synced ? 8000 : 3000); },
   /** Only one tab saves into the notebook. */
   lock() { try { if (!navigator.locks) return; navigator.locks.request('scientia-notebook', { ifAvailable: true }, l => { if (!l) { DISK.paused = true; DISK.error = 'Another tab of the app is open — this one does not save to the notebook'; setTimeout(() => toast(DISK.error), 800); return; } return new Promise(() => { }); }); } catch { } },
 };
@@ -125,7 +131,7 @@ const VAULT = {
     if (b.kind === 'eq') { const q = EQ.data(b); L.push('$$' + q.tex + '$$', ''); const vs = EQ.terms(q.tex); if (vs.length) { L.push('| Term | Name | Unit |', '|---|---|---|'); vs.forEach(v => { const V = (q.vars || {})[v.k] || {}; L.push(`| $${v.tex}$ | ${V.name || ''} | ${V.unit || ''} |`); }); L.push(''); } if (EQ.rec(b)) L.push('Registered as **' + EQ.rec(b).name + '**', ''); }
     else if (b.kind === 'figure' && b.fig) { FIG.cells(b).forEach((c, i) => { const m = c.media && MEDIA.get(c.media); if (!m) return; const it = c.itemId && M.item(c.itemId); L.push(`- **${FIG.letter(i)}** ${c.caption || ''}${it ? ' — ' + KIND[it.kind].label : ''} (\`${m.path || m.name}\`${c.crop ? ', cropped' : ''})`); }); L.push('', VAULT.text(b, P), ''); }
     else if (b.kind === 'calc') { L.push('```', ...(b.hist || []).map(x => (x.note ? x.note + ' ' : '') + x.e + ' = ' + CALC.fmt(x.v)), '```', ''); }
-    else if (b.kind === 'ref') { const ob = M.block(b.refBlockId), it = b.refItemId && M.item(b.refItemId); L.push('Pulled in: ' + (it ? KIND[it.kind].label + ' — ' + it.text + ' (' + VAULT.wl(P.block.get(it.originBlockId), 'origin') + ')' : ob ? VAULT.wl(P.block.get(ob.id), M.blockName(ob)) : '—'), ''); }
+    else if (b.kind === 'ref') { const ob = M.block(b.refBlockId), it = b.refItemId && M.item(b.refItemId); L.push((it ? 'Pulled in: ' : 'Bridged: ') + (it ? KIND[it.kind].label + ' — ' + it.text + ' (' + VAULT.wl(P.block.get(it.originBlockId), 'origin') + ')' : ob && b.refSpan && typeof EXCERPT !== 'undefined' ? '“' + EXCERPT.text(b).replace(/\s*\n\s*/g, ' ') + '” (a part of ' + VAULT.wl(P.block.get(ob.id), M.blockName(ob)) + ')' : ob ? VAULT.wl(P.block.get(ob.id), M.blockName(ob)) : '—'), ...(!it && b.why ? ['Why: ' + b.why] : []), ''); }
     else if (b.kind === 'component' || !b.kind) L.push(VAULT.text(b, P), '');
     else L.push((b.body && b.body.text) || '', '');
     if (b.anchor && b.anchor.source) { const r = M.lib(b.anchor.source); L.push('> Highlight, p. ' + b.anchor.page + ' of ' + VAULT.wl(P.lib.get(b.anchor.source), r ? LIB.shortRef(r) : 'paper'), ''); }
@@ -167,7 +173,7 @@ const VAULT = {
     for (const t of DB.all('terms')) F.set(P.term.get(t.id).file, VAULT.term(t, P));
     for (const r of DB.all('library')) F.set(P.lib.get(r.id).file, VAULT.lib(r, P));
     if (typeof REM !== 'undefined' && DB.all('reminders').length) { const open = REM.open(), done = DB.all('reminders').filter(r => r.done);
-      F.set('Reminders.md', [VAULT.fm({ type: 'reminders', tags: ['scientia/reminders'] }), '# Reminders', '', ...open.map(x => `- [ ] ${REMKIND[x.r.kind].label}: **${x.r.title}** — ${REM.fmtAt(x)}${x.r.where ? ' · ' + x.r.where : ''}${x.r.repeat && x.r.repeat !== 'none' ? ' · ' + x.r.repeat : ''}${x.r.docId && P.doc.get(x.r.docId) ? ' · ' + VAULT.wl(P.doc.get(x.r.docId), (M.doc(x.r.docId) || {}).title) : ''}`), '', ...(done.length ? ['## Done', ...done.map(r => `- [x] ${r.title} — ${fmtDay(r.at)}`)] : []), ''].join('\n')); }
+      F.set('Reminders.md', [VAULT.fm({ type: 'reminders', tags: ['scientia/reminders'] }), '# Reminders', '', ...open.map(x => `- [ ] ${REMKIND[x.r.kind].label}: **${x.r.title}** — ${REM.fmtAt(x)}${x.r.where ? ' · ' + x.r.where : ''}${x.r.repeat && x.r.repeat !== 'none' ? ' · ' + x.r.repeat : ''}${x.r.docId && P.doc.get(x.r.docId) ? ' · ' + VAULT.wl(P.doc.get(x.r.docId), (M.doc(x.r.docId) || {}).title) : ''}`), '', ...(done.length ? ['## Done', ...done.map(r => `- [x] ${r.title} — ${fmtDay(r.at || r.done)}`)] : []), ''].join('\n')); }
     return F;
   },
   /** Send only what changed; delete files the app wrote earlier that no longer exist. */

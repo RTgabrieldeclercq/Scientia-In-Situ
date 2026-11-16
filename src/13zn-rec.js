@@ -81,7 +81,7 @@ const REC = {
         if (j.state === 'error') { REC._watch.delete(id); REC.put(id, r => { r.state = 'error'; r.error = j.error || 'failed'; }); return changed(); }
         if (j.state !== b.rec.state) { REC.put(id, r => { r.state = j.state; }); changed(); }
         REC.progress.set(id, j); $$(`.box[data-id="${id}"] .rc-status`).forEach(el => el.replaceWith(REC.statusEl(M.block(id)))); }
-      REC._watch.set(id, setTimeout(go, 3000)); };
+      REC._watch.set(id, setTimeout(go, j && j.waiting === 'missing' ? 60000 : 3000)); };   // V3.965: a minute between looks while Whisper is not installed
     REC._watch.set(id, setTimeout(go, 400)); },
   progress: new Map(),
   apply(id, j) {

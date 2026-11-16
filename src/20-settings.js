@@ -1,16 +1,132 @@
 /* ==========================================================================
-   19 · Settings — structure colours, templates, keys, review, storage
+   19 · Settings — V3.995: a sidebar (Features, then Look & feel, Keys &
+   commands, Templates & note types, Notebook & devices, Data & storage);
+   Features is the board of every feature in the register (02b, 20a), with
+   presets, a tile each and the live preview of the feature in view.
    ========================================================================== */
 const SettingsView = {
+  /* V3.995 — the page as a sidebar and a feature board (Gabe chose layout C): Features first — presets, then a tile per feature (FEAT, 02b), which
+     opens across the board with its whole description and its settings — beside a live preview of the feature in view that follows the scroll;
+     then the ordinary settings, a section each. Search covers both. */
+  section: 'features', open: null, q: '', spy: null,
+  SECTIONS: [['features', 'Features', '◉'], ['look', 'Look & feel', '◐'], ['keys', 'Keys & commands', '⌘'], ['templates', 'Templates & note types', '⧉'], ['devices', 'Notebook & devices', '⇆'], ['data', 'Data & storage', '⛁']],
+  WORDS: { look: 'theme light dark appearance colour', keys: 'keys shortcut commands macro ctrl+w focus mode', templates: 'templates note types profiles', devices: 'notebook folder devices phone tablet ipad computer handwriting recordings whisper obsidian', data: 'storage export import json snapshots backup re-index round-trip start empty' },
   render() {
-    const s = settings();
-    const kinds = h('div.list', KINDS.map(k => { const ks = s.kinds[k.id] || k;
-      const prev = h('span.serif', { style: { fontSize: '15px' } }, 'Seeding at 40k/cm² ', h('span.st.st-' + k.id, 'collapsed the leading edge'), ' within 40 frames.');
-      return h('div.kindrow', h('span.row', kchip(k.id), h('kbd', k.key.toUpperCase())),
-        h('input', { type: 'color', value: ks.color, title: 'Pick any RGB colour', on: { input: e => { saveSettings({ kinds: Object.assign({}, settings().kinds, { [k.id]: { color: e.target.value, mode: (settings().kinds[k.id] || k).mode } }) }); applyKindCSS(); e.target.nextSibling.value = e.target.value; } } }),
-        h('input.inp.mono.hex', { value: ks.color, size: 8, on: { change: e => { const v = e.target.value.trim(); if (!/^#[0-9a-f]{6}$/i.test(v)) return toast('Use #RRGGBB'); saveSettings({ kinds: Object.assign({}, settings().kinds, { [k.id]: { color: v, mode: (settings().kinds[k.id] || k).mode } }) }); applyKindCSS(); App.refresh(); } } }),
-        h('div.seg', [['text', 'Text colour'], ['highlight', 'Highlight']].map(([m, l]) => h('button' + (ks.mode === m ? '.on' : ''), { on: { click: () => { saveSettings({ kinds: Object.assign({}, settings().kinds, { [k.id]: { color: (settings().kinds[k.id] || k).color, mode: m } }) }); applyKindCSS(); App.refresh(); } } }, l))),
-        prev); }));
+    const s = settings(), V = SettingsView;
+    App.setTitle('Settings', [h('span', DB.mode === 'idb' ? 'IndexedDB · ' + (DB.durable && DB.durable.persisted ? 'persistent' : 'evictable') : 'memory only')]);
+    if (DISK.server == null) DISK.info().then(() => App.refresh());
+    const q = V.q.trim().toLowerCase();
+    const side = h('nav.st-side', { 'aria-label': 'Settings sections' }, V.SECTIONS.map(([id, label, gl], i) => [
+      i === 1 ? h('div.st-sgh', 'Preferences') : i === 3 ? h('div.st-sgh', 'Notebook') : null,
+      h('button', { type: 'button', 'aria-current': String(V.section === id && !q), on: { click: () => { V.section = id; V.q = ''; V.open = null; V.redraw(true); } } },
+        h('span.gl', gl), label, id === 'features' ? h('span.ct', FEAT.count() + '/' + FEAT.list.length) : null)]));
+    const search = h('label.st-search', h('span', { 'aria-hidden': 'true' }, '⌕'), h('input#st-q', { type: 'search', value: V.q, placeholder: 'Search settings', 'aria-label': 'Search settings',
+      on: { input: debounce(e => { V.q = e.target.value; V.redraw(); requestAnimationFrame(() => { const i = $('#st-q'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }); }, 160) } }));
+    let main;
+    if (q) main = V.searchView(q);
+    else if (V.section === 'features') main = V.featuresView();
+    else main = h('div.st-main', h('div.st-mh', h('h2', V.SECTIONS.find(x => x[0] === V.section)[1])), V[V.section + 'View'] ? V[V.section + 'View'](s) : null);
+    return h('div.page.st2', h('div.st-top', h('div', h('div.eyebrow', 'System'), h('h1.title', 'Settings')), search), h('div.st-shell', side, main));
+  },
+  /** Draw it again where it was (the page keeps its scroll). */
+  redraw(top) { const pw = $('.pagewrap'); App._scroll = { key: location.hash, top: top || !pw ? 0 : pw.scrollTop }; App.refresh(); },
+  /* ---------- features ---------- */
+  featuresView(only) {
+    const V = SettingsView, n = FEAT.changes(), p = FEAT.preset(), own = FEAT.own();
+    const presets = h('div.st-presets', FEAT.PRESETS.map(([k, lab]) => { const c = FEAT.list.filter(f => FEAT.inPreset(f, k)).length;
+      return h('button.st-preset', { type: 'button', 'aria-pressed': String(p === k), on: { click: () => { FEAT.usePreset(k); V.redraw(); } } },
+        h('div.pn', lab, h('span.pc', c + ' of ' + FEAT.list.length)), h('div.meter', h('i', { style: { width: (c / FEAT.list.length * 100) + '%' } })), h('div.pd', V.PDESC[k])); }));
+    const status = h('div.st-custom', n ? [h('b', FEAT.PRESETS.find(x => x[0] === p)[1] + ' + ' + plural(n, 'change')), ' · ', h('button.st-link', { type: 'button', on: { click: () => { FEAT.usePreset(p); V.redraw(); } } }, 'back to ' + FEAT.PRESETS.find(x => x[0] === p)[1])] : FEAT.PRESETS.find(x => x[0] === p)[1] + ' · ' + plural(FEAT.count(), 'feature') + ' on',
+      h('span.spacer'), h('label.st-own', { title: 'Off: this device shows what the notebook is set to. On: this device keeps its own switches (a phone on Simple, the desktop on Everything)' },
+        h('button.fsw', { type: 'button', role: 'switch', 'aria-checked': String(own), 'aria-label': 'This device keeps its own switches', on: { click: () => { FEAT.setOwn(!own); V.redraw(); } } }), 'This device keeps its own switches'));
+    const groups = FEAT.GROUPS.map(g => ({ g, fs: FEAT.list.filter(f => f.group === g.id && (!only || only.includes(f))) })).filter(x => x.fs.length);
+    const board = h('div.st-board', groups.map(({ g, fs }) => h('div.st-group', h('div.st-gh', h('h3', g.label), h('span.k', fs.filter(f => FEAT.on(f.id)).length + ' of ' + fs.length + ' on')), h('div.st-tiles', fs.map(f => V.tile(f, g))))));
+    const cur = V.previewId(only);
+    return h('div.st-main', only ? null : h('div.st-mh', h('h2', 'Features'), h('span.k', 'switch off what you don’t use · select a tile to see all of it and tune it')),
+      only ? null : presets, only ? null : status, h('div.st-split', board, h('aside.st-pv', V.pane(cur))));
+  },
+  PDESC: { simple: 'Write and mark structures; bridges, timers, reminders, the Library and equations.', standard: 'The app as it was, without the parts most people never use.', all: 'Every feature, including recordings, handwriting and chores.' },
+  previewId(only) { const V = SettingsView, ok = id => !!FEAT.by[id] && (!only || only.includes(FEAT.by[id])); return ok(V.open) ? V.open : ok(V.spy) ? V.spy : ((only || FEAT.list)[0] || {}).id; },
+  /** The preview pane: the feature in view (or the one open), as it is set now. */
+  pane(id) {
+    const f = FEAT.by[id]; if (!f) return h('div.st-pv-in');
+    return h('div.st-pv-in', { 'data-f': id }, h('div.st-pv-h', h('span', 'Live preview'), h('b', f.label), FEAT.on(f.id) ? null : h('span.off', 'off')), SettingsView.previewOf(f));
+  },
+  previewOf(f) { let n = null; try { n = f.preview(PV, f); } catch (e) { console.warn('[preview]', f.id, e); } return h('div.fpv' + (FEAT.on(f.id) ? '' : '.is-off'), n || h('div.fpv-cap', 'No preview')); },
+  /** A slider moved, a colour picked: the preview again, nothing else. */
+  repaint() { const V = SettingsView, id = V.previewId(); $$('.st-pv-in, .ft-pv').forEach(el => { const fid = el.classList.contains('ft-pv') ? el.dataset.f : id; const f = FEAT.by[fid]; if (!f) return; const nb = V.previewOf(f); const old = $(':scope > .fpv', el); old ? old.replaceWith(nb) : el.append(nb); }); },
+  tile(f, g) {
+    const V = SettingsView, open = V.open === f.id, on = FEAT.raw(f.id), dis = !!f.needs && !FEAT.on(f.needs), nT = (f.tune || []).length;
+    const toggle = () => { V.open = open ? null : f.id; V.spy = f.id; V.redraw();
+      if (!open) requestAnimationFrame(() => { const el = $('.ft.open'), pw = $('.pagewrap'); if (!el || !pw) return; const r = el.getBoundingClientRect(), pr = pw.getBoundingClientRect(); if (r.top < pr.top + 8 || r.top > pr.bottom - 160) pw.scrollTop += r.top - pr.top - 70; }); };   // the tile just opened, in view
+    return h('div.ft' + (FEAT.on(f.id) ? '' : '.off') + (dis ? '.dis' : '') + (open ? '.open' : '') + (V.spy === f.id && !V.open ? '.spied' : ''), { 'data-f': f.id, on: { click: () => { if (!open) toggle(); } } },
+      h('div.ft-gl', g.gl),
+      h('div.ft-t', { role: 'button', tabindex: '0', 'aria-expanded': String(open), on: { click: e => { if (open) { e.stopPropagation(); toggle(); } }, keydown: e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); toggle(); } } } }, f.label, open ? h('span.ft-x', '▴ close') : null),
+      f.core ? h('span.ft-lock', 'always on') : h('button.fsw', { type: 'button', role: 'switch', 'aria-checked': String(on), 'aria-label': f.label, disabled: dis, on: { click: e => { e.stopPropagation(); FEAT.set(f.id, !on); V.spy = f.id; V.redraw(); } } }),
+      h('div.ft-d', dis ? 'Needs ' + FEAT.by[f.needs].label + '. ' : '', f.desc),
+      nT ? h('div.ft-n', plural(nT, 'setting') + (open ? '' : ' ▾')) : null,
+      open ? h('div.ft-body', { on: { click: e => e.stopPropagation() } },
+        h('div.ft-pv', { 'data-f': f.id }, V.previewOf(f)),
+        nT ? (FEAT.on(f.id) || f.core ? h('div.ft-tunes', f.tune.map(t => V.tuneCtl(f, t))) : h('div.ft-tunes.empty', dis ? 'Switch on ' + FEAT.by[f.needs].label + ' first.' : 'Switch it on to tune it.')) : h('div.ft-tunes.empty', 'Nothing to tune: it is on or off.')) : null);
+  },
+  /** One setting's control. Types: seg, range, switch, color, select, size, node (its own UI), button. */
+  tuneCtl(f, t) {
+    const V = SettingsView, v = FEAT.tune(f.id, t.key), set = x => { FEAT.setTune(f.id, t.key, x); V.redraw(); };
+    const opts = (t.opts || []).map(o => Array.isArray(o) ? o : [o, String(o)]);
+    let c;
+    if (t.type === 'seg') c = h('div.st-seg', { role: 'group', 'aria-label': t.label }, opts.map(([val, lab]) => h('button', { type: 'button', 'aria-pressed': String(String(val) === String(v)), on: { click: () => set(val) } }, lab)));
+    else if (t.type === 'select') c = h('select.inp', { 'aria-label': t.label, on: { change: e => set(opts.find(o => String(o[0]) === e.target.value)[0]) } }, opts.map(([val, lab]) => h('option', { value: val, selected: String(val) === String(v) }, lab)));
+    else if (t.type === 'range') { const out = h('output', V.fmt(v, t), t.zero && +v === 0 ? h('span.z', ' · ' + t.zero) : null);
+      c = h('span.st-range', h('input', { type: 'range', min: t.min, max: t.max, step: t.step || 1, value: v, 'aria-label': t.label, on: { input: e => { FEAT.live(f.id, t.key, +e.target.value); out.replaceChildren(V.fmt(+e.target.value, t), t.zero && +e.target.value === 0 ? h('span.z', ' · ' + t.zero) : ''); V.repaint(); }, change: e => set(+e.target.value) } }), out); }
+    else if (t.type === 'switch') c = h('button.fsw', { type: 'button', role: 'switch', 'aria-checked': String(!!v), 'aria-label': t.label, on: { click: () => set(!v) } });
+    else if (t.type === 'color') c = h('span.st-colors', opts.map(([val, lab]) => h('button.st-sw', { type: 'button', style: { background: val }, title: lab, 'aria-label': lab, 'aria-pressed': String(String(v).toLowerCase() === String(val).toLowerCase()), on: { click: () => set(val) } })),
+      h('input', { type: 'color', value: /^#[0-9a-f]{6}$/i.test(v || '') ? v : '#000000', 'aria-label': t.label + ': any colour', title: 'Any colour', on: { input: e => { FEAT.live(f.id, t.key, e.target.value); V.repaint(); }, change: e => set(e.target.value) } }));
+    else if (t.type === 'size') { const sz = Object.assign({ mode: 'fixed', fixed: 100, from: 85, to: 130, z0: 50, z1: 200 }, v || {}), up = (k, x) => set(Object.assign({}, sz, { [k]: x }));
+      const num = (k, lab, min, max, step) => h('input.inp.st-num', { type: 'number', min, max, step, value: sz[k], 'aria-label': lab, on: { change: e => up(k, clamp(+e.target.value || sz[k], min, max)) } });
+      c = h('div.st-size', h('div.st-seg', { role: 'group', 'aria-label': t.label }, [['fixed', 'Fixed'], ['zoom', 'Follows the zoom']].map(([m, l]) => h('button', { type: 'button', 'aria-pressed': String(sz.mode === m), on: { click: () => up('mode', m) } }, l))),
+        sz.mode === 'fixed' ? h('div.st-sizeln', num('fixed', 'Size', 50, 200, 5), '% of normal, at every zoom')
+          : h('div.st-sizeln', num('from', 'Smallest size', 50, 200, 5), '% at', num('z0', 'Zoom for the smallest size', 10, 400, 10), '% zoom, growing to', num('to', 'Largest size', 50, 250, 5), '% at', num('z1', 'Zoom for the largest size', 10, 400, 10), '% zoom')); }
+    else if (t.type === 'node') { try { c = t.render(); } catch (e) { console.warn('[settings]', f.id, t.key, e); c = null; } }
+    else if (t.type === 'button') c = h('button.btn.sm', { type: 'button', on: { click: () => t.run() } }, t.button || t.label);
+    const reset = !t.get && t.type !== 'node' && t.type !== 'button' && !FEAT.isDefault(f.id, t.key) ? h('button.st-reset', { type: 'button', title: 'Back to the default', on: { click: () => set(JSON.parse(JSON.stringify(t.def))) } }, 'Reset') : null;
+    return h('div.st-tune' + (t.full || t.type === 'node' || t.type === 'size' ? '.full' : '') + (t.type === 'node' ? '.node' : ''), t.type === 'node' && !t.label ? null : h('div.st-tl', h('b', t.label), t.isNew ? h('span.st-new', 'new') : null, reset, t.d ? h('div.st-th', t.d) : null), c);
+  },
+  fmt: (x, t) => (Math.round(x * 100) / 100) + (t.unit || ''),
+  searchView(q) {
+    const V = SettingsView, txt = f => [f.label, f.desc, (f.tune || []).map(t => (t.label || '') + ' ' + (t.d || '') + ' ' + (t.opts || []).map(o => Array.isArray(o) ? o[1] : o).join(' ')).join(' '), (FEAT.GROUPS.find(g => g.id === f.group) || {}).label].join(' ').toLowerCase();
+    const fs = FEAT.list.filter(f => txt(f).includes(q)), secs = V.SECTIONS.slice(1).filter(([id, label]) => (label + ' ' + (V.WORDS[id] || '')).toLowerCase().includes(q));
+    return h('div.st-main', h('div.st-mh', h('h2', 'Results for “' + V.q.trim() + '”'), h('span.k', plural(fs.length, 'feature') + (secs.length ? ' · ' + plural(secs.length, 'section') : ''))),
+      secs.length ? h('div.st-also', 'Also in ', secs.map(([id, label]) => h('button.st-link', { type: 'button', on: { click: () => { V.section = id; V.q = ''; V.redraw(true); } } }, label))) : null,
+      fs.length ? V.featuresView(fs) : (secs.length ? null : h('p.serif.muted', 'Nothing matches. Try a feature’s name, like “bridge” or “timer”.')));
+  },
+  /** After the page is on screen: the preview follows the tile in view as the page scrolls. */
+  after() {
+    const V = SettingsView, pw = $('.pagewrap'); if (!pw || pw._stSpy) return; pw._stSpy = true;
+    let raf = 0; pw.addEventListener('scroll', () => { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; V.follow(pw); }); }, { passive: true });
+    requestAnimationFrame(() => V.follow(pw));
+  },
+  follow(pw) {
+    const V = SettingsView; if (App.route.name !== 'settings' || V.open) return; const tiles = $$('.st-board .ft', pw); if (!tiles.length) return;
+    const top = pw.getBoundingClientRect().top + 110, t = tiles.find(x => x.getBoundingClientRect().bottom > top) || tiles[tiles.length - 1], id = t.dataset.f;
+    if (id === V.spy && $(`.st-pv-in[data-f="${id}"]`)) return; V.spy = id;
+    tiles.forEach(x => x.classList.toggle('spied', x === t));
+    const pane = $('.st-pv'); if (pane) { const nb = V.pane(id); nb.classList.add('fade'); pane.replaceChildren(nb); }
+  },
+  /* ---------- the ordinary settings ---------- */
+  lookView(s) {
+    const sel = (val, opts, on) => h('select.inp', { on: { change: e => on(e.target.value) } }, opts.map(([v, l]) => h('option', { value: v, selected: String(v) === String(val) }, l)));
+    return h('div.st-split', h('div.st-card', h('div.st-row', h('div', h('b', 'Theme'), h('div.st-th', 'Light, dark, or as the system is')), sel(s.theme, [['auto', 'Follow system'], ['light', 'Light'], ['dark', 'Dark']], v => { saveSettings({ theme: v }); applyTheme(); applyKindCSS(); App.refresh(); })),
+        h('p.tiny.muted', { style: { margin: '10px 0 0' } }, 'Structure colours, the bridge colour and every feature’s look are under Features, each with its preview.')),
+      h('aside.st-pv', h('div.st-pv-in', h('div.st-pv-h', h('span', 'Live preview'), h('b', 'This theme')), h('div.fpv', PV.sample()))));
+  },
+  keysView(s) {
+    let cmds = null; try { cmds = CMD.settingsUI(); } catch (e) { console.warn('[commands]', e); }
+    return h('div.st-col',
+      h('div.callout', h('b.h', 'Where the keys are'), 'Give a phrase its meaning: Features → Structures. Mark a term: Features → Terms. Pen buttons and gestures: Features → Pen & touch.'),
+      h('div.callout', h('b.h', 'Ctrl+W'), 'Browsers close the tab on Ctrl+W before a page can see it. In ', h('b', 'Focus mode'), ' (Ctrl+. or ⤢ on a note) the app goes fullscreen and asks the browser to lock the W key, and then Ctrl+W marks a term. Outside Focus mode, ', keyLabel(s.termKey), ' does the same. While you are typing, closing the tab asks first.'),
+      cmds);
+  },
+  templatesView(s) {
     const tpls = h('div', userProfiles().map(p => { const list = M.templatesFor(p.type), en = list.filter(t => t.enabled).length;
       return h('div.card.flat', { style: { marginBottom: '10px', padding: 0 } },
         h('div.row', { style: { padding: '10px 14px', borderBottom: '1px solid var(--rule)' } }, h('b', p.label), h('span.tiny.mono.muted', `${p.noun.toLowerCase()} · ${p.scope}-scoped`), h('span.spacer'),
@@ -22,9 +138,15 @@ const SettingsView = {
           h('button.btn.xs', { on: { click: () => { DB.put('templates', Object.assign(JSON.parse(JSON.stringify(t)), { id: uid('tp'), isStandard: false, name: t.name + ' (copy)' })); App.refresh(); } } }, 'Duplicate'),
           !t.isStandard ? h('button.btn.xs.ghost', { on: { click: () => { DB.del('templates', t.id); App.refresh(); } } }, '×') : null)));
     }));
-    const sel = (val, opts, on) => h('select.inp', { on: { change: e => on(e.target.value) } }, opts.map(([v, l]) => h('option', { value: v, selected: String(v) === String(val) }, l)));
-    const num = (val, on, w = 70) => h('input.inp.mono', { type: 'number', value: val, style: { width: w + 'px' }, on: { change: e => on(+e.target.value) } });
-    const d = DB.durable || {};
+    return h('div.st-col',
+      h('div.sec-h', h('h2', 'Templates'), h('span.k', 'per note type')),
+      h('p.serif.muted', { style: { marginTop: 0, fontSize: '14.5px' } }, 'For each note type, tick the template(s) to use. One ticked: applied automatically. Several ticked: New note asks which. None: notes start on an empty page. Any note can be saved as a template from its ⋯ menu.'),
+      tpls,
+      h('div.sec'), h('div.sec-h', h('h2', 'Note types'), h('span.k', 'profiles are data — a new type is a row')),
+      h('div.list', userProfiles().map(p => h('div.li', typechip(p.type), h('span.t', p.label + ' · a component is a ' + p.noun.toLowerCase(), h('span.s', `${p.scope}-scoped · ${p.ordered ? 'ordered' : 'unordered'}${p.steps ? ' · steps can be timed' : ''}${p.bindsTo ? ' · binds to ' + p.bindsTo : ''} · header: ${(p.headerFields || []).map(f => f.label).join(', ') || '—'}`)), h('button.btn.xs', { on: { click: () => SettingsView.editProfile(p) } }, 'Edit'))),
+        h('div.li', h('button.btn.sm', { on: { click: () => SettingsView.editProfile({ type: '', label: '', noun: 'Block', scope: 'theme', ordered: false, steps: false, bindsTo: null, headerFields: [] }, true) } }, '+ Note type'))));
+  },
+  devicesView(s) {
     const nbIn = h('input.inp.mono', { value: DISK.nb || '', placeholder: 'C:\\Users\\you\\Documents\\Lab notebook', style: { flex: '1 1 260px' }, on: { keydown: e => { if (e.key === 'Enter') DISK.connect(e.target.value.trim()); } } });
     const notebook = h('div.card.flat.nbcard',
       DISK.server === false ? h('p.tiny', { style: { color: 'var(--warn)', marginTop: 0 } }, 'The app is not running through launch.bat, so it cannot reach a folder. Start it with launch.bat.') : null,
@@ -39,8 +161,16 @@ const SettingsView = {
         h('a.btn.sm', { href: 'obsidian://open?path=' + encodeURIComponent(DISK.nb), title: 'Open the folder as a vault in Obsidian (add it once with “Open folder as vault”)' }, 'Open in Obsidian'),
         h('button.btn.sm.ghost', { on: { click: () => pickModal('Reload from the notebook?', 'Replaces what this browser shows with the notebook’s saved record. A copy of the browser’s data is kept first.', [{ label: 'Reload from the notebook', run: () => DISK.load() }]) } }, 'Reload from notebook')) : null,
       (DISK.recent || []).filter(x => x !== DISK.nb).length ? h('div.tiny.muted', { style: { marginTop: '8px' } }, 'Recent: ', DISK.recent.filter(x => x !== DISK.nb).slice(0, 4).map(x => h('a', { style: { marginRight: '10px', cursor: 'pointer' }, on: { click: () => DISK.connect(x) } }, x))) : null);
-    if (DISK.server == null) DISK.info().then(() => App.refresh());
-    const storage = h('div', h('dl.kv', { style: { fontSize: '13px', marginBottom: '12px' } },
+    const part = fn => { try { return fn(); } catch (e) { console.warn('[settings]', e); return null; } };
+    return h('div.st-col',
+      h('div.sec-h', h('h2', 'Notebook folder'), h('span.k', 'where your data lives')), notebook, h('div.sec'),
+      h('div.sec-h', h('h2', 'Devices'), h('span.k', 'your phone and tablet, in sync')), part(() => DEVICES.settings()), h('div.sec'),
+      h('div.sec-h', h('h2', 'Handwriting'), h('span.k', 'pen ink → text, read on this computer')), part(() => HWUI.settings()), h('div.sec'),
+      h('div.sec-h', h('h2', 'Recordings'), h('span.k', 'microphone → audio file + transcript, on this computer')), part(() => STTUI.settings()));
+  },
+  dataView(s) {
+    const d = DB.durable || {};
+    return h('div.st-col', h('dl.kv', { style: { fontSize: '13px', marginBottom: '12px' } },
       h('dt', 'store'), h('dd', DB.mode === 'idb' ? 'IndexedDB · ' + DB_NAME : h('span', { style: { color: 'var(--bad)' } }, 'memory only — nothing is saved (' + (DB.lastError || 'unavailable') + ')')),
       h('dt', 'persistent'), h('dd', d.persisted ? h('span', { style: { color: 'var(--ok)' } }, 'yes — protected from eviction') : h('span', { style: { color: 'var(--warn)' } }, 'no — browser may evict under pressure' + (d.reason ? ` (${d.reason})` : ''))),
       d.usedMB ? [h('dt', 'usage'), h('dd', `${d.usedMB} MB of ~${d.quotaMB} MB`)] : null,
@@ -56,51 +186,18 @@ const SettingsView = {
             h('span.tiny.muted', BACKUP.last ? 'last ' + fmtWhen(BACKUP.last) : BACKUP.error || ''))) : h('p.tiny.muted', 'This browser has no folder access (File System Access API). Use Chrome or Edge on localhost, or export by hand.')),
       h('div.row', { style: { marginTop: '12px' } },
         h('span.spacer'),
-        h('button.btn.ghost', { on: { click: () => pickModal('Start empty?', 'Wipes everything and starts with no projects. A copy of what is there now is kept first (in the notebook’s .scientia/kept, or the app’s backup folder).', [{ label: 'Wipe and start empty', run: async () => { await DISK.keep('before-start-empty'); await DB.wipe(); saveSettings({ seeded: true, dataEpoch: DATA_EPOCH }); _ls.set('nbSavedAt', null); await DISK.snapshot('start-empty'); location.reload(); } }]) } }, 'Start empty')));
-    App.setTitle('Settings', [h('span', DB.mode === 'idb' ? 'IndexedDB · ' + (DB.durable && DB.durable.persisted ? 'persistent' : 'evictable') : 'memory only')]);
-    return h('div.page.narrow', h('div.eyebrow', 'System'), h('h1.title', 'Settings'),
-      h('div.sec-h', h('h2', 'Notebook folder'), h('span.k', 'where your data lives')), notebook, h('div.sec'),
-      h('div.sec-h', h('h2', 'Devices'), h('span.k', 'your phone and tablet, in sync')), DEVICES.settings(), h('div.sec'),
-      h('div.sec-h', h('h2', 'Handwriting'), h('span.k', 'pen ink → text, read on this computer')), HWUI.settings(), h('div.sec'),
-      h('div.sec-h', h('h2', 'Recordings'), h('span.k', 'microphone → audio file + transcript, on this computer')), STTUI.settings(), h('div.sec'),
-      h('div.sec-h', h('h2', 'Structures'), h('span.k', 'colour & style per kind')),
-      h('p.serif.muted', { style: { marginTop: 0, fontSize: '14.5px' } }, `Select text, press ${keyLabel(s.structKey)}, then the letter. Text colour keeps the page calm; highlight makes a kind impossible to miss — mixing both is the recommended default.`),
-      kinds,
-      h('div.callout', { style: { marginTop: '10px' } }, h('b.h', 'Terms'), 'Terms render as ', h('span.term-demo', 'outlined bold'), ' — a channel colour never uses, so a term inside a highlighted barrier stays readable.'),
-      h('div.sec'), h('div.sec-h', h('h2', 'Templates'), h('span.k', 'per note type')),
-      h('p.serif.muted', { style: { marginTop: 0, fontSize: '14.5px' } }, 'For each note type, tick the template(s) to use. One ticked: applied automatically. Several ticked: New note asks which. None: notes start on an empty page. Any note can be saved as a template from its ⋯ menu.'),
-      tpls,
-      h('div.sec'), h('div.sec-h', h('h2', 'Note types'), h('span.k', 'profiles are data — a new type is a row')),
-      h('div.list', userProfiles().map(p => h('div.li', typechip(p.type), h('span.t', p.label + ' · a component is a ' + p.noun.toLowerCase(), h('span.s', `${p.scope}-scoped · ${p.ordered ? 'ordered' : 'unordered'}${p.steps ? ' · steps can be timed' : ''}${p.bindsTo ? ' · binds to ' + p.bindsTo : ''} · header: ${(p.headerFields || []).map(f => f.label).join(', ') || '—'}`)), h('button.btn.xs', { on: { click: () => SettingsView.editProfile(p) } }, 'Edit'))),
-        h('div.li', h('button.btn.sm', { on: { click: () => SettingsView.editProfile({ type: '', label: '', noun: 'Block', scope: 'theme', ordered: false, steps: false, bindsTo: null, headerFields: [] }, true) } }, '+ Note type'))),
-      h('div.sec'), h('div.sec-h', h('h2', 'Writing'), h('span.k', 'inside components')),
-      h('p.serif.muted', { style: { marginTop: 0, fontSize: '14.5px' } }, 'Lists: * or - then Space for bullets, 1. then Space for numbers, [ ] then Space for a checkbox; Enter continues, Tab / Shift+Tab nests. Ctrl+B bold, Alt+I italic, Ctrl+U underline. Backspace right after a replacement undoes it.'),
-      h('div.grid2', [['arrows', 'Arrows', '--> → · <-- ← · <-> ↔ · => ⇒'], ['science', 'Science symbols', '+- ± · >= ≥ · <= ≤ · != ≠ · ~= ≈ · 37 deg → 37° · 5 uL → 5 µL · 3x4 → 3×4'], ['scripts', 'Super- and subscripts', '^2 → ² · ^-1 → ⁻¹ · CO_2 → CO₂'], ['typo', 'Dashes and quotes', '-- → – · --- → — · ... → … · “curly” ‘quotes’']].map(([k, l, ex]) =>
-        h('label.row', { style: { gap: '8px', alignItems: 'flex-start' } }, h('input', { type: 'checkbox', checked: (s.autoReplace || {})[k] !== false, on: { change: e => saveSettings({ autoReplace: Object.assign({}, s.autoReplace, { [k]: e.target.checked }) }) } }), h('span', h('b', l), h('div.tiny.muted', ex))))),
-      h('div.sec'), h('div.sec-h', h('h2', 'Keys')),
-      h('div.grid2', h('label.f', h('span', 'Give meaning to a phrase'), sel(s.structKey, [['ctrl+enter', 'Ctrl+Enter'], ['alt+enter', 'Alt+Enter'], ['ctrl+shift+enter', 'Ctrl+Shift+Enter']], v => { saveSettings({ structKey: v }); App.refresh(); })),
-        h('label.f', h('span', 'Mark a term (outside Focus mode)'), sel(s.termKey, [['alt+w', 'Alt+W'], ['alt+shift+w', 'Alt+Shift+W']], v => { saveSettings({ termKey: v }); App.refresh(); }))),
-      h('div.callout', { style: { marginTop: '10px' } }, h('b.h', 'Ctrl+W'), 'Browsers close the tab on Ctrl+W before a page can see it. In ', h('b', 'Focus mode'), ' (Ctrl+. or ⛶ on a note) the app goes fullscreen and asks the browser to lock the W key, and then Ctrl+W marks a term. Outside Focus mode, ', keyLabel(s.termKey), ' does the same. While you are typing, closing the tab asks first.'),
-      h('div.grid2', { style: { marginTop: '10px' } }, h('label.f', h('span', 'Classify structures'), sel(s.classifyOn, [['mark', 'On marking — one key at the caret (default)'], ['review', 'In review — mark now as a takeaway, sort it later']], v => saveSettings({ classifyOn: v })))),
-      h('div.sec'), h('div.sec-h', h('h2', 'Weekly review')),
-      h('div.grid2', h('label.f', h('span', 'Week runs from'), sel(s.weekStartDow, [[6, 'Saturday → Friday (review Sat/Sun)'], [0, 'Sunday → Saturday'], [1, 'Monday → Sunday']], v => { saveSettings({ weekStartDow: +v }); changed(); })),
-        h('label.f', h('span', 'Current week'), h('label.switch', h('input', { type: 'checkbox', checked: s.reviewPreview, on: { change: e => { saveSettings({ reviewPreview: e.target.checked }); changed(); } } }), 'allow previewing the unfinished week'))),
-      h('div.sec'), h('div.sec-h', h('h2', 'Time')),
-      h('div.grid3', h('label.f', h('span', 'Timer cap (hours)'), num(s.timerCapHours, v => saveSettings({ timerCapHours: v || 4 }))),
-        h('label.f', h('span', 'Concurrent timers'), h('input.inp.mono', { value: s.maxTimers, disabled: true, style: { width: '70px' } })),
-        h('label.f', h('span', 'Idle prompt after (min)'), num(s.idleMinutes, v => saveSettings({ idleMinutes: v || 15 }))),
-        h('label.f', h('span', 'Suggest links within (days)'), num(s.inferWindowDays, v => { saveSettings({ inferWindowDays: v || 21 }); changed(); })),
-        h('label.f', h('span', 'Lineage shown (generations)'), num(s.lineageDepth, v => { saveSettings({ lineageDepth: v || 3 }); changed(); }))),
-      h('p.tiny.muted', 'Stamps move to any date and time (click the time on a box). Overlapping timers count once in day totals and are reported as multitask.'),
-      h('label.row', { style: { gap: '8px', marginTop: '10px', alignItems: 'flex-start' } }, h('input', { type: 'checkbox', checked: !!s.lockAfterDay, on: { change: e => { saveSettings({ lockAfterDay: e.target.checked }); changed(); } } }),
-        h('span', h('b', 'Lock wording once the day turns'), h('div.tiny.muted', 'Off: every component and structure stays editable, and notes and components can be deleted. On: after the day ends, changing recorded wording asks you to revise or add a correction (the original stays on record).'))),
-      h('div.sec'), h('div.sec-h', h('h2', 'Appearance')),
-      h('div.grid2', h('label.f', h('span', 'Theme'), sel(s.theme, [['auto', 'Follow system'], ['light', 'Light'], ['dark', 'Dark']], v => { saveSettings({ theme: v }); applyTheme(); applyKindCSS(); App.refresh(); })),
-        h('label.f', h('span', 'Default citation display'), sel(s.citeMode, [['title', 'Title'], ['author', 'Author–year'], ['number', 'Numbered']], v => saveSettings({ citeMode: v })))),
-      h('div.sec'), h('div.sec-h', h('h2', 'Labs'), h('span.k', 'try, keep or switch off')),
-      h('label.switch', h('input', { type: 'checkbox', checked: CANVAS.on(), on: { change: () => CANVAS.toggleLab() } }), 'Spatial canvases — arrange components, structures, papers and datasets; drawn lines become real connections; export as JSON Canvas'),
-      h('div', { style: { height: '8px' } }), h('button.btn.sm', { on: { click: () => CHORES.manage() } }, 'Recurring chores…'),
-      h('div.sec'), h('div.sec-h', h('h2', 'Storage'), h('span.k', 'export is schema-driven')), storage);
+        h('button.btn.ghost', { on: { click: () => pickModal('Start empty?', 'Wipes everything and starts with no projects. A copy of what is there now is kept first (in the notebook’s .scientia/kept, or the app’s backup folder).', [{ label: 'Wipe and start empty', run: async () => { await DISK.keep('before-start-empty'); await DB.wipe(); saveSettings({ seeded: true, dataEpoch: DATA_EPOCH, feat: { preset: 'standard', on: {} } }); _ls.set('nbSavedAt', null); await DISK.snapshot('start-empty'); location.reload(); } }]) } }, 'Start empty')));
+  },
+  /** The structure kinds' colours and styles (Features → Structures). */
+  kindsUI() {
+    const s = settings();
+    return h('div.list', KINDS.map(k => { const ks = s.kinds[k.id] || k;
+      const prev = h('span.serif', { style: { fontSize: '15px' } }, 'Seeding at 40k/cm² ', h('span.st.st-' + k.id, 'collapsed the leading edge'), ' within 40 frames.');
+      return h('div.kindrow', h('span.row', kchip(k.id), h('kbd', k.key.toUpperCase())),
+        h('input', { type: 'color', value: ks.color, title: 'Pick any RGB colour', on: { input: e => { saveSettings({ kinds: Object.assign({}, settings().kinds, { [k.id]: { color: e.target.value, mode: (settings().kinds[k.id] || k).mode } }) }); applyKindCSS(); e.target.nextSibling.value = e.target.value; SettingsView.repaint(); } } }),
+        h('input.inp.mono.hex', { value: ks.color, size: 8, on: { change: e => { const v = e.target.value.trim(); if (!/^#[0-9a-f]{6}$/i.test(v)) return toast('Use #RRGGBB'); saveSettings({ kinds: Object.assign({}, settings().kinds, { [k.id]: { color: v, mode: (settings().kinds[k.id] || k).mode } }) }); applyKindCSS(); SettingsView.redraw(); } } }),
+        h('div.seg', [['text', 'Text colour'], ['highlight', 'Highlight']].map(([m, l]) => h('button' + (ks.mode === m ? '.on' : ''), { on: { click: () => { saveSettings({ kinds: Object.assign({}, settings().kinds, { [k.id]: { color: (settings().kinds[k.id] || k).color, mode: m } }) }); applyKindCSS(); SettingsView.redraw(); } } }, l))),
+        prev); }));
   },
   editProfile(p, isNew) {
     const f = JSON.parse(JSON.stringify(p)), I = (k, ph) => h('input.inp', { value: f[k] || '', placeholder: ph, on: { input: e => f[k] = e.target.value } });

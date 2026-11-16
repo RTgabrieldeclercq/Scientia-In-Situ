@@ -47,7 +47,7 @@ sign-out and one's own password; `ADMIN_ONLY` pairing/device routes; switching t
   config); `/api/access/*`; making the lock and taking it off in place. `signin.html` is the page served instead of the app.
 - **Hooks in the lab's files** (keep them through every sync): serve.py — `atomic`/`load_json` seal and unseal, `notebook()`
   is `None` while closed, `set_notebook` asks `may_switch` and `copy_in`, `send_head` serves sealed files, `do_GET`/`do_POST`
-  ask `ACCESS.route` first, `media()`/`recording()` write through the lock, `ACCESS.attach(SYNC, STT, SLIDES)`; sisync.py —
+  ask `ACCESS.route` first, `media()`/`recording()` and the website capture (`/api/capture`, V3.971) write through the lock, `ACCESS.attach(SYNC, STT, SLIDES)`; sisync.py —
   `read_lines`/`append_line`. `attach()` wraps sttread (`_atomic`, `decode`, `Transcriber.job`) and `slides.convert`, and
   stops the server if one of them is gone.
 - `src/20b-access.js` (+ `.css`): Settings → Access, the sign-in card on a 423, the offline password on a paired device, no

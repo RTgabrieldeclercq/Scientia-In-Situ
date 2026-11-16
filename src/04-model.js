@@ -9,7 +9,7 @@ const M = {
   project: id => DB.get('projects', id), theme: id => DB.get('themes', id), term: id => DB.get('terms', id),
   lib: id => DB.get('library', id), session: id => DB.get('sessions', id), aim: id => DB.get('aims', id),
 
-  docBlocks(docId) { const d = M.doc(docId); return d ? d.blockIds.map(M.block).filter(Boolean) : []; },
+  docBlocks(docId) { const d = M.doc(docId); return d && Array.isArray(d.blockIds) ? d.blockIds.map(M.block).filter(Boolean) : []; },   // V3.988: a note can arrive from another device before its components (no blockIds yet)
   liveBlocks(docId) { return M.docBlocks(docId).filter(b => b.status !== 'superseded'); },
   blockTime(b) { return (b.stamp && b.stamp.at) || b.created; },
   docPath(d) {
@@ -128,6 +128,7 @@ const M = {
     const now = new Date();
     const b = Object.assign({ id: uid('c'), docId: d.id, kind: 'component', label: '', body: { text: '', marks: [] }, status: 'live',
       supersedes: [], supersededBy: [], created: isoLocal(now), modified: isoLocal(now), manualSec: null, step: null, x: null, y: null, w: 392, fields: [], boundTo: null }, init);
+    b.made = isoLocal(now);   // V3.975: when it was really made (a backdated note stamps `created` with its own date); activity (15d) counts this
     b.stamp = M.stampFor(d.id, now);
     DB.put('blocks', b);
     const i = afterId ? d.blockIds.indexOf(afterId) : -1;

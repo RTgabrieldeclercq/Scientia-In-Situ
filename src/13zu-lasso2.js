@@ -53,7 +53,7 @@ const LASSO2 = {
   move(pane, paper, e, wp0) {
     const sel = INK.sel, paths = sel.items.map(x => $(`:scope > .box[data-id="${x.id}"] .ink-svg path[data-i="${x.i}"]`, paper.world)).filter(Boolean), bx = LASSO2.boxes().map(b => ({ b, el: $(`:scope > .box[data-id="${b.id}"]`, paper.world), x: b.x || 0, y: b.y || 0 }));
     let d = { x: 0, y: 0 }; INK.drawing = e.pointerId;
-    const mv = ev => { if (ev.pointerId !== e.pointerId) return; ev.preventDefault(); const p = paper.toWorld(ev.clientX, ev.clientY); d = { x: p.x - wp0.x, y: p.y - wp0.y };
+    const mv = ev => { if (ev.pointerId !== e.pointerId) return; ev.preventDefault(); const p = paper.toWorld(ev.clientX, ev.clientY); d = { x: p.x - wp0.x, y: p.y - wp0.y }; if (ev.shiftKey) d = { x: Math.round(d.x / 14) * 14, y: Math.round(d.y / 14) * 14 };   // V3.992: Shift, a grid cell at a time
       paths.forEach(pt => pt.setAttribute('transform', `translate(${d.x},${d.y})`)); bx.forEach(o => { if (o.el) { o.el.style.left = (o.x + d.x) + 'px'; o.el.style.top = (o.y + d.y) + 'px'; } });
       $$('.ink-selbox', paper.world).forEach(x => x.style.transform = `translate(${d.x}px,${d.y}px)`); pane.drawWires && pane.drawWires(); };
     const up = ev => { if (ev.pointerId !== e.pointerId) return; INK.drawing = null; removeEventListener('pointermove', mv, true); removeEventListener('pointerup', up, true);
@@ -218,4 +218,15 @@ LASSO2.toggleBox = function (pane, id) {
     if (!(INK.sel.boxes || []).length && !INK.sel.items.length) return;
     e.preventDefault(); e.stopPropagation(); INK.deleteSel();
   }, true);
+}
+{
+  // V3.997 (Gabe: "When you have items selected, simply clicking outside of it, removes the selection."): a click on the note — the paper, or a component
+  // not in the selection — lets the lasso / Ctrl+click selection go. A drag (panning) keeps it; Ctrl, Shift or ⌘ add to it; the selection and its bar keep it.
+  let down = null;
+  document.addEventListener('pointerdown', e => { down = null; if (!INK.sel || e.button > 0 || e.ctrlKey || e.metaKey || e.shiftKey || !e.target || !e.target.closest) return; const t = e.target;
+    if (!t.closest('.paper') || t.closest('.ink-selbar, .ink-selbox, .box.lsel')) return; const bx = t.closest('.box[data-id]'); if (bx && (INK.sel.boxes || []).includes(bx.dataset.id)) return;   // one of the selection
+    if (!(t.matches('.paper, .grid, .world, .fade') || t.closest('.box'))) return;
+    down = { x: e.clientX, y: e.clientY, t: Date.now() }; }, true);
+  document.addEventListener('pointerup', e => { const d = down; down = null; if (!d || !INK.sel || Math.hypot(e.clientX - d.x, e.clientY - d.y) > 6 || Date.now() - d.t > 700) return;
+    INK.clearSel(); try { INK.paintBars(); } catch (x) { } }, true);
 }

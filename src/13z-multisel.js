@@ -4,7 +4,7 @@
    same component or in others. Then, on every piece at once:
      Ctrl+B / Alt+I / Ctrl+U  style · Ctrl+C copy (one piece per line) ·
      Backspace / Delete  remove · Alt+W (Ctrl+W in Focus)  one term for all ·
-     Ctrl+Enter or right-click  a menu with those and "Link all to a note…".
+     Ctrl+Enter or right-click  a menu with those and "Bridge all to a note…" (V3.981, 13zzu).
    A click without Ctrl, typing, or Esc lets them go.
    ========================================================================== */
 const MSEL = {
@@ -70,16 +70,13 @@ const MSEL = {
   },
   link() {
     const ps = MSEL.all(); if (!ps.length) return; const first = ps[ps.length - 1], el = MSEL.edOf(first.blockId), b = M.block(first.blockId); if (!el) return;
-    const [n, o] = ED.domPos(el, first.to), r = document.createRange(); r.setStart(n, o); const rc = r.getBoundingClientRect(), rect = rc.width || rc.height ? rc : el.getBoundingClientRect();
-    ED.linkPicker(el, b, { from: first.from, to: first.to, rect }, tg => {
-      MSEL.edit(ps, (body, list) => { const marks = body.marks.slice(); list.forEach(p => { const { a, z } = MSEL.trim(body.text, p); if (z > a) marks.push(Object.assign({ id: uid('m'), type: 'link', from: a, to: z }, tg)); }); return { text: body.text, marks }; });
-      MSEL.pieces = []; MSEL.paint(); toast('Linked ' + plural(ps.length, 'piece'));
-    });
+    // V3.981: each piece a bridge in one note, with one reason (13zzu)
+    BRIDGE.pieces(ps.map(p => { const bb = M.block(p.blockId), t = MSEL.trim(String((bb && bb.body && bb.body.text) || ''), p); return { blockId: p.blockId, from: t.a, to: t.z }; })).then(ok => { if (ok) { MSEL.pieces = []; MSEL.paint(); } });
   },
   menu(x, y) {
     const ps = MSEL.all(); if (!ps.length) return;
     ctxMenu(x, y, [{ head: plural(ps.length, 'selected piece') }, { label: 'Bold', key: 'Ctrl+B', run: () => MSEL.style('b') }, { label: 'Italic', key: 'Alt+I', run: () => MSEL.style('i') }, { label: 'Underline', key: 'Ctrl+U', run: () => MSEL.style('u') }, 'sep',
-      { label: 'Mark all as one term', key: keyLabel(settings().termKey), run: () => MSEL.term() }, { label: 'Link all to a note…', run: () => MSEL.link() }, 'sep',
+      { label: 'Mark all as one term', key: keyLabel(settings().termKey), run: () => MSEL.term() }, { label: 'Bridge all to a note…', run: () => MSEL.link() }, 'sep',
       { label: 'Copy', key: 'Ctrl+C', run: () => { MSEL.copy(ps); toast('Copied ' + plural(ps.length, 'piece')); } }, { label: 'Delete them', key: 'Del', danger: true, run: () => MSEL.del() }]);
   },
 };

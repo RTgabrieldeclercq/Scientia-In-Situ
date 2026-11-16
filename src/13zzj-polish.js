@@ -4,7 +4,11 @@
    • The hint line at the bottom of a note has a ×: once closed it stays
      closed (settings().hintOff); ⋯ → Shortcuts… shows the same.
    • A large note (over 100 components) lets the browser skip the boxes far
-     off screen (content-visibility), so it pans smoothly.
+     off screen (content-visibility), so it pans smoothly. V3.980: only when
+     zoomed in (from 60 %, off again under 50 %) — zoomed out nearly every
+     box is on screen, and boxes at the rim switching between skipped and
+     drawn flickered (a PDF or a page drawn again each time); and "boxes
+     never overlap" measures them whole (12 settle).
    • The reader's side panel gets chips: Mine · Notes, to show or hide the
      note's own highlights and the notes under them.
    • + Insert lists the rows made for this note's type first, then the ones
@@ -13,8 +17,10 @@
    bar in V3.947. The header's sync dot is the device sync's own, 13zc.)
    ========================================================================== */
 const POLISH = {
+  /** V3.980: a big note skips its far boxes only when zoomed in (on from 60 %, off under 50 %). */
+  cv(pane) { const host = pane && pane.host, P = pane && pane.paper; if (!host || !P) return; const on = host.classList.contains('big'), z = P.view.z, want = !!pane._many && (on ? z >= .5 : z >= .6); if (want !== on) host.classList.toggle('big', want); },
   /** The hint line: a × that closes it for good. */
-  hint(pane) { const el = pane && pane.hint; if (!el) return; if (settings().hintOff) { el.hidden = true; return; }
+  hint(pane) { const el = pane && pane.hint; if (!el) return; if (typeof FEAT !== 'undefined' && FEAT.by.hints ? !FEAT.on('hints') : settings().hintOff) { el.hidden = true; return; }   // V3.995: Settings → Features → Help lines
     const put = () => { if (settings().hintOff || $('.hint-x', el) || !el.childNodes.length) return; el.append(h('button.hint-x', { type: 'button', title: 'Close this line for good (⋯ → Shortcuts… shows it)', on: { click: ev => { ev.stopPropagation(); saveSettings({ hintOff: true }); el.hidden = true; toast('The hint line is gone — ⋯ → Shortcuts… lists the keys'); } } }, '×')); };
     put(); if (!el._hintX) { el._hintX = true; new MutationObserver(put).observe(el, { childList: true }); } },   // the line is repainted on every change: the × comes back each time
   shortcuts() { modal({ title: 'Shortcuts', actions: [{ label: 'Close' }], body: h('div.list', [['Ctrl+Enter', 'what a phrase is: a claim, a barrier, a question…'], ['Ctrl+W (Focus) · Alt+W', 'mark a term'], ['Ctrl+I · /cite', 'cite a paper'], ['/', 'commands in the text; on the canvas, the navigation bar'], ['@', 'name a person'], ['drag ●', 'connect two components; the last relation comes first'], ['Ctrl+click · lasso', 'select several; their bar does more'], ['P', 'pan (Move)'], ['Ctrl+K · Ctrl+Shift+K', 'the Atlas · the quick list'], ['Alt+← · Alt+→', 'the previous · next note'], ['Ctrl+0', 'fit'], ['Ctrl+Z · Ctrl+Shift+Z', 'undo · redo'], ['Esc', 'the bar, a popover, then what is open']].map(([k, w]) => h('div.li', h('kbd', k), h('span.t', w)))) }); },
@@ -28,7 +34,9 @@ const POLISH = {
 };
 {
   // the hint's ×, and ⋯ → Shortcuts…; big notes
-  const rr = DocView.render; DocView.render = function (docId) { const host = rr.apply(this, arguments); try { POLISH.hint(this); const n = M.liveBlocks(docId).length; (this.host || host) && (this.host || host).classList.toggle('big', n > 100); } catch (e) { } return host; };
+  const rr = DocView.render; DocView.render = function (docId) { const host = rr.apply(this, arguments); try { POLISH.hint(this); this._many = M.liveBlocks(docId).length > 100; POLISH.cv(this); } catch (e) { } return host; };
+  const fl = DocView.fill; DocView.fill = function (d) { const r = fl.apply(this, arguments); try { this._many = M.liveBlocks(d.id).length > 100; POLISH.cv(this); } catch (e) { } return r; };
+  const pa = Paper.prototype.apply; Paper.prototype.apply = function () { const r = pa.apply(this, arguments); try { const host = this.el && this.el.closest && this.el.closest('.canvas-host'); if (host && host._dv) POLISH.cv(host._dv); } catch (e) { } return r; };
   const dm = DocView.docMenu; if (dm) DocView.docMenu = function (d, e) { const cm = ctxMenu; let done = false; window.ctxMenu = function (x, y, items) { if (!done) { done = true; const i = items.findIndex(it => it && it.label === 'View as it stood on…'); items.splice(i >= 0 ? i : items.length, 0, { label: 'Shortcuts…', sub: 'The keys, and the hint line’s words', run: () => POLISH.shortcuts() }); } return cm.apply(this, arguments); }; try { return dm.apply(this, arguments); } finally { window.ctxMenu = cm; } };
   // the reader's chips
   setTimeout(() => { if (typeof MXHL === 'undefined') return; const mo = MXHL.open; MXHL.open = function (ov, srcId) { const r = mo.apply(this, arguments); try { POLISH.chips(ov); } catch (e) { } return r; }; }, 0);
