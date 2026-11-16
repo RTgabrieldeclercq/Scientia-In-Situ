@@ -1,5 +1,12 @@
 /* ==========================================================================
-   14 · Terms & the lens — how a term's components chain together
+   14 · Terms & the lens — how a term's components chain together.
+   V3.969 (Gabe: "The Atlas reshaping should apply to terms"): the lens opens
+   as the Atlas's nests (14d) — the term is the outer sphere, its themes
+   inside (the linked projects too), the notes inside those with the
+   components that use it as dots, the other terms and the papers they carry
+   orbiting the note they belong to, and the connections between them drawn
+   in the lens's inks. Chain, beside Nests in the bar, is the board of boxes
+   as before (lanes by theme or note, columns by day).
    ========================================================================== */
 const TermsView = {
   render() {
@@ -26,7 +33,7 @@ const LensView = {
   canvas: true, title: true, state: {},
   render(termId) {
     const t = M.term(termId); if (!t) return h('div.canvas-host', h('div.empty-c', 'Term not found'));
-    const st = LensView.state[termId] || (LensView.state[termId] = { scope: 'project', scopeId: t.projectId, imported: false });
+    const st = LensView.state[termId] || (LensView.state[termId] = { scope: 'project', scopeId: t.projectId, imported: false, view: 'nest' });
     const occ = IX.termOcc.get(termId) || [], docs = [...new Set(occ.map(o => o.docId))].map(M.doc).filter(Boolean);
     const themes = [...new Set(docs.map(d => d.themeId).filter(Boolean))].map(M.theme).filter(Boolean);
     if (st.scope === 'theme' && !themes.find(x => x.id === st.scopeId)) st.scopeId = themes[0] && themes[0].id;
@@ -37,9 +44,10 @@ const LensView = {
     LensView._G = G;
     const setScope = s => { st.scope = s; st.scopeId = s === 'project' ? t.projectId : s === 'theme' ? (themes[0] || {}).id : (docs.find(d => prof(d.type).steps) || docs[0] || {}).id; App._mounted = false; App.refresh(); };
     App.setTitle(t.label, [h('span', 'term lens · ' + (M.project(t.projectId) || { name: 'General' }).name), h('span', `${plural(docs.length, 'note')} · ${plural(occ.length, 'occurrence')} · ${plural(G.edges.filter(e => e.type !== 's').length, 'connection')}`), fam.length > 1 ? h('span.pill.mag', 'linked to ' + (fam.length - 1) + ' other project' + (fam.length > 2 ? 's' : '')) : null]);
-    const host = h('div.canvas-host'), P = makePaper(host, { minZ: .25 });
-    const B = LensView.board(G, st, t, P); P.world.append(B.el);
+    const host = h('div.canvas-host'), chain = st.view === 'chain', P = chain ? makePaper(host, { minZ: .25 }) : null;
+    const B = chain ? LensView.board(G, st, t, P) : null; if (B) P.world.append(B.el); else host.append(LensView.nests(G, st, t));
     const bar = h('div.lensbar.nopan',
+      h('div.seg.lens-view', [['nest', 'Nests', 'The term as nests: its themes, their notes, the components that use it, what they carry orbiting'], ['chain', 'Chain', 'The components as boxes: lanes by theme or note, columns by day']].map(([k, l, tip]) => h('button' + (st.view === k ? '.on' : ''), { title: tip, on: { click: () => { if (st.view === k) return; st.view = k; App._mounted = false; App.refresh(); } } }, l))),
       h('div.seg', [['project', 'Project · large'], ['theme', 'Theme · medium'], ['doc', 'Experiment · small']].map(([k, l]) => h('button' + (st.scope === k ? '.on' : ''), { on: { click: () => setScope(k) } }, l))),
       st.scope === 'theme' && themes.length ? h('select.inp', { on: { change: e => { st.scopeId = e.target.value; App._mounted = false; App.refresh(); } } }, themes.map(x => h('option', { value: x.id, selected: x.id === st.scopeId }, x.name))) : null,
       st.scope === 'doc' && docs.length ? h('select.inp', { on: { change: e => { st.scopeId = e.target.value; App._mounted = false; App.refresh(); } } }, docs.map(x => h('option', { value: x.id, selected: x.id === st.scopeId }, prof(x.type).label + ' · ' + x.title))) : null,
@@ -51,12 +59,56 @@ const LensView = {
       G.insights.length ? G.insights.map(i => h('div.insight' + (i.cls ? '.' + i.cls : ''), { on: { mouseenter: () => LensView.hl(i.path), mouseleave: () => LensView.hl([]), click: () => App.openBlock(i.path[i.path.length - 1]) } }, h('b', i.title), i.body))
         : h('div.empty', 'Connect components that use this term — chains, pivots and faulty assumptions surface here.'),
       h('div.ins-s', h('h6', 'Occurrences', h('span.muted', occ.length)), LensView.occList(occ)),
-      B.legend, h('div.ins-s', h('h6', 'Key'), h('div.lkey', LensView.key('x', 'explicit connection'), LensView.key('r', 'pulled in / referenced'), LensView.key('v', 'via other components'), LensView.key('s', 'suggested — click to accept or dismiss'))));
+      B && B.legend, h('div.ins-s', h('h6', 'Key'), h('div.lkey', LensView.key('x', 'explicit connection'), LensView.key('r', 'pulled in / referenced'), LensView.key('v', 'via other components'), LensView.key('s', 'suggested — click to accept or dismiss'))));
     const tog = h('button.btn.sm.lenstog.nopan', { hidden: true, on: { click: () => { side.classList.add('open'); tog.hidden = true; } } }, 'What the wiring says');
     host.append(bar, side, tog); if (innerWidth < 820) { side.classList.remove('open'); tog.hidden = false; }
-    requestAnimationFrame(() => { const [w, hh] = B.layout(); const sv = LensView._view && LensView._view[termId + st.scope + st.scopeId]; if (sv) { Object.assign(P.view, sv); P.apply(); } else { P.fit({ x0: 0, y0: 0, x1: Math.min(w, 2400) + (innerWidth < 820 ? 20 : 340), y1: Math.min(hh, 1400) + 60 }, false); if (P.view.z < .62) { P.view.z = .62; P.view.x = 24; P.view.y = 70; P.apply(); } if (innerWidth < 820) { P.view.y += 150; P.apply(); } } });
-    P.o.onView = v => { (LensView._view = LensView._view || {})[termId + st.scope + st.scopeId] = { ...v }; };
+    if (B) requestAnimationFrame(() => { const [w, hh] = B.layout(); const sv = LensView._view && LensView._view[termId + st.scope + st.scopeId]; if (sv) { Object.assign(P.view, sv); P.apply(); } else { P.fit({ x0: 0, y0: 0, x1: Math.min(w, 2400) + (innerWidth < 820 ? 20 : 340), y1: Math.min(hh, 1400) + 60 }, false); if (P.view.z < .62) { P.view.z = .62; P.view.x = 24; P.view.y = 70; P.apply(); } if (innerWidth < 820) { P.view.y += 150; P.apply(); } } });
+    if (P) P.o.onView = v => { (LensView._view = LensView._view || {})[termId + st.scope + st.scopeId] = { ...v }; };
     return host;
+  },
+  /** V3.969 · the lens as nests (14d): the term the outer sphere; its themes (a linked project's notes in a group of their own) inside;
+   *  each note with the components that use it (and those it reaches through, faint) as dots; the other terms, people and papers
+   *  they carry orbiting the note they belong to; the connections between the components drawn in the lens's inks, with arrows. */
+  nests(G, st, t) {
+    const stage = h('div.lens-nest'), card = h('div.lens-card.nopan', { hidden: true }), css = getComputedStyle(document.documentElement), ink = n => css.getPropertyValue('--' + n).trim();
+    const STY = { x: { col: ink('mag') || '#B5179E' }, r: { col: ink('teal') || '#0FA3B1' }, v: { col: ink('mag') || '#B5179E', dash: [2, 3] }, s: { col: ink('ink-3') || '#8a8f98', dash: [6, 4] } };
+    const fam = new Set(M.termFamily(t.id)), N = [], E = [], seen = new Map(), add = (id, o) => { if (!seen.has(id)) { const v = Object.assign({ id }, o); seen.set(id, v); N.push(v); } return seen.get(id); };
+    add('T', { kind: 'term', label: t.label });
+    G.nodes.forEach(n => { const b = n.b, d = b && M.doc(b.docId); if (!d) return; const k = IX.kindsOf(b)[0];
+      add(d.id, { kind: 'note', label: d.title || 'Untitled', sub: M.docPath(d) });
+      add(b.id, { kind: 'cmp', label: M.blockName(b) + (b.body && b.body.text ? ' — ' + snippet(b.body.text.split(OBJ).join(''), 40) : ''), doc: d.id, via: !!n.via, color: k ? (ink('k-' + k) || KIND[k].color) : null });
+      E.push({ a: b.id, b: d.id, kind: 'in', rel: 'in' }); if (!n.via) E.push({ a: b.id, b: 'T', kind: 'term', rel: 'uses' });
+      LensView.termsIn(b).forEach(id => { const x = !fam.has(id) && M.term(id); if (!x) return; add(id, { kind: x.kind === 'person' ? 'person' : 'term', label: x.label }); E.push({ a: b.id, b: id, kind: 'term', rel: 'mentions' }); });
+      ((b.body && b.body.marks) || []).forEach(m => { const r = m.type === 'cite' && M.lib(m.ref); if (r) { add(r.id, { kind: 'paper', label: r.title || r.url || 'Paper' }); E.push({ a: b.id, b: r.id, kind: 'cite', rel: 'cites' }); } }); });
+    G.edges.forEach(e => E.push(Object.assign({ a: e.from, b: e.to, kind: 'wire', type: e.type, dir: true, lens: e,
+      rel: e.type === 's' ? 'suggested: ' + e.rel : e.type === 'v' ? 'via ' + plural((e.via || []).length, 'component') : (REL[e.rel] || { label: e.rel || 'connection' }).label }, STY[e.type] || STY.x)));
+    const group = d => d.projectId !== t.projectId && st.scope === 'project' ? { id: 'P:' + d.projectId, name: 'Linked · ' + ((M.project(d.projectId) || {}).name || 'another project'), none: true } : NEST.GROUP.theme(d);
+    const I = NEST.make({ center: 'T', rootLabel: t.label, group, groupWord: 'theme', links: true, sel: st.sel || (st.sel = { focus: null, path: [], time: 1 }),
+      panel: I => LensView.card(I, card), moved: (I, n) => { st.nest = n.id; },
+      open: (I, hv) => { const v = hv.o.v; if (hv.kind === 'nest') { if (hv.o.doc) App.go('#/doc/' + hv.o.id); return; } if (!v) return;
+        if (v.kind === 'cmp') return App.openBlock(v.id); if ((v.kind === 'term' || v.kind === 'person') && M.term(v.id)) return App.go('#/lens/' + v.id); if (v.kind === 'paper' && M.lib(v.id)) App.go('#/read/' + v.id); } });
+    I.G = NEST.graph(N, E); LensView._nest = I;
+    stage.append(card, h('div.lens-foot.tiny.muted', 'click a nest: fly in · click outside: fly out · click a dot: what it is · drag: turn · wheel: closer · hover: its threads · double-click: open'));
+    NEST.mount(I, stage, 0);
+    setTimeout(() => { if (!stage.isConnected) return; NEST.size(I); NEST.show(I, st.nest); LensView.card(I, card); }, 0);
+    return stage;
+  },
+  /** What the picked node is, over the map: a component's words and connections (a suggested one asks to be accepted), a term's lens, a paper. */
+  card(I, el) {
+    const G = I.G, id = I.sel.focus, v = id && G && G.byId.get(id); if (!v) { el.hidden = true; el.replaceChildren(); return; }
+    const pill = (txt, col) => h('span.pill', { style: { background: col, color: '#fff' } }, txt), acts = [], body = [];
+    if (v.kind === 'cmp') { const b = M.block(v.id), d = b && M.doc(b.docId), links = G.edges.filter(e => e.kind === 'wire' && (e.a === v.id || e.b === v.id));
+      body.push(h('div.row', { style: { gap: '4px' } }, (b ? IX.kindsOf(b) : []).map(k => kchip(k)), v.via ? h('span.pill', { title: 'It does not use the term; a chain between two that do runs through it' }, 'via') : null),
+        h('b', b ? M.blockName(b) : v.label), d ? h('div.tiny.muted', M.docPath(d)) : null, b ? h('div.lc-t', snippet(String((b.body && b.body.text) || '').split(OBJ).join(''), 260)) : null,
+        links.length ? h('div.at-edges', links.map(e => { const o = G.byId.get(e.a === v.id ? e.b : e.a); return h('div.at-edge', { title: e.type === 's' ? 'Accept or dismiss this suggestion' : 'Go to it', on: { click: ev => e.type === 's' ? LensView.suggest(e.lens, ev.clientX, ev.clientY + 10) : NEST.focusOn(I, o.id, true) } },
+          h('i', { style: { background: e.col } }), h('span.s', (e.a === v.id ? '→ ' : '← ') + e.rel), h('span', snippet(o.label.split(' — ')[0], 50))); })) : h('div.tiny.muted', 'Not connected to another component that uses the term.'));
+      if (b) acts.push(h('button.btn.xs.pri', { type: 'button', title: 'Open its note at it · Alt+click: beside', on: { click: e => App.jump(v.id, e) } }, 'Open'));
+    } else if (v.kind === 'note') { const d = M.doc(v.id); body.push(pill('Note', NEST.pal().note), h('b', v.label), d ? h('div.tiny.muted', M.docPath(d)) : null, h('div.tiny.muted', plural(G.nodes.filter(x => x.kind === 'cmp' && x.doc === v.id && !x.via).length, 'component') + ' using it')); acts.push(h('a.btn.xs.pri', { href: '#/doc/' + v.id }, 'Open the note'));
+    } else { const uses = (G.adj.get(v.id) || []).filter(x => (G.byId.get(x) || {}).kind === 'cmp').length;
+      body.push(pill(v.kind === 'paper' ? 'Paper' : v.kind === 'person' ? 'Person' : 'Term', NEST.pal()[v.kind]), h('b', v.label), h('div.tiny.muted', 'in ' + plural(uses, 'component') + ' that use “' + I.o.rootLabel + '”'));
+      if ((v.kind === 'term' || v.kind === 'person') && M.term(v.id)) acts.push(h('a.btn.xs.pri', { href: '#/lens/' + v.id }, 'Its lens')); if (v.kind === 'paper' && M.lib(v.id)) acts.push(h('a.btn.xs.pri', { href: '#/read/' + v.id }, 'Read')); }
+    acts.push(h('button.btn.xs.ghost', { type: 'button', on: { click: () => NEST.focusOn(I, null, false) } }, 'Unfocus'));
+    el.replaceChildren(...body, h('div.row', { style: { gap: '6px', marginTop: '8px', flexWrap: 'wrap' } }, acts)); el.hidden = false;
   },
   occList(occ) {
     const rows = occ.map(o => ({ o, b: M.block(o.blockId) })).filter(x => x.b).sort((a, b) => +new Date(M.blockTime(b.b)) - +new Date(M.blockTime(a.b)));
@@ -66,7 +118,7 @@ const LensView = {
   },
   key(type, label) { const sw = { x: 'var(--mag)', r: 'var(--teal)', v: 'var(--mag)', s: 'var(--ink-3)' }[type], da = { x: '', r: '', v: '2 3', s: '6 4' }[type];
     return h('span.row', { style: { gap: '6px' }, html: `<svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" stroke="${sw}" stroke-width="1.6" stroke-dasharray="${da}"/></svg>${esc(label)}` }); },
-  hl(path) { $$('.lbox').forEach(n => n.classList.toggle('hl', path.includes(n.dataset.id))); },
+  hl(path) { $$('.lbox').forEach(n => n.classList.toggle('hl', path.includes(n.dataset.id))); const I = LensView._nest; if (I && I.cv && I.cv.isConnected) { I.lit = path.length ? new Set(path) : null; NEST.draw(I); } },
   TERMCOL: ['#E07A1F', '#3A6FE0', '#2E9E5B', '#B5179E', '#C9A227', '#0FA3B1'],
   termsIn: b => [...new Set(((b && b.body && b.body.marks) || []).filter(m => m.type === 'term' && m.ref).map(m => m.ref))],
   /** The lens as boxes: every component in full, under a header naming its note; lanes by theme or note, columns by day.
