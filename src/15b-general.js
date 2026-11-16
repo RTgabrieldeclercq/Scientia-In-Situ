@@ -1,7 +1,7 @@
 /* ==========================================================================
    15b · Notes outside any project ("General"). A meeting with a mentor, a
-   seminar, a broad idea: + Note → Project: "No project (general)". They sit
-   at the top of the Portfolio in a General section, and are searched,
+   seminar, a broad idea: + Note → Project: "No project (general)". They are
+   General in the Portfolio's list (V3.988), and are searched,
    linked and listed like any note. Their links reach notes in any project;
    the note's header shows which projects it touches. ⋯ → "Project &
    theme…" moves any note into a project, between projects, or out of one.
@@ -35,16 +35,4 @@ const GENERAL = {
     if (d && !d.projectId && this === App.pane) setTimeout(() => { const meta = $('#meta'); if (!meta || $('.gen-touch', meta)) return; const T = GENERAL.touches(d);
       meta.append(h('span.gen-touch', h('span.pill', 'General'), T.length ? [' touches ', ...T.map(({ p, n }, i) => [i ? ', ' : '', h('a', { title: plural(n, 'linked note'), on: { click: () => App.go('#/project/' + p.id) } }, p.name)])] : ' · not tied to a project')); }, 0);
     return r; };
-  // Portfolio: a General section above the projects
-  const pr = PortfolioView.render; PortfolioView.render = function (...a) { const host = pr.apply(this, a); const G = GENERAL.docs(); if (!G.length) return host;
-    const W = $('.world', host) || host.querySelector('.paper > div'); if (!W) return host;
-    const CW = 260, GAP = 40, CARD = 64, cols = Math.min(4, Math.max(1, Math.ceil(G.length / 4))), rows = Math.ceil(G.length / cols), H = 96 + rows * (CARD + 12) + 70;
-    $$(':scope > *', W).forEach(el => { if (el.style && el.style.top) el.style.top = (parseFloat(el.style.top) + H) + 'px'; });
-    const sv = $(':scope > svg.plinks', W); if (sv) sv.style.transform = `translateY(${H}px)`;
-    W.append(h('div.box.pcard.gcard.nopan', { style: { left: '0px', top: '0px', width: (cols * (CW + GAP) - GAP) + 'px' } }, h('div.pk', 'Outside projects'), h('div.pn', 'General'), h('div.ps', plural(G.length, 'note') + ' · meetings, seminars, broad ideas — they link into any project')));
-    G.sort((a, b) => b.modified.localeCompare(a.modified)).forEach((d, i) => { const x = (i % cols) * (CW + GAP), y = 96 + Math.floor(i / cols) * (CARD + 12), T = GENERAL.touches(d);
-      W.append(h('div.box.dcard.nopan', { 'data-doc': d.id, style: { left: x + 'px', top: y + 'px', width: CW + 'px' }, on: { click: () => App.go('#/doc/' + d.id) } },
-        h('div.row', typechip(d.type), h('span.spacer'), h('span.mono.tiny.muted', fmtDay(d.modified))), h('div.dn', d.title),
-        h('div.ds', T.length ? 'touches ' + T.map(t => t.p.name).join(', ') : 'not linked to a project yet'))); });
-    return host; };
 }

@@ -57,15 +57,20 @@ const SYNTH = {
     const have = new Set(mine().filter(b => b.kind === 'ref').flatMap(b => [b.refItemId, b.refBlockId]).filter(Boolean));
     const lit = new Set(mem.filter(SYNTH.lit).map(x => x.id));   // V3.976: a lit review gives only what is flagged
     const items = DB.where('items', it => ids.has(it.originDocId) && !lit.has(it.originDocId) && !it.correctedBy && SYNTH.KINDS.includes(it.kind) && !have.has(it.id)).sort((a, b) => String(a.created || '').localeCompare(String(b.created || '')));
+    // V3.988: kinded components come whole — an Insight as a takeaway, a Result as a result, an Anomaly nothing explains as a barrier (unless their own structures already come)
+    const CK = typeof CKINDS !== 'undefined' && CKINDS.counted ? CKINDS.counted([...ids].filter(id => !lit.has(id))) : { takeaway: [], evidence: [], barrier: [] };
+    const comps = [...CK.takeaway.map(b => ({ k: 'takeaway', b })), ...CK.evidence.map(b => ({ k: 'result', b })), ...CK.barrier.map(b => ({ k: 'barrier', b }))]
+      .filter(c => !have.has(c.b.id) && !DB.where('items', it => it.originBlockId === c.b.id && it.kind === c.k && !it.correctedBy).length);
     const heads = new Map(mine().filter(b => b.synthHead).map(b => [b.synthHead, b])), H = [...heads.values()]; let n = 0;
     // the columns go right of what the note holds (its header and template boxes); a kind new since goes right of the last column
     const F0 = mine().filter(b => b.synthFrom), at = [...H, ...F0];
     let nextX = at.length ? Math.max(...at.map(b => b.x)) + SYNTH.COL : SYNTH.start(d); const y0 = at.length ? Math.min(...at.map(b => b.y)) : SYNTH.Y0;
-    SYNTH.KINDS.forEach(k => { let head = heads.get(k); if (!head && !items.some(it => it.kind === k)) return;
+    SYNTH.KINDS.forEach(k => { let head = heads.get(k); if (!head && !items.some(it => it.kind === k) && !comps.some(c => c.k === k)) return;
       if (!head) { head = M.addBlock(d.id, null, { kind: 'component', x: nextX, y: y0, w: 392 }); head.body = { text: SYNTH.HEAD[k], marks: [] }; head.synthHead = k; DB.put('blocks', head); nextX += SYNTH.COL; }
       const below = mine().filter(b => b.id !== head.id && b.x != null && Math.abs(b.x - head.x) < SYNTH.COL / 2 && b.y > head.y);
       let y = Math.max(head.y + 96, ...below.map(b => b.y + 136));
-      items.filter(it => it.kind === k).forEach(it => { M.pullInto(d.id, null, { itemId: it.id, x: head.x, y }); y += SYNTH.ROW; n++; }); });
+      items.filter(it => it.kind === k).forEach(it => { M.pullInto(d.id, null, { itemId: it.id, x: head.x, y }); y += SYNTH.ROW; n++; });
+      comps.filter(c => c.k === k).forEach(c => { M.pullInto(d.id, null, { blockId: c.b.id, x: head.x, y }); y += SYNTH.ROW; n++; }); });
     // each stage's "what this note adds up to", once
     const from = mine().filter(b => b.synthFrom), said = new Set(from.map(b => b.synthFrom)), x = from.length ? from[0].x : nextX; let fy = from.length ? Math.max(...from.map(b => b.y)) + 170 : y0;
     mem.forEach(m => { const t = m.synthesis && String(m.synthesis.text || '').trim(); if (!t || said.has(m.id) || lit.has(m.id)) return;

@@ -21,6 +21,15 @@
      and the structure's hover card lists what ends there.
    • Authors of the library's papers are terms of a kind of their own
      ("person", auto, with their papers), marked in the text like any term.
+   • V3.988 — the results side (Gabe: "When you have a result labelled, then
+     the possible links to it are insight, correlation, or more"): Result,
+     Insight, Mechanism, Control, Anomaly, Caveat, with six links of their
+     own — correlates with (no arrow), reveals, explains, replicates,
+     validates, qualifies. A Result counts as evidence and an Insight as a
+     takeaway wherever those are asked for (a Hypothesis, a Verdict, an aim's
+     milestone, the Portfolio's dots, the Synthesis); an Anomaly that nothing
+     explains counts as an open barrier in the Portfolio until something does.
+     Correlation is a link, never a kind, and never becomes "caused".
    ========================================================================== */
 /* the kinds' own relations, besides the standard ones (02-schema RELATIONS); `next` is the story's bare arrow */
 const KREL = [
@@ -32,12 +41,21 @@ const KREL = [
   { id: 'produces',    label: 'produces',    dir: true, verb: 'produces',     inv: 'produced by' },
   { id: 'illustrates', label: 'illustrates', dir: true, verb: 'illustrates',  inv: 'illustrated by' },
   { id: 'next',        label: '',            dir: true, verb: 'goes on into', inv: 'goes on from', arrow: true, name: 'just the arrow' },
+  // V3.988 — the results side
+  { id: 'correlates',  label: 'correlates with', dir: false, verb: 'correlates with', inv: 'correlates with' },
+  { id: 'reveals',     label: 'reveals',     dir: true, verb: 'reveals',      inv: 'revealed by' },
+  { id: 'explains',    label: 'explains',    dir: true, verb: 'explains',     inv: 'explained by' },
+  { id: 'replicates',  label: 'replicates',  dir: true, verb: 'replicates',   inv: 'replicated by' },
+  { id: 'validates',   label: 'validates',   dir: true, verb: 'validates',    inv: 'validated by' },
+  { id: 'qualifies',   label: 'qualifies',   dir: true, verb: 'qualifies',    inv: 'qualified by' },
 ];
 KREL.forEach(r => { REL[r.id] = r; });
-Object.assign(WIRECOL, { fuels: '#c98a1c', tests: '#2f6fb0', predicts: '#7a4fc9', refines: '#5f8f3a', answers: '#3f9a6a', produces: '#3a8f8f', illustrates: '#8a8f98', next: '#55606e' });
+Object.assign(WIRECOL, { fuels: '#c98a1c', tests: '#2f6fb0', predicts: '#7a4fc9', refines: '#5f8f3a', answers: '#3f9a6a', produces: '#3a8f8f', illustrates: '#8a8f98', next: '#55606e',
+  correlates: '#93285c', reveals: '#6b4fa3', explains: '#2a7f86', replicates: '#1e5e8c', validates: '#5f8f3a', qualifies: '#b07d06' });
 const CKINDS = {
   /** What a link can be with — a kind, a structure the component carries, or what the component is — and how it reads. */
   CLASSES: { any: 'anything', hypothesis: 'a Hypothesis', question: 'a question', verdict: 'a Verdict', method: 'a Method', meeting: 'a Meeting', feedback: 'Feedback', story: 'a Story',
+    insight: 'an Insight', mechanism: 'a Mechanism', control: 'a Control', anomaly: 'an Anomaly', caveat: 'a Caveat',
     evidence: 'evidence', claim: 'a claim', observation: 'an observation', result: 'a result', barrier: 'a barrier', decision: 'a decision', idea: 'an idea', takeaway: 'a takeaway', resolution: 'a resolution',
     task: 'a task', figure: 'an image panel', run: 'a protocol run', protocol: 'a protocol', material: 'a material', paper: 'a paper', note: 'a note', person: 'a person', data: 'data' },
   BASE: [
@@ -61,7 +79,7 @@ const CKINDS = {
       { rel: 'tests', with: ['hypothesis'] },
       { rel: 'follows', with: ['protocol', 'method'] },
       { rel: 'needs', with: ['material', 'protocol'] },
-      { rel: 'produces', with: ['run', 'evidence', 'figure'] },
+      { rel: 'produces', with: ['result', 'run', 'evidence', 'figure', 'control', 'anomaly'] },
       { rel: 'leads', with: ['question'], in: true } ] },
     { id: 'meeting', label: 'Meeting', color: '#6B4FA3', links: [
       { rel: 'leads', with: ['decision', 'task', 'question', 'hypothesis'] },
@@ -74,6 +92,42 @@ const CKINDS = {
       { rel: 'next', with: ['any'] },
       { rel: 'illustrates', with: ['figure'], in: true },
       { rel: 'comments', with: ['feedback'], in: true } ] },
+    /* V3.988 — the results side. `result` is also the structure (Ctrl+Enter, s): a component that carries one links as a result too. */
+    { id: 'result', label: 'Result', color: '#1E5E8C', links: [
+      { rel: 'produces', with: ['method', 'protocol', 'run'], in: true },
+      { rel: 'supports', with: ['hypothesis', 'mechanism', 'claim'] }, { rel: 'contradicts', with: ['hypothesis', 'mechanism', 'claim'] },
+      { rel: 'correlates', with: ['result', 'data'] },
+      { rel: 'reveals', with: ['insight'] },
+      { rel: 'replicates', with: ['result'] },
+      { rel: 'answers', with: ['question'] },
+      { rel: 'validates', with: ['control'], in: true },
+      { rel: 'qualifies', with: ['caveat'], in: true },
+      { rel: 'explains', with: ['mechanism'], in: true },
+      { rel: 'illustrates', with: ['figure'], in: true } ] },
+    { id: 'insight', label: 'Insight', color: '#6B4FA3', links: [
+      { rel: 'reveals', with: ['result', 'observation', 'anomaly'], in: true },
+      { rel: 'fuels', with: ['question', 'hypothesis'] },
+      { rel: 'leads', with: ['decision', 'task', 'method'] },
+      { rel: 'refines', with: ['insight'] },
+      { rel: 'qualifies', with: ['caveat'], in: true },
+      { rel: 'explains', with: ['mechanism'], in: true } ] },
+    { id: 'mechanism', label: 'Mechanism', color: '#2A7F86', links: [
+      { rel: 'explains', with: ['result', 'insight', 'anomaly'] },
+      { rel: 'predicts', with: ['result'] },
+      { rel: 'tests', with: ['method'], in: true },
+      { rel: 'supports', with: ['result'], in: true }, { rel: 'contradicts', with: ['result', 'anomaly'], in: true } ] },
+    { id: 'control', label: 'Control', color: '#5E6B65', links: [
+      { rel: 'produces', with: ['method', 'protocol', 'run'], in: true },
+      { rel: 'validates', with: ['result', 'method'] } ] },
+    { id: 'anomaly', label: 'Anomaly', color: '#A8571A', links: [
+      { rel: 'produces', with: ['method', 'protocol', 'run'], in: true },
+      { rel: 'contradicts', with: ['hypothesis', 'mechanism'] },
+      { rel: 'fuels', with: ['question'] },
+      { rel: 'reveals', with: ['insight'] },
+      { rel: 'explains', with: ['mechanism'], in: true } ] },
+    { id: 'caveat', label: 'Caveat', color: '#85590A', links: [
+      { rel: 'qualifies', with: ['result', 'insight', 'claim'] },
+      { rel: 'leads', with: ['method', 'task'] } ] },
   ],
   /** Your kinds (Settings) carry links too; one made before V3.955 had `targets` — they become links. */
   all() { const own = (settings().ckinds || []).filter(k => k && k.id && k.label).map(k => Object.assign({}, k, { links: Array.isArray(k.links) ? k.links : (k.targets || []).map(t => ({ rel: k.rel || 'related', with: [String(t)] })) })); return [...CKINDS.BASE.filter(k => !own.some(o => o.id === k.id)), ...own]; },
@@ -89,7 +143,8 @@ const CKINDS = {
     const text = (b.body && b.body.text) || '', marks = (b.body && b.body.marks) || [];
     if (c === 'question') return CKINDS.carries(b, 'question') || /\?/.test(text);
     if (c === 'paper') return b.kind === 'rmpaper' || b.kind === 'pdf' || marks.some(m => m.type === 'cite');
-    if (c === 'evidence') return CKINDS.carries(b, 'evidence') || CKINDS.carries(b, 'observation') || CKINDS.carries(b, 'result') || ['figure', 'plate', 'table', 'plot', 'run', 'rec', 'canvas'].includes(b.kind) || CKINDS.is(b, 'paper');
+    if (c === 'takeaway' && b.ckind === 'insight') return true;   // V3.988: an Insight is a takeaway
+    if (c === 'evidence') return b.ckind === 'result' || CKINDS.carries(b, 'evidence') || CKINDS.carries(b, 'observation') || CKINDS.carries(b, 'result') || ['figure', 'plate', 'table', 'plot', 'run', 'rec', 'canvas'].includes(b.kind) || CKINDS.is(b, 'paper');
     if (c === 'data') return ['table', 'plot', 'plate', 'calc'].includes(b.kind);
     if (c === 'note') return b.kind === 'noteref' || b.kind === 'ref';
     if (c === 'person') return marks.some(m => m.type === 'person' || (m.type === 'term' && ((M.term(m.ref) || {}).kind === 'person')));
@@ -97,6 +152,15 @@ const CKINDS = {
     if (c === 'figure') return b.kind === 'figure' || b.kind === 'canvas' || b.kind === 'deck';
     if (KIND[c]) return CKINDS.carries(b, c);
     return b.kind === c;
+  },
+  /** V3.988 — an Anomaly that nothing explains yet (no "explains" wire ends on it): an open barrier in the Portfolio. */
+  unexplained: b => !!b && b.ckind === 'anomaly' && !DB.all('wires').some(w => w.rel === 'explains' && w.to === b.id),
+  /** V3.988 — the components of these notes that count as a takeaway (Insight), evidence (Result) or an open barrier (an unexplained Anomaly). */
+  counted(docIds) {
+    const ids = docIds instanceof Set ? docIds : new Set(docIds), out = { takeaway: [], evidence: [], barrier: [] };
+    ids.forEach(id => M.docBlocks(id).forEach(b => { if (!b || !b.ckind || b.status !== 'live' || b.kind !== 'component') return;
+      if (b.ckind === 'insight') out.takeaway.push(b); else if (b.ckind === 'result') out.evidence.push(b); else if (CKINDS.unexplained(b)) out.barrier.push(b); }));
+    return out;
   },
   named(w) { const L = (w || []).map(c => CKINDS.CLASSES[c] || (CKINDS.get(c) || {}).label && 'a ' + CKINDS.get(c).label || c); return L.length > 1 ? L.slice(0, -1).join(', ') + ' or ' + L[L.length - 1] : L[0] || 'anything'; },
   /** A kind's links in words: "it fuels a question; evidence supports it; …" */
