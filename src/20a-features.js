@@ -397,6 +397,22 @@ const PV = {
         h('div.pvb.pv-q', { style: { borderLeft: '4px solid ' + col } }, h('div.pvb-h', h('span.pvb-n', 'Quote'), h('span.sp'), h('span.pvb-st', 'p. 4')), band('❝ Quoted from'), h('div.pvb-tx', '❝ Cells pull hardest at the leading edge, where adhesions mature.')),
         h('div.pvb.pv-bridge', h('div.pvb-h', h('span.pvb-n', 'Bridge'), h('span.sp')), h('div.refbody', h('div.origin.or-bridge', h('div.or-top', h('span.or-k', '⇄ Bridged from'), h('a.or-note', 'Reading: Style 2014'), h('span.or-cmp', 'Quote'))), band('❝ Quoted from', 'in Reading: Style 2014'), h('div.serif', { style: { fontSize: '13px', fontStyle: 'italic' } }, 'Cells pull hardest at the leading edge, where adhesions mature.')))),
         PV.cap('A quote, and the same quote bridged to another note: the bridge’s band, then the citation’s. Click it: ' + (beside ? 'the paper opens beside the note, at the quote.' : 'its card scrolls to the quote.'))]; } });
+  /* V4.10 — the reader's side panel folds (17g, 30-sidefold.css) */
+  const sfPaint = () => { try { SIDEFOLD.paint(SIDEFOLD.start()); } catch (e) { } };
+  D({ id: 'sidefold', group: 'reading', label: 'Fold the side panel', isNew: true, presets: { simple: true }, desc: 'The panel of highlights and notes beside a maximised PDF, HTML page or saved website, and in the Library’s reader, folds to a thin strip at the side with ›, its count written down the strip; click the strip to open it again. Beside a note, › closes it (Highlights opens it). Off: the panel stays open, as before.',
+    changed: sfPaint,
+    tune: [T('start', 'When a file opens, the panel is', 'seg', { isNew: true, def: 'last', opts: [['last', 'As you left it'], ['open', 'Open'], ['folded', 'Folded']], d: 'As you left it: kept on this device, the same for every reader', changed: sfPaint })],
+    preview: () => {
+      const wrap = h('div'), start = tune('sidefold', 'start') || 'last';
+      const chev = () => { const b = h('button.pv-sf-b', { type: 'button', tabindex: '-1' }); b.innerHTML = SIDEFOLD.CHEV; return b; };
+      const draw = () => { const f = document.body.classList.contains('sf-fold'), toggle = e => { e.stopPropagation(); SIDEFOLD.set(!f); draw(); };
+        const ann = c => h('div.pv-sf-ann', { style: { '--hc': c } }, h('i'), h('i.s'));
+        const side = f ? h('div.pv-sf-side', { title: 'Open the panel', on: { click: toggle } }, chev(), h('span.pv-sf-rail', '3 highlights · 1 note'))
+          : h('div.pv-sf-side', h('div.pv-sf-top', h('span', 'Highlights and notes'), h('span.sp'), Object.assign(chev(), { title: 'Fold the panel to the side', onclick: toggle })), ann('#F6D55C'), ann('#90BE6D'), ann('#7FB3E8'));
+        wrap.replaceChildren(h('div.pv-sf' + (f ? '.f' : ''), rdPage(), side),
+          PV.cap((f ? 'Folded: the page has the room; click the strip to open the panel. ' : 'Open: › folds the panel to a strip at the side. ') + (start === 'open' ? 'A file you open starts with it open.' : start === 'folded' ? 'A file you open starts with it folded.' : 'A file you open finds it as you left it.') + ' Try it here.')); };
+      draw(); return [wrap];
+    } });
   /* =============================== Widgets =============================== */
   const W = (id, label, desc, rows, pv, o = {}) => D(Object.assign({ id, group: 'widgets', label, desc: desc + ' Off: it leaves + Insert and the / commands; those already in your notes stay.', inserts: rows, preview: pv }, o));
   W('equations', 'Equations', '∑ Equation in a note, or in the text, and the registered equations shared by every note.', ['equation', 'equation-reg'],

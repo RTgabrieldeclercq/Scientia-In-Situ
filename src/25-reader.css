@@ -13,6 +13,8 @@ body.rd-right .rd-wrap{grid-column:2;border-left:1px solid var(--rule);box-shado
 .rd-panes.n2.rows{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) minmax(0,1fr)}
 .rd-panes.n4{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr) minmax(0,1fr)}
 body .rd-wrap .embed-max.rd-docked{border:0;box-shadow:none;z-index:auto;min-width:0;min-height:0}
+/* V4.10: a pane in full screen (⤢) covers the window above the app's header — its bar (◧, Close) and its side panel's strip were under it */
+.rd-wrap:has(.embed-max.rd-dock:not(.rd-docked)){z-index:1200}
 .rd-wrap.rd-split .rd-panes > .rd-act{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--teal) 55%,transparent);z-index:1}
 .rd-wrap.rd-split .rd-bar{padding:5px 8px;gap:5px}
 .rd-wrap.rd-split .rd-ttl{max-width:22ch}
