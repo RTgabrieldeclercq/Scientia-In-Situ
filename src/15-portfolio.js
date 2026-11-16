@@ -8,38 +8,45 @@ const PortfolioView = {
   render() {
     App.setTitle('Portfolio', [h('span', plural(DB.all('projects').length, 'project') + ' · ' + plural(DB.where('themes', t => t.status === 'active').length, 'active theme') + ' · ' + plural(DB.all('documents').filter(d => d.type !== 'review').length, 'note'))]);
     const host = h('div.canvas-host'), P = makePaper(host, { view: _ls.get('view:portfolio', null) || undefined, onView: debounce(v => _ls.set('view:portfolio', v), 400), minZ: .2 });
-    const W = P.world, pos = {}, CW = 260, GAP = 40, CARD = 64;
-    let y = 0;
+    const W = P.world, pos = {}, CW = 260, GAP = 40, blocks = [];
+    // V3.975: each project a block of columns that flow (an experiment unfolds, a card has its dots); placed and linked once drawn
+    const card = d => { const items = M.docBlocks(d.id).flatMap(b => IX.itemsOf(b.id)), ob = items.filter(i => i.kind === 'barrier' && IX.status(i) === 'open').length;
+      return h('div.box.dcard.nopan', { 'data-doc': d.id, on: { click: () => App.go('#/doc/' + d.id) } },
+        h('div.row', typechip(d.type), TIMER.activeFor(d.id) ? h('span.live', '●') : null, h('span.spacer'), h('span.mono.tiny.muted', { title: 'edited ' + fmtWhen(d.modified) }, fmtDay(d.created))), h('div.dn', d.title),
+        h('div.ds', plural(M.liveBlocks(d.id).length, prof(d.type).noun.toLowerCase()), items.length ? ' · ' + plural(items.length, 'structure') : '', ob ? h('span', { style: { color: 'var(--bad)' } }, ' · ' + ob + ' open') : null),
+        PFKIT.dots([d])); };
     for (const p of DB.all('projects').sort((a, b) => a.created.localeCompare(b.created))) {
-      const themes = DB.where('themes', t => t.projectId === p.id && t.status === 'active'), cols = [{ id: null, name: 'Project-wide & global', docs: DB.where('documents', d => d.projectId === p.id && !d.themeId && d.type !== 'review') }, ...themes.map(t => ({ t, id: t.id, name: t.name, docs: DB.where('documents', d => d.themeId === t.id) }))];
-      const ph = h('div.box.pcard.nopan', { style: { left: '0px', top: y + 'px', width: (cols.length * (CW + GAP) - GAP) + 'px' }, on: { click: () => App.go('#/project/' + p.id) } }, h('div.pk', 'Project'), h('div.pn', p.name),
-        h('div.ps', `${plural(themes.length, 'theme')} · ${plural(IX.openBarriers(p.id).length, 'open barrier')} · ${plural(DB.where('terms', t => t.projectId === p.id).length, 'term')}`));
-      W.append(ph); y += 96; let maxH = 0;
-      cols.forEach((c, ci) => { const x = ci * (CW + GAP); const H = c.t ? IX.themeHealth(c.t) : null;
-        W.append(h('div.box.tcard.nopan', { style: { left: x + 'px', top: y + 'px', width: CW + 'px' }, on: { click: () => c.t && App.go('#/theme/' + c.id) } }, h('div.tn', c.name),
-          H ? h('div.ts', H.stalled ? h('span.pill.warn', 'stalled ' + H.days + 'd') : H.aims.length ? h('span.pill.teal', plural(H.aims.length, 'aim')) : h('span.pill', 'exploratory'), ' ', fmtDur(H.ms4) + ' / 4 wk', H.openB.length ? h('span', { style: { color: 'var(--bad)' } }, ' · ' + plural(H.openB.length, 'open barrier')) : null) : h('div.ts', 'protocols, literature, seminars'),
-          c.t ? heatmapEl({ weeks: 6, themeId: c.id, cell: 7 }) : null));
-        let yy = y + (c.t ? 150 : 70);
-        c.docs.sort((a, b) => b.modified.localeCompare(a.modified)).forEach(d => {
-          const items = M.docBlocks(d.id).flatMap(b => IX.itemsOf(b.id)), ob = items.filter(i => i.kind === 'barrier' && IX.status(i) === 'open').length;
-          W.append(h('div.box.dcard.nopan', { 'data-doc': d.id, style: { left: x + 'px', top: yy + 'px', width: CW + 'px' }, on: { click: () => App.go('#/doc/' + d.id) } },
-            h('div.row', typechip(d.type), TIMER.activeFor(d.id) ? h('span.live', '●') : null, h('span.spacer'), h('span.mono.tiny.muted', fmtDay(d.modified))), h('div.dn', d.title),
-            h('div.ds', plural(M.liveBlocks(d.id).length, prof(d.type).noun.toLowerCase()), items.length ? ' · ' + plural(items.length, 'structure') : '', ob ? h('span', { style: { color: 'var(--bad)' } }, ' · ' + ob + ' open') : null)));
-          pos[d.id] = { x, y: yy, w: CW, h: CARD }; yy += CARD + 12; });
-        maxH = Math.max(maxH, yy - y); });
-      y += maxH + 90;
+      const themes = DB.where('themes', t => t.projectId === p.id && t.status === 'active'), mine = d => !d.deleted && d.type !== 'review';
+      const cols = [{ id: null, name: 'Project-wide & global', docs: DB.where('documents', d => d.projectId === p.id && !d.themeId && mine(d) && !PFKIT.isLit(d)) },
+        ...themes.map(t => ({ t, id: t.id, name: t.name, docs: DB.where('documents', d => d.themeId === t.id && mine(d) && !PFKIT.isLit(d)) }))];
+      const lit = DB.where('documents', d => d.projectId === p.id && mine(d) && PFKIT.isLit(d)); if (lit.length) cols.push({ id: null, name: 'Lit reviews', docs: lit, lit: true });
+      const order = PFKIT.sortOf(p.id), redraw = () => App.refresh(), A = PFKIT.ofProject(p.id);
+      const ph = h('div.box.pcard.nopan', { on: { click: () => App.go('#/project/' + p.id) } }, h('div.row', h('div.pk', 'Project'), h('span.spacer'), PFKIT.sortBtn(p.id, redraw)), h('div.pn', p.name),
+        h('div.ps', `${plural(themes.length, 'theme')} · ${plural(IX.openBarriers(p.id).length, 'open barrier')} · ${plural(DB.where('terms', t => t.projectId === p.id).length, 'term')} · ${PFKIT.say({ act: A.score })}`));
+      const colEls = cols.map(c => { const H = c.t ? IX.themeHealth(c.t) : null;
+        return h('div.pf-col', { style: { width: CW + 'px' } },
+          h('div.box.tcard.nopan', { on: { click: () => c.t && App.go('#/theme/' + c.id) } }, h('div.tn', c.name),
+            H ? h('div.ts', H.stalled ? h('span.pill.warn', 'stalled ' + H.days + 'd') : H.aims.length ? h('span.pill.teal', plural(H.aims.length, 'aim')) : h('span.pill', 'exploratory'), ' ', PFKIT.say(H), H.openB.length ? h('span', { style: { color: 'var(--bad)' } }, ' · ' + plural(H.openB.length, 'open barrier')) : null) : null,
+            H ? PFKIT.heat(H.actMap, { weeks: 6, cell: 7 }) : null),
+          PFKIT.entries(c.docs, order).map(e => e.doc ? card(e.doc) : PFKIT.expCard(e, card, redraw))); });
+      const blk = h('div.pf-proj', { style: { left: '0px', top: '0px' } }, ph, h('div.pf-cols', { style: { gap: GAP + 'px' } }, colEls));
+      W.append(blk); blocks.push(blk);
     }
     // ordinary links between notes: wires, pulled-in components, link marks
-    const pairs = new Map(), add = (a, b, why) => { if (!a || !b || a === b || !pos[a] || !pos[b]) return; const k = [a, b].sort().join('|'); if (!pairs.has(k)) pairs.set(k, { a, b, why: new Set() }); pairs.get(k).why.add(why); };
+    const pairs = new Map(), add = (a, b, why) => { if (!a || !b || a === b) return; const k = [a, b].sort().join('|'); if (!pairs.has(k)) pairs.set(k, { a, b, why: new Set() }); pairs.get(k).why.add(why); };
     DB.all('wires').forEach(w => { const A = M.block(w.from), B = M.block(w.to); if (A && B && A.docId !== B.docId) add(A.docId, B.docId, (REL[w.rel] || {}).label || w.rel); });
     DB.all('blocks').forEach(b => { if (b.kind === 'ref' && b.status !== 'removed') { const o = M.block(b.refBlockId); if (o) add(o.docId, b.docId, 'pulled in'); } if (b.boundTo) add(b.boundTo.protocolId, b.docId, 'runs protocol'); (b.body.marks || []).forEach(m => { if (m.type === 'link' && m.ref) { const t = IX.linkTarget(m); if (t) add(b.docId, t.type === 'doc' ? t.d.id : t.b.docId, 'link'); } }); });
-    let svg = '';
-    for (const { a, b, why } of pairs.values()) { const A = pos[a], B = pos[b], x1 = A.x + A.w, y1 = A.y + A.h / 2, x2 = B.x, y2 = B.y + B.h / 2;
+    const add0 = h('div.box.addp.nopan', h('button.btn', { on: { click: async () => { const n = await askText('New project', 'Name'); if (n) { M.createProject(n); } } } }, '+ Project'));
+    const s = SV('svg', { class: 'wires plinks' }); W.prepend(s); W.append(add0); let y = 0;
+    const place = () => { if (!W.isConnected) return; y = 0; blocks.forEach(b => { b.style.top = y + 'px'; y += b.offsetHeight + 90; }); add0.style.left = '0px'; add0.style.top = y + 'px';
+      const rel = el => { let x = 0, yy = 0; for (let e = el; e && e !== W; e = e.offsetParent) { x += e.offsetLeft; yy += e.offsetTop; } return { x, y: yy, w: el.offsetWidth, h: el.offsetHeight }; };
+      $$('.dcard[data-doc]', W).forEach(e => { if (e.offsetParent) pos[e.dataset.doc] = rel(e); }); s.innerHTML = links(); };
+    const links = () => { let svg = '';
+    for (const { a, b, why } of pairs.values()) { if (!pos[a] || !pos[b]) continue; const A = pos[a], B = pos[b], x1 = A.x + A.w, y1 = A.y + A.h / 2, x2 = B.x, y2 = B.y + B.h / 2;
       const [p1, p2] = x1 <= x2 ? [{ x: x1, y: y1 }, { x: x2, y: y2 }] : [{ x: B.x + B.w, y: y2 }, { x: A.x, y: y1 }]; const off = Math.max(40, Math.abs(p2.x - p1.x) / 2);
       svg += `<path class="pl" d="M${p1.x},${p1.y} C${p1.x + off},${p1.y} ${p2.x - off},${p2.y} ${p2.x},${p2.y}"><title>${esc([...why].join(', '))}</title></path>`; }
-    const s = SV('svg', { class: 'wires plinks' }); s.innerHTML = svg; W.prepend(s);
-    W.append(h('div.box.addp.nopan', { style: { left: '0px', top: y + 'px' } }, h('button.btn', { on: { click: async () => { const n = await askText('New project', 'Name'); if (n) { M.createProject(n); } } } }, '+ Project')));
-    if (!_ls.get('view:portfolio', null)) requestAnimationFrame(() => { let x1 = 0; $$('.box', W).forEach(e => x1 = Math.max(x1, e.offsetLeft + e.offsetWidth)); P.fit({ x0: 0, y0: 0, x1, y1: Math.min(y, 900) }, false); });
+    return svg; };
+    requestAnimationFrame(() => { place(); if (!_ls.get('view:portfolio', null)) { let x1 = 0; blocks.forEach(e => x1 = Math.max(x1, e.offsetWidth)); P.fit({ x0: 0, y0: 0, x1, y1: Math.min(y, 900) }, false); } });
     host.append(h('div.hint', 'Notes sit under their theme; dashed lines are connections between notes. Drag to pan.'));
     return host;
   },
@@ -83,7 +90,7 @@ const ProjectView = {
     const themes = DB.where('themes', t => t.projectId === id), active = themes.filter(t => t.status === 'active'), docs = DB.where('documents', d => d.projectId === id);
     const claims = DB.where('items', i => i.projectId === id && (i.kind === 'claim' || i.kind === 'evidence') && !i.correctedBy).sort((a, b) => ({ contested: 0, supported: 1, abandoned: 2 }[a.stance] ?? 1) - ({ contested: 0, supported: 1, abandoned: 2 }[b.stance] ?? 1) || b.created.localeCompare(a.created));
     const contested = claims.filter(c => c.stance === 'contested');
-    const terms = DB.where('terms', t => t.projectId === id), pw = docs.filter(d => !d.themeId && d.type !== 'review');
+    const terms = DB.where('terms', t => t.projectId === id), pw = docs.filter(d => !d.themeId && d.type !== 'review' && !d.deleted && !PFKIT.isLit(d)), lits = docs.filter(d => !d.deleted && PFKIT.isLit(d));   // V3.975
     return h('div.page',
       h('div.eyebrow', 'Project'), h('h1.title', p.name),
       h('p.stand', `${plural(active.length, 'active theme')} · ${plural(docs.length, 'note')} · ${plural(IX.openBarriers(id).length, 'open barrier')} · ${plural(terms.length, 'term')}`),
@@ -95,12 +102,14 @@ const ProjectView = {
         return h('div.card.click', { on: { click: () => App.go('#/theme/' + t.id) } },
           h('div.row', h('h4', { style: { flex: 1, margin: 0 } }, t.name), H.stalled ? h('span.pill.warn', 'stalled ' + H.days + 'd') : H.aims.length ? null : h('span.pill', 'exploratory')),
           h('p.serif.muted', { style: { margin: '4px 0 10px', fontSize: '13.5px' } }, t.question || '—'),
-          heatmapEl({ weeks: 6, themeId: t.id, cell: 9 }),
-          h('div.row.mono.tiny', { style: { marginTop: '10px', color: 'var(--ink-3)', gap: '14px' } }, h('span', fmtDur(H.ms4) + ' / 4 wk'), h('span', { style: { color: H.openB.length ? 'var(--bad)' : '' } }, plural(H.openB.length, 'open barrier')), h('span', plural(H.evid, 'result'))),
+          PFKIT.heat(H.actMap, { weeks: 6, cell: 9 }),
+          h('div.row.mono.tiny', { style: { marginTop: '10px', color: 'var(--ink-3)', gap: '14px' } }, h('span', PFKIT.say(H)), h('span', { style: { color: H.openB.length ? 'var(--bad)' : '' } }, plural(H.openB.length, 'open barrier')), h('span', plural(H.evid, 'result'))),
           H.aims.map(a => { const met = sum(a.milestones.filter(m => m.metAt).map(m => m.weight)); return h('div', { style: { marginTop: '8px' } }, h('div.tiny', snippet(a.statement, 60)), h('div.bar', h('i', { style: { width: met * 100 + '%' } }))); })); })),
       themes.some(t => t.status !== 'active') ? [h('div.sec-h', h('h2', 'Earlier themes'), h('span.k', 'retired, merged, split or re-shaped — documents still reachable')),
         h('div.list', themes.filter(t => t.status !== 'active').map(t => h('div.li.click', { on: { click: () => App.go('#/theme/' + t.id) } }, h('span.t', t.name, h('span.s', t.status + (t.supersededBy && t.supersededBy.length ? ' → ' + t.supersededBy.map(x => (M.theme(x) || {}).name).join(', ') : '') + (t.retireReason ? ' · ' + t.retireReason : ''))), h('span.tiny.mono.muted', fmtDay(t.supersededAt || t.retiredAt || t.created)))))] : null,
-      pw.length ? [h('div.sec-h', h('h2', 'Project-wide & global notes'), h('span.k', 'protocols, literature and seminars reused by every theme')),
+      lits.length ? [h('div.sec-h', h('h2', 'Lit reviews'), h('span.k', plural(lits.length, 'literature note') + ' in this project')),
+        h('div.list', lits.map(d => h('div.li.click', { on: { click: () => App.go('#/doc/' + d.id) } }, typechip(d.type), h('span.t', d.title), h('span.tiny.mono.muted', fmtDay(d.created)))))] : null,
+      pw.length ? [h('div.sec-h', h('h2', 'Project-wide & global notes'), h('span.k', 'protocols and seminars reused by every theme')),
         h('div.list', pw.map(d => h('div.li.click', { on: { click: () => App.go('#/doc/' + d.id) } }, typechip(d.type), h('span.t', d.title), h('span.tiny.mono.muted', fmtWhen(d.modified)))))] : null,
       h('div.sec-h', h('h2', 'Claims & evidence'), h('span.k', contested.length ? plural(contested.length, 'contested claim') + ' — the discussion section, assembled continuously' : 'the argument, assembled continuously')),
       capped(claims, 8, it => itemRow(it, h('span.row', { style: { gap: '4px', flexWrap: 'nowrap' } }, it.stance ? h('span.pill' + (it.stance === 'contested' ? '.warn' : it.stance === 'abandoned' ? '' : '.teal'), it.stance) : null, (it.relatedClaims || []).length ? h('span.pill.mag', '↔ ' + it.relatedClaims.length) : null,
