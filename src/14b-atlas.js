@@ -93,6 +93,7 @@ const ATLAS = {
   /* ---------- /collection (V3.961) ---------- */
   /** The types /collection takes: its word, what it is, the words it also answers to, which components. */
   COLL: [
+    ['website', 'Websites (saved copies)', 'websites site sites web url urls link links', b => !!b.web],   // V3.971 (13zzs)
     ['html', 'HTML pages', 'htmls page pages webpage webpages', b => b.kind === 'html'],
     ['pdf', 'PDFs', 'pdfs', b => b.kind === 'pdf'],
     ['image', 'Image panels', 'images picture pictures figure figures panel panels photo photos img', b => b.kind === 'figure'],

@@ -101,7 +101,7 @@ const CLIPX = {
     const at = CLIPX.spot(pane); let j = null; try { j = raw && JSON.parse(raw); } catch (x) { }
     const C = CLIPX.copied(j, text); if (C) return CLIPX.pull(pane, at, C, Date.now() - CLIPX.shiftAt < 1500);
     if (useFiles) return CLIPX.addFiles(d, at, files);
-    if (j && j.kind === 'text' && M.block(j.blockId)) { const src = M.block(j.blockId); if (src.docId !== d.id && src.status === 'live') { M.addBlock(d.id, null, { kind: 'ref', refItemId: null, refBlockId: src.id, x: at.x, y: at.y, w: 392 }); changed(); toast('Pulled in from ' + ((M.doc(src.docId) || {}).title || 'its note')); return; } return CLIPX.component(d, at, j.text, src, j); }
+    if (j && j.kind === 'text' && M.block(j.blockId)) { const src = M.block(j.blockId); if (src.docId !== d.id && src.status === 'live' && !(Date.now() - CLIPX.shiftAt < 1500)) return EXCERPT.pull(d, at, src, j); return CLIPX.component(d, at, j.text, src, j); }   // V3.972: just the words copied (13zzt); Ctrl+Shift+V a copy
     const L = CLIPX.last; if (L && L.kind === 'quote' && text && CLIPX.norm(L.text) === CLIPX.norm(text) && M.block(L.sel.src)) return CLIPX.quote(d, at, L.sel);
     if (text) CLIPX.component(d, at, text.replace(/\r/g, ''), null, null);
   },

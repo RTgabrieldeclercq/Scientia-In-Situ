@@ -38,3 +38,8 @@
 .synth-rest .sr-h{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--rule);font:600 12.5px var(--f-d)} .synth-rest .sr-h .x{margin-left:auto;border:0;background:transparent;cursor:pointer;font-size:16px;color:var(--ink-3)}
 .synth-rest .sr-b{overflow:auto;padding:6px 8px;flex:1} .synth-rest h4{font:600 10.5px var(--f-m);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin:8px 2px 4px}
 .synth-rest .sr-row{display:flex;gap:8px;align-items:flex-start;padding:6px;border-radius:7px} .synth-rest .sr-row:hover{background:var(--surface-2)} .synth-rest .sr-row .t{flex:1;min-width:0;font-size:12.5px} .synth-rest .sr-row .t b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .synth-rest .sr-row .t span{color:var(--ink-3);font-size:11.5px}
+/* V3.971 · 13zzs a website kept as it was: the strip under its header */
+.web-strip{display:flex;align-items:center;gap:6px;padding:4px 10px;border-bottom:1px dashed var(--rule);font-size:11.5px;color:var(--ink-3);min-width:0}
+.web-strip .ws-ic{width:14px;height:14px;flex:none;border-radius:3px;object-fit:contain} .web-strip .ws-g{display:inline-grid;place-items:center;font-size:12px}
+.web-strip .ws-t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink-2);min-width:0} .web-strip .ws-n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10.5px;min-width:0}
+.web-strip .btn.xs{flex:none} .box.folded > .web-strip{display:none}
