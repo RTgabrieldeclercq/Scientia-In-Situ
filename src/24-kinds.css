@@ -1,6 +1,9 @@
 /* 24 · kinds of component (V3.955): the header in the kind's colour; the story's footer and arc; the kinded drop */
 .box.cmp.kinded > .bh{background:color-mix(in srgb,var(--ck,var(--teal)) 12%,transparent);border-radius:5px 5px 0 0;padding-bottom:3px}
 .box.cmp.kinded > .bh > .num{color:var(--ck,var(--teal))}
+/* V4.4 (13zzy): a PDF or web page that is a Report, an image panel that is a Result — the same coloured header */
+.box.kinded-w > .bh{background:color-mix(in srgb,var(--ck,var(--teal)) 12%,transparent);border-radius:5px 5px 0 0}
+.box.kinded-w > .bh > .num{color:var(--ck,var(--teal));font-weight:600}
 .pop .ck-why{margin:-2px 0 6px;max-width:300px}
 .pop .opts .opt .s{display:block}
 .story-foot{display:flex;align-items:center;gap:8px;padding:5px 10px 6px;border-top:1px dashed var(--rule);cursor:default}

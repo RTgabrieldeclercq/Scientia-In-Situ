@@ -73,7 +73,9 @@ const LSEARCH = {
   _redraw: debounce(() => { try { if (typeof LibraryView !== 'undefined' && LibraryView.el && LibraryView.el.isConnected) LibraryView.draw(); if (typeof LSHEET !== 'undefined' && LSHEET.id) LSHEET.redraw(); } catch (e) { } }, 250),
   from(fn, r, ctx) { const out = []; LSEARCH.sources.forEach(src => { if (typeof src[fn] !== 'function') return; try { const v = src[fn](r, ctx); if (v && v.length) out.push(...v); } catch (e) { console.warn('[libsearch] source', fn, e); } }); return out; },
   bust() { LSEARCH._ix = null; LSEARCH._smart = new Map(); },
-  sig: () => ['library', 'libsets', 'blocks', 'documents', 'items', 'flags'].map(s => DB.all(s).length).join(':') + ':' + (IX.citations ? IX.citations.size : 0),
+  sig: () => ['library', 'libsets', 'blocks', 'documents', 'items', 'flags'].map(s => DB.all(s).length).join(':') + ':' + (IX.citations ? IX.citations.size : 0)
+    + ':' + LSEARCH.setSig(),   // V4.4: and Settings — a source added to the search may read a feature's switch or setting
+  setSig() { try { const st = settings(); return JSON.stringify([st.feat || null, st.tune || null, typeof FEAT !== 'undefined' && FEAT.own() ? _ls.get('feat', null) : 0]); } catch (e) { return ''; } },
   index() {
     const s = LSEARCH.sig(); if (LSEARCH._ix && LSEARCH._sig === s) return LSEARCH._ix;
     const push = (m, k, v) => { if (!m.has(k)) m.set(k, []); m.get(k).push(v); };

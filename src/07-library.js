@@ -125,7 +125,13 @@ const LIB = {
     return `${n}, ${r.year || 'n.d.'}`;
   },
   /** Display-time rendering of a cite mark: title | author–year | numbered. */
-  citeText(r, mode, n) { if (!r) return '[missing]'; return mode === 'author' ? `(${LIB.shortRef(r)})` : mode === 'number' ? `[${n}]` : r.title; },
+  citeText(r, mode, n) { if (!r) return '[missing]'; return mode === 'author' ? LIB.authorCite(r) : mode === 'number' ? `[${n}]` : r.title; },
+  /** V4.6 — a citation by its first author, without brackets (Gabe: "don't do the parentheses"): Style · Style & Lee · Style et al.; the year when Settings says so. */
+  authorCite(r, year) {
+    if (!r) return '[missing]'; if (r.kind === 'link') return r.title || r.url; const a = r.authors || [];
+    const n = !a.length ? (r.publisher || 'Anon.') : a.length === 1 ? a[0].family : a.length === 2 ? `${a[0].family} & ${a[1].family}` : `${a[0].family} et al.`;
+    return (year != null ? year : !!settings().citeYear) ? `${n}, ${r.year || 'n.d.'}` : n;
+  },
   hovercard(r) {
     return h('div.hovercard', LIB.sigil(r), h('div', h('div', { style: { fontFamily: 'var(--f-b)', fontStyle: 'italic', fontSize: '14.5px', lineHeight: 1.35 } }, r.title),
       h('div', { style: { fontSize: '12px', color: 'var(--ink-2)', marginTop: '3px' } }, LIB.apaAuthors(r.authors), r.container ? ' — ' : '', h('i', LIB.journal(r.container)), r.year ? ', ' + r.year : ''),

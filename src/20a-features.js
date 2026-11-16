@@ -134,6 +134,55 @@ const PV = {
     preview: () => [h('div.pv-kinds', KINDS.slice(0, 8).map(k => h('div', h('kbd', k.key.toUpperCase()), PV.st(k.id, k.label.toLowerCase() + ' — ' + ({ claim: 'collapsed at 10 ng/mL', barrier: 'gels tear above 40 kPa', question: 'is batch 14 too stiff?', evidence: '3 of 3 fields', result: 'traction 1.2 kPa' }[k.id] || 'as marked'))))),
       PV.cap('Select words, press ' + keyLabel(settings().structKey) + ', then the letter.')] });
 
+  // V4.4 (13zzy): a PDF or a saved web page can be a Report; what is snipped out of one lands as a Result
+  D({ id: 'reports', group: 'structures', label: 'Reports', isNew: true, desc: 'A PDF or a saved web page can be a Report — a kind only those can be (double-click the label left of its name). A figure snipped out of a report is a Result the moment it lands, and an image panel that is a Result counts as one, like a Result component. Off: no Report is offered and snips stay plain; what you labelled keeps its kind.',
+    tune: [T('snips', 'A figure snipped from a report', 'seg', { isNew: true, def: 'result', opts: [['result', 'Becomes a Result'], ['plain', 'Stays plain']], d: 'The scissors on a PDF, the snip on a web page' })],
+    preview: () => {
+      const res = FEAT.tune('reports', 'snips') !== 'plain', kc = (id, fb) => { const K = typeof CKINDS !== 'undefined' && CKINDS.get(id); return (K && K.color) || fb; };
+      const hd = (label, c) => ({ style: { borderTop: '2px solid ' + c }, num: label });
+      return [h('div.pv-rep', { style: { display: 'flex', gap: '10px', alignItems: 'flex-start', flexWrap: 'wrap' } },
+        PV.box(Object.assign(hd('Report', kc('report', '#46607A')), { label: 'Traction maps · Style 2014.pdf', body: h('div', { style: { height: '46px', borderRadius: '4px', background: 'linear-gradient(135deg, color-mix(in srgb, var(--ink) 8%, transparent), transparent)' } }), cls: 'pv-rep-r' })),
+        h('span', { style: { alignSelf: 'center', color: 'var(--ink-3)' } }, '✂ →'),
+        PV.box(Object.assign(hd(res ? 'Result' : 'Image panel', res ? kc('result', '#1E5E8C') : 'var(--rule-2)'), { label: 'Figure 2', body: h('div', { style: { height: '46px', width: '120px', borderRadius: '4px', background: 'radial-gradient(circle at 35% 40%, #f5a524, #5b2a86 70%)' } }) }))),
+        PV.cap(res ? 'Snipped out of a report: a Result, and counted as one.' : 'Snipped out of a report: a plain image panel.')];
+    } });
+
+  // V4.5 (14g): any component can also be a reference — /reference finds it from any note; the Atlas lists them (and the Reports)
+  D({ id: 'references', group: 'structures', label: 'References', isNew: true, desc: 'Any component can also be a reference, beside whatever kind it is: a bookmark on its card. /reference opens a gallery of them over the note — search, filters, a preview — and Enter puts one in the note, live, pointing back to where it lives. The Atlas gains a References tab (gallery or list) and, with Reports on, a Reports tab. Off: no bookmark, no gallery, no tabs; what you marked stays marked.',
+    tune: [T('enter', 'Enter in the gallery', 'seg', { isNew: true, def: 'insert', opts: [['insert', 'Puts it in the note'], ['open', 'Opens where it lives']], d: 'Alt+Enter does the other' }),
+      T('scope', 'The gallery shows first', 'seg', { isNew: true, def: 'project', opts: [['project', 'The note’s project'], ['all', 'Everything, newest first']] }),
+      T('type', 'The gallery opens on', 'seg', { isNew: true, def: 'all', opts: [['all', 'All'], ['text', 'Text'], ['figure', 'Figures'], ['table', 'Tables'], ['equation', 'Equations']] }),
+      T('show', 'The Atlas’s References tab shows', 'seg', { isNew: true, def: 'cards', opts: [['cards', 'A gallery'], ['list', 'A list']] })],
+    preview: () => {
+      const ins = FEAT.tune('references', 'enter') !== 'open', list = FEAT.tune('references', 'show') === 'list', ty = FEAT.tune('references', 'type') || 'all';
+      const rib = h('span', { style: { position: 'absolute', top: '-1px', right: '10px', width: '10px', height: '14px', background: 'var(--ink)', clipPath: 'polygon(0 0,100% 0,100% 100%,50% 76%,0 100%)' } });
+      const card = (k, label, body, typ) => h('div', { style: { position: 'relative', background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: '8px', padding: '7px 9px', display: 'grid', gap: '4px', opacity: ty === 'all' || ty === typ ? '1' : '.35' } },
+        h('span', { style: { font: '600 8.5px var(--f-m)', letterSpacing: '.08em', textTransform: 'uppercase', color: k ? `var(--k-${k}, var(--ink-3))` : 'var(--ink-3)' } }, k ? k : 'reference'), h('b', { style: { fontSize: '11.5px' } }, label), body, rib);
+      return [h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px', font: '12px var(--f-m)', color: 'var(--ink-3)', marginBottom: '6px' } }, h('kbd', '/reference'), h('span', '⌕ gel'), h('span', { style: { marginLeft: 'auto' } }, list ? 'Atlas: a list' : 'Atlas: a gallery')),
+        h('div.pv-refs', card('result', 'Gel stiffness', h('span', { style: { font: '600 15px var(--f-d)' } }, '30.4 kPa'), 'text'),
+          card('method', 'Polyacrylamide, 30 kPa', h('span', { style: { font: '10px var(--f-m)', color: 'var(--ink-3)' } }, 'acrylamide 150 µL · bis 100 µL'), 'table'),
+          card(null, 'Hertz model', h('i', { style: { font: 'italic 13px var(--f-b)' } }, 'F = 4/3 · E/(1−ν²) · √R δ³ᐟ²'), 'equation')),
+        PV.cap(ins ? 'Enter puts the reference in the note, live; Alt+Enter opens where it lives.' : 'Enter opens where it lives; Alt+Enter puts it in the note.')];
+    } });
+
+  // V4.7 (14h): floats — a component waiting for a note; /float brings the dome of them
+  D({ id: 'floats', group: 'structures', label: 'Floats', isNew: true, desc: 'A component that waits for a note not made yet: right-click → Make it a float (or select several with Ctrl and /float). It keeps its kind and shows a cloud. /float in a note, with nothing selected, raises a clear glass dome from the bottom of the canvas with the floats drifting in it; drag one out onto the note and it lands as a bridge from where it was written, no longer a float. Off: no cloud, no dome, no /float; placed floats stay where they are.',
+    tune: [T('spin', 'The dome', 'seg', { isNew: true, def: 'slow', opts: [['slow', 'Turns slowly'], ['still', 'Still']], d: 'It always holds still while the pointer is in it' }),
+      T('by', 'Floats coloured by', 'seg', { isNew: true, def: 'kind', opts: [['kind', 'Kind'], ['origin', 'Where they came from'], ['age', 'Age']] }),
+      T('old', 'A float has waited too long after', 'seg', { isNew: true, def: '14', opts: [['7', '1 week'], ['14', '2 weeks'], ['30', '1 month']], d: 'It sits lower in the dome, paler, with its age' }),
+      T('rest', 'Rest on a float before it opens', 'seg', { isNew: true, def: '1000', opts: [['600', '0.6 s'], ['1000', '1 s'], ['1600', '1.6 s']], d: 'A click opens it at once' }),
+      T('place', 'A float you drag out lands', 'seg', { isNew: true, def: 'drop', opts: [['drop', 'Where you drop it'], ['centre', 'At the view’s centre']] })],
+    preview: () => {
+      const by = FEAT.tune('floats', 'by') || 'kind', still = (FEAT.tune('floats', 'spin') || 'slow') === 'still';
+      const cols = by === 'origin' ? ['hsl(20 55% 58%)', 'hsl(200 55% 58%)', 'hsl(120 45% 50%)', 'hsl(280 50% 62%)', 'hsl(40 60% 55%)', 'hsl(330 50% 60%)']
+        : by === 'age' ? ['var(--float)', 'var(--float)', 'color-mix(in srgb, var(--ink-4) 30%, var(--float))', 'color-mix(in srgb, var(--ink-4) 55%, var(--float))', 'var(--float)', 'color-mix(in srgb, var(--ink-4) 75%, var(--float))']
+        : ['#B5761B', '#1E5E8C', '#6B4FA3', '#9E2A62', 'var(--float)', '#2F6FB0'];
+      const B = [[.16, .86, 22, 1], [.3, .5, 26], [.5, .28, 30], [.68, .46, 24], [.84, .84, 20, 1], [.46, .7, 18]];
+      return [h('div.pv-fl' + (still ? '.still' : ''), h('span.pv-flcard', FLOATS.cloud(), 'afloat'), h('div.pv-flsk'),
+        h('div.pv-fld', B.map(([x, y, d, o], i) => h('i' + (o ? '.old' : ''), { style: { left: (x * 100) + '%', top: (y * 100) + '%', '--d': d + 'px', '--kc': cols[i] } })))),
+        PV.cap('Floats in the dome, coloured by ' + (by === 'origin' ? 'where they came from' : by === 'age' ? 'age' : 'kind') + '; the oldest lowest. Drag one onto the note.')];
+    } });
+
   D({ id: 'terms', group: 'structures', label: 'Terms', tab: 'terms', desc: 'Words you mark as terms of the project, outlined in bold and found by themselves in every note that uses them, with the Terms tab — every term with its uses, its last twelve weeks, its structures and open barriers, to find, sort and jump through — and each term’s bubbles. Off: no outline, no scanning, no Terms tab; the terms stay.',
     tune: [T('key', 'Mark a term', 'seg', Object.assign({ opts: [['alt+w', 'Alt+W'], ['alt+shift+w', 'Alt+Shift+W']], d: 'Ctrl+W in Focus mode' }, B('termKey'))),
       T('lit', 'Mentions in lit reviews', 'seg', { isNew: true, def: 'out', opts: [['out', 'Left out'], ['counted', 'Counted']], d: 'Left out of the Terms tab and the term’s page; a term used only in lit reviews isn’t listed' }),
@@ -216,11 +265,15 @@ const PV = {
   D({ id: 'reminders', group: 'time', label: 'Reminders', presets: { simple: true }, inserts: ['reminder'], desc: 'Deadlines, meetings and plain reminders under the bell in the header, on Today and in the day note, with alerts.',
     preview: () => [h('div.pv-rem', h('div.pv-remh', 'Coming up'), [['Today 15:00', 'Lab meeting', 'meeting'], ['Mon', 'Order fibronectin', 'reminder'], ['Fri', 'Abstract due', 'deadline']].map(([a, b, c]) => h('div', h('span.mono', a), h('b', b), h('span', c))))] });
 
-  D({ id: 'review', group: 'time', label: 'Weekly review', tab: 'review', desc: 'The weekly bet: what needs addressing, decide, what moved, rate, friction, signal, and next week. It opens on the weekend after the week ends and writes a review note.',
-    tune: [T('start', 'The week runs from', 'seg', Object.assign({ opts: [[6, 'Saturday'], [0, 'Sunday'], [1, 'Monday']] }, { get: () => settings().weekStartDow, set: v => { saveSettings({ weekStartDow: +v }); changed(); } })),
-      T('preview', 'Preview the unfinished week', 'switch', { get: () => !!settings().reviewPreview, set: v => { saveSettings({ reviewPreview: v }); changed(); } })],
-    preview: () => [h('div.pv-steps', ['What needs addressing', 'Decide', 'What moved', 'Rate', 'Friction', 'Signal', 'Next week’s bet'].map((x, i) => h('div' + (i === 1 ? '.on' : ''), h('span', String(i + 1)), x))),
-      PV.cap('Week: ' + ({ 6: 'Saturday → Friday', 0: 'Sunday → Saturday', 1: 'Monday → Sunday' }[settings().weekStartDow] || '') + '.')] });
+  // V4.8 (18b-monthly.js): the monthly review replaces the weekly bet — a report of the month's deliverables per note, an inbox for what belongs to no note, next month's plan
+  D({ id: 'review', group: 'time', label: 'Monthly review', tab: 'review', desc: 'Each month’s report: what it added up to, its numbers against the month before, and per note its takeaways and results (then barriers resolved, questions answered, Reports and References). Unassigned lists every component of your daily notes that belongs to no note of the Portfolio, to file with a key. Ticking what is still open writes next month’s plan into the review note.',
+    tune: [T('opens', 'A month’s review opens', 'seg', { isNew: true, def: 'after', opts: [['after', 'The day after it ends'], ['weekend', 'On its last weekend']] }),
+      T('deliver', 'The report lists', 'seg', { isNew: true, def: 'all', opts: [['core', 'Takeaways and results'], ['more', '+ barriers resolved, questions answered'], ['all', '+ Reports and References']] }),
+      T('inbox', 'Unassigned takes in', 'seg', { isNew: true, def: 'quick', opts: [['daily', 'Daily notes'], ['quick', 'Daily and quick notes']] }),
+      T('keys', 'Inbox keys (j k x f m l n d u)', 'switch', { isNew: true, def: true }),
+      T('compare', 'Compare with the month before', 'switch', { isNew: true, def: true }),
+      T('preview', 'Preview the running month', 'switch', { get: () => !!settings().reviewPreview, set: v => { saveSettings({ reviewPreview: v }); changed(); } })],
+    preview: () => typeof MONTHLY !== 'undefined' ? MONTHLY.preview() : [PV.cap('The monthly review.')] });
 
   D({ id: 'chores', group: 'time', label: 'Recurring chores', presets: { standard: false }, desc: 'Lab chores that repeat — the water bath, the CO₂ tank — due ones shown in the day note.',
     tune: [T('list', 'Chores', 'button', { button: 'Recurring chores…', run: () => CHORES.manage() })],
@@ -228,9 +281,14 @@ const PV = {
 
   /* =============================== Reading & sources =============================== */
   D({ id: 'library', group: 'reading', label: 'Library', tab: 'library', presets: { simple: true }, desc: 'Papers and their PDFs, the reader with highlights and notes, and citations in your text. Off: the Library tab leaves; citations and papers stay.',
-    tune: [T('cite', 'Citations show', 'seg', Object.assign({ opts: [['title', 'Title'], ['author', 'Author–year'], ['number', 'Numbered']] }, B('citeMode')))],
-    preview: () => { const m = settings().citeMode, c = m === 'author' ? '(Style et al., 2014)' : m === 'number' ? '[3]' : 'Traction force microscopy in physics and biology';
-      return [PV.box({ num: 'Block', label: 'Background', body: ['Cells pull on soft gels as they move ', h('span.pv-cite', c), '.'] })]; } });
+    // V4.6: every note that has not chosen its own shows its citations this way (/cite); /author-cite makes one citation "Style et al." whatever the note shows
+    tune: [T('cite', 'Citations show', 'seg', Object.assign({ isNew: true, opts: [['number', 'Numbered [1]'], ['author', 'Style et al.'], ['title', 'Title']], d: 'In every note that has not chosen its own (its ⋯ menu); numbered from [1] in the order they first appear, with the references listed under the note' }, B('citeStyle'))),
+      T('year', 'Citations by author add the year', 'switch', Object.assign({ isNew: true, d: 'Style et al., 2014 — without it: Style et al.' }, B('citeYear')))],
+    preview: () => { const m = settings().citeStyle || 'number', yr = !!settings().citeYear, au = 'Style et al.' + (yr ? ', 2014' : ''), au2 = 'Plotnikov et al.' + (yr ? ', 2012' : '');
+      const cite = (t, sup) => h('span.pv-cite', sup ? { style: { fontSize: '.72em', verticalAlign: 'super', fontFamily: 'var(--f-m)', color: 'var(--teal)' } } : {}, t);
+      const c1 = m === 'author' ? cite(au) : m === 'number' ? cite('[1]', true) : cite('Traction force microscopy in physics and biology'), c2 = m === 'author' ? cite(au) : m === 'number' ? cite('[2]', true) : cite('Force fluctuations within focal adhesions');
+      return [PV.box({ num: 'Block', label: 'Background', body: ['Cells pull on soft gels as they move', c1, '; adhesions fluctuate', c2, ', as ', cite(au2), ' showed.'] }),
+        PV.cap(m === 'number' ? '/cite numbers from [1]; /author-cite names the author, just for that one.' : m === 'author' ? '/cite names the first author, no brackets.' : '/cite shows the paper’s title.')]; } });
 
   /* V4.1 — the Library overhaul (17e search, 17d shelves and foci, 17f shelf map and sheet) */
   D({ id: 'libsearch', group: 'reading', needs: 'library', label: 'Library search', isNew: true, presets: { simple: true },

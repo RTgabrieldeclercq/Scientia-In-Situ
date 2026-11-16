@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "f0caa7a8013486be4a57dbaf0cdb41076713076b",
-  "subject": "V4.3: Scientia — the lab notebook keeps the reshaped Library page: the lab's papers, RM highlights and RM actions go into it instead of the lab's own list",
-  "date": "2026-11-15"
+  "commit": "f7c0dffca877a2e6969a8c887bcd88d89fbe1234",
+  "subject": "V4.8: Scientia — the monthly review: the month's deliverables per note, an inbox for what belongs to no note, next month's plan",
+  "date": "2026-11-16"
  },
- "cut": "bf6493b940a8229d1a1792fe0919da80d423142e",
+ "cut": "640e27fdb7a963a9cfd54dff678859d0836a252e",
  "names": [
   "DESKLAB",
   "LABSYNC",
