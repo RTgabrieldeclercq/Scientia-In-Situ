@@ -48,14 +48,14 @@ Object.assign(DocView, {
     const ed = e.target.closest('.ed'), box = e.target.closest('.box.cmp'), sel = ed && ED.selection(ed);
     if (ed && sel && !sel.collapsed && ed.contentEditable === 'true') { const b = M.block(box.dataset.id);
       return ctxMenu(e.clientX, e.clientY + 6, [{ head: 'Selection' }, { label: 'What is it…', key: keyLabel(settings().structKey), run: () => { ed.focus(); ED.setCaret(ed, sel.from, sel.to); ED.openStrip(ed, b, ED.selection(ed) || sel); } },
-        { label: 'Mark as a term', key: 'Ctrl+W', run: () => ED.markTerm(ed, b, sel) }, { label: 'Link to a note…', run: () => ED.linkPicker(ed, b, sel) }, { label: 'Reference an existing structure…', run: () => ED.mentionPicker(ed, b, sel) }, { label: 'Add to library', key: 'Ctrl+I', run: () => LibraryView.addDialog(ED.read(ed, []).text.slice(sel.from, sel.to)) }]); }
+        { label: 'Mark as a term', key: 'Ctrl+W', run: () => ED.markTerm(ed, b, sel) }, { label: 'Bridge to a note…', run: () => BRIDGE.fromText(ed, b, sel) }, { label: 'Reference an existing structure…', run: () => ED.mentionPicker(ed, b, sel) }, { label: 'Add to library', key: 'Ctrl+I', run: () => LibraryView.addDialog(ED.read(ed, []).text.slice(sel.from, sel.to)) }]); }
     if (box) return this.boxMenu(M.block(box.dataset.id), e);
     const d = M.doc(this.docId);
     ctxMenu(e.clientX, e.clientY + 6, [{ head: d.title },
       { label: 'New ' + prof(d.type).noun.toLowerCase() + ' here', key: 'Dbl-click', run: () => this.newAt(p.x, p.y) },
       { label: 'Pull in an unresolved barrier…', sub: 'From any note; closed barriers are not offered', run: () => this.pullMenu(d, 'barrier', p) },
       { label: 'Pull in a structure…', sub: 'A claim, result or question from elsewhere', run: () => this.pullMenu(d, 'item', p) },
-      { label: 'Embed a component from another note…', run: () => this.pullMenu(d, 'component', p) }, 'sep',
+      { label: 'Bridge a component from another note here…', run: () => this.pullMenu(d, 'component', p) }, 'sep',
       { label: 'Insert…', sub: 'A well plate, a protocol, a box — everything that can go here', run: () => INSERT.menu(this, { x: e.clientX, y: e.clientY }, { x: Math.round(p.x / 14) * 14, y: Math.round(p.y / 14) * 14 }) },
       { label: 'New protocol here', sub: 'One block, steps linked; register it when it is ready', run: () => PROTO.create(d.id, Math.round(p.x / 14) * 14, Math.round(p.y / 14) * 14) },
       { label: 'Run a registered protocol here…', sub: 'Steps to check, time and observe', run: () => { const defs = DB.where('blocks', b => b.kind === 'protocol' && b.registered); if (!defs.length) return toast('No registered protocols yet'); PROTO.pickProtocol('Run which protocol here?', df => PROTO.newRun(df, d.id, Math.round(p.x / 14) * 14, Math.round(p.y / 14) * 14)); } }, 'sep',
@@ -66,6 +66,7 @@ Object.assign(DocView, {
     const d = M.doc(b.docId), i = d.blockIds.indexOf(b.id), next = d.blockIds.slice(i + 1).map(M.block).find(x => x && x.status === 'live' && x.kind === 'component'), flag = M.flagFor('block', b.id), live = b.status === 'live' && b.kind === 'component';
     const isP = PROTO.is(b), pdef = isP && PROTO.defOf(b), W = WIDGETS[b.kind];
     if (W) return ctxMenu(e.clientX, e.clientY + 6, [{ head: b.label || W.label }, ...(W.menu ? W.menu(b) : []), 'sep',
+      b.status === 'live' ? { label: 'Bridge to another note…', sub: 'It shows there, live, with a caption saying why', run: () => BRIDGE.to(b) } : null,
       { label: 'Connect to a component in another note…', run: () => this.crossWire(b.id) },
       { label: flag ? 'Clear flag' : 'Flag for weekly review', run: () => M.toggleFlag('block', b.id) },
       { label: 'Remove from this note', sub: 'Kept in the record; the files stay in the images folder', danger: true, run: () => { b.status = 'removed'; b.removedAt = isoLocal(new Date()); DB.put('blocks', b); changed(); toast((b.label || 'Widget') + ' removed'); } }]);
@@ -83,7 +84,7 @@ Object.assign(DocView, {
       live ? { label: 'Split into two…', sub: 'Both successors inherit the history', run: () => this.splitDialog(b) } : null,
       live && next ? { label: 'Merge with next', sub: `with “${snippet(M.blockName(next), 30)}”`, run: () => M.mergeBlocks(b, next) } : null,
       { label: 'Connect to a component in another note…', run: () => this.crossWire(b.id) },
-      live ? { label: 'Embed in another note…', sub: 'It appears there; the origin is kept', run: () => this.embedElsewhere(b) } : null,
+      b.status === 'live' && (b.kind !== 'ref' || BRIDGE.is(b)) ? { label: 'Bridge to another note…', sub: 'It shows there, live, with a caption saying why', run: () => BRIDGE.to(b) } : null,
       live && !b.parent && i > 0 ? { label: 'Make it a substep of the one above', sub: 'Nested, numbered as a sub-step', run: () => { const prev = d.blockIds.slice(0, i).reverse().map(M.block).find(x => x && x.status === 'live' && x.kind === 'component' && !x.parent); if (prev) M.nestUnder(b, prev.id); } } : null,
       live && b.parent ? { label: 'Un-nest', run: () => M.nestUnder(b, null) } : null,
       live ? { label: 'Fields…', sub: 'Typed key/value rows, charted across runs', run: () => this.fieldsDialog(b) } : null,
@@ -125,10 +126,8 @@ Object.assign(DocView, {
       h('label.f', h('span', 'First'), la, a), h('div', { style: { height: '10px' } }), h('label.f', h('span', 'Second'), lc, c)),
       actions: [{ label: 'Cancel' }, { label: 'Split', pri: true, run: () => { M.splitBlock(b, [{ label: la.value, text: a.value }, { label: lc.value, text: c.value }]); } }] });
   },
-  embedElsewhere(b) {
-    const m = modal({ title: 'Embed in another note', actions: [{ label: 'Cancel' }], body: optionPicker({ placeholder: 'Search notes…', items: q => DB.where('documents', x => x.id !== b.docId && (!q || x.title.toLowerCase().includes(q))).sort((x, y) => y.modified.localeCompare(x.modified)),
-      render: x => h('div', typechip(x.type), ' ', x.title, h('span.s', M.docPath(x))), onPick: x => { m.close(); M.pullInto(x.id, null, { blockId: b.id }); toast('Embedded in “' + x.title + '”'); } }) });
-  },
+  /** V3.981 — embedding became a bridge (13zzu). */
+  embedElsewhere(b) { return BRIDGE.to(b); },
   moveDoc(d) {
     const m = modal({ title: 'Move note to theme', actions: [{ label: 'Cancel' }], body: optionPicker({ placeholder: 'Theme…', items: q => DB.where('themes', t => t.projectId === d.projectId && t.status === 'active' && (!q || t.name.toLowerCase().includes(q))),
       render: t => h('div', t.name), onPick: t => { m.close(); d.themeId = t.id; M.touchDoc(d); changed(); } }) });
@@ -138,7 +137,7 @@ Object.assign(DocView, {
     const pos = at || (() => { const bb = this.bbox(); return bb ? { x: bb.x0, y: bb.y1 + 40 } : { x: 0, y: 200 }; })();
     const tabs = h('div.seg', { style: { marginBottom: '10px' } }), host = h('div');
     const set = md => {
-      mode = md; tabs.replaceChildren(...[['barrier', 'Unresolved barriers'], ['item', 'Any structure'], ['component', 'Component']].map(([k, l]) => h('button' + (k === mode ? '.on' : ''), { on: { click: () => set(k) } }, l)));
+      mode = md; tabs.replaceChildren(...[['barrier', 'Unresolved barriers'], ['item', 'Any structure'], ['component', 'Bridge a component']].map(([k, l]) => h('button' + (k === mode ? '.on' : ''), { on: { click: () => set(k) } }, l)));
       const inDoc = new Set(M.docBlocks(d.id).filter(b => b.status !== 'removed').map(b => b.refItemId).filter(Boolean));
       host.replaceChildren(mode === 'component'
         ? optionPicker({ placeholder: 'Search components in other notes…', items: q => DB.where('blocks', b => b.docId !== d.id && b.kind === 'component' && b.status === 'live' && (!q || (b.body.text + b.label).toLowerCase().includes(q))).sort((a, b) => (b.modified || '').localeCompare(a.modified || '')),

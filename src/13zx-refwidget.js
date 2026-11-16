@@ -29,7 +29,7 @@
     if (!src || src.status === 'removed' || !WIDGETS[src.kind] || SKIP.has(src.kind)) return rc.call(this, b, d);
     const od = M.doc(src.docId), ro = !!this.travel;
     let body; try { body = WIDGETS[src.kind].body(src, od, this, ro); } catch (e) { return rc.call(this, b, d); }
-    return h('div.refwidget', body, h('div.origin.rw-origin', 'embedded from ', h('a', { title: 'Alt+click: open beside', on: { click: e => App.jump(src.id, e) } }, od ? M.docPath(od) : 'missing'), ' · live — changes here change the original'));
+    return h('div.refwidget', body, h('div.origin.rw-origin', 'bridged from ', h('a', { title: 'Alt+click: open beside', on: { click: e => App.jump(src.id, e) } }, od ? M.docPath(od) : 'missing'), ' · live — changes here change the original'));
   };
   // the box takes the widget's look and width
   const bx = DocView.box; DocView.box = function (b, d, p) { const el = bx.apply(this, arguments); const src = el && b && b.kind === 'ref' && !b.refItemId && M.block(b.refBlockId);

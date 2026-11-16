@@ -9,7 +9,7 @@
      is connected.
    • Pen: press and hold a highlight, drag it into another pane — it is
      embedded there (live). Dropped on a component, it is also connected.
-     Dragging a component into another pane embeds it the same way.
+     Dragging a component into another pane bridges it there (V3.981, 13zzu).
    ========================================================================== */
 const GEST = {
   len(P, a = 0, z = P.length - 1) { let s = 0; for (let i = a + 1; i <= z; i++) s += Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]); return s; },
@@ -160,7 +160,7 @@ const LINKS = {
     let x = Math.round(w.x / 14) * 14, y = Math.round(w.y / 14) * 14;
     if (ov) { const r = pane.rectOf(ov.box.dataset.id); if (r) { x = Math.round((r.x + r.w + 56) / 14) * 14; y = Math.round(r.y / 14) * 14; } }
     DB.beginGroup(); const nb = M.pullInto(pane.docId, null, Object.assign({ x, y }, src)); changed();
-    toast('Embedded in “' + snippet((M.doc(pane.docId) || {}).title || '', 30) + '” — it follows the original');
+    toast('Bridged to “' + snippet((M.doc(pane.docId) || {}).title || '', 30) + '” — live; say why in the caption under it');
     if (ov) setTimeout(() => LINKS.connect(pane, nb.id, ov.box.dataset.id, e.clientX, e.clientY + 12), 120);
     return nb;
   };

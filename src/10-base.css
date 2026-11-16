@@ -191,10 +191,9 @@ table.t.compact td,table.t.compact th{padding:4px 6px;text-align:center} table.t
 .ed .ct{font-style:italic;cursor:help;user-select:all}
 .ed .ct.au{font-style:normal}
 .ed .ct.num{font-style:normal;font-family:var(--f-m);font-size:.78em;vertical-align:super;color:var(--teal)}
-.ed .ln{cursor:pointer;color:inherit}
-.ed .ln.end::after{content:"↗";font-family:var(--f-m);font-size:.7em;vertical-align:super;margin-left:1px;color:var(--ink-3)}
-.ed .ln.open.end::after{content:"○";color:var(--ink-4)}
-.ed .ln:hover::after{color:var(--teal)}
+.ed .ln{cursor:pointer;color:inherit;text-decoration:underline 2px var(--bridge,#1f9d55);text-underline-offset:3px;text-decoration-skip-ink:none}   /* V3.981: underlined like a bridge (13zzu), no arrow */
+.ed .ln.open{text-decoration-style:dashed}
+.ed .ln:hover{text-decoration-thickness:3px}
 
 /* ---------- floating: structure pop-up, popovers, hover cards ---------- */
 .strip{position:fixed;z-index:160;padding:6px;background:var(--ink);color:var(--paper);border-radius:9px;box-shadow:var(--shadow-lg);font-size:12px;width:min(640px,96vw);animation:tin .14s}

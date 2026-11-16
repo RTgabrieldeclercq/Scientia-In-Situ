@@ -180,7 +180,7 @@ function helpModal() {
   const s = settings(), row = (k, d) => [h('dt', k), h('dd', d)];
   modal({ title: 'Keys and gestures', wide: true, body: h('dl.help', row(keyLabel(s.structKey), 'Say what a selected phrase is — claim, barrier, resolution, result, takeaway, decision, question, idea, deviation, observation, reminder; / an existing one; W a term; L a link'),
     row('Ctrl+W', 'Mark a term — in Focus mode (Ctrl+.), where the browser lets the page have it. ' + keyLabel(s.termKey) + ' works everywhere'), row('Ctrl+I', 'Cite from the library (with text selected: add it to the library)'),
-    row('Enter / Shift+Enter', 'New component below / line break'), row('Double-click paper', 'New component there'), row('Right-click', 'Pull in barriers, structures or components; box actions'),
+    row('Enter / Shift+Enter', 'New component below / line break'), row('Double-click paper', 'New component there'), row('Right-click', 'Pull in barriers or structures; bridge a component to another note; box actions'),
     row('Drag ● on a box', 'Connect two components and say how (direction matters)'), row('Drag paper · wheel', 'Pan; Ctrl+wheel or pinch zooms; Space+drag pans over boxes'),
     row('Ctrl+click a link', 'Open that note (in a split view: in the pane you clicked)'), row('Alt+click a link', 'Open it beside — up to four notes, 2×2'),
     row('∑ Equation', 'New equation with a legend of its terms, or a registered one; drag its ● onto a calculator to solve it'),

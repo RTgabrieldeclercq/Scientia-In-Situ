@@ -46,10 +46,10 @@ const EXCERPT = {
     const text = String((src.body && src.body.text) || ''); let a = Math.max(0, j.from | 0), z = Math.min(text.length, j.to | 0);
     if (CLIPX.norm(text.slice(a, z)) !== CLIPX.norm(j.text)) { const i = text.indexOf(j.text); if (i >= 0) { a = i; z = i + j.text.length; } }   // changed since the copy
     const od = M.doc(src.docId), from = (od && od.title) || 'its note';
-    if (z <= a || (a === 0 && z >= text.length) || !text.slice(a, z).trim()) { M.addBlock(d.id, null, { kind: 'ref', refItemId: null, refBlockId: src.id, x: at.x, y: at.y, w: 392 }); changed(); toast('Pulled in from ' + from); return; }
+    if (z <= a || (a === 0 && z >= text.length) || !text.slice(a, z).trim()) { M.addBlock(d.id, null, { kind: 'ref', refItemId: null, refBlockId: src.id, x: at.x, y: at.y, w: 392 }); changed(); toast('Bridged from ' + from + ' — say why in the caption under it'); return; }
     const exact = text.slice(a, z);
     M.addBlock(d.id, null, { kind: 'ref', refItemId: null, refBlockId: src.id, refSpan: { from: a, to: z, exact, prefix: text.slice(Math.max(0, a - EXCERPT.AROUND), a), suffix: text.slice(z, z + EXCERPT.AROUND) }, x: at.x, y: at.y, w: 392 });
-    IX.rebuild(); changed(); toast('Pulled in “' + snippet(exact.replace(/￼/g, ''), 48) + '” from ' + from + ' — live: it follows the original · Ctrl+Shift+V pastes a copy instead', 4500);
+    IX.rebuild(); changed(); toast('Bridged “' + snippet(exact.replace(/￼/g, ''), 48) + '” from ' + from + ' — live: it follows the original; say why in the caption under it · Ctrl+Shift+V pastes a copy instead', 4500);
   },
 };
 {
@@ -57,7 +57,7 @@ const EXCERPT = {
   const rc = DocView.refCard; DocView.refCard = function (b, d) {
     if (!b || !b.refSpan || b.refItemId) return rc.apply(this, arguments);
     const v = EXCERPT.view(b); if (!v) return h('div.refbody', 'Missing reference'); const ob = v.ob, od = M.doc(ob.docId);
-    const origin = h('div.origin', 'from ', h('a', { title: 'Open the original · Alt+click: beside', on: { click: e => App.jump(ob.id, e) } }, od ? M.docPath(od) : 'missing'), ' › ' + M.blockName(ob) + ' · ' + fmtDay(ob.created));
+    const origin = h('div.origin', 'bridged from ', h('a', { title: 'Open the original · Alt+click: beside', on: { click: e => App.jump(ob.id, e) } }, od ? M.docPath(od) : 'missing'), ' › ' + M.blockName(ob) + ' · ' + fmtDay(ob.created));
     const pv = h('div.ed'); ED.render(pv, Object.assign({}, ob, { body: { text: v.text, marks: v.marks } })); pv.contentEditable = 'false';
     return h('div.refbody.excerpt', h('div.row', h('span.pill', { title: 'A part of a component in another note, live' }, 'excerpt'), ob.label ? h('b', { style: { fontSize: '12.5px' } }, ob.label) : null), origin, pv,
       v.gone ? h('div.tiny.muted.ex-gone', 'These words are no longer in the original — this is how they read when they were pulled in.') : null);

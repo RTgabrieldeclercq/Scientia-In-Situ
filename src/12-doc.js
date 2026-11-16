@@ -133,7 +133,7 @@ const DocView = {
     const kinds = IX.kindsOf(b), accent = kinds[0], W = WIDGETS[b.kind];
     const el = h('div.box.cmp' + (isRef ? '.ref' : '') + (isP ? '.proto' + (b.kind === 'run' ? '.run' : '') + (b.kind === 'protocol' && !b.registered ? '.draft' : '') : '') + (this.sel === b.id ? '.sel' : '') + (b.boundTo ? '.bound' : '') + (W ? '.widget.w-' + b.kind : ''), { 'data-id': b.id, style: { left: (b.x || 0) + 'px', top: (b.y || 0) + 'px', width: (b.w || (isP ? 448 : W ? W.w : 392)) + 'px', '--kc': isP ? 'var(--teal)' : accent ? `var(--k-${accent})` : null } });
     const stepBox = p.steps && !isRef && !isP && !W && !ro ? h('button.step' + (b.step && b.step.checkedAt ? '.done' : ''), { title: TIMER.activeFor(d.id) ? 'Check off — records this step’s time inside the running timer' : 'Check off (start the timer to time steps)', on: { click: e => { e.stopPropagation(); TIMER.checkStep(b.id); } } }, b.step && b.step.checkedAt ? '✓' : '') : null;
-    const num = W ? W.label : isRef ? 'pulled in' : isP ? (b.kind === 'run' ? 'protocol run' : b.registered ? 'protocol' : b.localOnly ? 'protocol · local' : 'protocol · draft') : p.ordered ? `${p.noun} ${M.blockIndex(b)}` : p.noun;
+    const num = W ? W.label : isRef ? (b.refItemId || !b.refBlockId ? 'pulled in' : 'bridge') : isP ? (b.kind === 'run' ? 'protocol run' : b.registered ? 'protocol' : b.localOnly ? 'protocol · local' : 'protocol · draft') : p.ordered ? `${p.noun} ${M.blockIndex(b)}` : p.noun;
     // ▾ left of the title folds the component up to its title (b.collapsed)
     if (b.collapsed) el.classList.add('folded');
     const fold = b.kind === 'ink' ? null : h('button.cfold', { title: b.collapsed ? 'Unfold' : 'Fold it up — only its title shows', disabled: ro, on: { click: e => { e.stopPropagation(); b.collapsed = !b.collapsed || undefined; DB.put('blocks', b); changed(); } } }, b.collapsed ? '▸' : '▾');
@@ -149,7 +149,7 @@ const DocView = {
     if (isP) el.append(PROTO.body(b, d, this, ro));
     else if (W) el.append(W.body(b, d, this, ro));
     else if (isRef) el.append(this.refCard(b, d));
-    else { const ed = h('div.ed', { 'data-ph': `Write the ${p.noun.toLowerCase()}…` }); if (ro) { ED.render(ed, b, d); ed.contentEditable = 'false'; } else ED.attach(ed, b); el.append(ed); }
+    else { const ed = h('div.ed', { 'data-ph': `Write the ${p.noun.toLowerCase()}…`, 'data-own': b.id }); if (ro) { ED.render(ed, b, d); ed.contentEditable = 'false'; } else ED.attach(ed, b); el.append(ed); }
     if ((b.fields || []).length) el.append(h('div.fields', b.fields.map(f => h('div.fr', h('span', f.key), h('b', f.value)))));
     el.append(this.chipsFor(b, d));
     const anc = DocView.ancestors(b);
@@ -175,7 +175,8 @@ const DocView = {
     for (const w of wires) { const out = w.from === b.id, oid = out ? w.to : w.from, other = M.end(oid); if (!other || other.docId === b.docId) continue;
       const go = other.block ? oid : REGION.blocksOf(other.region)[0];   // a region in another note: open it at its first component
       const rel = REL[w.rel] || REL.related; chips.push(h('button.wchip.cross', { title: M.docPath(M.doc(other.docId)) + ' · Alt+click: open beside', on: { click: e => go && App.jump(go, e) } }, (w.directed ? (out ? '→ ' : '← ') : '↔ ') + (out ? rel.label : rel.inv) + ' · ⇱ ' + snippet(M.endName(oid), 28))); }
-    const refs = [...(IX.refsOfBlock.get(b.id) || []), ...IX.itemsOf(b.id).flatMap(i => IX.refsOfItem.get(i.id) || [])].map(M.block).filter(x => x && x.docId !== b.docId && x.status !== 'removed');
+    // V3.981: a component bridged elsewhere shows it by its underline or its "bridged" tag (13zzu); this chip is for its structures pulled in elsewhere
+    const refs = IX.itemsOf(b.id).flatMap(i => IX.refsOfItem.get(i.id) || []).map(M.block).filter(x => x && x.docId !== b.docId && x.status !== 'removed');
     if (refs.length) chips.push(h('button.wchip.teal', { on: { click: e => metaPop(e.clientX, e.clientY + 8, 'Appears in', [...new Set(refs.map(r => r.docId))].map(id => ({ label: M.doc(id).title, sub: M.docPath(M.doc(id)), date: M.doc(id).modified, note: M.doc(id).title, run: ev => App.jump(refs.find(r => r.docId === id).id, ev) }))) } }, `⇲ in ${plural(new Set(refs.map(r => r.docId)).size, 'other note')}`));
     const bl = IX.backlinks(b.id); if (bl.length) chips.push(h('button.wchip', { on: { click: e => metaPop(e.clientX, e.clientY + 8, 'Linked from', bl.filter(x => x.blockId && M.block(x.blockId)).map(x => ({ label: M.blockName(M.block(x.blockId)), sub: M.docPath(M.doc(M.block(x.blockId).docId)), date: M.block(x.blockId).modified, note: (M.doc(M.block(x.blockId).docId) || {}).title, run: ev => App.jump(x.blockId, ev) }))) } }, `↩ linked from ${bl.length}`));
     for (const it of IX.itemsOf(b.id).filter(i => i.kind === 'barrier')) { const st = IX.status(it); chips.push(h('span.pill' + (st === 'open' ? '.bad' : st === 'resolved' ? '.ok' : ''), 'barrier ' + st)); }
@@ -185,7 +186,7 @@ const DocView = {
   },
   refCard(b, d) {
     const it = b.refItemId && M.item(b.refItemId), ob = M.block(b.refBlockId), od = ob && M.doc(ob.docId);
-    const origin = h('div.origin', 'from ', h('a', { title: 'Alt+click: open beside', on: { click: e => ob && App.jump(ob.id, e) } }, od ? M.docPath(od) : 'missing'), ob ? ' › ' + M.blockName(ob) : '', ' · ', ob ? fmtDay(ob.created) : '');
+    const origin = h('div.origin', it ? 'from ' : 'bridged from ', h('a', { title: 'Alt+click: open beside', on: { click: e => ob && App.jump(ob.id, e) } }, od ? M.docPath(od) : 'missing'), ob ? ' › ' + M.blockName(ob) : '', ' · ', ob ? fmtDay(ob.created) : '');
     if (it) {
       const st = IX.status(it), res = (IX.resolutions.get(it.id) || []).map(M.item).filter(Boolean);
       return h('div.refbody', { style: { '--kc': `var(--k-${it.kind})` } }, h('div.row', kchip(it.kind), st ? h('span.pill' + (st === 'open' ? '.bad' : st === 'resolved' ? '.ok' : ''), st) : null), origin,
