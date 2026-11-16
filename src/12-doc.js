@@ -50,11 +50,24 @@ const DocView = {
     $$(':scope > .nextbtn', this.host).forEach(x => x.remove()); { const nb = CHAIN.button(d, this); if (nb) this.host.append(nb); }
     if (!this.side) App.setTitle(d.title, [typechip(d.type), CHAIN.strip(d), h('span', M.docPath(d).replace(/ › [^›]*$/, '')), h('span', 'edited ' + fmtWhen(d.modified)), this.travel && !this.travel.viewer ? h('span.pill.warn', 'as it stood ' + fmtWhen(this.travel.at)) : null],
       { editable: !this.travel, onEdit: v => { if (v && v !== d.title) { d.title = v; M.touchDoc(d); changed(); } }, more: this.travel ? null : e => this.docMenu(d, e) });
-    $$(':scope > .box, :scope > .wl, :scope > .obsbox', w).forEach(x => x.remove());
+    // V3.980 (Gabe: "changing a thing or two in any note causes whiteboards, PDFs, or HTMLs to refresh/take time to reload"): a page,
+    // a PDF or a whiteboard whose box would be drawn exactly as it is — the same record, the same HTML (shape) — stays on the paper
+    // as it is, loaded; the others are drawn again
+    const kept = new Map(); if (!this.travel) $$(':scope > .box.cmp[data-id]', w).forEach(x => { if (x._shape) kept.set(x.dataset.id, x); });
+    $$(':scope > .box, :scope > .wl, :scope > .obsbox', w).forEach(x => { if (kept.get(x.dataset.id) !== x) x.remove(); });
     const src = this.travel || { doc: d, blocks: M.docBlocks(d.id) };
     w.append(this.headBox(src.doc));
-    const live = src.blocks.filter(b => b.status !== 'superseded' && b.status !== 'removed');
-    for (const b of live) w.append(this.box(b, src.doc, p));
+    const live = src.blocks.filter(b => b.status !== 'superseded' && b.status !== 'removed'), places = [];
+    for (const b of live) {
+      const old = kept.get(b.id), sh = !this.travel && DocView.heavy(b) ? this.shape(b, src.doc, p) : null;
+      if (old && sh && old._b === b && old._shape === sh) {
+        kept.delete(b.id); old.style.left = (b.x || 0) + 'px'; old.style.top = (b.y || 0) + 'px'; old.classList.toggle('sel', this.sel === b.id);
+        const ph = document.createComment(''); w.append(ph); places.push([old, ph]); continue;
+      }
+      const el = this.box(b, src.doc, p); if (sh) { el._shape = sh; el._b = b; } w.append(el);
+    }
+    kept.forEach(x => x.remove());   // drawn again (a PDF's viewer was taken into its new box), or gone from the note
+    places.forEach(([el, ph]) => { if (w.moveBefore) try { w.moveBefore(el, ph); } catch (e) { } ph.remove(); });   // back in its place among the others, still loaded (where the browser can move it so)
     PROTO.obsLayer(this, src.doc);
     w.append(this.synthBox(src.doc, live));
     this.drawWires(); this.renderDock(d); this.renderHint(d, live);
@@ -101,6 +114,19 @@ const DocView = {
       d.citeMode === 'number' && nums.size ? h('div.refs', h('div.lab', 'References'), h('ol', [...nums.keys()].map(id => h('li', LIB.apa(M.lib(id) || { title: 'missing' }))))) : null);
   },
 
+  /** V3.980 — a component that is slow to draw again: a page (an iframe), a PDF, an image panel with a whiteboard, or a copy of one. */
+  heavy(b) {
+    if (!b) return false; if (b.kind === 'html' || b.kind === 'pdf') return true;
+    if (b.kind === 'figure') return !!(b.fig && (b.fig.cells || []).some(c => c && c.board));
+    if (b.kind === 'ref') { const it = b.refItemId && M.item(b.refItemId), s = b.refItemId ? (it && it.figPanel ? M.block(it.originBlockId) : null) : M.block(b.refBlockId); return !!s && s !== b && s.kind !== 'ref' && DocView.heavy(s); }
+    return false;
+  },
+  /** V3.980 — the box as it would be drawn now, as HTML, without its place and its selection: a trial build (DocView.dry: a PDF gives its
+      viewer's signature, not the viewer). Equal to the shape it had when drawn: the box on the paper is still right. */
+  shape(b, d, p) {
+    let el; DocView.dry = true; try { el = this.box(b, d, p); } finally { DocView.dry = false; }
+    el.style.left = el.style.top = ''; el.classList.remove('sel'); return el.outerHTML;
+  },
   /* ---------------- one component box ---------------- */
   box(b, d, p) {
     const ro = !!this.travel, isRef = b.kind === 'ref', isP = PROTO.is(b), pdef = isP && PROTO.defOf(b), pEdit = isP && b.kind === 'protocol' && !ro && PROTO.editableIn(b, d.id), flag = M.flagFor('block', b.id), stamp = b.stamp || {}, s = stamp.sessionId && M.session(stamp.sessionId);
@@ -306,7 +332,13 @@ const DocView = {
     if (!quiet) this.pendingFocus = { focus: nb.id, pos: 0 }; return nb;
   },
   /** Boxes placed automatically are nudged apart once their real heights are known. */
+  /** V3.980 — measured as drawn: in a big note the boxes far off screen are skipped (content-visibility) and report a placeholder
+      height, so "boxes never overlap" pushed boxes apart that did not overlap (and saved it). They are measured whole. */
   settle() {
+    const host = this.host, cv = !!(host && host.classList.contains('big')); if (cv) host.classList.add('cv-measure');
+    try { return this.settleNow(); } finally { if (cv) host.classList.remove('cv-measure'); }
+  },
+  settleNow() {
     const d = M.doc(this.docId); if (!d || this.travel || !this.paper) return false;
     // ink floats where it was written; so does a box put on top of another on purpose (`float` = that spot: a clip on its paper,
     // 13zza) until it is moved

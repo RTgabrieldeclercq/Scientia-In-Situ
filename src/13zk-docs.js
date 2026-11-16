@@ -135,6 +135,7 @@ const PDFW = {
   },
   body(b, d, pane, ro) {
     if (!MEDIA.get(b.media)) return h('div.pdfw', h('div.embed-missing', 'The PDF is missing.'));
+    if (DocView.dry) return h('div.pdfw.pdf-dry', { 'data-sig': [b.media, b.view || 'scroll', b.view === 'page' ? (b.cur || 0) : '', b.w || 616, b.h || 560, ro ? 1 : 0].join('|') });   // V3.980: a trial build (DocView.shape) leaves the live viewer where it is; the page count it learns once open is not a change of the box
     if (!pane || pane.maxView || !pane.paper) return PDFW.full(b, d, pane, ro);
     const key = (Object.prototype.hasOwnProperty.call(pane, '_pdk') ? pane._pdk : (pane._pdk = ++PDFW.n)) + ':' + b.id, hit = PDFW.live.get(key), sig = PDFW.sig(b, ro);
     if (hit && hit.b === b && hit.sig === sig && !hit.dead && !hit.failed) {   // the same viewer, its pages still drawn
@@ -213,10 +214,12 @@ const PDFW = {
   },
   io() { return PDFW._io || (PDFW._io = new IntersectionObserver(es => es.forEach(en => { const C = en.target._pd; if (C) { C.vis = en.isIntersecting; PDFW.want(C); } }), { rootMargin: '400px' })); },
   want(C) { if (C.raf || C.dead) return; C.raf = requestAnimationFrame(() => { C.raf = 0; PDFW.update(C); }); },
-  shown: C => C.vis && C.el.isConnected && PDFW.zoom(C) >= PDFW.MIN_Z,
+  /** V3.980: far off (pages not drawn) under MIN_Z − .03, near again over MIN_Z + .04 — a zoom resting at the line no longer flickers. */
+  far(C) { const z = PDFW.zoom(C); return (C.far = C.far ? z < PDFW.MIN_Z + .04 : z < PDFW.MIN_Z - .03); },
+  shown: C => C.vis && C.el.isConnected && !PDFW.far(C),
   update(C) {
     if (C.dead) return;
-    const far = PDFW.zoom(C) < PDFW.MIN_Z, st = C.stage;
+    const far = PDFW.far(C), st = C.stage;
     if (far) C.ph.style.cssText = `top:${st.offsetTop}px;left:${st.offsetLeft}px;width:${st.offsetWidth}px;height:${st.offsetHeight}px`;
     C.el.classList.toggle('pdf-far', far);
     if (PDFW.shown(C)) { clearTimeout(C.idleT); C.idleT = null; if (C.active) PDFW.plan(C); else if (!C.failed || C.retry) { C.retry = false; PDFW.activate(C); } }   // a failed card waits for its retry timer (C.retry) or the next redraw
