@@ -106,7 +106,8 @@ const SYNTH = {
   /** A Synthesis note gets its "notes to synthesize" component once (made with the note, or the first time it is opened). */
   ensureAsk(d) { d = d && M.doc(d.id); if (!d || !SYNTH.is(d) || d.synthAsked) return null; d.synthAsked = true; DB.put('documents', d);
     if (M.liveBlocks(d.id).some(b => b.kind === 'synthof')) return null;
-    const b = M.addBlock(d.id, null, { kind: 'synthof', label: 'Notes to synthesize', x: 476, y: 0, w: 520 }); b.body = { text: 'Notes to synthesize', marks: [] }; DB.put('blocks', b); return b; },
+    const x = M.liveBlocks(d.id).some(o => o.x != null && o.x < 996 && o.x + (o.w || 392) > 476 && (o.y || 0) < 280) ? SYNTH.start(d) : 476;   // V3.977: clear of a template's boxes
+    const b = M.addBlock(d.id, null, { kind: 'synthof', label: 'Notes to synthesize', x, y: 0, w: 520 }); b.body = { text: 'Notes to synthesize', marks: [] }; DB.put('blocks', b); return b; },
   async addNotes(d) { const ids = ((M.doc(d.id) || d).synthOf || []).slice(), n0 = ids.length; await SYNTH.pick(ids, 'Notes to synthesize (Cancel when done)'); if (ids.length === n0) return;
     const cur = M.doc(d.id); cur.synthOf = ids; M.touchDoc(cur); changed(); SYNTH.gather(cur); },
   drop(d, id) { const cur = M.doc(d.id); if (!cur) return; cur.synthOf = (cur.synthOf || []).filter(x => x !== id); M.touchDoc(cur); changed(); toast('Taken out of the list — what it already gave stays in the note'); },
@@ -162,8 +163,9 @@ WIDGETS.synthof = { label: 'notes to synthesize', w: 520, body: SYNTH.ofBody, me
       { label: (span ? 'Flag the whole component for synthesis' : 'Flag for synthesis') + to(s), sub: 'Into “' + snippet(s.title, 40) + '”, pulled in', run: () => SYNTH.flag(s, b, null) }].filter(Boolean))];
     const orig = ctxMenu; ctxMenu = (x, y, list) => orig(x, y, [...list, 'sep', ...rows]);
     try { return mn.apply(this, arguments); } finally { ctxMenu = orig; } };
-  // a Synthesis note made otherwise (/new, a changed type, from before): its "notes to synthesize" component the first time it is opened
-  const rn = DocView.render; DocView.render = function (docId) { const r = rn.apply(this, arguments); const d = M.doc(docId || this.docId);
+  // a Synthesis note made otherwise (/new, a changed type, from before): its "notes to synthesize" component the first time it is drawn —
+  // V3.977: drawn, not opened (a note whose type becomes Synthesis is redrawn, not opened again: it waited until the next visit)
+  const fl = DocView.fill; DocView.fill = function (d) { const r = fl.apply(this, arguments);
     if (d && !this.travel && SYNTH.is(d) && !d.synthAsked) setTimeout(() => { if (SYNTH.ensureAsk(d)) changed(); }, 0); return r; };
   // V3.973: /synthesis — a Synthesis of the notes you choose
   CMD.add({ slash: 'synthesis', label: 'A synthesis of notes…', args: [], alias: ['synthesize'], group: 'Note', sub: 'Pick the notes; their claims, evidence, results, takeaways, barriers and resolutions are gathered into a new Synthesis note',
@@ -177,7 +179,7 @@ WIDGETS.synthof = { label: 'notes to synthesize', w: 520, body: SYNTH.ofBody, me
     ctxMenu = (x, y, list) => orig(x, y, [list[0], ...rows, ...list.slice(1)]);
     try { return dm.apply(this, arguments); } finally { ctxMenu = orig; } };
   // the Synthesis note, when it is made from the Analysis, gathers the experiment
-  const adv = CHAIN.advance; CHAIN.advance = function (d, e) { const before = CHAIN.nextOf(d); const r = adv.apply(this, arguments); const n = CHAIN.nextOf(d); if (n && !before && SYNTH.is(n)) setTimeout(() => { SYNTH.ensureAsk(n); SYNTH.gather(M.doc(n.id), true); }, 0); return r; };
+  const adv = CHAIN.advance; CHAIN.advance = function (d, e) { const before = CHAIN.nextOf(d); const r = adv.apply(this, arguments); const n = CHAIN.nextOf(d); if (n && !before && SYNTH.is(n)) setTimeout(() => { const a = SYNTH.ensureAsk(n), g = SYNTH.gather(M.doc(n.id), true); if (a && !g) changed(); }, 0); return r; };
   // the dock of a Synthesis note: ⟲ Gather, ☰ The rest
   const rd = DocView.renderDock; DocView.renderDock = function (d) { const r = rd.apply(this, arguments); if (!SYNTH.is(d) || this.travel || !this.dock) return r;
     const n = SYNTH.others(d).length;

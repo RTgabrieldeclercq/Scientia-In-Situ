@@ -26,7 +26,7 @@ const ITER = {
   what: b => b.kind === 'component' ? 'text component' : (WIDGETS[b.kind] || {}).label || b.kind,
   root: b => b.iter ? b.iter.root || b.iter.of : b.id,
   /** root id → its later versions, oldest first (made again after each change). */
-  ix() { if (ITER._ix) return ITER._ix; const m = new Map(); DB.all('blocks').forEach(x => { if (x.status !== 'live' || !x.iter) return; const r = x.iter.root || x.iter.of; (m.get(r) || m.set(r, []).get(r)).push(x); }); m.forEach(L => L.sort((a, c) => a.iter.v - c.iter.v)); return (ITER._ix = m); },
+  ix() { if (ITER._ix && ITER._ixRev === DB.revOf.blocks) return ITER._ix; ITER._ixRev = DB.revOf.blocks; /* V3.978: made again when the blocks changed (an undo too, which calls no changed()) */ const m = new Map(); DB.all('blocks').forEach(x => { if (x.status !== 'live' || !x.iter) return; const r = x.iter.root || x.iter.of; (m.get(r) || m.set(r, []).get(r)).push(x); }); m.forEach(L => L.sort((a, c) => a.iter.v - c.iter.v)); return (ITER._ix = m); },
   /** Every version of b's line, v1 first. */
   line(b) { const r = ITER.root(b); return [M.block(r), ...(ITER.ix().get(r) || [])].filter(x => x && x.status === 'live'); },
   /** Which version b is: 0 when it has none. */

@@ -15,6 +15,10 @@
    what is typed (Tab takes it), and an argument that takes several words
    (/collection html image pdf) keeps its list open after each pick, without
    the ones already on the line; Enter on a space runs it.
+   V3.977 — the palm: writing, the hand rests on the bar and woke it, went
+   back or picked from its list. With a pen hand (pen, highlighter, eraser,
+   lasso), or while the pen is near the glass, a touch on the bar does
+   nothing; the pen itself and the mouse still work it (NAV.guard).
    ========================================================================== */
 const NAV = {
   el: null, inp: null, list: null, crumbEl: null, sayEl: null, back: null, ghost: null, awake: false, items: [], hi: 0, hpos: -1, picked: {},
@@ -24,7 +28,21 @@ const NAV = {
     NAV.crumbEl = h('span.nav-crumb'); NAV.sayEl = h('span.nav-say'); NAV.list = h('div.nav-list');
     NAV.inp = h('input.nav-in', { type: 'text', spellcheck: false, autocomplete: 'off', placeholder: '/command — ? lists them', on: { keydown: e => NAV.key(e), input: () => NAV.render() } });
     NAV.el = h('div#nav.nav.asleep', { on: { click: e => { if (!NAV.awake) { e.stopPropagation(); NAV.wake(); } } } }, NAV.back, NAV.crumbEl, NAV.inp, NAV.sayEl, NAV.list);
-    $('#app').append(NAV.el); NAV.crumb();
+    $('#app').append(NAV.el); NAV.crumb(); NAV.guard();
+  },
+  /** What touched: 'pen', 'mouse' or 'touch' (a click or a mouse event that a finger or a palm made says so too). */
+  kind(e) { if (e.pointerType) return e.pointerType; if (e.changedTouches) { const t = e.changedTouches[0]; return t && t.touchType === 'stylus' ? 'pen' : 'touch'; } const sc = e.sourceCapabilities; return sc && sc.firesTouchEvents ? 'touch' : 'mouse'; },
+  /** A touch the bar ignores: a pen hand, the pen near the glass, or a contact as big as a palm. */
+  palmOff(e) {
+    if (NAV.kind(e) !== 'touch') return false; if (NAV._palm > NAV._pen && Date.now() - NAV._palm < 700 && !/^(pointerdown|touchstart)$/.test(e.type)) return true;   // the rest of a touch already ignored
+    const hand = typeof HANDS !== 'undefined' ? HANDS.hand() : 'move';
+    return (!!hand && hand !== 'move' && hand !== 'zoom') || (typeof PALM !== 'undefined' && (PALM.penNear() || (e.pointerType === 'touch' && PALM.big(e))));
+  },
+  _palm: 0, _pen: 0,
+  guard() {
+    const stop = e => { if (!NAV.palmOff(e)) { if (e.type === 'pointerdown') NAV._pen = Date.now(); return; } NAV._palm = Date.now(); if (e.cancelable) e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); };
+    ['pointerdown', 'pointerup', 'touchstart', 'touchend', 'mousedown', 'mouseup', 'click', 'dblclick', 'contextmenu'].forEach(t => NAV.el.addEventListener(t, stop, { capture: true, passive: false }));
+    NAV.el.addEventListener('focusin', e => { if (NAV._palm > NAV._pen && Date.now() - NAV._palm < 700 && e.target.blur) { e.stopPropagation(); e.target.blur(); } }, true);
   },
   crumb() { if (!NAV.el) return; const ctx = CMD.ctx(), d = ctx.doc; const r = App.route || {}; const tab = (typeof TABS === 'undefined' ? [] : TABS).find(t => t[0] === (typeof TABOF !== 'undefined' && TABOF[r.name] || r.name));
     NAV.crumbEl.textContent = d ? [M.docPath(d), d.title].filter(Boolean).join(' › ') : (tab ? tab[1] : r.name || ''); NAV.back.disabled = !HIST.can(-1); NAV.back.title = HIST.can(-1) ? 'Back to ' + HIST.title(-1) + ' (Alt+←)' : 'Nothing to go back to'; },
