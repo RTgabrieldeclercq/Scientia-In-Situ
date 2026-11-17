@@ -17,3 +17,4 @@ pen-button/ScientiaPen.exe
 # Python
 __pycache__/
 *.pyc
+demokit/out/

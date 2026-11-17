@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "d261e65a4361b0972d6420b17fed1971a26bf030",
-  "subject": "V4.11: Scientia — the Report tag can be reached: it shows on PDF and HTML cards, and ⋯ → What kind is this… chooses it too",
-  "date": "2026-11-16"
+  "commit": "915052ba53f596a1e7bae4d4090018d72887ba8b",
+  "subject": "V4.12: Scientia — a page for every feature, with a demonstration: what it is for in Gabe's words and a recording of it being used in a test note",
+  "date": "2026-11-17"
  },
- "cut": "39d9b1e06858bf4698ce4c1eeae4770dd77b7d14",
+ "cut": "25e60b3d445823a9f2a2795b25871996e53f6e56",
  "names": [
   "DESKLAB",
   "LABSYNC",

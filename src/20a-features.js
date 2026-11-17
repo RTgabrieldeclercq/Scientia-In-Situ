@@ -7,7 +7,10 @@
    wrapped around the feature's own code here, or CSS under body.f-off-<id>
    (24-kinds.css), so the modules themselves stay as they were.
    A new feature is not finished until it is here, with a preview that
-   follows its settings (Gabe, 14 Nov 2026; FEAT.audit()).
+   follows its settings (Gabe, 14 Nov 2026; FEAT.audit()) — and, since V4.12,
+   until its page has a demonstration: what it is for in Gabe's words and a
+   recording of it used in a test note (20b-demos.js, demokit/record.mjs;
+   FEAT.undemoed() lists the ones still without).
    ========================================================================== */
 /* ---------- PV: the pieces previews are drawn with (24-kinds.css .fpv) ---------- */
 const PV = {
@@ -457,6 +460,16 @@ const PV = {
   TabF('materials', 'materials', 'Materials', 'The Materials tab: gel batches, cell lines, antibody lots and the notes that used them.', () => [h('div.pv-list', [['PAA gel batch 15', '8 kPa · bench 3'], ['MDCK p12', 'LN2 box 2']].map(([a, b]) => h('div', h('b', a), h('span', b))))]);
   TabF('canvas', 'canvas', 'Spatial canvases (lab)', 'Canvases where components, structures, papers and datasets are arranged freely; drawn lines become real connections; export as JSON Canvas. An experiment: presets leave it as it is.', () => [PV.cap('A Canvas tab in the row.')],
     { keep: true, nb: true, get: () => CANVAS.on(), set: v => { if (CANVAS.on() !== !!v) CANVAS.toggleLab(); } });   // a lab experiment: presets leave it as it is
+  // V4.12 (20-settings.js featurePage, 20b-demos.js): a feature's page shows a recording of it being used in a test note, and what it is for in the words of whoever asked for it
+  D({ id: 'demos', group: 'tabs', label: 'Feature demonstrations', isNew: true, presets: { simple: true }, desc: 'Each feature has a page of its own in Settings (click its tile): what it is, what it is for in the words of whoever asked for it, a recording of it being used in a test note with its steps under it, its live preview and its settings. A recording plays only when you press Play; a step plays it from there. Off: the pages keep everything but the recordings.',
+    tune: [T('speed', 'Recordings play at', 'seg', { isNew: true, def: '1', opts: [['0.75', '¾ speed'], ['1', 'Normal speed'], ['1.5', '1.5×']] }),
+      T('captions', 'The step being shown, under the recording', 'switch', { isNew: true, def: true, d: 'Off: only the list of steps' }),
+      T('loop', 'At the end, a recording', 'seg', { isNew: true, def: 'stop', opts: [['stop', 'Stops'], ['loop', 'Starts again']] })],
+    preview: () => { const sp = String(tune('demos', 'speed') || '1'), cap = tune('demos', 'captions') !== false, loop = tune('demos', 'loop') === 'loop', d = FEAT.demo('floats'), n = FEAT.list.length - FEAT.undemoed().length;
+      const st = [['0:01', 'Right-click → Make it a float'], ['0:13', '/float raises the dome'], ['0:27', 'Drag one out onto the note']];
+      return [h('div.pv-demo', h('div.pv-demo-f', d && d.poster && on('demos') ? h('i', { style: { backgroundImage: 'url(' + d.poster + (d.v ? '?v=' + d.v : '') + ')' } }) : null, on('demos') ? h('span.pl', '▶') : null, on('demos') && sp !== '1' ? h('span.sp', (sp === '0.75' ? '¾' : sp) + '×') : null),
+          on('demos') && cap ? h('div.pv-demo-cap', st[1][1]) : null, h('ol', st.map(([t, x], i) => h('li' + (i === 1 && on('demos') ? '.on' : ''), h('span', on('demos') ? t : (i + 1) + '.'), x)))),
+        PV.cap(on('demos') ? 'Play starts it' + (sp === '1' ? '' : ' at ' + (sp === '0.75' ? '¾ speed' : sp + '×')) + '; a step plays from there. ' + (cap ? 'The step being shown is written under it. ' : '') + (loop ? 'It starts again at the end. ' : '') + plural(n, 'feature') + ' of ' + FEAT.list.length + ' ' + (n === 1 ? 'has' : 'have') + ' a recording so far.' : 'Off: a page keeps what the feature is for and its steps, without the recording.')]; } });
   D({ id: 'pfdots', group: 'tabs', label: 'Portfolio dots', desc: 'The count dots beside notes and projects in the Portfolio — open barriers, reminders, Needs investigation (breathing).',
     preview: () => [h('div.pv-pf', h('b', '30 kPa series'), h('span.pfdots', h('span.pfdot', { style: { '--c': 'var(--k-barrier, #c92a2a)' } }, '1'), h('span.pfdot.inv', { style: { '--c': 'var(--k-investigate)' } }, '2'), h('span.pfdot', { style: { '--c': 'var(--warn)' } }, '3')))] });
   D({ id: 'syncdot', group: 'tabs', label: 'Sync dot', presets: { simple: true }, desc: 'The dot in the header: green in step, amber while it works, grey when offline, red with one plain sentence when it failed. Off: it shows only when something is wrong.',

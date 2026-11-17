@@ -26,6 +26,12 @@
      sizes over a range of zoom.
    • FEAT.audit(): the features with no preview, description or group — a
      feature that isn't in the register with a preview isn't finished.
+   • V4.12 — a page each (20-settings.js featurePage, #/settings/feature/<id>)
+     and a demonstration: FEAT.demo(id, { use, by, video, poster, steps }) in
+     20b-demos.js — what the feature is for, in the words of whoever asked for
+     it, and a recording of it being used in a test note (demokit/record.mjs
+     makes both the file and the entry). FEAT.undemoed(): the features that
+     have none yet.
    ========================================================================== */
 const FEAT = {
   GROUPS: [
@@ -39,7 +45,7 @@ const FEAT = {
     { id: 'tabs', label: 'Tabs & overview', gl: '▤' },
   ],
   PRESETS: [['simple', 'Simple'], ['standard', 'Standard'], ['all', 'Everything']],
-  list: [], by: {}, _live: {},
+  list: [], by: {}, _live: {}, demos: {},
   /** A feature declares itself: { id, group, label, desc, core?, keep?, presets: { simple, standard }, needs?, tab?, get?, set?, tune: [{ key, label, type, def, … }], preview(P) }. */
   def(f) {
     if (!f || !f.id) return null;
@@ -109,6 +115,10 @@ const FEAT = {
   apply() { const b = document.body; if (!b) return; FEAT.list.forEach(f => b.classList.toggle('f-off-' + f.id, !FEAT.on(f.id))); },
   /** A tab whose feature is off leaves the tab row (its page still opens from links and search). */
   tabOn(k) { const f = FEAT.list.find(x => x.tab === k); return !f || FEAT.on(f.id); },
+  /** A feature's demonstration: FEAT.demo(id, { use, by, at, video, poster, v, w, h, dur, steps: [[seconds, caption]…] }) records it (20b-demos.js); FEAT.demo(id) reads it. */
+  demo(id, d) { if (d) FEAT.demos[id] = Object.assign({ id }, d); return FEAT.demos[id] || null; },
+  /** The features with no recorded demonstration yet. */
+  undemoed() { return FEAT.list.filter(f => !(FEAT.demos[f.id] && FEAT.demos[f.id].video)).map(f => f.id); },
   /** The features that aren't finished: no preview, no description, or no group. */
   audit() { return FEAT.list.filter(f => typeof f.preview !== 'function' || !f.desc || !FEAT.GROUPS.some(g => g.id === f.group)).map(f => f.id); },
 };
