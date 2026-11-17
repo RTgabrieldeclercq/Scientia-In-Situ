@@ -208,7 +208,7 @@ const REFS = {
     App.setTitle('Atlas', [h('span', 'reports · ' + plural(all.length, 'report'))]);
     const tools = h('div.rf-tools', h('label.rf-pq', h('span', '⌕'), h('input', { type: 'search', placeholder: 'Search reports and their Results', 'aria-label': 'Search reports', value: P.rq, on: { input: e => { P.rq = e.target.value; const s = e.target.selectionStart; const p = $('.rf-page'); if (p) p.replaceWith(REFS.reportsPage()); const i = $('.rf-page .rf-pq input'); if (i) { i.focus(); i.setSelectionRange(s, s); } } } })),
       h('span.rf-lab', plural(rows.length, 'report') + ' · ' + plural(rows.reduce((n, r) => n + REFS.snips(r).length, 0), 'figure') + ' snipped out of them'));
-    const body = !all.length ? h('div.rf-emptypage', h('h3', 'No reports yet'), h('p', 'A PDF or a saved web page becomes a Report from the label left of its name. Figures you snip out of a report land as Results and show here under it.'))
+    const body = !all.length ? h('div.rf-emptypage', h('h3', 'No reports yet'), h('p', 'A PDF or a saved web page becomes a Report: double-click the tag left of its name (“pdf”, “html page”), or ⋯ → What kind is this…. Figures you snip out of a report land as Results and show here under it.'))
       : !rows.length ? h('p.rf-hint', 'No report matches “' + P.rq + '”.')
       : h('div.rf-reps', rows.map(r => { const w = REFS.where(r), S = REFS.snips(r);
         return h('article.rf-rep', { 'data-id': r.id }, h('button.rf-cover.' + r.kind, { type: 'button', title: 'Open it in its note', on: { click: e => REFS.open(r, e) } }, h('span.rf-dk', r.kind === 'pdf' ? 'PDF' : 'Page'), h('b', M.blockName(r))),

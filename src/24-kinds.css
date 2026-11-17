@@ -4,6 +4,9 @@
 /* V4.4 (13zzy): a PDF or web page that is a Report, an image panel that is a Result — the same coloured header */
 .box.kinded-w > .bh{background:color-mix(in srgb,var(--ck,var(--teal)) 12%,transparent);border-radius:5px 5px 0 0}
 .box.kinded-w > .bh > .num{color:var(--ck,var(--teal));font-weight:600}
+/* V4.11: the slim header (13zg) hides a widget's tag — the kind tag stays, so it can be double-clicked: on a PDF or page always, on an image panel once it has a kind */
+.box.widget.slim:is(.w-pdf,.w-html,.kinded-w) > .bh > .num.ck-tag{display:block;flex:none;align-self:center;margin-right:2px;line-height:1.2}
+.box.widget > .bh > .num.ck-tag:hover{text-decoration:underline dotted;text-underline-offset:2px}
 .pop .ck-why{margin:-2px 0 6px;max-width:300px}
 .pop .opts .opt .s{display:block}
 .story-foot{display:flex;align-items:center;gap:8px;padding:5px 10px 6px;border-top:1px dashed var(--rule);cursor:default}

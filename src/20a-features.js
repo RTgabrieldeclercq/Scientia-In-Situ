@@ -135,7 +135,7 @@ const PV = {
       PV.cap('Select words, press ' + keyLabel(settings().structKey) + ', then the letter.')] });
 
   // V4.4 (13zzy): a PDF or a saved web page can be a Report; what is snipped out of one lands as a Result
-  D({ id: 'reports', group: 'structures', label: 'Reports', isNew: true, desc: 'A PDF or a saved web page can be a Report — a kind only those can be (double-click the label left of its name). A figure snipped out of a report is a Result the moment it lands, and an image panel that is a Result counts as one, like a Result component. Off: no Report is offered and snips stay plain; what you labelled keeps its kind.',
+  D({ id: 'reports', group: 'structures', label: 'Reports', isNew: true, desc: 'A PDF or a saved web page can be a Report — a kind only those can be (double-click the tag left of its name, or ⋯ → What kind is this…). A figure snipped out of a report is a Result the moment it lands, and an image panel that is a Result counts as one, like a Result component. Off: no Report is offered and snips stay plain; what you labelled keeps its kind.',
     tune: [T('snips', 'A figure snipped from a report', 'seg', { isNew: true, def: 'result', opts: [['result', 'Becomes a Result'], ['plain', 'Stays plain']], d: 'The scissors on a PDF, the snip on a web page' })],
     preview: () => {
       const res = FEAT.tune('reports', 'snips') !== 'plain', kc = (id, fb) => { const K = typeof CKINDS !== 'undefined' && CKINDS.get(id); return (K && K.color) || fb; };
