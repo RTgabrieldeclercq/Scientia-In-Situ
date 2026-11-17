@@ -2,7 +2,7 @@
    01 · Utilities — DOM builder, ids, dates, formatting
    ========================================================================== */
 'use strict';
-const BUILD = '2026-11-16 · standalone · the Report tag shows on PDF and HTML cards', DEMO_V = 2;
+const BUILD = '2026-11-17 · standalone · a page per feature, with its demonstration', DEMO_V = 2;
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

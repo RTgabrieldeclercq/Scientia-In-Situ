@@ -3,22 +3,29 @@
    commands, Templates & note types, Notebook & devices, Data & storage);
    Features is the board of every feature in the register (02b, 20a), with
    presets, a tile each and the live preview of the feature in view.
+   V4.12 (Gabe: "Each feature deserves a full page when clicked on, with a
+   demonstration of what it can be used for"): a tile opens the feature's own
+   page, #/settings/feature/<id> — what it is, what it is for in the words of
+   whoever asked for it, the recording of it being used in a test note with
+   its steps (FEAT.demo, 20b-demos.js; it plays only when asked), its live
+   preview and its settings. The tile no longer unfolds in the board.
    ========================================================================== */
 const SettingsView = {
   /* V3.995 — the page as a sidebar and a feature board (Gabe chose layout C): Features first — presets, then a tile per feature (FEAT, 02b), which
-     opens across the board with its whole description and its settings — beside a live preview of the feature in view that follows the scroll;
+     opens its own page (V4.12, featurePage) — beside a live preview of the feature in view that follows the scroll;
      then the ordinary settings, a section each. Search covers both. */
-  section: 'features', open: null, q: '', spy: null,
+  section: 'features', q: '', spy: null, back: null,
   SECTIONS: [['features', 'Features', '◉'], ['look', 'Look & feel', '◐'], ['keys', 'Keys & commands', '⌘'], ['templates', 'Templates & note types', '⧉'], ['devices', 'Notebook & devices', '⇆'], ['data', 'Data & storage', '⛁']],
   WORDS: { look: 'theme light dark appearance colour', keys: 'keys shortcut commands macro ctrl+w focus mode', templates: 'templates note types profiles', devices: 'notebook folder devices phone tablet ipad lab computer handwriting recordings whisper obsidian', data: 'storage export import json snapshots backup re-index round-trip start empty' },
-  render() {
+  render(a0, a1) {
     const s = settings(), V = SettingsView;
     App.setTitle('Settings', [h('span', DB.mode === 'idb' ? 'IndexedDB · ' + (DB.durable && DB.durable.persisted ? 'persistent' : 'evictable') : 'memory only')]);
     if (DISK.server == null) DISK.info().then(() => App.refresh());
+    if (a0 === 'feature' && FEAT.by[a1]) return V.featurePage(FEAT.by[a1]);   // V4.12: a feature's own page
     const q = V.q.trim().toLowerCase();
     const side = h('nav.st-side', { 'aria-label': 'Settings sections' }, V.SECTIONS.map(([id, label, gl], i) => [
       i === 1 ? h('div.st-sgh', 'Preferences') : i === 3 ? h('div.st-sgh', 'Notebook') : null,
-      h('button', { type: 'button', 'aria-current': String(V.section === id && !q), on: { click: () => { V.section = id; V.q = ''; V.open = null; V.redraw(true); } } },
+      h('button', { type: 'button', 'aria-current': String(V.section === id && !q), on: { click: () => { V.section = id; V.q = ''; V.redraw(true); } } },
         h('span.gl', gl), label, id === 'features' ? h('span.ct', FEAT.count() + '/' + FEAT.list.length) : null)]));
     const search = h('label.st-search', h('span', { 'aria-hidden': 'true' }, '⌕'), h('input#st-q', { type: 'search', value: V.q, placeholder: 'Search settings', 'aria-label': 'Search settings',
       on: { input: debounce(e => { V.q = e.target.value; V.redraw(); requestAnimationFrame(() => { const i = $('#st-q'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }); }, 160) } }));
@@ -42,32 +49,83 @@ const SettingsView = {
     const groups = FEAT.GROUPS.map(g => ({ g, fs: FEAT.list.filter(f => f.group === g.id && (!only || only.includes(f))) })).filter(x => x.fs.length);
     const board = h('div.st-board', groups.map(({ g, fs }) => h('div.st-group', h('div.st-gh', h('h3', g.label), h('span.k', fs.filter(f => FEAT.on(f.id)).length + ' of ' + fs.length + ' on')), h('div.st-tiles', fs.map(f => V.tile(f, g))))));
     const cur = V.previewId(only);
-    return h('div.st-main', only ? null : h('div.st-mh', h('h2', 'Features'), h('span.k', 'switch off what you don’t use · select a tile to see all of it and tune it')),
+    return h('div.st-main', only ? null : h('div.st-mh', h('h2', 'Features'), h('span.k', 'switch off what you don’t use · a tile opens its page: what it is for, a demonstration, its settings')),
       only ? null : presets, only ? null : status, h('div.st-split', board, h('aside.st-pv', V.pane(cur))));
   },
   PDESC: { simple: 'Write and mark structures; bridges, timers, reminders, the Library and equations.', standard: 'The app as it was, without the parts most people never use.', all: 'Every feature, including recordings, handwriting and chores.' },
-  previewId(only) { const V = SettingsView, ok = id => !!FEAT.by[id] && (!only || only.includes(FEAT.by[id])); return ok(V.open) ? V.open : ok(V.spy) ? V.spy : ((only || FEAT.list)[0] || {}).id; },
-  /** The preview pane: the feature in view (or the one open), as it is set now. */
+  previewId(only) { const V = SettingsView, ok = id => !!FEAT.by[id] && (!only || only.includes(FEAT.by[id])); return ok(V.spy) ? V.spy : ((only || FEAT.list)[0] || {}).id; },
+  /** The preview pane: the feature in view, as it is set now. */
   pane(id) {
     const f = FEAT.by[id]; if (!f) return h('div.st-pv-in');
     return h('div.st-pv-in', { 'data-f': id }, h('div.st-pv-h', h('span', 'Live preview'), h('b', f.label), FEAT.on(f.id) ? null : h('span.off', 'off')), SettingsView.previewOf(f));
   },
   previewOf(f) { let n = null; try { n = f.preview(PV, f); } catch (e) { console.warn('[preview]', f.id, e); } return h('div.fpv' + (FEAT.on(f.id) ? '' : '.is-off'), n || h('div.fpv-cap', 'No preview')); },
   /** A slider moved, a colour picked: the preview again, nothing else. */
-  repaint() { const V = SettingsView, id = V.previewId(); $$('.st-pv-in, .ft-pv').forEach(el => { const fid = el.classList.contains('ft-pv') ? el.dataset.f : id; const f = FEAT.by[fid]; if (!f) return; const nb = V.previewOf(f); const old = $(':scope > .fpv', el); old ? old.replaceWith(nb) : el.append(nb); }); },
+  repaint() { const V = SettingsView, id = V.previewId(); $$('.st-pv-in, .fp-pv').forEach(el => { const fid = el.classList.contains('fp-pv') ? el.dataset.f : id; const f = FEAT.by[fid]; if (!f) return; const nb = V.previewOf(f); const old = $(':scope > .fpv', el); old ? old.replaceWith(nb) : el.append(nb); }); },
+  /** A feature's tile on the board: its switch, and the way to its page (V4.12; it used to unfold here). */
   tile(f, g) {
-    const V = SettingsView, open = V.open === f.id, on = FEAT.raw(f.id), dis = !!f.needs && !FEAT.on(f.needs), nT = (f.tune || []).length;
-    const toggle = () => { V.open = open ? null : f.id; V.spy = f.id; V.redraw();
-      if (!open) requestAnimationFrame(() => { const el = $('.ft.open'), pw = $('.pagewrap'); if (!el || !pw) return; const r = el.getBoundingClientRect(), pr = pw.getBoundingClientRect(); if (r.top < pr.top + 8 || r.top > pr.bottom - 160) pw.scrollTop += r.top - pr.top - 70; }); };   // the tile just opened, in view
-    return h('div.ft' + (FEAT.on(f.id) ? '' : '.off') + (dis ? '.dis' : '') + (open ? '.open' : '') + (V.spy === f.id && !V.open ? '.spied' : ''), { 'data-f': f.id, on: { click: () => { if (!open) toggle(); } } },
+    const V = SettingsView, on = FEAT.raw(f.id), dis = !!f.needs && !FEAT.on(f.needs), nT = (f.tune || []).length, d = FEAT.demo(f.id), href = '#/settings/feature/' + f.id;
+    const go = () => { V.spy = f.id; App.go(href); };
+    return h('div.ft' + (FEAT.on(f.id) ? '' : '.off') + (dis ? '.dis' : '') + (V.spy === f.id ? '.spied' : ''), { 'data-f': f.id, on: { click: go } },
       h('div.ft-gl', g.gl),
-      h('div.ft-t', { role: 'button', tabindex: '0', 'aria-expanded': String(open), on: { click: e => { if (open) { e.stopPropagation(); toggle(); } }, keydown: e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); toggle(); } } } }, f.label, open ? h('span.ft-x', '▴ close') : null),
+      h('a.ft-t', { href, title: 'Its page: what it is for, its demonstration, its settings', on: { click: e => { e.preventDefault(); e.stopPropagation(); go(); } } }, f.label),
       f.core ? h('span.ft-lock', 'always on') : h('button.fsw', { type: 'button', role: 'switch', 'aria-checked': String(on), 'aria-label': f.label, disabled: dis, on: { click: e => { e.stopPropagation(); FEAT.set(f.id, !on); V.spy = f.id; V.redraw(); } } }),
       h('div.ft-d', dis ? 'Needs ' + FEAT.by[f.needs].label + '. ' : '', f.desc),
-      nT ? h('div.ft-n', plural(nT, 'setting') + (open ? '' : ' ▾')) : null,
-      open ? h('div.ft-body', { on: { click: e => e.stopPropagation() } },
-        h('div.ft-pv', { 'data-f': f.id }, V.previewOf(f)),
-        nT ? (FEAT.on(f.id) || f.core ? h('div.ft-tunes', f.tune.map(t => V.tuneCtl(f, t))) : h('div.ft-tunes.empty', dis ? 'Switch on ' + FEAT.by[f.needs].label + ' first.' : 'Switch it on to tune it.')) : h('div.ft-tunes.empty', 'Nothing to tune: it is on or off.')) : null);
+      h('div.ft-n', [nT ? plural(nT, 'setting') : null, d && d.video && FEAT.on('demos') ? '▶ demonstration' : null].filter(Boolean).join(' · '), h('span.ft-go', ' ›')));
+  },
+  /* ---------- V4.12 — a feature's own page ---------- */
+  featurePage(f) {
+    const V = SettingsView, g = FEAT.GROUPS.find(x => x.id === f.group) || { label: '', gl: '◉' }, on = FEAT.raw(f.id), live = FEAT.on(f.id), dis = !!f.needs && !FEAT.on(f.needs), nT = (f.tune || []).length;
+    const all = FEAT.GROUPS.flatMap(G => FEAT.list.filter(x => x.group === G.id)), i = all.indexOf(f), href = x => '#/settings/feature/' + x.id;
+    const nav = (x, before) => x ? h('a.fp-nav', { href: href(x), title: (before ? 'The feature before: ' : 'The next feature: ') + x.label }, before ? '‹ ' + x.label : x.label + ' ›') : null;
+    const ps = f.core ? 'Always on' : f.keep ? 'Presets leave it as it is' : (l => 'On in ' + l.join(', '))(FEAT.PRESETS.filter(([k]) => FEAT.inPreset(f, k)).map(x => x[1]));
+    const kin = FEAT.list.filter(x => x.needs === f.id);
+    V.back = V.spy = f.id;
+    return h('div.page.st2.fp', { 'data-f': f.id },
+      h('nav.fp-top', { 'aria-label': 'Features' }, h('a.fp-back', { href: '#/settings' }, '‹ Features'), h('span.fp-crumb', g.label), h('span.spacer'), nav(all[i - 1], true), nav(all[i + 1])),
+      h('header.fp-head', h('div.ft-gl', g.gl),
+        h('div.fp-hd', h('h1.title', f.label, f.isNew ? h('span.st-new', 'new') : null),
+          h('div.fp-meta', h('span', ps), f.tab ? h('span', 'Its tab: ' + ((TABS.find(t => t[0] === f.tab) || [])[1] || f.tab)) : null,
+            f.needs && FEAT.by[f.needs] ? h('span', 'Needs ', h('a', { href: href(FEAT.by[f.needs]) }, FEAT.by[f.needs].label)) : null,
+            kin.length ? h('span', 'Goes with ', kin.map((x, j) => [j ? ', ' : '', h('a', { href: href(x) }, x.label)])) : null)),
+        f.core ? h('span.ft-lock', 'always on') : h('div.fp-sw', h('span', live ? 'On' : dis ? 'Needs ' + FEAT.by[f.needs].label : 'Off'),
+          h('button.fsw', { type: 'button', role: 'switch', 'aria-checked': String(on), 'aria-label': f.label, disabled: dis, on: { click: () => { FEAT.set(f.id, !on); V.redraw(); } } }))),
+      h('p.fp-desc', f.desc),
+      h('div.fp-cols',
+        h('div.fp-main', V.demoView(f),
+          h('section.fp-sec', h('div.fp-sh', h('h2', 'Settings'), nT ? h('span.k', plural(nT, 'setting')) : null),
+            nT ? (live || f.core ? h('div.ft-tunes', f.tune.map(t => V.tuneCtl(f, t))) : h('div.ft-tunes.empty', dis ? 'Switch on ' + FEAT.by[f.needs].label + ' first.' : 'Switch it on to tune it.')) : h('div.ft-tunes.empty', 'Nothing to tune: it is on or off.'))),
+        h('aside.fp-side', h('div.fp-pv', { 'data-f': f.id }, h('div.st-pv-h', h('span', 'Live preview'), h('b', 'as it is set now'), live ? null : h('span.off', 'off')), V.previewOf(f)))));
+  },
+  /** What the feature is for, in the words of whoever asked for it, and the recording of it being used in a test note (FEAT.demo, 20b-demos.js). */
+  demoView(f) {
+    const V = SettingsView, d = FEAT.demo(f.id), steps = (d && d.steps) || [], mmss = t => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
+    const head = k => h('div.fp-sh', h('h2', 'What it is for'), k ? h('span.k', k) : null);
+    if (!d || !d.use) return h('section.fp-sec.fd', head(), h('p.fd-none', 'No demonstration has been recorded for this feature yet. The live preview shows it as it is set now.'));
+    const use = h('blockquote.fd-use', d.use, d.by ? h('cite', d.by) : null);
+    if (!FEAT.on('demos') || !d.video) return h('section.fp-sec.fd', head(), use, steps.length ? h('ol.fd-steps.plain', steps.map(x => h('li', h('span.fd-s', x[1])))) : null);
+    return h('section.fp-sec.fd', head('recorded in a test note · ' + mmss(d.dur || 0)), use, V.player(f, d, mmss));
+  },
+  /** The recording: a still until Play is pressed (nothing plays uninvited); its steps under it, each a place to play from. */
+  player(f, d, mmss) {
+    const V = SettingsView, url = x => x + (d.v ? '?v=' + d.v : ''), steps = d.steps || [], rate = +FEAT.tune('demos', 'speed') || 1;
+    const vid = h('video.fd-v', { playsinline: '', preload: 'none', poster: url(d.poster), 'aria-label': f.label + ': the demonstration' });
+    vid.muted = true; vid.loop = FEAT.tune('demos', 'loop') === 'loop';
+    const big = h('button.fd-play', { type: 'button', 'aria-label': 'Play the demonstration of ' + f.label }, h('span', '▶'), h('em', 'Play · ' + mmss(d.dur || 0)));
+    const cap = FEAT.tune('demos', 'captions') !== false && steps.length ? h('div.fd-cap', steps[0][1]) : null, note = h('div.fd-note', { hidden: true });
+    let loading = null;
+    // the whole file first, so any moment can be played wherever it is served from (the desktop's server sends no ranges); failing that, straight from its address
+    const load = () => loading || (loading = (async () => { let src = url(d.video);
+      try { const r = await fetch(src); if (!r.ok) throw new Error(String(r.status)); src = URL.createObjectURL(new Blob([await r.arrayBuffer()], { type: 'video/mp4' })); if (V._blob) URL.revokeObjectURL(V._blob); V._blob = src; } catch (e) { }
+      vid.src = src; vid.controls = true; vid.defaultPlaybackRate = rate; vid.playbackRate = rate; })());
+    const play = async () => { big.classList.add('busy'); await load(); try { await vid.play(); } catch (e) { } };
+    const from = async t => { await load(); try { vid.currentTime = t + .05; await vid.play(); } catch (e) { } };
+    const items = steps.map(([t, say]) => h('li', h('button.fd-step', { type: 'button', title: 'Play from here', on: { click: () => from(t) } }, h('span.fd-t', mmss(t)), h('span.fd-s', say))));
+    const cur = () => { let k = 0; steps.forEach(([t], n) => { if (vid.currentTime >= t - .06) k = n; }); items.forEach((li, n) => li.classList.toggle('on', n === k)); if (cap && steps[k]) cap.textContent = steps[k][1]; };
+    big.addEventListener('click', play);
+    vid.addEventListener('playing', () => { big.hidden = true; }); vid.addEventListener('timeupdate', cur); vid.addEventListener('seeked', cur);
+    vid.addEventListener('error', () => { if (!vid.getAttribute('src')) return; big.hidden = true; note.hidden = false; note.textContent = 'The recording is not on this device (' + d.video + ' comes with the app’s files). Its steps are listed here.'; });
+    return h('div.fd-player', h('div.fd-frame', { style: { aspectRatio: (d.w || 16) + ' / ' + (d.h || 10) } }, vid, big), cap, note, steps.length ? h('ol.fd-steps', items) : null);
   },
   /** One setting's control. Types: seg, range, switch, color, select, size, node (its own UI), button. */
   tuneCtl(f, t) {
@@ -99,14 +157,17 @@ const SettingsView = {
       secs.length ? h('div.st-also', 'Also in ', secs.map(([id, label]) => h('button.st-link', { type: 'button', on: { click: () => { V.section = id; V.q = ''; V.redraw(true); } } }, label))) : null,
       fs.length ? V.featuresView(fs) : (secs.length ? null : h('p.serif.muted', 'Nothing matches. Try a feature’s name, like “bridge” or “timer”.')));
   },
-  /** After the page is on screen: the preview follows the tile in view as the page scrolls. */
-  after() {
+  /** After the page is on screen: the preview follows the tile in view as the page scrolls. Back from a feature's page (V4.12): its tile in view again. */
+  after(a0) {
     const V = SettingsView, pw = $('.pagewrap'); if (!pw || pw._stSpy) return; pw._stSpy = true;
+    if (a0 === 'feature') return;
+    if (V.back) { const t = $('.st-board .ft[data-f="' + V.back + '"]', pw); V.back = null; V.hold = Date.now() + 400;   // its tile stays the one marked, with its preview, until the page is scrolled by hand
+      if (t) { const r = t.getBoundingClientRect(), pr = pw.getBoundingClientRect(); if (r.top < pr.top + 8 || r.bottom > pr.bottom - 8) pw.scrollTop += r.top - pr.top - Math.max(90, (pr.height - r.height) / 3); } }
     let raf = 0; pw.addEventListener('scroll', () => { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; V.follow(pw); }); }, { passive: true });
     requestAnimationFrame(() => V.follow(pw));
   },
   follow(pw) {
-    const V = SettingsView; if (App.route.name !== 'settings' || V.open) return; const tiles = $$('.st-board .ft', pw); if (!tiles.length) return;
+    const V = SettingsView; if (App.route.name !== 'settings' || App.route.args.length || (V.hold && Date.now() < V.hold)) return; const tiles = $$('.st-board .ft', pw); if (!tiles.length) return;
     const top = pw.getBoundingClientRect().top + 110, t = tiles.find(x => x.getBoundingClientRect().bottom > top) || tiles[tiles.length - 1], id = t.dataset.f;
     if (id === V.spy && $(`.st-pv-in[data-f="${id}"]`)) return; V.spy = id;
     tiles.forEach(x => x.classList.toggle('spied', x === t));

@@ -933,15 +933,19 @@ Settings has a sidebar: **Features** first, then **Look & feel**, **Keys & comma
 
 - **Presets:** **Simple** (write and mark structures; bridges, timers, reminders, the Library, equations), **Standard** (the app without the parts most people never use) and **Everything**. A notebook made before this version is on Everything; **Start empty** begins on Standard. Change one switch and it reads "Standard + 1 change", with *back to Standard*.
 - **Off hides a feature's tools and decorations** — its button, chips, tab, its rows in + Insert and / — never what you made with it: that stays in your notes, the search and the export. Switch it on and it is all back.
-- **A tile per feature**, by group: Canvas & notes, Pen & touch, Structures, Bridges, Time & reminders, Reading & sources, Widgets, Tabs & overview. **Select a tile:** it opens across the board with its whole description and all its settings. *Always on* marks what is the notebook itself (writing, structures, bridges, the pen's shortcuts); a feature that needs another says so.
-- **The live preview** beside the board shows the feature in view — it changes as you scroll and stays beside you — or the one you opened, drawn as it is set now, following each setting as you change it. On a narrow screen it is inside the opened tile.
+- **A tile per feature**, by group: Canvas & notes, Pen & touch, Structures, Bridges, Time & reminders, Reading & sources, Widgets, Tabs & overview. **Click a tile:** it opens the feature's own page (below). *Always on* marks what is the notebook itself (writing, structures, bridges, the pen's shortcuts); a feature that needs another says so.
+- **The live preview** beside the board shows the feature in view — it changes as you scroll and stays beside you — drawn as it is set now. On a narrow screen it is on the feature's page.
+- **A page per feature.** A tile opens it: the feature's whole description, which presets have it and what it needs or goes with; **What it is for**, in the words of whoever asked for the feature, with a **recording** of it being used in a test note; its **settings**; and its **live preview** beside them, following each setting as you change it. *‹ Features* goes back to the board at the tile you came from; the two names at the top right step to the feature before and the next.
+  - **The recording** shows a still until you press **Play** — nothing plays by itself. The steps are listed under it with their times: click one and it plays from there, and the step being shown is written under the picture. The pointer, clicks and keys pressed are drawn into it. It has no sound.
+  - A tile says **▶ demonstration** when its feature has one. A page without one says so and keeps the live preview.
+  - **Feature demonstrations** (Tabs & overview) holds their settings: the speed they play at, the step written under the recording, and whether one starts again at its end. Off: the pages keep everything but the recordings.
 - **This device keeps its own switches** (under the presets): a phone on Simple while the notebook is on Everything. Lock the wording and Spatial canvases stay the notebook's, and presets leave them as they are.
 - **The editing bar's starting size:** fixed, or following the zoom between two sizes (smaller zoomed out, larger zoomed in). It places itself where you are in the note, so its position isn't a setting.
 - **The bridge bar:** how many most-used bridges it shows (0–5; at 0 only the crossing you are on) and how long they are counted (1, 2 or 4 weeks, or never reset).
 
 | Section | What it holds |
 |---|---|
-| **Features** | Presets, a switch and the settings of every feature, the live preview |
+| **Features** | Presets, a switch and a page for every feature: what it is for, its recording, its settings and live preview |
 | **Look & feel** | Theme |
 | **Keys & commands** | Where the keys are, Ctrl+W and Focus mode, your own commands and macros |
 | **Templates & note types** | Templates per note type; note types as data (fields, next stage) |
