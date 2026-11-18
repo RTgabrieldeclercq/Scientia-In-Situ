@@ -1,0 +1,17 @@
+/* 31 · the pills (V4.20): Settings → Pills off — the pills leave and the app's own bar and top-right row come back (the
+   lab's §11 hides them under .lab-pilled), in every build; the preview */
+body.f-off-pills .lab-pills{display:none!important}
+body.f-off-pills .canvas-host.lab-pilled > .ctools{display:flex}
+body.f-off-pills .canvas-host.lab-pilled:not(.lab-ro) > .dock{display:flex}
+body.f-off-pills .canvas-host.lab-pilled > .ink-bar{left:12px}
+body.f-off-pills .canvas-host.lab-hand-zoom .paper{cursor:auto}
+.pv-pills{position:relative;height:150px;border:1px solid var(--rule);border-radius:10px;background:var(--paper);overflow:hidden;display:grid;place-items:center}
+.pv-pills > .pvb{width:58%;transform:translateY(-6px)}
+.pv-pill{position:absolute;width:26px;height:26px;border-radius:50%;border:1px solid var(--rule-2);background:var(--surface);color:var(--ink);display:grid;place-items:center;font-size:13px;line-height:1;box-shadow:0 1px 2px rgba(36,33,28,.12)}
+.pv-pill.tl{left:9px;top:9px}.pv-pill.tr{right:9px;top:9px}.pv-pill.br{right:9px;bottom:9px}
+.pv-pill.bc{left:calc(50% - 13px);bottom:9px;background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.pv-pill i{position:absolute;top:27px;left:50%;transform:translateX(-50%);font:600 8px/1 var(--f-m,monospace);font-style:normal;color:var(--ink-3)}
+.pv-ctools{position:absolute;right:8px;top:8px;display:flex;gap:4px}
+.pv-ctools b,.pv-dockbar b{font:500 10px/1 var(--f-d,system-ui);border:1px solid var(--rule-2);border-radius:6px;background:var(--surface);padding:4px 6px;color:var(--ink-2)}
+.pv-dockbar{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);display:flex;gap:3px;padding:3px;border:1px solid var(--rule-2);border-radius:10px;background:var(--surface)}
+.pv-dockbar b{border-color:transparent}

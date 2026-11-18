@@ -1,0 +1,15 @@
+/* 32 · Rotate (V4.21, 13zzz ROTATE): the whole app turned a quarter at a time — <body> is the turned frame (fixed, its own
+   size, turned about its top-left corner and moved back onto the screen); everything fixed inside it turns with it */
+html.rot{overflow:hidden;background:var(--paper)}
+html.rot body{position:fixed;left:0;top:0;margin:0;transform-origin:0 0}
+html.rot-90 body{width:100vh;height:100vw;transform:translateX(100vw) rotate(90deg)}
+html.rot-180 body{width:100vw;height:100vh;transform:translate(100vw,100vh) rotate(180deg)}
+html.rot-270 body{width:100vh;height:100vw;transform:translateY(100vh) rotate(270deg)}
+/* the preview (Settings → Rotate the app) */
+.pv-rot{display:grid;place-items:center;height:150px}
+.pv-rot-scr{position:relative;width:176px;height:110px;border:2px solid var(--ink-3);border-radius:8px;background:var(--surface);display:grid;place-items:center;overflow:hidden}
+.pv-rot-app{width:100px;height:62px;border:1px solid var(--rule-2);border-radius:4px;background:var(--paper);display:grid;grid-template-rows:9px 1fr;overflow:hidden;transition:transform .35s cubic-bezier(.2,.8,.3,1)}
+.pv-rot-app i{display:block;background:var(--ink);opacity:.85}
+.pv-rot-app b{display:block;margin:6px 30px 6px 6px;border:1px solid var(--rule-2);border-radius:3px;background:var(--surface)}
+.pv-rot-dir{position:absolute;right:6px;top:4px;font:600 10px/1 var(--f-m,monospace);color:var(--ink-3)}
+@media (prefers-reduced-motion:reduce){.pv-rot-app{transition:none}}

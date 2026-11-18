@@ -98,6 +98,32 @@ const PV = {
       h('div.pv-synthnote', h('b', 'Synthesis — 30 kPa series'), h('div.pvb.pv-bridge', h('div.refbody', h('div.origin.or-passage', h('div.or-top', h('span.or-k', '⇄ Passage from'), h('a.or-note', 'Run 3'), h('span.or-cmp', 'Edge'))), h('div.serif', { style: { fontSize: '13px', paddingBottom: '6px' } }, 'held at 2 ng/mL')))),
       PV.cap('Words: Ctrl+Enter → F. A whole component: right-click, or select and /synthesize.')] });
 
+  // V4.15 (13c): + Experiment asks the name and can continue a series; one name for every note of an experiment
+  D({ id: 'expseries', group: 'canvas', label: 'Experiment series', isNew: true, presets: { simple: true },
+    desc: '+ Experiment asks the experiment’s name, and can continue a series of its theme: pick “30 kPa series Run 2” and it is named “30 kPa series Run 3”. Every note of an experiment carries its name alone — the stage is its chip and the strip, not part of the title — and renaming one renames them all. A series’ runs share one Synthesis. Off: no series to continue (the name is still asked); series already made stay.',
+    preview: () => { const on = FEAT.on('expseries');
+      return [h('div.pv-xs', h('div.pv-xs-h', 'New experiment'),
+        on ? h('div.pv-xs-f', h('span', 'Continue a series'), h('div.pv-xs-sel', '30 kPa series Run 2 · 2 runs', h('i', '▾'))) : null,
+        h('div.pv-xs-f', h('span', 'Name'), h('div.pv-xs-in', on ? '30 kPa series Run 3' : '30 kPa series'))),
+        h('div.pv-xs-notes', ['Planning', 'Run', 'Analysis'].map(s => h('div.pv-xs-n', h('span.pv-xs-st', s), h('b', on ? '30 kPa series Run 3' : '30 kPa series')))),
+        PV.cap(on ? 'Picking a series names the next run; its three notes all carry the name, each stage as its chip.' : 'Off: the name is asked, with no series to continue; each note still carries the name alone.')]; } });
+
+  // V4.16 (15e): one Synthesis per series; Syntheses in the Portfolio; a note's synthesis in its first block and under its row
+  D({ id: 'synthnotes', group: 'canvas', label: 'Synthesis notes', isNew: true, presets: { simple: true },
+    desc: 'A series’ runs share one Synthesis note: Next from Run 3’s Analysis opens the one the series has and adds Run 3 to what it gathers. Synthesis notes have their own place in the Portfolio — Syntheses, above Notes in each theme, and a choice in its switch. A note’s “what this note adds up to” sits in its first block and moves with it, and its words show under the note’s row in the Portfolio. Off: each run makes its own Synthesis, a Synthesis stays in its experiment’s row, and the box floats on its own.',
+    tune: [T('legend', 'Under each note in the Portfolio, what it adds up to', 'switch', { isNew: true, def: true, d: 'The Portfolio has the same switch beside its own — Syntheses under notes', changed: () => { try { if (App.route && App.route.name === 'portfolio') App.refresh(); } catch (e) { } } })],
+    preview: () => { const on = FEAT.on('synthnotes'), leg = on && FEAT.tune('synthnotes', 'legend') !== false;
+      const note = (t, l) => h('div.pv-sn-n', h('div', t), leg && l ? h('div.pv-sn-leg', l) : null);
+      return [h('div.pv-sn',
+        h('div.pv-sn-head', h('div.pvb-h', h('span.pvb-n', 'Run'), h('span.sp'), h('span.pvb-st', 'Mon 16 Nov')), h('div.pv-sn-f', 'Title · 30 kPa series Run 3'),
+          on ? h('div.pv-sn-syn', h('b', 'Synthesis'), ' — the edge held at 2 ng/mL, not at 10') : null),
+        on ? null : h('div.pv-sn-float', h('b', 'Synthesis'), ' — on its own, beside the note'),
+        h('div.pv-sn-pf',
+          h('div.pv-sn-col', h('div.pv-sn-gl', 'Experiments'), h('div.pv-sn-n', '▸ 30 kPa series Run 3' + (on ? '' : ' · Synthesis'))),
+          h('div.pv-sn-col', on ? [h('div.pv-sn-gl', 'Syntheses'), note('30 kPa series — Runs 2 and 3', 'Stiffer gels hold the edge longer')] : null,
+            h('div.pv-sn-gl', 'Notes'), note('Bench log', 'Fibronectin helped at 2 ng/mL')))),
+        PV.cap(!on ? 'Off: each run its own Synthesis, kept in its experiment; the box floats beside the note.' : leg ? 'Runs 2 and 3 share one Synthesis, listed under Syntheses; each note’s synthesis shows under it.' : 'Runs 2 and 3 share one Synthesis; the lines under the notes are off.')]; } });
+
   D({ id: 'stamps', group: 'canvas', label: 'Times on components', desc: 'When each component happened, in its header, with its place in the timer. Off: shown only when you point at the component.',
     preview: () => [run3({ stamp: on('stamps') ? '13 Nov 2026 20:11 · +12:04' : null }), on('stamps') ? null : PV.cap('Point at a component to see its time.')] });
 
@@ -128,6 +154,28 @@ const PV = {
   D({ id: 'edgepan', group: 'pen', label: 'Edge pan in full screen', desc: 'In Move, in full screen, resting the pointer at the screen’s very edge pans the note that way, faster the further you push.',
     preview: () => [h('div.pv-edge', h('span.l', '‹‹'), run3({ stamp: null, body: 'The edge collapsed.' }), h('span.r', '››'))] });
 
+  /* V4.20 — the lab's pills in every build (lab-mode.js §11; vendor/lab-pills.js + 99z-pills.js where the lab layer isn't) */
+  D({ id: 'pills', group: 'pen', label: 'Pills', isNew: true, presets: { simple: true }, desc: 'Four round buttons on every note that you drag anywhere: ✎ the hand (zoom, move, pen, highlighter, lasso, and a cog for the pen’s colours and widths), ＋ the Quick cast (Pull in, Flag and Label, then what you add most — it takes the bottom bar’s place), ✦ tools (timer, head start, calculator, equation, split, full screen) and ⊕ zoom (in, 100 %, out, fit). A wheel left open rolls into a row; drop a pill against an edge and its row turns into a column. The layout is yours, the same in every note and on every computer. Off: no pills — the bottom bar and the row of buttons at the top right come back.',
+    changed: v => { try { PILLS.changed(v); } catch (e) { } },
+    preview: () => {
+      const on = FEAT.on('pills'), pill = (g, cls, extra) => h('span.pv-pill' + (cls ? '.' + cls : ''), g, extra || null);
+      const note = h('div.pv-pills' + (on ? '' : '.off'), run3({ stamp: null, body: 'Seed at 40k/cm² on the 30 kPa gels.' }),
+        on ? [pill('⊕', 'tl', h('i', '100%')), pill('✦', 'tr'), pill('＋', 'bc'), pill('✎', 'br')]
+          : [h('span.pv-ctools', ['◫', '◷', '∑', '∫'].map(g => h('b', g))), h('span.pv-dockbar', ['＋ Insert', '⇣ Pull in', '⚐'].map(g => h('b', g)))]);
+      return [note, PV.cap(on ? 'Drag a pill anywhere; a wheel left open rolls into a row, and the ＋ Quick cast stands where the bottom bar was.' : 'Off: the bottom bar and the buttons at the top right, as before.')];
+    } });
+
+  /* V4.21 — Rotate: the whole app a quarter turn clockwise at a time (13zzz ROTATE; ⊕'s Rotate in lab-mode §11 and the cut) */
+  D({ id: 'rotate', group: 'pen', label: 'Rotate the app', isNew: true, presets: { simple: true }, desc: 'Rotate in the ⊕ zoom pill (and /rotate) turns the whole app 90° clockwise; each tap turns it 90° more, and the fourth puts it upright again — for a tablet or a screen held the other way. Kept on this device. The pen, the canvas, menus and selections all follow the turn. Esc three times, /rotate reset or Upright here puts it back. Off: upright, and no Rotate.',
+    changed: () => ROTATE.sync(),
+    tune: [T('turn', 'On this device, the app is', 'seg', { isNew: true, def: '0', opts: [['0', 'Upright'], ['90', '90°'], ['180', '180°'], ['270', '270°']], d: 'Clockwise, as Rotate turns it',
+      get: () => String(ROTATE.stored()), set: v => ROTATE.set(+v, true) })],
+    preview: () => {
+      const v = FEAT.on('rotate') ? ROTATE.stored() : 0;
+      return [h('div.pv-rot', h('div.pv-rot-scr', h('span.pv-rot-dir', v ? v + '° ↻' : 'upright'), h('div.pv-rot-app', { style: { transform: 'rotate(' + v + 'deg)' } }, h('i'), h('b')))),
+        PV.cap(v ? ROTATE.name(v) + ' — the app’s top is at the screen’s ' + ({ 90: 'right', 180: 'bottom', 270: 'left' }[v]) + '. Rotate turns it 90° more; Esc three times puts it upright.' : 'Upright. Rotate in the ⊕ zoom pill (or /rotate) turns the whole app 90° clockwise.')];
+    } });
+
   /* =============================== Structures =============================== */
   D({ id: 'structures', group: 'structures', core: true, label: 'Structures', desc: 'Selected words given a meaning: claim, barrier, question and the rest, each in its colour and style, with a status where it has one. Your own kinds of component are here too.',
     tune: [T('key', 'Key', 'seg', Object.assign({ opts: [['ctrl+enter', 'Ctrl+Enter'], ['alt+enter', 'Alt+Enter'], ['ctrl+shift+enter', 'Ctrl+Shift+Enter']] }, B('structKey'))),
@@ -148,6 +196,20 @@ const PV = {
         h('span', { style: { alignSelf: 'center', color: 'var(--ink-3)' } }, '✂ →'),
         PV.box(Object.assign(hd(res ? 'Result' : 'Image panel', res ? kc('result', '#1E5E8C') : 'var(--rule-2)'), { label: 'Figure 2', body: h('div', { style: { height: '46px', width: '120px', borderRadius: '4px', background: 'radial-gradient(circle at 35% 40%, #f5a524, #5b2a86 70%)' } }) }))),
         PV.cap(res ? 'Snipped out of a report: a Result, and counted as one.' : 'Snipped out of a report: a plain image panel.')];
+    } });
+
+  // V4.14 (13zzyb): the Problem kind — a barrier in the literature, cited by its paper(s), never counted as a barrier towards your project
+  D({ id: 'problems', group: 'structures', label: 'Problems', isNew: true, desc: 'A component can be a Problem: a barrier in the literature, with room for improvement or a solution (double-click the label left of its title). It must be cited by the paper(s) that show it — until then its header says “cite a paper”. A Problem is never counted as a barrier towards your project, and neither is a barrier you mark inside one. Off: Problem is not offered and the reminder goes; what you labelled keeps its kind.',
+    tune: [T('cite', 'What counts as its citation', 'seg', { isNew: true, def: 'any', opts: [['any', 'A cite, a quote or a wire'], ['text', 'A cite in its text']], d: 'A cite of a Library paper in its text; or also a quote from a PDF and a wire to a paper', changed: () => { try { App.refresh(); } catch (e) { } } })],
+    changed: () => { try { App.refresh(); } catch (e) { } },
+    preview: () => {
+      const on = FEAT.on('problems'), any = FEAT.tune('problems', 'cite') !== 'text', c = typeof PROBLEM !== 'undefined' ? PROBLEM.COLOR : '#7D7A16';
+      const chip = () => { const s = h('span.pb-cite'); s.innerHTML = typeof PROBLEM !== 'undefined' ? PROBLEM.ICON : ''; s.append('cite a paper'); return s; };
+      return [h('div.pv-pb', { style: { display: 'grid', gap: '8px' } },
+        PV.box({ num: on ? 'Problem' : 'Block', label: 'Traction maps blur at the cell edge', style: on ? { '--kc': c } : {}, head: [], body: ['Displacement fields lose resolution within 2 µm of the edge ', h('span.pv-cite', '(Style 2014)'), '.'] }),
+        PV.box({ num: on ? 'Problem' : 'Block', label: 'No standard for gel stiffness checks', style: on ? { '--kc': c, borderLeftStyle: 'dashed' } : {}, head: on ? [chip()] : [], body: any ? 'Labs measure their gels in different ways (no citation yet).' : 'A quote from a PDF, without a cite in its text.' }),
+        h('div.pv-pbn', h('span', 'Open barriers in the project: 0'), h('span', '·'), h('span', on ? 'Problems are the literature’s, not yours' : 'Problem is not offered'))),
+        PV.cap(!on ? 'Off: Problem is not offered; a Problem you made keeps its kind.' : any ? 'Cited by a cite, a quote from a PDF or a wire to a paper. The second one needs its paper.' : 'Only a cite written in its own text counts.')];
     } });
 
   // V4.5 (14g): any component can also be a reference — /reference finds it from any note; the Atlas lists them (and the Reports)
@@ -288,6 +350,20 @@ const PV = {
       T('compare', 'Compare with the month before', 'switch', { isNew: true, def: true }),
       T('preview', 'Preview the running month', 'switch', { get: () => !!settings().reviewPreview, set: v => { saveSettings({ reviewPreview: v }); changed(); } })],
     preview: () => typeof MONTHLY !== 'undefined' ? MONTHLY.preview() : [PV.cap('The monthly review.')] });
+  /* V4.18 — a theme's aims are milestones, measured by their deliverables (15g, 32-milestones.css) */
+  D({ id: 'milestones', group: 'time', label: 'Milestones', isNew: true, presets: { simple: true }, desc: 'A theme’s large, overarching goals (what were its aims), each measured by its deliverables: a Synthesis note, or a set of results, takeaways, verdicts… picked from your notes. Its completeness is the share delivered; + Milestone on the theme’s page, Re-scope… for a new version. Off: the milestones leave the theme and project pages and the Portfolio; nothing written is lost.',
+    tune: [T('synth', 'A Synthesis note delivers its deliverable once', 'seg', { isNew: true, def: 'written', opts: [['written', 'Its synthesis is written'], ['linked', 'It is linked']], d: 'Its synthesis: the “what this note adds up to” of the Synthesis note' })],
+    preview: () => {
+      const linkedOnly = (tune('milestones', 'synth') || 'written') === 'linked', flag = h('span.mi-flag'); flag.innerHTML = MILE.FLAG;
+      const row = (met, label, sub, w) => h('div.msrow.mi-row' + (met ? '.met' : ''), h('span.mi-tick' + (met ? '.on' : ''), met ? '✓' : ''), h('div.mi-main', h('div.mi-l', label), h('div.mi-sub', ...sub)), h('span.pill.mi-w', w));
+      const rows = [[true, '8 kPa series, synthesised', [h('span.mi-k', 'Synthesis note'), h('span', '↳ 8 kPa series — Synthesis'), h('span.mi-st.ok', 'its synthesis is written')], '34%'],
+        [linkedOnly, '30 kPa series, synthesised', [h('span.mi-k', 'Synthesis note'), h('span', '↳ 30 kPa series — Synthesis'), h('span.mi-st', linkedOnly ? 'linked' : 'write its synthesis to deliver it')], '33%'],
+        [false, 'Results across the stiffness range', [h('span.mi-k', 'Results · Verdicts'), h('span.mi-cnt', '2 of 3')], '33%']];
+      const pct = linkedOnly ? 67 : 34, done = rows.filter(r => r[0]).length;
+      return [h('div.pv-mi', h('div.row.mi-h', flag, h('b', { style: { flex: 1 } }, 'Map traction force against stiffness, 8–30 kPa'), h('span.mono.tiny.mi-pct', pct + '%')), h('div.bar', { style: { margin: '6px 0 8px' } }, h('i', { style: { width: pct + '%' } })),
+        h('div.mi-dlh', h('span', 'Deliverables'), h('span.mi-dln', done + ' of 3 delivered')), rows.map(r => row(...r))),
+        PV.cap(linkedOnly ? 'A Synthesis note counts as soon as it is linked.' : 'A Synthesis note counts once its synthesis is written; a set once as many as it asks for are picked.')];
+    } });
 
   D({ id: 'chores', group: 'time', label: 'Recurring chores', presets: { standard: false }, desc: 'Lab chores that repeat — the water bath, the CO₂ tank — due ones shown in the day note.',
     tune: [T('list', 'Chores', 'button', { button: 'Recurring chores…', run: () => CHORES.manage() })],
@@ -416,6 +492,25 @@ const PV = {
           PV.cap((f ? 'Folded: the page has the room; click the strip to open the panel. ' : 'Open: › folds the panel to a strip at the side. ') + (start === 'open' ? 'A file you open starts with it open.' : start === 'folded' ? 'A file you open starts with it folded.' : 'A file you open finds it as you left it.') + ' Try it here.')); };
       draw(); return [wrap];
     } });
+  // V4.22 (17h): the References Map — a PDF's citations, hovered, show their paper; clicked, go to it; listed in the Highlights panel
+  const rfmRefresh = () => { try { REFMAP.refresh(); } catch (e) { } };
+  D({ id: 'refmap', group: 'reading', label: 'References Map', isNew: true, presets: { simple: true }, changed: rfmRefresh,
+    desc: 'In a PDF you read — maximised, beside a note, or in the Library’s reader — a citation in the text shows its paper when you rest the pointer on it, and a click takes you to that reference at the end of the paper (‹ Back returns you). The Highlights panel gains the References Map: every reference, numbered as in the paper, with how often it is cited. It uses the PDF’s own links when it has them; without links (older papers) it finds the citations in the text — numbered superscripts, [12], (12), Smith et al. 2014 — the journal saying which style to expect. Off: no map, no card, a click on a citation does nothing.',
+    tune: [T('delay', 'The card shows after resting on a citation for', 'seg', { isNew: true, def: '1000', opts: [['600', '0.6 s'], ['1000', '1 s'], ['1500', '1.5 s']], d: 'Moving away before then shows nothing', changed: rfmRefresh }),
+      T('find', 'Citations come from', 'seg', { isNew: true, def: 'both', opts: [['both', 'Its links, then the text'], ['links', 'The PDF’s links only']], d: 'The text: numbered superscripts, [12], (12), author and year — for papers without links', changed: rfmRefresh })],
+    preview: () => {
+      const wrap = h('div'), on = FEAT.on('refmap'), links = tune('refmap', 'find') === 'links', d = (+tune('refmap', 'delay') || 1000) / 1000;
+      let shown = false;
+      const draw = () => {
+        const cite = (t, sup) => h(sup ? 'sup.cite' : 'span.cite', { class: shown && on ? 'on' : '', on: { click: e => { e.stopPropagation(); if (!on) return; shown = !shown; draw(); } } }, t);
+        const pg = h('div.pv-rfm-pg', 'Cells pull hardest at the leading edge', cite('1,2', true), ' and relax behind it, as traction maps show', cite('3', true), '.',
+          shown && on ? h('div.pv-rfm-card', h('span.mono.tiny.muted', '1 · Style et al. · 2014'), h('b', 'Traction force microscopy in physics and biology'), h('span.tiny', h('i', 'Soft Matter'), ' · In your Library')) : null);
+        const side = h('div.pv-rfm-side', h('h6', 'References Map'), h('div', h('i', '1'), 'Style 2014', h('span', '×2')), h('div', h('i', '2'), 'Plotnikov 2012', h('span', '×1')), h('div', h('i', '3'), 'Legant 2010', h('span', '×1')));
+        wrap.replaceChildren(h('div.pv-rfm' + (on ? '' : '.off'), pg, on ? side : null),
+          PV.cap(!on ? 'Off: no map, no card; a click on a citation does nothing.' : (shown ? 'The card of reference 1 — it shows after resting ' + d + ' s on a citation; a click in the paper goes to the reference. ' : 'Click a citation here to see its card (in a paper, rest the pointer ' + d + ' s). ') + (links ? 'Citations come from the PDF’s links only.' : 'From the PDF’s links, or found in the text for older papers.')));
+      };
+      draw(); return [wrap];
+    } });
   /* =============================== Widgets =============================== */
   const W = (id, label, desc, rows, pv, o = {}) => D(Object.assign({ id, group: 'widgets', label, desc: desc + ' Off: it leaves + Insert and the / commands; those already in your notes stay.', inserts: rows, preview: pv }, o));
   W('equations', 'Equations', '∑ Equation in a note, or in the text, and the registered equations shared by every note.', ['equation', 'equation-reg'],
@@ -440,6 +535,18 @@ const PV = {
   /* =============================== Tabs & overview =============================== */
   const TabF = (id, tab, label, desc, pv, o = {}) => D(Object.assign({ id, group: 'tabs', tab, label, desc: desc + ' Off: the tab leaves the row; its page still opens from links and search.', preview: () => [PV.tabs(tab), ...pv()] }, o));
   TabF('tasks', 'tasks', 'Tasks', 'The Tasks tab: everything to do, from every note.', () => [h('div.pv-list', [['Order fibronectin', 'Seeding notes'], ['Re-image field 3', 'Run 3']].map(([a, b]) => h('div', h('input', { type: 'checkbox', tabindex: '-1' }), h('b', a), h('span', b))))], { presets: { simple: true } });
+  /* V4.17 — the Portfolio's section icons and every theme's banner (15f, 31-banners.css) */
+  D({ id: 'pficons', group: 'tabs', label: 'Section icons', isNew: true, presets: { simple: true }, desc: 'A small symbol before each kind of section in the Portfolio — a flask for Experiments, a page of notes for Notes, an open book for Lit reviews, a stack for Syntheses — beside the section and on the switch above it. Off: the words alone.',
+    preview: () => { const on = FEAT.on('pficons'), ico = k => on ? PFICON.el(k, 13) : null;
+      return [h('div.pv-pfi', h('div.pv-pfi-seg', [['exp', 'Experiments', 3], ['notes', 'Notes', 5], ['lit', 'Lit reviews', 2]].map(([k, l, n], i) => h('span' + (i ? '' : '.on'), ico(k), l, h('i', String(n))))),
+        h('div.pv-pfi-g', [['exp', 'Experiments'], ['syn', 'Syntheses'], ['notes', 'Notes'], ['lit', 'Lit reviews']].map(([k, l]) => h('div', ico(k), h('span', l))))),
+        PV.cap(on ? 'Each kind of section with its symbol, in the list and on the switch.' : 'Off: the sections by their words alone.')]; } });
+  D({ id: 'tbanner', group: 'tabs', label: 'Theme banners', isNew: true, presets: { simple: true }, desc: 'Every theme has a banner, 1600 × 320 px (5 : 1): at the top of its section in the Portfolio and of its page. Click it to choose an image — ask Claude for one at that size; another size is cropped to fit — or to remove it. A theme without an image gets a quiet banner drawn from its name, in the app’s colours. Off: no banners; the images stay with their themes.',
+    tune: [T('where', 'Show the banner', 'seg', { isNew: true, def: 'both', opts: [['both', 'Portfolio and page'], ['portfolio', 'In the Portfolio'], ['page', 'On the theme’s page']] })],
+    preview: () => { const w = tune('tbanner', 'where') || 'both', ban = (key, cls) => { const b = h('div.tb-ban.drawn.pv-tb-ban' + (cls ? '.' + cls : '')); b.innerHTML = BANNER.drawn(key); return b; };
+      const pf = h('div.pv-tb', h('div.pv-tb-k', 'Portfolio'), ban('pv|Traction vs stiffness'), h('div.pv-tb-sh', h('b', 'Traction vs stiffness'), h('span.pvc', '2 milestones')), ban('pv|Detection floor'), h('div.pv-tb-sh', h('b', 'Detection floor'), h('span.pvc', 'exploratory')));
+      const pg = h('div.pv-tb', h('div.pv-tb-k', 'Theme page'), ban('pv|Traction vs stiffness', 'pg'), h('div.pv-tb-sh', h('b.pv-tb-t', 'Traction vs stiffness')));
+      return [w === 'page' ? pg : w === 'portfolio' ? pf : h('div.pv-tb2', pf, pg), PV.cap('1600 × 320 px. Click a banner to choose an image (ask Claude for one at this size) or remove it; without one, each theme gets a banner drawn from its name.')]; } });
   TabF('atlas', 'atlas', 'Atlas', 'The Atlas: the notebook in a room in 3D with three axes, each sorting by one thing you pick — time (oldest at the origin, newer outward), kind, project, note, note type, term, people, status or connections. Drag turns it, Shift+drag moves it. Each dot is a glass bead that opens into the term page’s bubble only when you rest the pointer on it a moment, tap it or pin it; a click visits it in its note, and a small bubble there brings you back. Bridges and connections are threads with an arrow and a light running from where they start; resting on one shows both its ends. The axes tighten as you go further: days close up, months far off.', () => [ATLAS3.preview()],
     { tune: [T('ctrlk', 'Ctrl+K opens the Atlas', 'switch', { d: 'Off: Ctrl+K opens the list, as before', get: () => ATLAS.on(), set: v => saveSettings({ labs: Object.assign({}, settings().labs, { atlas: v }) }) }),
       T('start', 'It starts on', 'select', { isNew: true, def: 'last', opts: [['last', 'The axes I used last'], ['story', 'Story over time'], ['loops', 'Open loops'], ['who', 'Who did what'], ['terms', 'Terms across notes'], ['busy', 'Most connected'], ['mine', 'These three ↓']], d: 'The first visit is Story over time: time × kind × project' }),
@@ -456,7 +563,21 @@ const PV = {
       T('ticks', 'The axes tighten as you go further', 'switch', { isNew: true, def: true, d: 'Days close up, then weeks, months, quarters and years as you scroll away; long names shorten. Off: the ticks stay as the span gives them' }),
       T('room', 'Floor and walls', 'switch', { isNew: true, def: true, d: 'The two far walls with their grid, and the lines across to them from the dot you point at. Off: only the floor' }),
       T('labels', 'Labels beside the dots', 'seg', { isNew: true, def: 'few', opts: [['none', 'None'], ['few', 'A few'], ['many', 'Many']], d: 'Never over another label or an open bubble' })] });
-  TabF('activity', 'activity', 'Activity', 'The Activity tab: the heatmap of your days, themes and weekly numbers.', () => [h('div.pv-heat', Array.from({ length: 42 }, (_, i) => h('i', { style: { background: `var(--hm-${[0, 1, 2, 3, 0, 4, 2][i % 7]})` } })))]);
+  // V4.19: the Activity tab left the row (Gabe: "Remove Activity tab → Make the Activity interactable in Portfolio for each Project or Theme"); its parts open from the Portfolio (19b)
+  D({ id: 'pfactivity', group: 'tabs', label: 'Portfolio activity', isNew: true, desc: 'A project’s or a theme’s activity in the Portfolio — its heat strip, “active 2d ago” or “stalled”, its score — opens its activity in a panel at the right: why it is active or stalled and how that is counted, eight weeks of activity, the time recorded, its notes still in their two weeks, what moved (each line goes to the note) and, for a project, its themes. #/activity (Today’s “Activity →”) opens the whole notebook’s there: the old Activity tab. Off: the strips are plain again and #/activity is the old page.',
+    tune: [T('rows', 'The strips in the list open it too', 'switch', { isNew: true, def: true, d: 'A row’s small strip picks the project and opens its activity. Off: only the open project’s header and its themes do' })],
+    preview: () => {
+      const wrap = h('div'), lv = [0, 1, 0, 2, 3, 1, 0, 0, 2, 4, 3, 1, 2, 0, 1, 3, 4, 2, 1, 0, 0, 2, 3, 1, 4, 2, 0, 1, 3, 2, 1, 0, 2, 4, 3, 2, 1, 0, 0, 1, 2, 3];
+      let open = false;
+      const draw = () => { const live = on('pfactivity'), hot = el => { if (!live) return el; el.classList.add('pfa-hot'); el.title = 'Click: its activity'; el.addEventListener('click', e => { e.stopPropagation(); open = !open; draw(); }); return el; };
+        const strip = hot(h('div.pv-pfa-strip', lv.map(l => h('i', { style: l ? { background: 'var(--hm-' + l + ')' } : null }))));
+        wrap.replaceChildren(h('div.pv-pfa', h('div.pv-pfa-h', h('b', 'Traction force'), h('div.pv-pfa-line', hot(h('span', 'activity 34 · 4 wk')), hot(h('span', 'active 2d ago')))), strip,
+          live && open ? h('div.pv-pfa-panel', h('div.r', h('b', '34'), h('span', 'activity · 4 wk'), h('span.pfa-st.sm.ok', 'active 2d ago')),
+            h('div.r', h('span', 'What moved'), 'Takeaway — the edge collapsed at 10 ng/mL', h('span', '+10')), h('div.r', h('span', 'Notes in their two weeks'), '30 kPa series Run 3')) : null),
+          PV.cap(live ? (open ? 'Its activity: why it is active, what moved, its notes and themes — ✕ or Esc closes it.' : 'Click the strip, the score or “active 2d ago” to open its activity.') : 'Off: the strips are plain, as before; #/activity is the old page.'));
+      };
+      draw(); return [wrap];
+    } });
   TabF('materials', 'materials', 'Materials', 'The Materials tab: gel batches, cell lines, antibody lots and the notes that used them.', () => [h('div.pv-list', [['PAA gel batch 15', '8 kPa · bench 3'], ['MDCK p12', 'LN2 box 2']].map(([a, b]) => h('div', h('b', a), h('span', b))))]);
   TabF('canvas', 'canvas', 'Spatial canvases (lab)', 'Canvases where components, structures, papers and datasets are arranged freely; drawn lines become real connections; export as JSON Canvas. An experiment: presets leave it as it is.', () => [PV.cap('A Canvas tab in the row.')],
     { keep: true, nb: true, get: () => CANVAS.on(), set: v => { if (CANVAS.on() !== !!v) CANVAS.toggleLab(); } });   // a lab experiment: presets leave it as it is

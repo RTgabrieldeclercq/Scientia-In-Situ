@@ -1,23 +1,33 @@
 /* ==========================================================================
-   17 · Activity — heatmap, theme small multiples, weekly numbers
+   17 · Activity — heatmap, theme small multiples, weekly numbers.
+   V4.19: no longer a tab (Gabe: "Remove Activity tab → Make the Activity
+   interactable in Portfolio for each Project or Theme"). Its parts are drawn
+   in the Portfolio's activity panel for the whole notebook (19b PFACT);
+   #/activity opens that panel.
    ========================================================================== */
 const ActivityView = {
+  /** Ten weeks of measured time, every theme on the same scale. */
+  byTheme(themes, weeks = 10, cell = 11) {
+    return h('div.cards', themes.map(t => h('div.card.flat', h('div.row', h('b', { style: { flex: 1, fontSize: '13px' } }, t.name), h('span.tiny.mono.muted', (M.project(t.projectId) || {}).name)), h('div', { style: { marginTop: '8px' } }, heatmapEl({ weeks, themeId: t.id, cell })))));
+  },
+  /** The weekly numbers: the accessible view of the chart. */
+  weekly(n = 6) {
+    const rows = IX.reviewWeeks().slice(0, n).map(w => { const S = IX.weekStats(w.start); let unm = 0; S.perDay.forEach(D => { if (D.total === 0 && D.edits > 0) unm++; }); return { w, S, unm }; });
+    return h('div.list', h('table.t', h('thead', h('tr', h('th', 'Week'), h('th', 'Recorded'), h('th', 'Multitask (once)'), h('th', 'Manual'), h('th', 'Blocks · 90 min'), h('th', 'Planned'), h('th', 'Untimed active days'), h('th', 'Review'))),
+        h('tbody', rows.map(({ w, S, unm }) => h('tr', h('td', `${fmtDay(w.start)} – ${fmtDay(w.end)}`), h('td', fmtDur(S.total)), h('td', S.multi ? fmtDur(S.multi) : '—'), h('td', S.manual ? fmtDur(S.manual) : '—'), h('td', (S.total / 54e5).toFixed(1)), h('td', (() => { const pr = DB.get('reviews', localDate(addDays(w.start, -7))); return pr && pr.alloc ? String(sum(Object.entries(pr.alloc).filter(([k]) => k !== '_slack').map(([, v]) => v.blocks || 0))) : '—'; })()),
+          h('td', unm ? h('span.pill.warn', unm) : '—'), h('td', h('a', { href: '#/review/' + w.id }, w.status === 'complete' ? '✓ ' + (w.rv.impact ?? '') : w.status)))))));
+  },
   render() {
-    const themes = DB.where('themes', t => t.status === 'active'), weeks = IX.reviewWeeks().slice(0, 6);
-    const rows = weeks.map(w => { const S = IX.weekStats(w.start); let unm = 0; S.perDay.forEach(D => { if (D.total === 0 && D.edits > 0) unm++; }); return { w, S, unm }; });
+    const themes = DB.where('themes', t => t.status === 'active');
     App.setTitle('Activity', [h('span', 'presence, not progress')]);
     return h('div.page', h('div.eyebrow', 'Measured time'), h('h1.title', 'Activity'),
       h('p.stand', 'Presence, not progress — read it alongside barriers. Overlapping timers count once in the total; a day with edits and no timer is unmeasured, never empty.'),
       h('div.sec-h', h('h2', 'Ten weeks'), h('span.r', legendEl())), heatmapEl({ weeks: 10, cell: 18 }),
-      h('div.sec'), h('div.sec-h', h('h2', 'By theme'), h('span.k', 'same scale · a gap three columns wide is a stalled theme')),
-      h('div.cards', themes.map(t => h('div.card.flat', h('div.row', h('b', { style: { flex: 1, fontSize: '13px' } }, t.name), h('span.tiny.mono.muted', (M.project(t.projectId) || {}).name)), h('div', { style: { marginTop: '8px' } }, heatmapEl({ weeks: 10, themeId: t.id, cell: 11 }))))),
-      h('div.sec'), h('div.sec-h', h('h2', 'Weekly numbers'), h('span.k', 'the accessible view of the chart')),
-      h('div.list', h('table.t', h('thead', h('tr', h('th', 'Week'), h('th', 'Recorded'), h('th', 'Multitask (once)'), h('th', 'Manual'), h('th', 'Blocks · 90 min'), h('th', 'Planned'), h('th', 'Untimed active days'), h('th', 'Review'))),
-        h('tbody', rows.map(({ w, S, unm }) => h('tr', h('td', `${fmtDay(w.start)} – ${fmtDay(w.end)}`), h('td', fmtDur(S.total)), h('td', S.multi ? fmtDur(S.multi) : '—'), h('td', S.manual ? fmtDur(S.manual) : '—'), h('td', (S.total / 54e5).toFixed(1)), h('td', (() => { const pr = DB.get('reviews', localDate(addDays(w.start, -7))); return pr && pr.alloc ? String(sum(Object.entries(pr.alloc).filter(([k]) => k !== '_slack').map(([, v]) => v.blocks || 0))) : '—'; })()),
-          h('td', unm ? h('span.pill.warn', unm) : '—'), h('td', h('a', { href: '#/review/' + w.id }, w.status === 'complete' ? '✓ ' + (w.rv.impact ?? '') : w.status))))))));
+      h('div.sec'), h('div.sec-h', h('h2', 'By theme'), h('span.k', 'same scale · a gap three columns wide is a stalled theme')), ActivityView.byTheme(themes),
+      h('div.sec'), h('div.sec-h', h('h2', 'Weekly numbers'), h('span.k', 'the accessible view of the chart')), ActivityView.weekly());
   },
 };
-ActivityView.title = true; VIEWS.activity = ActivityView;
+ActivityView.title = true; VIEWS.activity = ActivityView;   // V4.19: 19b points #/activity at the Portfolio's panel
 
 /* ==========================================================================
    18 · Search — relevance (link degree), recent, keyword; superseded

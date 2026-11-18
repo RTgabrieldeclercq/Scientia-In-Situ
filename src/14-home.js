@@ -1,11 +1,12 @@
 /* ==========================================================================
    12 · Shared widgets (heatmap, stat tiles) + Today
    ========================================================================== */
-function heatmapEl({ weeks = 5, themeId = null, cell = 14, end = new Date() } = {}) {
+function heatmapEl({ weeks = 5, themeId = null, themeIds = null, cell = 14, end = new Date() } = {}) {   // V4.19: themeIds — a project's themes together (19b)
+  if (!themeIds && themeId) themeIds = [themeId]; themeId = themeIds ? themeIds[0] || '_none' : null;
   let start = dayStart(end); while (start.getDay() !== 1) start = addDays(start, -1); start = addDays(start, -7 * (weeks - 1));
   const today = localDate(new Date()), grid = h('div.hm', { style: { '--c': cell + 'px' } });
   for (let i = 0; i < weeks * 7; i++) {
-    const dd = addDays(start, i), key = localDate(dd), D = IX.day(key), ms = themeId ? (D.byTheme[themeId] || 0) : D.total;
+    const dd = addDays(start, i), key = localDate(dd), D = IX.day(key), ms = themeIds ? themeIds.reduce((a, id) => a + (D.byTheme[id] || 0), 0) : D.total;
     const fut = +dd > +dayStart(new Date());
     const unm = !fut && ms === 0 && D.edits > 0 && !themeId;
     grid.append(h('i' + (fut ? '.out' : '') + (unm ? '.unm' : '') + (key === today ? '.today' : '') + (!themeId && D.multi > 0 ? '.mt' : ''), { 'data-l': IX.level(ms),

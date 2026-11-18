@@ -51,9 +51,16 @@ const EBAR = {
     if (EBAR.cur && EBAR.cur.el === el) return EBAR.place();
     EBAR.hide(); const bar = FBAR.make([], { cls: 'ebar' }); document.body.append(bar);
     bar.addEventListener('pointerenter', () => { EBAR.over = true; }); bar.addEventListener('pointerleave', () => { EBAR.over = false; });
-    EBAR.cur = { el, b, bar, sel: ED.selection(el) }; EBAR.rebuild();
+    EBAR.cur = { el, b, bar, sel: ED.selection(el) }; EBAR.rebuild(); EBAR.watch(box);
   },
-  hide() { const c = EBAR.cur; if (!c) return; EBAR.cur = null; EBAR.over = false; c.bar.remove(); if (EBAR.popOpen) { closePop(); EBAR.popOpen = false; } },
+  hide() { const c = EBAR.cur; if (!c) return; EBAR.cur = null; EBAR.over = false; EBAR.unwatch(c); c.bar.remove(); if (EBAR.popOpen) { closePop(); EBAR.popOpen = false; } },
+  /** V4.13: the bar follows its component — a new line typed, a manual resize or a move places it again at once (below the component it rode on the old bottom edge) */
+  watch(box) {
+    const c = EBAR.cur; if (!c || !box) return; const again = () => { if (EBAR.cur === c) EBAR.place(); };
+    try { c.ro = new ResizeObserver(again); c.ro.observe(box); } catch (e) { }
+    try { c.mo = new MutationObserver(again); c.mo.observe(box, { attributes: true, attributeFilter: ['style'] }); } catch (e) { }
+  },
+  unwatch(c) { try { if (c.ro) c.ro.disconnect(); if (c.mo) c.mo.disconnect(); } catch (e) { } c.ro = c.mo = null; },
   rebuild() { const c = EBAR.cur; if (!c) return; c.bar.replaceChildren(...EBAR.items()); EBAR.sync(); EBAR.place(); },
   place() {
     const c = EBAR.cur; if (!c) return; if (!c.el.isConnected) return EBAR.hide();

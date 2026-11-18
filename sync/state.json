@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "915052ba53f596a1e7bae4d4090018d72887ba8b",
-  "subject": "V4.12: Scientia — a page for every feature, with a demonstration: what it is for in Gabe's words and a recording of it being used in a test note",
+  "commit": "eba6b01f98dd03f31c608fd144535c1ba546f6db",
+  "subject": "V4.22: Scientia — the References Map: in a PDF, a citation shows its paper on hover and takes you to it on click; the Highlights panel lists the references",
   "date": "2026-11-17"
  },
- "cut": "25e60b3d445823a9f2a2795b25871996e53f6e56",
+ "cut": "029b735bb9d72256bfc508c9a69659aff8caec3b",
  "names": [
   "DESKLAB",
   "LABSYNC",

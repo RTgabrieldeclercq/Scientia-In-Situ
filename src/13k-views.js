@@ -3,7 +3,7 @@
      { source(s), where: predicate tree, layout: table|board|calendar|timeline,
        columns, formulas: [{name, expr}], sort, group, dateField }
    evaluated over what is already stored (structures, components and their
-   typed fields, notes, time sessions, aim milestones, datasets, materials,
+   typed fields, notes, time sessions, milestone deliverables, datasets, materials,
    day entries). A view can sit in any note as a component and stays live.
    Formulas use FX, a small expression language parsed here — never eval.
    ========================================================================== */
@@ -95,7 +95,7 @@ const LV = {
     sessions: { label: 'Time (timer sessions and entries)', date: 'start', end: 'end', title: 'note', group: 'theme', rows() { return DB.all('sessions').map(s => { const d = M.doc(s.docId) || {}, th = s.themeId && M.theme(s.themeId), g0 = (s.segments || [])[0], gl = (s.segments || []).slice(-1)[0], ms = TIMER.elapsed(s);
       const start = g0 ? g0.s : s.localDate ? s.localDate + 'T09:00' : s.created, end = gl && gl.e ? gl.e : isoLocal(new Date(+new Date(start) + ms));
       return { _id: s.id, _open: e => d.id && App.jump(d.id, e, true), _src: 'sessions', note: d.title || '—', noteId: d.id || '', theme: th ? th.name : 'no theme', themeId: s.themeId || '', projectId: s.projectId || '', start, end, minutes: Math.round(ms / 6e4), state: s.state, source: s.source || s.entry }; }); } },
-    milestones: { label: 'Aim milestones', date: 'metAt', title: 'label', group: 'theme', rows() { return DB.where('aims', a => a.status !== 'superseded').flatMap(a => (a.milestones || []).map(m => { const th = M.theme(a.themeId);
+    milestones: { label: 'Milestone deliverables', date: 'metAt', title: 'label', group: 'theme', rows() { return DB.where('aims', a => a.status !== 'superseded').flatMap(a => (a.milestones || []).map(m => { const th = M.theme(a.themeId);
       return { _id: m.id, _open: () => th && App.go('#/theme/' + th.id), _src: 'milestones', label: m.label, aim: a.statement, weight: m.weight, met: !!m.metAt, metAt: m.metAt || '', due: m.due || '', theme: th ? th.name : '', themeId: a.themeId, projectId: th ? th.projectId : '', created: a.created }; })); } },
     datasets: { label: 'Datasets', date: 'acquired', title: 'name', group: 'instrument', rows() { return DB.all('datasets').map(x => ({ _id: x.id, _open: () => DATA.detail(x), _src: 'datasets', name: x.name, path: x.path, folder: x.root, sizeMB: Math.round(x.size / 1048576 * 10) / 10, instrument: x.instrument || '', acquired: x.acquired, status: x.status || '', projectId: x.projectId || '', usedBy: DB.where('blocks', b => ((b.binds || {}).datasets || []).includes(x.id)).length })); } },
     materials: { label: 'Materials', date: 'created', title: 'title', group: 'kind', rows() { return MATS.all().map(r => { const H = r.header || {}, used = MATS.usedIn(r.id);
