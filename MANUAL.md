@@ -85,7 +85,6 @@ This manual covers everything the notebook can do, from first launch to the pen 
 | **Terms** | Every term, with its forms and lens. |
 | **Atlas** | The notebook as one map: notes, components, structures, terms, people and papers, and how they link. Search lives here. |
 | **Library** | Papers and links. Open a paper's PDF in the reader. |
-| **Data** | Raw-data folders and datasets. |
 | **Materials** | Cell lines, antibodies, gels, reagents… |
 | **Canvas** | Only shown when the spatial-canvas lab is on. |
 | **Settings** | All settings (§23). |
@@ -163,7 +162,7 @@ A note has a **header box** (title, type, profile fields, tags, ✎ for note det
 - **Gravity.** What a component or a region pushed out of its way — unfolding, or growing as you type — comes back by exactly as much when it folds or shrinks again (emptied, its earlier versions closed), and what that pushed comes with it. Settings → Features → Writing in components turns it off.
 - **An unfolding region moves the other regions aside, whole** — what lies right of its middle to the right, left of it to the left — instead of pushing their components about; folding it brings them back. Settings → Features → Regions.
 - **The Portfolio is two panes.** On the left, your projects in a list, **most relevant first** (the most activity in the last four weeks; **Recent** and **A–Z** at the top of the list change the order), and the notes outside any project (**General**). Each row has the project's activity for four weeks and its dots. Click one (or ↑ ↓ in the list) and it opens on the right; the Portfolio opens it again next time.
-- **The open project** shows its themes, each with its question, its state (aims, exploratory or stalled), its activity, and its **Experiments** beside its other **Notes**; then the **Project-wide** notes; then its **Lit reviews** (every literature note of the project and the reviews linked to it, never under a theme). Its name opens the project's page. **+ Note**, **+ Theme** and **⇅** (the order of its notes) sit under the title.
+- **The open project** shows its themes, each with its question, its state (aims, exploratory or stalled), its activity, and its **Experiments** beside its other **Notes**; then the **Project-wide** notes; then its **Lit reviews** (every literature note of the project and the reviews linked to it, never under a theme), with **+ Lit review**, which starts a new review linked to the project. There is no Lit reviews tab: the Portfolio is where reviews are, and a review linked to no project is listed with the notes outside any project. Its name opens the project's page. **+ Note**, **+ Theme** and **⇅** (the order of its notes) sit under the title.
   - **The switch** (All · Experiments · Notes · Lit reviews, each with its count) shows only that kind; with two themes or more, **chips** narrow it to one theme.
   - **An experiment is one row**: its name, its stages (Planning, Run, Analysis, Synthesis; a stage opens its note), its dots and its dates. **▸** unfolds it into its notes, and it stays unfolded on this computer until you fold it.
   - **Notes in the order of their date**, the day a note is about, newest first. **⇅** changes it: oldest first, recent changes, most active, or title.
@@ -715,18 +714,21 @@ Open it with the ＋ **Quick cast** → **⋯** (everything that can go in this 
 
 ## 15. Data, materials and provenance
 
-### Data (raw data by reference)
-Your raw files stay where they are.
-- **Add a folder:** **+ Add a data folder** points the app at a folder, such as the microscope's export folder. **Register files…** lists what's inside; tick what you want.
-- **What each dataset records:**
-  - its path, size and date;
-  - its instrument, guessed from the extension (ND2, CZI, LIF…);
-  - a fingerprint of its first and last 4 MB.
-- **Checking files:**
-  - **Rescan** checks for changes.
-  - **Verify fingerprints** re-reads every file's ends.
-  - Moved files are found again; changed files are flagged until you accept them.
-  - After a restart, click Rescan once per folder to give the browser read access again.
+### Data: a tree in the component that used it
+The data an experiment used is logged in its component, as a tree of folders and files. Your raw files stay where they are: nothing is copied.
+- **Log it:**
+  - ⋯ → **Log data…** → **Add a folder…** or **Add files…**;
+  - type **/data** in the component (from the navigation bar with no component chosen, /data makes a component labelled "Data");
+  - or drop files and folders from Explorer or Finder: on a component's tree, or on any component with **Alt** held. A folder dropped anywhere on a component goes into its tree; a folder dropped on the paper makes a "Data" component there. Files alone dropped on the paper are placed as before (images, PDFs, pages).
+- **The tree:** folders and files, indented, with sizes and dates; each folder shows how many files it holds and their size.
+  - Click a folder to fold or unfold it. A folder you log shows its first level, and the folders inside it start folded (Settings → Data tree: or only its name).
+  - A folder with more than 12 entries shows 12 and **+ n more**.
+  - Rest on a row for its full path. **×** takes it out of the tree (Ctrl+Z brings it back).
+- **What it records:** names, places, sizes and modified dates, up to 1,500 entries and six folders deep. It is part of the note, so it syncs.
+- **Checking again:**
+  - On a computer whose browser can keep the folder (Chrome, Edge), **⟳ Rescan** reads it again and marks what is **new**, **changed** or **gone**. **Accept** makes the tree the folder as it is now. After a restart the browser asks once for read access.
+  - On other devices (an iPad, Safari) the tree is as it was logged, and says so.
+- **The Data tab is gone (V4.28).** The datasets bound to a component (⋯ → Data, materials & code…, or a dataset's "produced by" step) came into that component's tree, on the computer that registered them. The old page, with its folders, rescans and fingerprints, still opens with **/datasets**.
 
 ### Materials
 **+ New material** asks for a name, a kind and whether it was made here or bought. It opens as a compact **material sheet**:

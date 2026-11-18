@@ -3,10 +3,20 @@
    that carries review { topic, projectIds }: a canvas of papers, quotes and
    notes on one question, linked to every project it serves. The same record
    the lab website's Lit reviews tab makes, so a review written here shows
-   there and back. Its own tab after Portfolio; its head box holds the topic
-   and the projects; reviews are not quick notes.
-   On the website the lab layer draws its own tab and head box over the same
-   data — this module then leaves the drawing to it (window.SIS_LAB).
+   there and back. Its head box holds the topic and the projects; reviews
+   are not quick notes.
+   On the website the lab layer draws its own head box (and its own page)
+   over the same data — this module then leaves the drawing to it
+   (window.SIS_LAB).
+   V4.27 (Gabe: "Remove the Lit Reviews tab"): no build has the tab. The
+   reviews live in the Portfolio: each project's Lit reviews section lists
+   the reviews linked to it, with + Lit review (LITREV.start: the lab
+   layer's own create where it is loaded, so its first block is the same);
+   a review linked to no project is listed with the notes outside any
+   project. A review on screen lights the Portfolio tab. The page
+   (#/litreviews) still opens from a link or search. The lab layer adds
+   its tab after this module, so the tab is taken out where the row is
+   drawn (FEAT.tabOn, read by 20a's renderTabs), not from TABS.
    ========================================================================== */
 const LITREV = {
   is: d => !!(d && !d.deleted && d.review && typeof d.review === 'object'),
@@ -14,6 +24,8 @@ const LITREV = {
   projects: d => LITREV.is(d) ? (d.review.projectIds || []).map(id => M.project(id)).filter(Boolean) : [],
   of: pid => LITREV.all().filter(d => (d.review.projectIds || []).includes(pid)),
   lab: () => !!window.SIS_LAB,
+  /** V4.27: + Lit review in the Portfolio — the lab layer's own create where it is loaded (its first block, its signature), else ours. */
+  start(projectIds) { const L = window.SIS_LAB && SIS_LAB.reviews; return L && typeof L.create === 'function' ? L.create({ projectIds: projectIds || [] }) : LITREV.create({ projectIds: projectIds || [] }); },
   filter: '',
   stats(d) {
     const o = { papers: 0, quotes: 0, notes: 0 };
@@ -96,15 +108,16 @@ VIEWS.litreviews = {
   }
 };
 
-{ // the tab after Portfolio; a review on screen lights it; reviews are not quick notes; the head box carries the review's fields
-  const at = TABS.findIndex(t => t[0] === 'portfolio');
-  if (!TABS.some(t => t[0] === 'litreviews')) TABS.splice(at + 1, 0, ['litreviews', 'Lit reviews']);
-  TABOF.litreviews = 'litreviews';
+{ // V4.27: no tab (the lab layer's too: its tab is hidden where the row is drawn); a review on screen, or its page, lights the Portfolio; reviews are not quick notes; the head box carries the review's fields
+  const ti = TABS.findIndex(t => t[0] === 'litreviews'); if (ti >= 0) TABS.splice(ti, 1);
+  const tabOn = FEAT.tabOn; FEAT.tabOn = function (k) { return k !== 'litreviews' && tabOn.apply(this, arguments); };
+  TABOF.litreviews = 'portfolio';
   const tabs = App.renderTabs;
   App.renderTabs = function () {
-    const r = App.route || {}, d = r.name === 'doc' ? M.doc((r.args || [])[0]) : null, was = TABOF.doc;
-    if (LITREV.is(d)) TABOF.doc = 'litreviews';
-    try { return tabs.apply(this, arguments); } finally { TABOF.doc = was; }
+    const r = App.route || {}, d = r.name === 'doc' ? M.doc((r.args || [])[0]) : null, was = TABOF.doc, wasL = TABOF.litreviews;
+    if (LITREV.is(d)) TABOF.doc = 'portfolio';
+    TABOF.litreviews = 'portfolio';   // the lab layer sets its own after this module
+    try { return tabs.apply(this, arguments); } finally { TABOF.doc = was; TABOF.litreviews = wasL; }
   };
   const gen = GENERAL.docs;
   GENERAL.docs = function () { return gen.apply(this, arguments).filter(d => !LITREV.is(d)); };

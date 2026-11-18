@@ -497,12 +497,12 @@ FEAT.demo("libsmart", { by: "", at: "2026-11-18", use: "A focus that fills itsel
 /* /demo:libsmart */
 /* demo:litrev */
 FEAT.demo("litrev", { by: "", at: "2026-11-18", use: "A canvas for one question in the literature, linked to every project it serves.",
-  video: "demos/litrev.mp4", poster: "demos/litrev.jpg", v: "4e39063c", w: 1280, h: 800, dur: 55.2, kb: 664,
+  video: "demos/litrev.mp4", poster: "demos/litrev.jpg", v: "0b41694f", w: 1280, h: 800, dur: 46.2, kb: 587,
   steps: [
-    [1.3,"In the Lit reviews tab press + New review, then give it its topic and the project it serves"],
-    [11.7,"Put two papers on the canvas with Insert → PDF, and quote a sentence from each"],
-    [36.6,"Wire the two quotes from one dot to the other and say how they relate"],
-    [50.5,"In the Portfolio the project’s Lit reviews list the review, with its papers and quotes"]] });
+    [1.1,"In the Portfolio, under the project’s Lit reviews, press + Lit review, then give it its topic: it is linked to the project already"],
+    [7.7,"Put two papers on the canvas with Insert → PDF, and quote a sentence from each"],
+    [29.6,"Wire the two quotes from one dot to the other and say how they relate"],
+    [41.4,"In the Portfolio the project’s Lit reviews list the review, with its papers and quotes"]] });
 /* /demo:litrev */
 /* demo:editbar */
 FEAT.demo("editbar", { by: "", at: "2026-11-18", use: "The bar over the component you are writing in: styles, lists, symbols and your favourites, one click away.",
@@ -560,12 +560,12 @@ FEAT.demo("split", { by: "", at: "2026-11-18", use: "Work in two to four notes a
 /* /demo:split */
 /* demo:structures */
 FEAT.demo("structures", { by: "", at: "2026-11-18", use: "Give selected words a meaning (claim, evidence, barrier, question…) so the notebook can find, count and follow them.",
-  video: "demos/structures.mp4", poster: "demos/structures.jpg", v: "150a16c2", w: 1280, h: 800, dur: 47.8, kb: 597,
+  video: "demos/structures.mp4", poster: "demos/structures.jpg", v: "d5295f9b", w: 1280, h: 800, dur: 46.3, kb: 580,
   steps: [
-    [0,"Select “collapsed at 10 ng/mL”, press Ctrl+Enter, then C: it is a claim, in the claim’s colour"],
-    [8.6,"Mark “3 of 3 fields” as evidence (E): it asks what the evidence comes from"],
-    [20.1,"“gels tear above 40 kPa” is a barrier (B); later “a thicker backing layer” is its resolution (R)"],
-    [36.4,"Double-click a component’s “Block” label: its kind, as a Hypothesis (Problem and the others are here too)"]] });
+    [1.1,"Select “collapsed at 10 ng/mL”, press Ctrl+Enter, then C: it is a claim, in the claim’s colour"],
+    [8.9,"Mark “3 of 3 fields” as evidence (E): it asks what the evidence comes from"],
+    [19.3,"“gels tear above 40 kPa” is a barrier (B); later “a thicker backing layer” is its resolution (R)"],
+    [34.9,"Double-click a component’s “Block” label: its kind, as a Hypothesis (Challenge and the others are here too)"]] });
 /* /demo:structures */
 /* demo:synthesis */
 FEAT.demo("synthesis", { by: "", at: "2026-11-18", use: "The one or two sentences you would tell your advisor, kept at the top of every note.",

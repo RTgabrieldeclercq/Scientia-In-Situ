@@ -4,16 +4,16 @@
 /* V4.4 (13zzy): a PDF or web page that is a Report, an image panel that is a Result — the same coloured header */
 .box.kinded-w > .bh{background:color-mix(in srgb,var(--ck,var(--teal)) 12%,transparent);border-radius:5px 5px 0 0}
 .box.kinded-w > .bh > .num{color:var(--ck,var(--teal));font-weight:600}
-/* V4.14 (13zzyb): a Problem no paper cites yet — its left edge dashed, and "cite a paper" in its header (it opens the citation picker) */
-.box.cmp.kinded.pb-uncited{border-left-style:dashed}
-.box .bh .pb-cite{display:inline-flex;align-items:center;gap:3px;font:600 9.5px/1.2 var(--f-m);letter-spacing:.04em;color:var(--ck,var(--ink-2));border:1px dashed color-mix(in srgb,var(--ck,var(--ink-3)) 65%,transparent);border-radius:9px;padding:2px 7px 2px 5px;cursor:pointer;white-space:nowrap}
-.box .bh .pb-cite:hover,.box .bh .pb-cite:focus-visible{background:color-mix(in srgb,var(--ck,var(--ink-3)) 14%,transparent);outline:0}
-.box .bh .pb-cite svg{flex:none}
-.box .bh .pb-cite > span{min-width:0;overflow:hidden;text-overflow:clip}
-.box:not(.slim) > .bh > span.pb-cite{flex-shrink:.01;text-overflow:clip}   /* like the kind's tag: it gives way after the stamp and the name, clipped (an ellipsis would show for a fraction of a pixel) */
-body.f-off-problems .box .bh .pb-cite{display:none} body.f-off-problems .box.cmp.kinded.pb-uncited{border-left-style:solid}
-.pv-pb .pvb{width:100%} .pv-pb .pb-cite{display:inline-flex;align-items:center;gap:3px;font:600 9px/1.2 var(--f-m);color:#7D7A16;border:1px dashed color-mix(in srgb,#7D7A16 65%,transparent);border-radius:9px;padding:1px 6px 1px 4px;text-transform:none;letter-spacing:.03em}
-.pv-pb .pv-cite{font-family:var(--f-m);font-size:.85em;color:var(--ink-3)} .pv-pb .pv-pbn{display:flex;gap:6px;align-items:center;margin-top:8px;font:11px var(--f-m);color:var(--ink-3)}
+/* V4.14 (13zzyb), V4.24 renamed: a Challenge no paper cites yet — its left edge dashed, and "cite a paper" in its header (it opens the citation picker) */
+.box.cmp.kinded.cg-uncited{border-left-style:dashed}
+.box .bh .cg-cite{display:inline-flex;align-items:center;gap:3px;font:600 9.5px/1.2 var(--f-m);letter-spacing:.04em;color:var(--ck,var(--ink-2));border:1px dashed color-mix(in srgb,var(--ck,var(--ink-3)) 65%,transparent);border-radius:9px;padding:2px 7px 2px 5px;cursor:pointer;white-space:nowrap}
+.box .bh .cg-cite:hover,.box .bh .cg-cite:focus-visible{background:color-mix(in srgb,var(--ck,var(--ink-3)) 14%,transparent);outline:0}
+.box .bh .cg-cite svg{flex:none}
+.box .bh .cg-cite > span{min-width:0;overflow:hidden;text-overflow:clip}
+.box:not(.slim) > .bh > span.cg-cite{flex-shrink:.01;text-overflow:clip}   /* like the kind's tag: it gives way after the stamp and the name, clipped (an ellipsis would show for a fraction of a pixel) */
+body.f-off-challenges .box .bh .cg-cite{display:none} body.f-off-challenges .box.cmp.kinded.cg-uncited{border-left-style:solid}
+.pv-cg .pvb{width:100%} .pv-cg .cg-cite{display:inline-flex;align-items:center;gap:3px;font:600 9px/1.2 var(--f-m);color:#7D7A16;border:1px dashed color-mix(in srgb,#7D7A16 65%,transparent);border-radius:9px;padding:1px 6px 1px 4px;text-transform:none;letter-spacing:.03em}
+.pv-cg .pv-cite{font-family:var(--f-m);font-size:.85em;color:var(--ink-3)} .pv-cg .pv-cgn{display:flex;gap:6px;align-items:center;margin-top:8px;font:11px var(--f-m);color:var(--ink-3)}
 /* V4.11: the slim header (13zg) hides a widget's tag — the kind tag stays, so it can be double-clicked: on a PDF or page always, on an image panel once it has a kind */
 .box.widget.slim:is(.w-pdf,.w-html,.kinded-w) > .bh > .num.ck-tag{display:block;flex:none;align-self:center;margin-right:2px;line-height:1.2}
 .box.widget > .bh > .num.ck-tag:hover{text-decoration:underline dotted;text-underline-offset:2px}

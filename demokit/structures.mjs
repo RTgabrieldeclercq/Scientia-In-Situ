@@ -56,11 +56,11 @@ export default {
       await R.click({ sel: '.pop .op, .pop .opt, .pop li, .pop div', text: 'gels tear above 40 kPa' });
       await R.sleep(1500);
     }],
-    ['Double-click a component’s “Block” label: its kind, as a Hypothesis (Problem and the others are here too)', async (R, c) => {
+    ['Double-click a component’s “Block” label: its kind, as a Hypothesis (Challenge and the others are here too)', async (R, c) => {
       await R.dblclick({ sel: `.box[data-id="${c.a}"] .bh .num` });
       await R.until(`!!document.querySelector('.pop')`, 3000);
       await R.sleep(1200);
-      await R.wheel(500, { sel: '.pop' });   // the rest of the list: Result … Problem
+      await R.wheel(500, { sel: '.pop' });   // the rest of the list: Result … Challenge
       await R.sleep(1600);
       await R.wheel(-500);
       await R.sleep(300);

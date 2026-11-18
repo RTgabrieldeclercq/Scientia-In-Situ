@@ -126,7 +126,8 @@ const PFLIST = {
   /** A row's notes by section — its themes, then project-wide — and its lit reviews (a review linked to the project counts, wherever it is stored). */
   parts(row) {
     const live = d => !!d && !d.deleted && d.type !== 'review' && d.type !== 'day';
-    if (row.general) { const G = GENERAL.docs().filter(live); return { themes: [], secs: [{ wide: true, bare: true, name: 'Outside any project', docs: G.filter(d => !PFLIST.isLit(d)) }], lit: G.filter(PFLIST.isLit) }; }
+    if (row.general) { const G = GENERAL.docs().filter(live), lone = typeof LITREV !== 'undefined' ? LITREV.all().filter(d => !(d.review.projectIds || []).length && !G.includes(d)) : [];   // V4.27: a review linked to no project is listed here (there is no tab to find it in)
+      return { themes: [], secs: [{ wide: true, bare: true, name: 'Outside any project', docs: G.filter(d => !PFLIST.isLit(d)) }], lit: [...G.filter(PFLIST.isLit), ...lone] }; }
     const p = row.p, themes = DB.where('themes', t => t.projectId === p.id && t.status === 'active').sort((a, b) => String(a.name).localeCompare(String(b.name)));
     const docs = DB.where('documents', d => d.projectId === p.id && live(d));
     const secs = themes.map(t => ({ t, name: t.name, docs: docs.filter(d => d.themeId === t.id && !PFLIST.isLit(d)) }));
@@ -164,8 +165,12 @@ const PFLIST = {
       if (pick ? !pick.length : (!c.t && !c.docs.length && P.themes.length)) return;
       add(PFLIST.section(row, c, pick ? h('div.pf-flat', pick.map(e => PFLIST.entry(e, row))) : h('div.pf-groups', PFLIST.group('Experiments', S.exps, row, c), PFLIST.group('Notes', S.notes, row, c))));
     });
-    if ((type === 'lit' || (type === 'all' && th === 'all')) && P.lit.length)
-      add(h('div.pf-sec.pf-lit', h('div.pf-sh', h('span.pf-sn', 'Lit reviews'), h('span.pf-c', P.lit.length)), PFKIT.entries(P.lit, order).map(e => PFLIST.note(e.doc || e.docs[0], row))));
+    // V4.27: a project's Lit reviews are always here (the only way in now that there is no tab), with + Lit review; the notes outside any project show theirs when they have some
+    const litAdd = !row.general && typeof LITREV !== 'undefined' && (typeof FEAT === 'undefined' || FEAT.on('litrev')) && !(row.readOnly);
+    if ((type === 'lit' || (type === 'all' && th === 'all')) && (P.lit.length || litAdd))
+      add(h('div.pf-sec.pf-lit', h('div.pf-sh', h('div.pf-gl', { 'data-g': 'lit' }, h('span', 'Lit reviews'), h('span.pf-c', P.lit.length)),   // V4.26: its heading is a .pf-gl like the groups', so the four headers share one box
+          litAdd ? [h('span.spacer'), h('button.btn.xs.pf-lit-add', { type: 'button', title: 'A new lit review — a canvas for one question in the literature — linked to ' + row.name, on: { click: e => { e.stopPropagation(); LITREV.start([row.p.id]); } } }, '+ Lit review')] : null),
+        P.lit.length ? PFKIT.entries(P.lit, order).map(e => PFLIST.note(e.doc || e.docs[0], row)) : h('div.pf-none.pf-lit-none', 'No lit review yet — + Lit review starts one, linked to this project')));
     if (!out.length) add(h('div.pf-none', type === 'lit' ? 'No lit review here yet' : th !== 'all' ? 'Nothing of this kind in this theme yet' : row.general ? 'Notes outside any project come here: meetings, seminars, broad ideas.' : 'No notes yet — + Note'));
     return out;
   },
