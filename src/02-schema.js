@@ -14,7 +14,7 @@ const STORES = {
   profiles:  { key: 'type', doc: 'Note types as data (§4) — a new type is a row' },
   projects:  { key: 'id',  doc: 'Funded, publishable wholes' },
   themes:    { key: 'id',  doc: 'Lines of attack inside a project (with lineage)', idx: ['projectId'] },
-  aims:      { key: 'id',  doc: 'Objectives on a theme; weighted milestones; versioned', idx: ['themeId'] },
+  aims:      { key: 'id',  doc: 'Milestones on a theme (V4.18; once aims): large goals measured by their deliverables — a Synthesis note or a set of components; versioned', idx: ['themeId'] },
   documents: { key: 'id',  doc: 'Notes: one session of work', idx: ['projectId', 'themeId', 'type'] },
   blocks:    { key: 'id',  doc: 'Components — the universal atom', idx: ['docId'] },
   items:     { key: 'id',  doc: 'Structures: claim, barrier, resolution… (claims & evidence are project records)', idx: ['kind', 'originDocId'] },
@@ -102,10 +102,13 @@ const userProfiles = () => PROFILES.filter(p => !p.system);
 /** One standard template per type (toggleable in Settings). */
 const STANDARD_TEMPLATES = {
   protocol:   [['Purpose', 'What this protocol establishes and when to use it.'], ['Materials', ''], ['Prepare', ''], ['Run', ''], ['Clean-up', '']],
-  experiment: [['Aim of this run', ''], ['Setup', ''], ['Run', ''], ['Observe', ''], ['Outcome', '']],
-  analysis:   [['Input data', ''], ['Method', ''], ['Pass 1', ''], ['Result', '']],
-  planning:   [['Context', ''], ['Option A', ''], ['Option B', ''], ['Decision', '']],
-  reflection: [['Summary', ''], ['What to change next time', '']],   // V3.967: the Synthesis gathers the experiment's claims, evidence, results… on its own (13zzr)
+  // V4.15 (Gabe: "The preset text components for each experiment note type should be stripped and go back to the universal text
+  // component any general note would have"): an experiment's stages start as a general note does; the old presets are kept as
+  // templates you can switch on (CHAIN.OLD_PRESETS, Settings → Templates)
+  experiment: [['', '']],
+  analysis:   [['', '']],
+  planning:   [['', '']],
+  reflection: [['', '']],   // V3.967: the Synthesis gathers the experiment's claims, evidence, results… on its own (13zzr)
   meeting:    [['Attendees', ''], ['First topic', ''], ['Second topic', ''], ['Actions', '']],
   seminar:    [['Speaker & topic', ''], ['Key point', ''], ['Relevance to my work', '']],
   literature: [['Citation', ''], ['Main claim', ''], ['Methods worth stealing', ''], ['Doubts', '']],

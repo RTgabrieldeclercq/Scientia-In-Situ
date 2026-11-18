@@ -5,7 +5,7 @@
    ========================================================================== */
 const _ls = { get(k, d) { try { const v = localStorage.getItem('sis:' + k); return v == null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { localStorage.setItem('sis:' + k, JSON.stringify(v)); } catch { } } };
 const VIEWS = {};
-const TABS = [['home', 'Today'], ['portfolio', 'Portfolio'], ['review', 'Review'], ['activity', 'Activity'], ['terms', 'Terms'], ['library', 'Library'], ['data', 'Data'], ['materials', 'Materials'], ['canvas', 'Canvas'], ['settings', 'Settings']];
+const TABS = [['home', 'Today'], ['portfolio', 'Portfolio'], ['review', 'Review'], ['terms', 'Terms'], ['library', 'Library'], ['data', 'Data'], ['materials', 'Materials'], ['canvas', 'Canvas'], ['settings', 'Settings']];   // V4.19: no Activity tab — a project's or theme's activity opens from the Portfolio (19b)
 const TABOF = { reminders: 'home', mat: 'materials', read: 'library', canvas: 'canvas', project: 'portfolio', theme: 'portfolio', doc: 'portfolio', split: 'portfolio', lens: 'terms' };
 
 const App = {

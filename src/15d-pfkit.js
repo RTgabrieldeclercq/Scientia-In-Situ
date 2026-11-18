@@ -80,8 +80,9 @@ const PFKIT = {
   events(d, items) {
     if (!d || d.deleted || PFKIT.isLit(d) || d.type === 'day' || d.type === 'review') return []; const t0 = +new Date(d.created), t1 = t0 + PFKIT.WINDOW, ev = [];
     if (!t0) return ev; const inside = t => t >= t0 - 60000 && t <= t1;
-    M.docBlocks(d.id).forEach(b => { if (!b || b.status === 'removed' || b.kind === 'ref' || b.synthHead || b.synthFrom) return; if (b.kind === 'component' && !String((b.body || {}).text || '').trim()) return; const t = +new Date(b.made || b.created); if (inside(t)) ev.push({ t, s: PFKIT.SCORE.component }); });   // made: the real time (V3.975)
-    (items || DB.where('items', i => i.originDocId === d.id && !i.correctedBy)).forEach(i => { const t = +new Date(i.created); if (inside(t)) ev.push({ t, s: PFKIT.SCORE[i.kind] || PFKIT.SCORE.structure }); });
+    // V4.19: each moment keeps what made it (b, it) and its note (d), for the activity panel's "What moved" (19b)
+    M.docBlocks(d.id).forEach(b => { if (!b || b.status === 'removed' || b.kind === 'ref' || b.synthHead || b.synthFrom) return; if (b.kind === 'component' && !String((b.body || {}).text || '').trim()) return; const t = +new Date(b.made || b.created); if (inside(t)) ev.push({ t, s: PFKIT.SCORE.component, b, d }); });   // made: the real time (V3.975)
+    (items || DB.where('items', i => i.originDocId === d.id && !i.correctedBy)).forEach(i => { const t = +new Date(i.created); if (inside(t)) ev.push({ t, s: PFKIT.SCORE[i.kind] || PFKIT.SCORE.structure, it: i, d }); });
     return ev;
   },
   /** Activity of these notes: { score (the last `days`), last, days (since the last moment), perDay (the last `mapDays`: 6 weeks, a theme's page 8) }. */

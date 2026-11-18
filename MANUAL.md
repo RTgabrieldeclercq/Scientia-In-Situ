@@ -80,9 +80,8 @@ This manual covers everything the notebook can do, from first launch to the pen 
 |---|---|
 | **Today** | The day's timeline, the Capture box, what's coming up, chores, what needs investigating and a resurfaced claim or question. |
 | **Tasks** | Every open task: Overdue / Today / Upcoming / No date, plus Done lately. |
-| **Portfolio** | Your projects in a list, most relevant first, with the notes outside any project; the open one beside the list, its themes and notes. Each project has its own page, with its tasks. |
+| **Portfolio** | Your projects in a list, most relevant first, with the notes outside any project; the open one beside the list, its themes and notes. Each project has its own page, with its tasks. A project's or theme's activity (its heat strip, "active 2d ago", its score) opens its activity at the right. |
 | **Review** | The weekly review (it opens on the weekend). |
-| **Activity** | Heatmap, theme small multiples, weekly numbers, the Done list. |
 | **Terms** | Every term, with its forms and lens. |
 | **Atlas** | The notebook as one map: notes, components, structures, terms, people and papers, and how they link. Search lives here. |
 | **Library** | Papers and links. Open a paper's PDF in the reader. |
@@ -555,6 +554,9 @@ Open it with the ＋ **Quick cast** → **⋯** (everything that can go in this 
 - **Maximised** (⤢ / ⛶), a PDF or HTML page works like a paper in the reader:
   - a side panel lists its highlights, with notes and search;
   - the pen highlights whole words.
+- **The References Map:** in a PDF you read (maximised, beside the note, or in the Library's reader), rest the pointer on a citation for a second and a card shows the paper it points to (author, year, title, journal, DOI, whether it is in your Library). Click the citation to go to that reference at the end of the paper; **‹ Back to where you were** (or Esc) returns you.
+  - The side panel's **References Map** lists every reference, numbered as in the paper, with how often it is cited: hover a row to light its citations, click it to go to the reference, **×n** to its first citation.
+  - It uses the PDF's own links when it has them. In older papers without links it finds the citations in the text (superscript numbers, [12], (12), Smith et al. 2014); the journal says which style to expect. Settings → References Map: the delay, links only, or off.
 - **Writing on an HTML page:** in pen mode (the ✎ pill on pen or highlighter) the pen writes on the page itself — on the paper, maximised and beside the note; the eraser (or the pen's back) takes strokes away. The ink stays with the page, pinned to what it was written on. In pan mode the pen selects text for quotes, as before.
   - While the pen writes, a finger scrolls the page. A palm resting on it does nothing.
   - **The ✎ pill comes with the page.** When an HTML page fills the window (maximised, or beside the note at full screen), the note's ✎ pill sits over the page, inside it. Switch to **Move** to scroll and select text, or back to **Pen** to write, without leaving the page.
@@ -861,7 +863,7 @@ The review opens on the weekend for the past week (Sat→Fri) and stays open unt
 
 - Completing the review writes a **review note**; its synthesis is next week's plan.
 - A **cycle review** comes up every ~6 weeks.
-- **Activity** shows a heatmap, small multiples per theme, weekly numbers and the **Done** list.
+- **Activity** is no longer a tab (V4.19). In the **Portfolio**, click a project's or theme's heat strip, its "active 2d ago" / "stalled" or its score: a panel at the right says why it is active or stalled and how that is counted, and shows eight weeks of activity, the time recorded, its notes still in their two weeks and what moved (each line goes to the note); a project's panel lists its themes. ✕ or Esc closes it. Today's **Activity →** (or `#/activity`) opens the whole notebook's there: ten weeks, every theme on one scale and the weekly numbers. The theme page's eight weeks open it too.
 
 ---
 

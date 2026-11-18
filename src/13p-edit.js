@@ -104,7 +104,7 @@ const EDIT = {
     const docs = DB.where('documents', d => d.projectId === p.id && !d.deleted), themes = DB.where('themes', t => t.projectId === p.id), its = DB.where('items', i => i.projectId === p.id).length;
     const go = async notes => { if (DISK.on) await DISK.keep('before-delete-project'); if (EDIT.deleteProject(p, notes)) { App.go('#/portfolio'); toast('Project deleted' + (notes === 'keep' && docs.length ? ' — its ' + plural(docs.length, 'note') + ' are outside any project now' : '') + ' · Ctrl+Z brings it back', 5000); } };
     modal({ title: 'Delete the project “' + p.name + '”?', body: h('div',
-      h('p.serif', { style: { marginTop: 0 } }, 'It holds ' + plural(docs.length, 'note') + ', ' + plural(themes.length, 'theme') + (its ? ' and ' + plural(its, 'structure') : '') + '. Its themes and their aims go either way.'),
+      h('p.serif', { style: { marginTop: 0 } }, 'It holds ' + plural(docs.length, 'note') + ', ' + plural(themes.length, 'theme') + (its ? ' and ' + plural(its, 'structure') : '') + '. Its themes and their milestones go either way.'),
       docs.length ? h('p', h('b', 'Keep its notes'), ': they stay as they are, with everything in them, outside any project — move each one to another project when you like. ', h('b', 'Delete its notes too'), ': they go with it.') : null,
       h('p.tiny.muted', 'Ctrl+Z (outside a text box) undoes it in this session. With a notebook folder, a copy of everything is kept in .scientia/kept first.')),
       actions: [{ label: 'Cancel' }, docs.length ? { label: 'Delete it, keep its notes', pri: true, run: () => go('keep') } : null, { label: docs.length ? 'Delete it and its notes' : 'Delete the project', danger: true, run: () => go('delete') }].filter(Boolean) });
