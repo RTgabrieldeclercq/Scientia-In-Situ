@@ -1,0 +1,52 @@
+/* 33 · V4.28 (13zzyc): the data tree — the folders and files a component's experiment used, under its text */
+.box .dt{margin:2px 12px 10px 13px;border:1px solid var(--rule);border-radius:9px;background:color-mix(in srgb,var(--surface-2) 45%,transparent);font-size:12px;line-height:1.35;color:var(--ink-2);overflow:hidden}
+.box .dt.over,.box.dt-over .dt{border-color:var(--teal);box-shadow:0 0 0 2px color-mix(in srgb,var(--teal) 28%,transparent)}
+.box.dt-over:not(.has-dt){box-shadow:0 0 0 2px var(--teal)}
+.dt-h{display:flex;align-items:center;gap:6px;padding:5px 6px 5px 8px;border-bottom:1px solid color-mix(in srgb,var(--rule) 70%,transparent);min-height:28px}
+.dt-h .spacer{flex:1}
+.dt-hi{display:inline-flex;color:var(--ink-3)}
+.dt-k{font:600 9.5px/1 var(--f-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.dt-sum{font:400 11px/1.2 var(--f-m);color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.dt-as{font:400 10px/1 var(--f-m);color:var(--ink-4);white-space:nowrap}
+.dt-pend{font:500 10px/1 var(--f-m);color:var(--warn,#B8860B);white-space:nowrap}
+.dt-b,.dt-acc{display:inline-flex;align-items:center;justify-content:center;border:0;background:transparent;color:var(--ink-3);border-radius:6px;cursor:pointer;font:500 14px/1 var(--f-d);min-width:24px;height:24px;padding:0 5px}
+.dt-b:hover,.dt-acc:hover{background:var(--surface-2);color:var(--ink)}
+.dt-b:focus-visible,.dt-acc:focus-visible,.dt-r:focus-visible{outline:2px solid var(--teal);outline-offset:-2px}
+.dt-acc{font:500 11px/1 var(--f-d);border:1px solid var(--rule-2);padding:0 8px;color:var(--ink-2)}
+.dt-rows{padding:3px 0 4px}
+.dt-r{--d:0;display:grid;grid-template-columns:12px 16px minmax(0,1fr) auto auto auto 20px;align-items:center;gap:0 6px;padding:2px 4px 2px calc(6px + var(--d) * 16px);min-height:23px;border-radius:5px;margin:0 3px}
+.dt.ro .dt-r,.dt.pv .dt-r{grid-template-columns:12px 16px minmax(0,1fr) auto auto auto}
+.dt-r.dir{cursor:pointer}
+.dt-r:hover{background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.dt-tg{display:inline-flex;align-items:center;justify-content:center;color:var(--ink-4);transition:transform .16s ease}
+.dt-r.open > .dt-tg{transform:rotate(90deg)}
+.dt-ic{display:inline-flex;color:var(--ink-3)}
+.dt-r.dir > .dt-ic{color:var(--ink-2)}
+.dt-n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink);font-size:12px}
+.dt-r:not(.dir) > .dt-n{color:var(--ink-2)}
+.dt-c,.dt-m{font:400 10.5px/1 var(--f-m);color:var(--ink-3);white-space:nowrap;text-align:right}
+.dt-m{min-width:42px;color:var(--ink-4)}
+.dt-st{font:600 9px/1 var(--f-m);letter-spacing:.08em;text-transform:uppercase;padding:3px 5px;border-radius:999px;white-space:nowrap;background:var(--surface-2);color:var(--ink-2)}
+.dt-r.st-new > .dt-st{background:color-mix(in srgb,var(--teal) 18%,transparent);color:var(--teal)}
+.dt-r.st-changed > .dt-st{background:color-mix(in srgb,var(--warn,#B8860B) 20%,transparent);color:var(--warn,#B8860B)}
+.dt-r.st-gone > .dt-st{background:color-mix(in srgb,var(--bad,#B4443C) 16%,transparent);color:var(--bad,#B4443C)}
+.dt-r.st-gone > .dt-n{text-decoration:line-through;color:var(--ink-4)}
+.dt-x{border:0;background:transparent;color:var(--ink-4);font:400 14px/1 var(--f-d);width:20px;height:20px;border-radius:5px;cursor:pointer;opacity:0;transition:opacity .12s}
+.dt-r:hover > .dt-x,.dt-x:focus-visible{opacity:1}
+.dt-x:hover{background:var(--surface-2);color:var(--bad,#B4443C)}
+.dt-more{grid-template-columns:12px minmax(0,1fr);cursor:pointer}
+.dt-more > .dt-n{font:400 11px/1 var(--f-m);color:var(--ink-3)}
+.dt-more:hover > .dt-n{color:var(--ink)}
+.dt-more.off{cursor:default}
+.dt-more.off:hover{background:transparent}
+.dt-more.off > .dt-n{color:var(--ink-4);white-space:normal}
+.dt-empty{padding:10px 12px 12px;color:var(--ink-3);font-size:12px;line-height:1.45}
+body.f-off-datatree .box .dt{display:none}
+@media (hover:none){ .dt-x{opacity:.7} }
+@media (prefers-reduced-motion:reduce){ .dt-tg,.dt-x{transition:none} }
+
+/* Settings preview */
+.pvb .dt{margin:6px 0 2px;font-size:11.5px}
+
+/* the old Data page (#/data, /datasets) says where data goes now */
+.dt-gone{margin:6px 0 14px;padding:10px 12px;border:1px solid var(--rule);border-left:3px solid var(--teal);border-radius:8px;background:var(--surface);font-size:13px;line-height:1.5;color:var(--ink-2);max-width:760px}

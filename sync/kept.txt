@@ -32,6 +32,7 @@ src/13zzd-board.js	empty cell): the Lab Notebook's own board (pen, highlighter, 
 src/13zzd-board.js	engine keeps in Firestore on the lab site) are kept in the `boards` store:
 src/13zzi-kinds.js	if (c === 'material') return b.kind === 'matcard' || b.kind === 'matsheet' || !!b.inventoryId;
 src/13zzi-kinds.js	if (c === 'paper') return b.kind === 'rmpaper' || b.kind === 'pdf' || marks.some(m => m.type === 'cite');
+src/13zzyb-challenge.js	paper (a PDF card, an RM paper, a component that cites one). Until it
 src/13zzyb-problem.js	paper (a PDF card, an RM paper, a component that cites one). Until it
 src/13zzz-rotate.js	try { const L = window.SIS_LAB || window.SIS_PILLS; if (L && L.paintPills) L.paintPills(); } catch (e) { }
 src/14b-atlas.js	if (b.kind === 'rmpaper' && b.paperId && M.lib(b.paperId)) { const r = M.lib(b.paperId); add(r.id, 'paper', r.title || 'Paper', { t: r.added, go: () => App.go('#/read/' + r.id) }); edge(b.id, r.id, 'paper', 'cite'); }

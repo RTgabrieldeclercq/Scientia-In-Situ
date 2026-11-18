@@ -3,14 +3,22 @@
    that carries review { topic, projectIds }: a canvas of papers, quotes and
    notes on one question, linked to every project it serves (the same record
    the McGhee Lab's site makes, so a notebook moved between them keeps its
-   reviews). Its own tab after Portfolio; its head box holds the topic and the
-   projects; reviews are not quick notes.
+   reviews). Its head box holds the topic and the projects; reviews are not
+   quick notes.
+   V4.27 (Gabe: "Remove the Lit Reviews tab"): there is no tab. The reviews
+   live in the Portfolio: each project's Lit reviews section lists the
+   reviews linked to it, with + Lit review (LITREV.start); a review linked
+   to no project is listed with the notes outside any project. A review on
+   screen lights the Portfolio tab. The page (#/litreviews) still opens
+   from a link or search.
    ========================================================================== */
 const LITREV = {
   is: d => !!(d && !d.deleted && d.review && typeof d.review === 'object'),
   all: () => DB.where('documents', d => LITREV.is(d)).sort((a, b) => String(b.modified || '').localeCompare(String(a.modified || ''))),
   projects: d => LITREV.is(d) ? (d.review.projectIds || []).map(id => M.project(id)).filter(Boolean) : [],
   of: pid => LITREV.all().filter(d => (d.review.projectIds || []).includes(pid)),
+  /** V4.27: + Lit review in the Portfolio — a new review linked to that project. */
+  start(projectIds) { return LITREV.create({ projectIds: projectIds || [] }); },
   filter: '',
   stats(d) {
     const o = { papers: 0, quotes: 0, notes: 0 };
@@ -93,15 +101,16 @@ VIEWS.litreviews = {
   }
 };
 
-{ // the tab after Portfolio; a review on screen lights it; reviews are not quick notes; the head box carries the review's fields
-  const at = TABS.findIndex(t => t[0] === 'portfolio');
-  if (!TABS.some(t => t[0] === 'litreviews')) TABS.splice(at + 1, 0, ['litreviews', 'Lit reviews']);
-  TABOF.litreviews = 'litreviews';
+{ // V4.27: no tab (FEAT.tabOn also keeps one out of the row where the row is drawn); a review on screen, or its page, lights the Portfolio; reviews are not quick notes; the head box carries the review's fields
+  const ti = TABS.findIndex(t => t[0] === 'litreviews'); if (ti >= 0) TABS.splice(ti, 1);
+  const tabOn = FEAT.tabOn; FEAT.tabOn = function (k) { return k !== 'litreviews' && tabOn.apply(this, arguments); };
+  TABOF.litreviews = 'portfolio';
   const tabs = App.renderTabs;
   App.renderTabs = function () {
-    const r = App.route || {}, d = r.name === 'doc' ? M.doc((r.args || [])[0]) : null, was = TABOF.doc;
-    if (LITREV.is(d)) TABOF.doc = 'litreviews';
-    try { return tabs.apply(this, arguments); } finally { TABOF.doc = was; }
+    const r = App.route || {}, d = r.name === 'doc' ? M.doc((r.args || [])[0]) : null, was = TABOF.doc, wasL = TABOF.litreviews;
+    if (LITREV.is(d)) TABOF.doc = 'portfolio';
+    TABOF.litreviews = 'portfolio';
+    try { return tabs.apply(this, arguments); } finally { TABOF.doc = was; TABOF.litreviews = wasL; }
   };
   const gen = GENERAL.docs;
   GENERAL.docs = function () { return gen.apply(this, arguments).filter(d => !LITREV.is(d)); };

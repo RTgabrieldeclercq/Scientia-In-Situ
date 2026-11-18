@@ -141,7 +141,7 @@ const BINDS = {
     const pickers = {
       datasets: () => optionPicker({ placeholder: 'Search datasets by name, folder, instrument…', sort: 'bind-ds', items: q => DB.where('datasets', x => !B.datasets.includes(x.id) && (!q || (x.path + ' ' + x.root + ' ' + (x.instrument || '')).toLowerCase().includes(q))),
         section: x => x.projectId === d.projectId ? 'This project' : 'Other projects', render: x => h('div', h('b', x.name), ' ', h('span.pill.st-' + (x.status || 'unverified'), x.status || '?'), h('span.s', `${x.root}/${x.path} · ${DATA.fmtSize(x.size)} · ${x.instrument || '—'} · ${fmtDay(x.acquired)}`)),
-        emptyText: DATA.roots().length ? 'No dataset matches — register files in Data' : 'No datasets yet — add a data folder in Data', onPick: x => { B.datasets.push(x.id); drawCur(); draw(); } }),
+        emptyText: DATA.roots().length ? 'No dataset matches — the data a step used is logged in its component now: ⋯ → Log data…, or /data' : 'No datasets — the data a step used is logged in its component: ⋯ → Log data…, or /data', onPick: x => { B.datasets.push(x.id); drawCur(); draw(); } }),
       resources: () => optionPicker({ placeholder: 'Search materials: cell lines, antibodies, gel batches…', sort: 'bind-res', items: q => MATS.all().filter(r => !B.resources.includes(r.id) && (!q || (MATS.label(r) + ' ' + JSON.stringify(r.header || {})).toLowerCase().includes(q))),
         section: r => (r.header || {}).kind || 'other', render: r => h('div', h('b', MATS.label(r)), h('span.s', MATS.sub(r))), emptyText: 'No materials yet — add one in Materials', onPick: r => { B.resources.push(r.id); drawCur(); draw(); } }),
       from: () => optionPicker({ placeholder: 'Search components this one is made from (an analysis pass, a figure…)', sort: 'bind-from', items: q => DB.where('blocks', x => x.id !== b.id && x.status === 'live' && x.kind === 'component' && !B.from.includes(x.id) && (!q || (M.blockName(x) + ' ' + x.body.text + ' ' + ((M.doc(x.docId) || {}).title || '')).toLowerCase().includes(q))),
@@ -195,7 +195,7 @@ const PROV = {
   },
 };
 
-/* ---------------- the Data page ---------------- */
+/* ---------------- the Data page (V4.28: no longer a tab — data is logged in a component's data tree, 13zzyc; this page keeps what was registered before, at #/data and /datasets) ---------------- */
 const DataView = {
   title: true, q: '',
   render() {
@@ -213,6 +213,7 @@ const DataView = {
     };
     draw();
     return h('div.page', h('div.eyebrow', 'Provenance'), h('h1.title', 'Data'),
+      h('div.dt-gone', h('b', 'The Data tab is gone.'), ' The data an experiment used is logged in its component now, as a tree of folders and files: ⋯ → Log data…, /data, or drop the folder on the component. The datasets bound to components here came into those components’ trees. This page keeps what was registered before.'),
       h('p.stand', 'Raw data stays where it was created. Each dataset here is a reference — the folder, the path inside it, size, modified time and a fingerprint of the first and last 4 MB — so multi-gigabyte files are never copied. Bind an analysis pass to a dataset and a code version to complete figure ← pass ← dataset ← experiment step.'),
       h('div.row', { style: { margin: '10px 0 14px' } }, h('button.btn.pri', { on: { click: () => DATA.addRoot() } }, '+ Add a data folder'), roots.length ? h('button.btn', { on: { click: () => DATA.rescanAll() } }, '⟳ Rescan all') : null, h('span.spacer'),
         h('span.tiny.muted', 'FileSystemObserver' in window ? 'Live watching is on for granted folders.' : 'Changes are picked up when you rescan.')), q, h('div', { style: { height: '10px' } }), list);

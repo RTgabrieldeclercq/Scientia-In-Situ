@@ -1,4 +1,4 @@
-// Lit reviews (15c, V3.889) — the demonstration on its page in Settings. Record: node scientia/demokit/record.mjs litrev
+// Lit reviews (15c, V3.889; V4.27: no tab — + Lit review in the project's Lit reviews in the Portfolio) — the demonstration on its page in Settings. Record: node scientia/demokit/record.mjs litrev
 const K = (R, t, o) => R.click(t, Object.assign({ ms: 450, rest: 100, after: 220 }, o));
 // where a phrase starts and ends on a paper's page in a note (its text layer), for a mouse selection
 const phrase = (id, from, to) => `(() => { const sp = [...document.querySelectorAll('.box[data-id="${id}"] .pdf-slot[data-p="1"] .textLayer span')].filter(s => s.firstChild && s.firstChild.nodeType === 3);
@@ -15,24 +15,23 @@ export default {
     const ok = await mk('Edge traction on compliant gels rises with fibronectin density', [au('Okafor', 'Ngozi'), au('Lindqvist', 'Elin'), au('Marchetti', 'Rosa')], 2021, 'Journal of Demonstration Mechanobiology', 'paper-okafor-2021.pdf');
     const va = await mk('Stiffness sensing at the leading edge of epithelial sheets', [au('Varga', 'Dóra'), au('Tomlin', 'Samuel')], 2017, 'Demonstration Cell Reports', 'paper-varga-2017.pdf');
     KIT.note(P, 'Fibronectin series', { daysAgo: 4 });
+    _ls.set('pf:view', { sel: P.id, type: 'all' });
     KIT.done(); return { P: P.id, ok, va };
   },
   before: async R => {
-    await R.go('#/litreviews'); await R.until(`!!document.querySelector('.lr-page')`, 5000);
+    await R.go('#/portfolio'); await R.until(`!!document.querySelector('.pf-lit .pf-lit-add')`, 5000);
     await R.move([640, 420], 0);
   },
   steps: [
-    ['In the Lit reviews tab press + New review, then give it its topic and the project it serves', async (R, c) => {
-      await K(R, { sel: '.lr-page .btn', text: '+ New review' });
+    ['In the Portfolio, under the project’s Lit reviews, press + Lit review, then give it its topic: it is linked to the project already', async (R, c) => {
+      await K(R, { sel: '.pf-lit .pf-lit-add', text: '+ Lit review' });
       await R.until(`!!document.querySelector('.lr-topic')`, 6000);
       await R.sleep(300);
       await K(R, '.lr-topic');
       await R.type('Does the edge peak hold at low ligand?', 28);
       await R.key('Tab');
-      await K(R, '.lr-link');
-      await R.key('ArrowDown'); await R.key('Enter');
       await R.until(`!!document.querySelector('.lr-chip')`, 3000);
-      await R.sleep(500);
+      await R.sleep(900);
     }],
     ['Put two papers on the canvas with Insert → PDF, and quote a sentence from each', async (R, c) => {
       // where things go, in the note's own coordinates: paper A with its quote at its right, paper B beside that (a PDF is ~600 wide, its quote ~330 further right)
