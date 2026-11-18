@@ -89,6 +89,7 @@ const FREEW = {
     { id: 'question', name: 'The question is / I wonder', pats: ['The question is whether [A]', 'The question is if [A]', 'The question is [A]', 'I wonder whether [A]', 'I wonder if [A]'], A: { kind: 'question' }, ex: 'The question is whether EGF moves the force or lowers it.' },
     { id: 'method', name: 'Method: / We used', pats: ['Method: [A]', 'We used [A]', 'I used [A]', 'We measured [A]'], A: { kind: 'method' }, ex: 'We used traction force microscopy on 30 kPa gels.' },
     { id: 'result', name: 'Results show / We found', pats: ['Results show that [A]', 'The results show that [A]', 'Results show [A]', 'We found that [A]', 'I found that [A]', 'We found [A]', 'The result is [A]', 'Result: [A]'], A: { kind: 'result' }, ex: 'We found that traction doubles between 8 and 30 kPa.' },
+    { id: 'verdict', name: 'The verdict is / We conclude', pats: ['The verdict is that [A]', 'The verdict is [A]', 'Verdict: [A]', 'We conclude that [A]', 'I conclude that [A]', 'In conclusion, [A]', 'The answer is that [A]', 'The answer is [A]'], A: { kind: 'verdict' }, ex: 'The verdict is that the 30 kPa gels hold their shape.' },   // V4.37 — Gabe's example: a verdict you go on describing
     { id: 'anomaly', name: 'Surprisingly / Unexpectedly', pats: ['Surprisingly, [A]', 'Surprisingly [A]', 'Unexpectedly, [A]', 'Unexpectedly [A]', 'Oddly, [A]'], A: { kind: 'anomaly' }, ex: 'Surprisingly, the softest gel gave the highest peak.' },
     { id: 'insight', name: 'This suggests / This means', pats: ['This suggests that [A]', 'This suggests [A]', 'This means that [A]', 'This means [A]', 'The takeaway is that [A]', 'The takeaway is [A]'], A: { kind: 'insight' }, ex: 'This suggests that the edge senses stiffness first.' },
     { id: 'task', name: 'need to / to do', pats: ['We need to [A]', 'I need to [A]', 'Need to [A]', 'To do: [A]', 'Todo: [A]', 'Remember to [A]'], A: { as: 'task' }, ex: 'We need to order more 0.2 µm beads.' },
@@ -194,7 +195,9 @@ const FREEW = {
       if (o.plain === 'component') return part(a, b, {}, null);
       return null;
     };
-    FREEW.sentences(text).forEach(s => read(s.from, s.to, null, 0, null));
+    // V4.37 — every sentence read, and whether it made one component and no link (what the sentences after it may go on describing)
+    const recs = [], joins = [], mode = o.plain || 'run';
+    FREEW.sentences(text).forEach(s => { const n0 = parts.length, l0 = links.length, got = read(s.from, s.to, null, 0, null); recs.push({ s, got, single: !!got && links.length === l0 && parts.length - n0 <= 1 }); });
     // V4.34 — your associations: this freewrite's (o.assoc) and your phrase rules (every freewrite). Each place the words are written
     // becomes their part where nothing claimed them; where a rule found exactly those words, they become what you said; out of a
     // whole sentence a word rule (or "every sentence a component") coloured, they are taken as their own; inside a part a two- or
@@ -211,12 +214,28 @@ const FREEW = {
         if (host && host.rule && !wordIds.has(host.rule)) continue;
         if (host) { host.spans = host.spans.filter(s => s !== hs); if (!host.spans.length) { parts.splice(parts.indexOf(host), 1); byKey.delete(host.key); } }
         const p = part(a, b, {}, ph.id); if (p) force(p, ph.A); } });
+    // V4.37 (Gabe: "a string of sentences not recognized are their own text component in between the links. For example, describing a
+    // verdict in a sentence and you keep describing in more sentences with no trigger of other components, it remains in that verdict.
+    // Manual editing can override that."): in order, a sentence no rule read (and none of your associations claimed) stays in the
+    // component the sentence before it made, when that sentence made one and no link; otherwise it starts a text component of its own,
+    // which the next unread sentences join. Its own words key a click's change (o.over): its own component, a kind, plain words.
+    if (mode === 'run') { let host = null; recs.forEach(r => {
+      if (r.got) { host = r.single && byKey.get(r.got.key) === r.got ? r.got : null; return; }
+      const [a, b] = trim(r.s.from, r.s.to); if (b <= a) return;
+      const inside = parts.filter(p => p.spans.some(x => x.from >= a && x.to <= b)); if (inside.length) { host = inside.length === 1 ? inside[0] : null; return; }   // your association claimed words in it
+      const t = text.slice(a, b), k = FREEW.key(t); if (!k) return; const v = (o.over || {})[k];
+      if (v && v.none) return;   // plain words, by a click; the next sentences still go on with the component before
+      if (host && !v) { joins.push({ key: k, host: host.key, from: a, to: b, text: t }); return; }
+      const p = part(a, b, {}, null); if (!p) return; p.run = true; if (host) p.split = host.key; host = p;
+    }); }
     // what was changed by clicking: by the part's words, so a correction elsewhere keeps it
     const over = o.over || {}, lover = o.lover || {};
     parts.forEach(p => { const v = over[p.key]; if (!v) return; if (v.none) p.none = true; else { if (v.as) p.as = v.as; if ('kind' in v) p.kind = v.kind || null; if ('struct' in v) p.struct = v.struct || null; if (v.as === 'bridge' && !p.cands) p.cands = FREEW.cands(p.text, o.docId); } p.changed = true; });
     links.forEach(l => { const v = lover[l.key]; if (v) { if (v.none) l.none = true; if (v.rel) l.rel = v.rel; if (v.flip) { const t = l.a; l.a = l.b; l.b = t; l.back = !l.back; } l.changed = true; }
       const A = byKey.get(l.a), B = byKey.get(l.b); if (!A || !B || A.none || B.none) l.off = true; });
-    return { parts, links, cues, text };
+    // V4.37 — the sentences that stay in the component before them: its words grow; each stretch keeps its own words (a click can take it out)
+    joins.forEach(j => { const H = byKey.get(j.host); if (!H || H.none) return; H.text = H.text.replace(/\s+$/, '') + (/[.!?;:]$/.test(H.text.trim()) ? ' ' : '. ') + j.text; H.spans.push({ from: j.from, to: j.to, own: j.key }); H.joined = (H.joined || 0) + 1; });   // each sentence keeps its full stop
+    return { parts, links, cues, text, joins };
   },
   /** What a part looks like: its colour and, in words, what it became. */
   look(p) {
@@ -344,7 +363,7 @@ const FREEW = {
   /** The words read now (with what you changed by clicking), or null while there are no colours yet. */
   conv() {
     const st = FREEW.st; if (!st) return null; if (!st.shown && FREEW.opt('colour', 'convert') !== 'live') return null;
-    const fw = FREEW.fw(); return FREEW.convert(st.ta.value, { over: fw.over, lover: fw.lover, assoc: fw.assoc, plain: FREEW.opt('plain', 'words'), docId: st.docId });
+    const fw = FREEW.fw(); return FREEW.convert(st.ta.value, { over: fw.over, lover: fw.lover, assoc: fw.assoc, plain: FREEW.opt('plain', 'run'), docId: st.docId });
   },
   paint() {
     const st = FREEW.st; if (!st) return; const text = st.ta.value, conv = st.conv = FREEW.conv();
@@ -372,7 +391,7 @@ const FREEW = {
   /* ---------------- choosing: a click on coloured words, or a box ---------------- */
   at(c) { const st = FREEW.st, conv = st && st.conv; if (!conv) return null;
     for (const l of conv.links) if (!l.none && !l.off && l.span && c >= l.span[0] && c <= l.span[1] && l.span[1] > l.span[0]) return { t: 'l', k: l.key, from: l.span[0] };
-    for (const p of conv.parts) if (!p.none) for (const s of p.spans) if (c >= s.from && c <= s.to) return { t: 'p', k: p.key, from: s.from };
+    for (const p of conv.parts) if (!p.none) for (const s of p.spans) if (c >= s.from && c <= s.to) return { t: 'p', k: s.own || p.key, from: s.from };   // V4.37: a sentence that stays in it, by its own words
     for (const q of conv.cues) if (c >= q.from && c <= q.to) return { t: 'p', k: q.part, from: q.from };
     return null; },
   clickText() {
@@ -454,11 +473,14 @@ const FREEW = {
         'sep', { label: 'Turn it round', sub: 'The arrow the other way', run: () => { const cur = (FREEW.fw().lover || {})[l.key] || {}; set(Object.assign({}, cur, { flip: !cur.flip })); } },
         { label: l.none ? 'Link them again' : 'No link', run: () => set(Object.assign({}, (FREEW.fw().lover || {})[l.key], { none: !l.none })) },
         l.changed ? { label: 'As the rule read it', run: () => set(null) } : null]); }
-    const p = st.conv.parts.find(x => x.key === sel.k); if (!p) return;
+    let p = st.conv.parts.find(x => x.key === sel.k), J = null;
+    if (!p) { J = (st.conv.joins || []).find(x => x.key === sel.k); if (!J) return; p = { key: J.key, text: J.text, as: 'joined', kind: null, struct: null, changed: false }; }   // V4.37
+    const host = J ? st.conv.parts.find(x => x.key === J.host) : p.split ? st.conv.parts.find(x => x.key === p.split) : null, hl = host ? FREEW.look(host).tag : '';
     const set = v => FREEW.setOver('over', p.key, v), is = (a, k, s) => p.as === a && (k === undefined || (p.kind || null) === k) && (s === undefined || (p.struct || null) === s);
     const K = (typeof CKINDS !== 'undefined' ? CKINDS.all() : []).filter(k => !k.act && k.id !== 'report' && k.id !== 'iteration');
     ctxMenu(r.left, r.bottom + 6, [{ head: '“' + snippet(p.text, 44) + '” becomes…' },
-      { label: (is('component', null, null) ? '✓ ' : '') + 'A component', sub: 'Plain, no kind', run: () => set({ as: 'component', kind: null, struct: null }) },
+      J || p.split ? { label: (J ? '✓ ' : '') + 'Stays in the ' + hl + ' before it', sub: '“' + snippet(host ? host.spans.length && st.ta ? st.ta.value.slice(host.spans[0].from, host.spans[0].to) : host.text : '', 34) + '” — no rule found anything new in it', run: () => set(null) } : null,
+      { label: (is('component', null, null) ? '✓ ' : '') + (J ? 'Its own component' : 'A component'), sub: 'Plain, no kind', run: () => set({ as: 'component', kind: null, struct: null }) },
       { label: (p.as === 'task' ? '✓ ' : '') + 'A task', sub: 'A tick box in the note', run: () => set({ as: 'task', kind: null, struct: null }) },
       { label: (p.as === 'slot' ? '✓ ' : '') + 'A Result to add', sub: 'Titled with these words; ＋ adds an image, a table, a plot…', run: () => set({ as: 'slot', kind: 'result', struct: null }) },
       { label: (p.as === 'bridge' ? '✓ ' : '') + 'A bridge from a note', sub: 'Notes whose titles share these words are offered', run: () => set({ as: 'bridge', kind: null, struct: null }) },
@@ -467,8 +489,8 @@ const FREEW = {
       'sep', { head: 'A structure on its words' },
       ...KINDS.filter(k => k.id !== 'reminder').map(k => ({ label: (p.struct === k.id ? '✓ ' : '') + k.label, run: () => set({ as: p.as === 'task' || p.as === 'slot' || p.as === 'bridge' ? 'component' : p.as, kind: p.kind || null, struct: p.struct === k.id ? null : k.id }) })),
       'sep', { label: 'Plain words — not a component', danger: true, run: () => set({ none: true }) },
-      p.changed ? { label: 'As the rules read it', run: () => set(null) } : null]);
-    FREEW.flash(p.key);
+      p.changed && !p.split ? { label: 'As the rules read it', run: () => set(null) } : null]);
+    FREEW.flash(J ? J.host : p.key);
   },
   setOver(which, key, v) { const cur = Object.assign({}, FREEW.fw()[which] || {}); if (v == null) delete cur[key]; else cur[key] = v; FREEW.setFw({ [which]: cur }); FREEW.chipOff(); FREEW.paint(); },
   /** The chosen part's box in the preview, brought into view and lit. */
@@ -672,7 +694,7 @@ const FREEW = {
   /* ---------------- the freewrite's card in its note ---------------- */
   card(b, d, pane, ro) {
     const fw = b.fw || {}, text = (b.body && b.body.text) || '', n = (text.match(/\S+/g) || []).length, made = Object.values(fw.made || {}).filter(id => { const x = M.block(id); return x && x.status === 'live'; }).length;
-    const conv = fw.shown ? FREEW.convert(text, { over: fw.over, lover: fw.lover, assoc: fw.assoc, plain: FREEW.opt('plain', 'words'), docId: b.docId }) : null;
+    const conv = fw.shown ? FREEW.convert(text, { over: fw.over, lover: fw.lover, assoc: fw.assoc, plain: FREEW.opt('plain', 'run'), docId: b.docId }) : null;
     const go = () => FREEW.open(M.doc(b.docId), { block: b.id, pane });
     const r = b.rec || {}, has = r.state && r.state !== 'new' && r.state !== 'recording';
     const tx = h('div.fwc-tx' + (text ? '' : '.empty'), { title: ro ? '' : 'Double-click to open it', on: { dblclick: e => { if (ro) return; e.stopPropagation(); go(); } } }, text ? FREEW.spans(text, conv) : 'Nothing written yet.');
@@ -769,12 +791,12 @@ const FREEW = {
     if (R && R.ex) { const c = FREEW.convert(R.ex, { rules: [Object.assign({}, R, { on: true })] });
       return [h('div.fw-pv', h('div.fw-pvbar', h('span.fw-pvic', { html: FREEW.ICON }), h('b', 'Rule'), h('span', R.name || R.pats[0])), h('div.fw-pvt', FREEW.spans(R.ex, c)), FREEW.mini(c, { width: 300, empty: 'This rule does not read its example yet.' })),
         PV.cap('The rule at work on its example — ' + FREEW.makes(R) + '.')]; }
-    const plainC = FREEW.opt('plain', 'words') === 'component', live = FREEW.opt('colour', 'convert') === 'live', voice = FREEW.opt('voice', true) !== false, side = FREEW.opt('side', 'right'), fold = FREEW.opt('fold', true) !== false;
-    const text = 'Stiffer gels raise traction, which supports the mechanosensing hypothesis. One of the barriers is bead drift at the edge.' + (plainC ? ' We imaged at 37 °C.' : '');
-    const conv = FREEW.convert(text, { plain: plainC ? 'component' : 'words' });
+    const pm = FREEW.opt('plain', 'run'), plainC = pm === 'component', live = FREEW.opt('colour', 'convert') === 'live', voice = FREEW.opt('voice', true) !== false, side = FREEW.opt('side', 'right'), fold = FREEW.opt('fold', true) !== false;
+    const text = 'Stiffer gels raise traction, which supports the mechanosensing hypothesis. One of the barriers is bead drift at the edge. It grows over the first hour of imaging.';
+    const conv = FREEW.convert(text, { plain: pm });
     return [h('div.fw-pv', h('div.fw-pvbar', h('span.fw-pvic', { html: FREEW.ICON }), h('b', 'Freewrite'), h('span', voice ? 'Speak: words appear as you speak' : 'Speak: words written when the recording stops'), h('span.spacer'), h('span.fw-pvside', side === 'left' ? '◧ beside, left' : 'beside, right ◨')),
       h('div.fw-pvt', FREEW.spans(text, conv)), FREEW.mini(conv, { width: 300 })),
-      PV.cap((live ? 'Coloured as you write. ' : 'Coloured when you press Convert, then as you correct. ') + 'Two components and a supports link; a barrier' + (plainC ? '; the plain sentence a component too' : '') + '. Apply puts them in the note' + (fold ? ' and the freewrite folds.' : '; the freewrite stays open.') + ' ' + plural(FREEW.rules().filter(r => r.on !== false).length, 'rule') + ' read the words (' + FREEW.store().own.length + ' of yours); Edit one below to see it at work here.')];
+      PV.cap((live ? 'Coloured as you write. ' : 'Coloured when you press Convert, then as you correct. ') + 'Two components and a supports link; a barrier' + (pm === 'run' ? ', and the sentence after it stays in the barrier (it goes on describing it)' : plainC ? '; the sentence after it a component of its own' : '; the sentence after it stays words') + '. Apply puts them in the note' + (fold ? ' and the freewrite folds.' : '; the freewrite stays open.') + ' ' + plural(FREEW.rules().filter(r => r.on !== false).length, 'rule') + ' read the words (' + FREEW.store().own.length + ' of yours); Edit one below to see it at work here.')];
   },
 };
 WIDGETS.freewrite = { label: 'freewrite', w: 448, body: (b, d, pane, ro) => FREEW.card(b, d, pane, ro), menu: b => [FREEW.on() ? { label: 'Open the freewrite', sub: 'The page again, to go on with it', run: () => FREEW.open(M.doc(b.docId), { block: b.id }) } : null].filter(Boolean) };

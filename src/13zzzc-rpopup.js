@@ -36,6 +36,10 @@
      paper or page on this device (a new one takes the last used); open
      popups stay from note to note, step aside on pages that aren't notes
      and come back with the next note, and after a reload (_ls 'rpop').
+   V4.36 (Gabe: "Popups don't close even when you leave notes or move through the notebook. Add a close button to it when
+   you hover on it."): × at the top right of the popup's border shows while the pointer is on the popup (after the same
+   rest as the anchors; with the anchors on a tablet's tap); it closes the popup and the paper or page is back in its card.
+   They still stay from note to note — now one click takes one away.
    A popup is a pane object like RDOCK's (p.i = -1, p.pop): RDOCK.draw,
    RDOCK.zoom, RVIEW.fit work on it, RDOCK.paneOf / has count it (so its
    card says it is in a popup and quotes go to it).
@@ -43,6 +47,7 @@
 const RPOP = {
   list: [], Z: 1215, MINW: 260, MINH: 180,
   ICON: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 9V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10c0 1.1.9 2 2 2h4"/><rect width="10" height="7" x="12" y="13" rx="2"/></svg>',
+  X: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg>',
   MAX: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" x2="14" y1="3" y2="10"/><line x1="3" x2="10" y1="21" y2="14"/></svg>',
   on: () => RDOCK.ftOn('rpop'),
   tn: (k, d) => RDOCK.tn('rpop', k, d),
@@ -88,6 +93,8 @@ const RPOP = {
     const strip = k => h('div.rp-rim.rp-rim-' + k), mv = k => h('div.rp-mv', { 'data-e': k, title: 'Drag to move' }), rz = k => h('div.rp-rz', { 'data-c': k, title: 'Drag to resize' });
     const body = h('div.rp-body', p.ov, p.ui);
     p.el = h('div.rp-pop', { 'data-id': p.id, role: 'dialog', 'aria-label': (M.block(p.id) || {}).label || 'Popup', style: { '--rp-reach': RPOP.reach() + 'px' } }, body, strip('n'), strip('e'), strip('s'), strip('w'), mv('n'), mv('e'), mv('s'), mv('w'), rz('nw'), rz('ne'), rz('sw'), rz('se'));
+    p.el.append(h('button.rp-x', { type: 'button', title: 'Close the popup — the ' + (p.kind === 'pdf' ? 'paper' : 'page') + ' goes back in its card', 'aria-label': 'Close the popup', html: RPOP.X,
+      on: { pointerdown: e => e.stopPropagation(), click: e => { e.stopPropagation(); RPOP.remove(p); } } }));   // V4.36
     document.body.append(p.el); RPOP.geo(p, RPOP.place(p.id)); RPOP.wire(p, body); RPOP.front(p); RPOP.sync();
   },
   wire(p, body) {
@@ -104,6 +111,9 @@ const RPOP = {
     body.addEventListener('wheel', () => { if (!p._uiOn) RPOP.moved(p); }, { passive: true });
     body.addEventListener('pointerdown', e => { if (!e.target.closest('.rp-ui') && !p._uiOn) clearTimeout(p._it); });
     p.ov.addEventListener('pointerenter', () => { p.hover = true; }); p.ov.addEventListener('pointerleave', () => { p.hover = false; });
+    // V4.36 — × shows while the pointer is on the popup, after the same rest as the anchors (Settings)
+    el.addEventListener('pointerenter', e => { if (e.pointerType === 'touch') return; clearTimeout(p._xh); clearTimeout(p._xt); const d = RPOP.reveal(); if (!d) el.classList.add('rp-hov'); else p._xt = setTimeout(() => el.classList.add('rp-hov'), d); });
+    el.addEventListener('pointerleave', () => { clearTimeout(p._xt); clearTimeout(p._xh); p._xh = setTimeout(() => el.classList.remove('rp-hov'), 300); });
     // a click on one brings it to the front
     el.addEventListener('pointerdown', () => RPOP.front(p), true);
   },
@@ -193,9 +203,9 @@ addEventListener('wheel',function(){var n=Date.now();if(n-w>250){w=n;P.postMessa
     const r = RPOP.reach(), still = RPOP.still() / 1000, rev = RPOP.reveal() / 1000, on = RPOP.on();
     const pl = () => h('div.pv-page', h('div.pv-pl'), h('div.pv-pl.s'), h('div.pv-pl'), h('div.pv-pl.s'));
     const pop = h('div.pv-rp-pop', { style: { '--pr': Math.round(r * .6) + 'px' } }, h('div.pv-rp-rim'), h('div.pv-rp-in', h('div.pv-rp-ui', h('span', 'Fit'), h('span', '−'), h('i', '112%'), h('span', '+'), h('span.pv-rp-mx', { html: RPOP.MAX })), pl()),
-      ['n', 'e', 's', 'w'].map(k => h('span.pv-rp-mv', { 'data-e': k })), ['nw', 'ne', 'sw', 'se'].map(k => h('span.pv-rp-rz', { 'data-c': k })));
+      ['n', 'e', 's', 'w'].map(k => h('span.pv-rp-mv', { 'data-e': k })), ['nw', 'ne', 'sw', 'se'].map(k => h('span.pv-rp-rz', { 'data-c': k })), h('span.pv-rp-x', { html: RPOP.X }));   // V4.36
     return [h('div.pv-rp' + (on ? '' : '.off'), h('div.pv-rp-note', h('div.pv-rd-nt', '30 kPa series'), PV.box({ num: 'Step 2', label: 'Run 3', body: 'The edge collapsed at 10 ng/mL.' }), PV.box({ num: 'Block', label: 'Seeding', body: 'Seed at 40k/cm².' })), on ? pop : null),
-      PV.cap(on ? 'As if your pointer rested on its border: the four anchors move it, the four corners resize it (they show after ' + (rev ? rev + ' s' : 'no wait') + ', on a band ' + r + ' px wide). Holding still ' + still + ' s inside shows the bar: Fit, − +, Maximize.' : 'Off: no ⧉, and open popups go back where they came from.')];
+      PV.cap(on ? 'As if your pointer rested on it: × closes it (the paper goes back in its card), the four anchors move it, the four corners resize it (they show after ' + (rev ? rev + ' s' : 'no wait') + ', on a band ' + r + ' px wide). Holding still ' + still + ' s inside shows the bar: Fit, − +, Maximize.' : 'Off: no ⧉, and open popups go back where they came from.')];
   },
 };
 {
@@ -241,10 +251,10 @@ addEventListener('wheel',function(){var n=Date.now();if(n-w>250){w=n;P.postMessa
   { const fa = FEAT.apply; FEAT.apply = function () { const r = fa.apply(this, arguments); try { if (RPOP.list.length && !RPOP.on()) setTimeout(() => { if (!RPOP.on()) RPOP.dockAll(); }, 0); } catch (e) { } return r; }; }
   // Settings → Reading & sources → Popup windows
   FEAT.def({ id: 'rpop', group: 'reading', label: 'Popup windows', isNew: true,
-    desc: '⧉ on a paper or page read beside a note — or “⧉ Popup” when it is maximised — makes it a popup: a window inside the app, over everything, that you move and resize while the note stays usable around it. At rest it is a rounded rectangle with a light shadow and no buttons. Rest the pointer on its border and four anchors (the middle of each side) and four corners show: drag an anchor to move it, a corner to resize it (on a tablet, tap the border). Inside it works like the reader: scroll, pan, select text, highlight, use the page. Hold the pointer still in it and a small bar shows Fit (its width to the window), − and +, and Maximize, which puts it back where it came from — its pane beside the note, or the maximised view. One popup per paper or page; click one to bring it to the front. Their places and sizes are kept on this device, and they stay from note to note. Off: no ⧉, and open popups go back where they came from.',
+    desc: '⧉ on a paper or page read beside a note — or “⧉ Popup” when it is maximised — makes it a popup: a window inside the app, over everything, that you move and resize while the note stays usable around it. At rest it is a rounded rectangle with a light shadow and no buttons. Rest the pointer on its border and four anchors (the middle of each side) and four corners show: drag an anchor to move it, a corner to resize it (on a tablet, tap the border). Inside it works like the reader: scroll, pan, select text, highlight, use the page. Hold the pointer still in it and a small bar shows Fit (its width to the window), − and +, and Maximize, which puts it back where it came from — its pane beside the note, or the maximised view. One popup per paper or page; click one to bring it to the front. Their places and sizes are kept on this device, and they stay from note to note. Off: no ⧉, and open popups go back where they came from. × at its top right, shown while the pointer is on it (a tap on the border, on a tablet), closes it: the paper or page is back in its card.',
     changed: v => { try { if (!v) RPOP.dockAll(); } catch (e) { } },
     tune: [{ key: 'still', label: 'The bar shows after holding the pointer still for', type: 'seg', isNew: true, def: '2000', opts: [['1000', '1 s'], ['2000', '2 s'], ['3000', '3 s']], d: 'Inside the popup; moving away hides it' },
-      { key: 'reveal', label: 'The anchors and corners show after resting on the border for', type: 'seg', isNew: true, def: '1000', opts: [['0', 'No wait'], ['500', '0.5 s'], ['1000', '1 s']], d: 'They can be dragged before they show — the pointer changes over them' },
+      { key: 'reveal', label: 'The anchors, corners and × show after resting on it for', type: 'seg', isNew: true, def: '1000', opts: [['0', 'No wait'], ['500', '0.5 s'], ['1000', '1 s']], d: 'They can be dragged before they show — the pointer changes over them' },
       { key: 'reach', label: 'The border reaches', type: 'seg', isNew: true, def: '14', opts: [['8', 'Narrow'], ['14', 'Medium'], ['22', 'Wide']], d: 'How far around the edge counts as the border', changed: () => { try { RPOP.list.forEach(p => p.el && p.el.style.setProperty('--rp-reach', RPOP.reach() + 'px')); } catch (e) { } } }],
     preview: () => RPOP.preview() });
   RVIEW.late('rpop');

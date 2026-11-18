@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "b819347591d556b1103ff1b7227d611eb7228b25",
-  "subject": "V4.35: Scientia — the pills follow the turn and come back; your pill layout on an empty note in Settings; bridges over the pills",
+  "commit": "7026bb7a699700b4ed3dd908d618439ea20b8a3e",
+  "subject": "V4.37: Scientia — Freewrite: sentences no rule reads go on with the component before them, or are one text component between the links",
   "date": "2026-11-18"
  },
- "cut": "7e57b8954c0f105ba379adc80f2e7c898d772ace",
+ "cut": "be04953528d7349b321447157bdcfd05f5146755",
  "names": [
   "DESKLAB",
   "LABSYNC",
