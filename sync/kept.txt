@@ -1,6 +1,27 @@
 # Lines that look like the lab's and stay (sync/lab_sync.py): path<TAB>line. Remove a row to be asked again.
 README.md	**Left out** (they belong to the lab's site, RM): the lab layer (`lab-mode.js`: RM's library, inventory, tasks and My Week, the Portfolio's assigned work, the canvas pills and Quick cast, the one recorder, sharing), the lab cloud and pairing this computer with it (`labsync.py`, `scientia_cloud.py`, Settings → The lab), the installer and updater the lab site hands out (`install/`, `service.py`, `open_local.py`), the ✓ that reports a component to My Week, Export for the lab website, the sync dot for the lab, presence and locks, and the @-list of lab members. A notebook that was synced with the lab opens here as it is: its records stay, and what only the lab could do simply doesn't happen.
 board/store.js	so the website's boards on the same address (mcgheelab.com) keep theirs */
+demokit/eqcap.mjs	await K(R, '.lab-pill-tools .lab-pill-btn');
+demokit/hw.mjs	await R.click({ sel: `.lab-pill-hand .lab-fan-item[title^="${name}"]` }); await R.sleep(500);
+demokit/hw.mjs	if (!await R.ev(`const p = document.querySelector('.lab-pill-hand'); return !!p && p.classList.contains('open')`)) { await R.click('.lab-pill-hand .lab-pill-btn'); await R.sleep(600); }
+demokit/ink.mjs	await R.click({ sel: `.lab-pill-hand .lab-fan-item[title^="${name}"]` }); await R.sleep(500);
+demokit/ink.mjs	if (!await R.ev(`const p = document.querySelector('.lab-pill-hand'); return !!p && p.classList.contains('open')`)) { await R.click('.lab-pill-hand .lab-pill-btn'); await R.sleep(600); }
+demokit/pen.mjs	await R.click({ sel: `.lab-pill-hand .lab-fan-item[title^="${name}"]` }); await R.sleep(500);
+demokit/pen.mjs	if (!await R.ev(`const p = document.querySelector('.lab-pill-hand'); return !!p && p.classList.contains('open')`)) { await R.click('.lab-pill-hand .lab-pill-btn'); await R.sleep(600); }
+demokit/record.mjs	const done = async () => { try { slot && rmSync(slot, { recursive: true, force: true }); } catch { } try { py && py.kill(); } catch { } if (nbDir) { await sleep(600); await rm(nbDir, { recursive: true, force: true }).catch(() => { }); } try { ws && ws.close(); } catch { } try { chrome.kill(); } catch { } server.close(); await sleep(400); await rm(profile, { recursive: true, force: true }).catch(() => { }); if (!flag('keep')) await rm(frames, { recursive: true, force: true }).catch(() => { }); process.exit(code); };
+demokit/record.mjs	for (const f of readdirSync(slotDir)) { try { if (Date.now() - statSync(path.join(slotDir, f)).mtimeMs > 8 * 60000) rmSync(path.join(slotDir, f), { recursive: true, force: true }); } catch { } }   // a take that died
+demokit/record.mjs	import { existsSync, readFileSync, writeFileSync, statSync, mkdirSync, rmSync, readdirSync } from 'node:fs';
+demokit/split.mjs	await R.click({ js: `(document.querySelector('.split > .pane.p0 .lab-pill-tools .lab-pill-btn') || document.querySelector('.lab-pill-tools .lab-pill-btn'))` });
+demokit/split.mjs	await R.click({ sel: '.lab-pill-tools .lab-fan-item[aria-label^="Split"]' }, F);
+demokit/split.mjs	await R.until(`!!document.querySelector('.lab-pill-tools .lab-fan-item[aria-label^="Split"]')`, 3000);
+demokit/split.mjs	const pane = '.lab-pills .lab-pill-tools';
+demokit/synthflag.mjs	await R.click('.lab-pill-view .lab-pill-btn');   // ⊕ → Fit everything
+demokit/timers.mjs	await R.click('.lab-pill-tools .lab-pill-btn');
+demokit/timers.mjs	await R.click('.lab-pill-tools .lab-pill-btn');   // fold the wheel away again
+demokit/timers.mjs	await R.click({ js: `[...document.querySelectorAll('.lab-pill-tools .lab-fan-item')].find(e => /Start this note/.test(e.title))` });
+demokit/timers.mjs	await R.click({ js: `[...document.querySelectorAll('.lab-pill-tools .lab-fan-item')].find(e => /head start/.test(e.title))` });
+demokit/timers.mjs	await R.until(`!!document.querySelector('.lab-pill-tools .lab-fan-item')`, 3000);
+demokit/timers.mjs	if (!await R.ev(`return !!document.querySelector('.lab-pill-tools .lab-fan-item')`)) await R.click('.lab-pill-tools .lab-pill-btn');
 src/02-schema.js	mwsteps:   { key: 'id',  doc: 'My Week steps from RM, mirrored by the lab hub (read-only): what a component’s ✓ reports onto, offline too' },
 src/09-editor.js	for (const m of cov.filter(m => m.type === 'person')) node = h('span.mn', { 'data-m': m.id, 'data-uid': m.uid || '', title: (m.name || '') + (m.uid ? ' · a lab member' : '') }, node);   // V3.947: @Name (13zzg)
 src/11b-commands.js	ALIAS: { rmpaper: 'paper', rmprotocol: 'protocol', rmaction: 'action', rmcollection: 'collection', 'material-new': 'newmaterial', 'equation-reg': 'registered', 'table-empty': 'emptytable', 'canvas-add': 'canvas', 'pull-barrier': 'barrier', 'pull-item': 'structure', 'pull-comp': 'component' },

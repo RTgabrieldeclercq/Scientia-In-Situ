@@ -1,0 +1,95 @@
+From: <Saved by Blink>
+Snapshot-Content-Location: https://traction-lab.example/reports/run3.html
+Subject: =?utf-8?Q?Run=203=20=E2=80=94=20traction=20report?=
+Date: Wed, 18 Nov 2026 03:28:06 GMT
+MIME-Version: 1.0
+Content-Type: multipart/related;
+	type="text/html";
+	boundary="----MultipartBoundary--h2Yg0uFsKqZnMSKETuJwmt90x3IZ1u2VpxA6UDYMcA----"
+
+
+------MultipartBoundary--h2Yg0uFsKqZnMSKETuJwmt90x3IZ1u2VpxA6UDYMcA----
+Content-Type: text/html
+Content-ID: <frame-949E811F985E82882F3AB648EB98A8AA@mhtml.blink>
+Content-Transfer-Encoding: quoted-printable
+Content-Location: https://traction-lab.example/reports/run3.html
+
+<!DOCTYPE html><html><head><meta http-equiv=3D"Content-Type" content=3D"tex=
+t/html; charset=3DUTF-8"><link rel=3D"stylesheet" type=3D"text/css" href=3D=
+"cid:css-95b39792-7025-47a3-8876-58b8641706cd@mhtml.blink" /><title>Run 3 =
+=E2=80=94 traction report</title></head><body><h1>Run 3 =E2=80=94 traction =
+report</h1><p>Exported by the analysis script on the made-up data of the de=
+monstration notebook. Edge traction was read from bead displacement on thre=
+e fields per condition.</p><figure><svg xmlns=3D"http://www.w3.org/2000/svg=
+" width=3D"360" height=3D"190" viewBox=3D"0 0 360 190"><rect width=3D"360" =
+height=3D"190" fill=3D"#fff"></rect><line x1=3D"40" y1=3D"12" x2=3D"40" y2=
+=3D"160" stroke=3D"#222"></line><line x1=3D"40" y1=3D"160" x2=3D"352" y2=3D=
+"160" stroke=3D"#222"></line><text x=3D"12" y=3D"95.0" font-size=3D"10" fon=
+t-family=3D"Arial" transform=3D"rotate(-90 12 95.0)" text-anchor=3D"middle"=
+>Edge traction (kPa)</text><rect x=3D"52" y=3D"118" width=3D"75" height=3D"=
+42" fill=3D"#2f6fb0"></rect><line x1=3D"89" y1=3D"109" x2=3D"89" y2=3D"127"=
+ stroke=3D"#222"></line><text x=3D"89" y=3D"174" font-size=3D"9.5" font-fam=
+ily=3D"Arial" text-anchor=3D"middle">1</text><rect x=3D"149" y=3D"77" width=
+=3D"75" height=3D"83" fill=3D"#2f6fb0"></rect><line x1=3D"186" y1=3D"68" x2=
+=3D"186" y2=3D"86" stroke=3D"#222"></line><text x=3D"186" y=3D"174" font-si=
+ze=3D"9.5" font-family=3D"Arial" text-anchor=3D"middle">5</text><rect x=3D"=
+245" y=3D"35" width=3D"75" height=3D"125" fill=3D"#2f6fb0"></rect><line x1=
+=3D"283" y1=3D"26" x2=3D"283" y2=3D"44" stroke=3D"#222"></line><text x=3D"2=
+83" y=3D"174" font-size=3D"9.5" font-family=3D"Arial" text-anchor=3D"middle=
+">10</text></svg><figcaption>Figure 1 =C2=B7 Edge traction against fibronec=
+tin density (=C2=B5g/mL), 30 kPa gels.</figcaption></figure><p>The edge pea=
+k holds at 5 =C2=B5g/mL and above. At 1 =C2=B5g/mL the edge cannot be told =
+from the interior.</p><table><tbody><tr><th>Fibronectin (=C2=B5g/mL)</th><t=
+h>Field 1</th><th>Field 2</th><th>Field 3</th></tr><tr><td>1</td><td>0.38</=
+td><td>0.41</td><td>0.42</td></tr><tr><td>5</td><td>0.77</td><td>0.83</td><=
+td>0.80</td></tr><tr><td>10</td><td>1.18</td><td>1.24</td><td>1.19</td></tr=
+></tbody></table><figure><svg xmlns=3D"http://www.w3.org/2000/svg" width=3D=
+"360" height=3D"180" viewBox=3D"0 0 360 180"><defs><filter id=3D"b"><feGaus=
+sianBlur stdDeviation=3D"9"></feGaussianBlur></filter></defs><rect width=3D=
+"360" height=3D"180" fill=3D"#150b2e"></rect><g filter=3D"url(#b)"><circle =
+cx=3D"215" cy=3D"138" r=3D"40" fill=3D"hsl(6 80% 51%)" opacity=3D".55"></ci=
+rcle><circle cx=3D"285" cy=3D"31" r=3D"41" fill=3D"hsl(35 80% 54%)" opacity=
+=3D".55"></circle><circle cx=3D"125" cy=3D"63" r=3D"25" fill=3D"hsl(17 80% =
+55%)" opacity=3D".55"></circle><circle cx=3D"195" cy=3D"149" r=3D"40" fill=
+=3D"hsl(26 80% 65%)" opacity=3D".55"></circle><circle cx=3D"100" cy=3D"49" =
+r=3D"35" fill=3D"hsl(-3 80% 46%)" opacity=3D".55"></circle><circle cx=3D"18=
+4" cy=3D"86" r=3D"44" fill=3D"hsl(26 80% 55%)" opacity=3D".55"></circle><ci=
+rcle cx=3D"179" cy=3D"60" r=3D"18" fill=3D"hsl(5 80% 59%)" opacity=3D".55">=
+</circle><circle cx=3D"96" cy=3D"74" r=3D"18" fill=3D"hsl(37 80% 48%)" opac=
+ity=3D".55"></circle><circle cx=3D"115" cy=3D"136" r=3D"32" fill=3D"hsl(37 =
+80% 58%)" opacity=3D".55"></circle><circle cx=3D"248" cy=3D"41" r=3D"33" fi=
+ll=3D"hsl(20 80% 62%)" opacity=3D".55"></circle><circle cx=3D"141" cy=3D"10=
+2" r=3D"20" fill=3D"hsl(14 80% 51%)" opacity=3D".55"></circle><circle cx=3D=
+"82" cy=3D"128" r=3D"29" fill=3D"hsl(44 80% 57%)" opacity=3D".55"></circle>=
+<circle cx=3D"209" cy=3D"107" r=3D"37" fill=3D"hsl(3 80% 54%)" opacity=3D".=
+55"></circle><circle cx=3D"107" cy=3D"78" r=3D"21" fill=3D"hsl(43 80% 49%)"=
+ opacity=3D".55"></circle></g><rect x=3D"270" y=3D"160" width=3D"60" height=
+=3D"4" fill=3D"#fff"></rect><text x=3D"300" y=3D"155" font-size=3D"9" font-=
+family=3D"Arial" fill=3D"#fff" text-anchor=3D"middle">20 =C2=B5m</text></sv=
+g><figcaption>Figure 2 =C2=B7 Traction map, field 2 at 10 =C2=B5g/mL.</figc=
+aption></figure><p class=3D"n">A made-up report for demonstrating Scientia =
+In Situ. It is not a real article and reports no real data.</p></body></htm=
+l>
+------MultipartBoundary--h2Yg0uFsKqZnMSKETuJwmt90x3IZ1u2VpxA6UDYMcA----
+Content-Type: text/css
+Content-Transfer-Encoding: quoted-printable
+Content-Location: cid:css-95b39792-7025-47a3-8876-58b8641706cd@mhtml.blink
+
+@charset "utf-8";
+
+body { font: 15px / 1.5 Arial, sans-serif; max-width: 720px; margin: 24px a=
+uto; padding: 0px 16px; color: rgb(27, 27, 27); }
+
+h1 { font-size: 22px; }
+
+table { border-collapse: collapse; }
+
+td, th { border: 1px solid rgb(187, 187, 187); padding: 4px 10px; text-alig=
+n: right; }
+
+figure { margin: 18px 0px; }
+
+figcaption { font-size: 13px; color: rgb(68, 68, 68); }
+
+.n { color: rgb(119, 119, 119); font-size: 12px; }
+------MultipartBoundary--h2Yg0uFsKqZnMSKETuJwmt90x3IZ1u2VpxA6UDYMcA------

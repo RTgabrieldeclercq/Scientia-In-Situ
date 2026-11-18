@@ -31,7 +31,7 @@
 const LIBSTATE = {
   LABEL: { unread: 'Not opened', reading: 'Reading', read: 'Read' },
   of(r, f) { if (!r) return 'unread'; if (r.readState) return r.readState; const F = f || (LSEARCH._ix && LSEARCH._ix.get(r.id)); return F && F.hl.length ? 'reading' : 'unread'; },
-  set(r, s) { if (!r || r.readState === s) return; DB.beginGroup('library'); DB.put('library', Object.assign({}, r, { readState: s, readAt: isoLocal(new Date()) })); changed(); },
+  set(r, s) { if (!r || r.readState === s) return; DB.beginGroup('library'); DB.put('library', Object.assign({}, r, { readState: s, readAt: isoLocal(new Date()) })); if (typeof LSEARCH !== 'undefined') LSEARCH.bust(); /* V4.23: the search's index kept the paper as it was (its signature counts records, and none was added), so is:read / is:unread and the Reading facet missed a state just set */ changed(); },
   /** The reader opened this paper's PDF. */
   opened(id) { try { if (!FEAT.on('libread') || !FEAT.tune('libread', 'auto')) return; const r = M.lib(id); if (r && r.pdf && !r.readState) LIBSTATE.set(r, 'reading'); } catch (e) { } },
 };
