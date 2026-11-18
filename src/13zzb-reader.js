@@ -47,6 +47,8 @@ const RDOCK = {
   label: b => (b && b.label) || (b && b.kind === 'pdf' ? 'PDF' : 'Page'),
   /** + on the tab row (17e: papers and pages of your notes, papers of the Library). */
   picker() { toast('Open a PDF or a page with the book on its card'); },
+  /** V4.31 — the zoom a pane's PDF is drawn at, as a share of its width (13zzzb makes p.zoom the page's own size: 100% = its width in points). */
+  rel: p => p.zoom,
   ftOn: id => typeof FEAT === 'undefined' || FEAT.on(id),
   tabsOn: () => RDOCK.ftOn('rtabs'),
   splitOn: () => RDOCK.tabsOn() && RDOCK.ftOn('rsplit'),
@@ -240,7 +242,7 @@ const RDOCK = {
     if (b.kind === 'html') { const c = $('.dk-maxc', p.ov), rec = MEDIA.get(b.media); if (!rec) return RDOCK.closeTab(p.id);
       if (p.media !== b.media || !$('iframe', c)) { p.media = b.media; EMBED._maxId = b.id; const fr = EMBED.frame(rec, 'em-frame'); fr._rdSrc = b.id; c.replaceChildren(fr); }   // 13zw fills it as this page's (QUOTE.fill)
       return RDOCK.countP(p); }
-    const at = RDOCK.where(p), body = WIDGETS.pdf.body(b, M.doc(b.docId), { maxView: true, paper: null, zoom: p.zoom }, false);
+    const at = RDOCK.where(p), body = WIDGETS.pdf.body(b, M.doc(b.docId), { maxView: true, paper: null, get zoom() { return RDOCK.rel(p); } }, false);   // read when the pages are laid out (V4.31)
     body.classList.add('maxed'); $('.dk-maxc', p.ov).replaceChildren(body); p.zl.textContent = Math.round(p.zoom * 100) + '%'; RDOCK.countP(p);
     if (at) { let n = 60; const go = () => { const s = RDOCK.stage(p), sl = s && $(`.pdf-slot[data-p="${at.p}"]`, s); if (!sl) return --n > 0 && setTimeout(go, 50);
       requestAnimationFrame(() => requestAnimationFrame(() => { s.scrollTop = RDOCK.top(s, sl) + at.f * sl.offsetHeight; RDOCK.onScroll(p); })); }; go(); }

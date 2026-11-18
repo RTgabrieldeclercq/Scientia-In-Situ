@@ -130,8 +130,7 @@ Every note is an infinite sheet of graph paper.
 A note has a **header box** (title, type, profile fields, tags, ✎ for note details), its **components**, and a **synthesis box**. The synthesis box is your summary; it saves as you type.
 
 - **⋯ beside the note's title** (top of the window) is the note's menu: note details, **Log time…**, time entries, tidy layout, **citations** (Title · Author–year · [1]), time travel, export, delete…
-- **The bar at the bottom** of a note: **+ Insert** (§10), **+ Time** (log time without the timer), the citation style (Title · Author–year · [1]), **⤓ Pull in** (an open barrier, a structure or a component from another note), ⚐ flag the note for the weekly review, ⤢ fit, ⛶ focus mode.
-- **Top right:** **Split** (another note beside this one), **Timer** (▾: a head start), **✎ Pen** (the ink bar, §17), **Calculator**, **Equation**.
+- **The pills:** ＋ **Quick cast** at the bottom (where a bar used to be — Pull in…, Flag and the inserts you chose), ⊕ zoom, ✦ tools, ✎ pan · pen · highlighter · lasso. Drag a pill anywhere. Left open 3 s, a pill unfolds into a row or column and stays; against the left or right edge it stands as a column, against the top or bottom it lies as a row. Your layout is kept with your notebook: the same in every note, every session, every computer. A note held upright (a tablet turned, or the app turned by Rotate) has places of its own: the pills glide there when it turns and back to yours when it turns again (Settings → Pills → Portrait and landscape can keep one layout for both). **Settings → Pills** shows an empty note with your pills on it, in Landscape or Portrait: drag one to its place there, and every note on every device has it. A note's bridge circles are drawn over the pills; an open wheel comes over them.
 
 ### Components
 - **Select:** click. Then click again, or press Enter, to type.

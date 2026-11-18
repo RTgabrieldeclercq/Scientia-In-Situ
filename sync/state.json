@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "74479fab4922538f522fb6f279d7d5920d17f440",
-  "subject": "V4.28: Scientia — the Data tab leaves; the data an experiment used is logged in its component as a tree of folders and files",
+  "commit": "b819347591d556b1103ff1b7227d611eb7228b25",
+  "subject": "V4.35: Scientia — the pills follow the turn and come back; your pill layout on an empty note in Settings; bridges over the pills",
   "date": "2026-11-18"
  },
- "cut": "bdb12ec7142743d6c72dcbbd17cdb0add853d8cb",
+ "cut": "7e57b8954c0f105ba379adc80f2e7c898d772ace",
  "names": [
   "DESKLAB",
   "LABSYNC",

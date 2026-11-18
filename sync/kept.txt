@@ -38,12 +38,20 @@ src/13zzz-rotate.js	try { const L = window.SIS_LAB || window.SIS_PILLS; if (L &&
 src/14b-atlas.js	if (b.kind === 'rmpaper' && b.paperId && M.lib(b.paperId)) { const r = M.lib(b.paperId); add(r.id, 'paper', r.title || 'Paper', { t: r.added, go: () => App.go('#/read/' + r.id) }); edge(b.id, r.id, 'paper', 'cite'); }
 src/14e-bubble.js	if (!BUBBLE.on() || (typeof RM === 'function' && RM())) { go(); return; }
 src/14e-bubble.js	still: () => (typeof RM === 'function' && RM()) || !BUBBLE.opt('float') || !BUBBLE.on(),
+src/14j-freewrite.js	the note) to go on with it. Quick cast → Freewrite (lab-mode §11), /freewrite, ⋯ → Freewrite.
 src/15c-litreviews.js	const ps = DB.all('projects').filter(p => !have.has(p.id) && !p.deleted && p.status !== 'archived' && !(p.rm && p.rmAssigned === false));
 src/17e-readtabs.js	/** The Library's entry for an embedded paper or page: linked by hand, the same file, the paper record an older notebook may carry (rmPaper, read only), the page's address. */
 src/17e-readtabs.js	return all.find(l => l.pdf && b.media && l.pdf === b.media) || (b.rmPaper ? all.find(l => String(l.rmId || l.id) === String(b.rmPaper)) : null) || (u ? all.find(l => l.url && RDX.sameUrl(l.url, u)) : null) || null;
 src/20a-features.js	/* V4.20 — the lab's pills in every build (lab-mode.js §11; vendor/lab-pills.js + 99z-pills.js where the lab layer isn't) */
 src/20a-features.js	/* V4.21 — Rotate: the whole app a quarter turn clockwise at a time (13zzz ROTATE; ⊕'s Rotate in lab-mode §11 and the cut) */
+src/20a-features.js	// V4.35 — a note held upright keeps its own places (lab-mode §11 labPills.portrait), or shares one layout (labPills.one)
+src/20c-pillcanvas.js	/** where a pill sits until it is moved: the pills' own rule (lab-mode §11, LAB.pillDefs), else the same numbers */
+src/20c-pillcanvas.js	L: () => window.SIS_LAB || window.SIS_PILLS || null,
+src/20c-pillcanvas.js	cut in vendor/lab-pills.js): in the notebook's settings, so every device
+src/20c-pillcanvas.js	one the pills themselves keep (settings().labPills, lab-mode §11 and its
 src/31-pills.css	body.f-off-pills .lab-pills{display:none!important}
+src/34-pillcanvas.css	(half-moons at its edges, beads in full screen) and their threads sit above the pills (the lab layer's .lab-pills,
+src/34-pillcanvas.css	.canvas-host > .lab-pills.fan-open{z-index:23}
 src/99z-pills.js	/** The lab's builds carry lab-mode.js, which runs its own section 11. */
 src/99z-pills.js	app's modules — where lab-mode.js would run — with a LAB of its own (the
 src/99z-pills.js	are lab-mode.js's section 11; the lab's builds run lab-mode.js itself. A

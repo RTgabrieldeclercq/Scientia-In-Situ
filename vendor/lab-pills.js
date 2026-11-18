@@ -59,7 +59,7 @@ const LABPILLS = { start(LAB) {
   function pic(name) { var p = PILL_ICONS[name]; return p ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + p + '</svg>' : ''; }
   function picEl(name) { var s = h('span.lab-pic'); s.innerHTML = pic(name); return s; }
   var QC_DEFAULT = ['component', 'rmpaper', 'material', 'rmprotocol', 'run', 'plate', 'task', 'rmaction', 'rmcollection'];
-  var LP = { open: null, zoom: false, last: null, seen: null, pos: {}, tap: null, suppress: 0, docked: {}, orient: {}, dockT: null, dockMs: 10000, rolling: null, qc: QC_DEFAULT.slice(), saved: '' };
+  var LP = { open: null, zoom: false, last: null, seen: null, pos: {}, tap: null, suppress: 0, docked: {}, orient: {}, dockT: null, dockMs: 10000, rolling: null, qc: QC_DEFAULT.slice(), saved: '', port: { pos: {}, orient: {} }, one: false, ro: null, was: null };
   LAB.pills = LP;
   /* V3.941 — the layout is the person's, everywhere: the notebook's settings (labPills), read on every paint (another
      computer's change arrives with the sync), saved on every change; the per-device keys of V3.882–V3.896 read once */
@@ -68,13 +68,25 @@ const LABPILLS = { start(LAB) {
     if (!s || typeof s !== 'object') s = { pos: _ls.get('lab:pills2', {}) || {}, docked: _ls.get('lab:docked', {}) || {}, orient: {}, qc: _ls.get('lab:quickcast', null) || QC_DEFAULT };
     var key = JSON.stringify(s); if (key === LP.saved) return; LP.saved = key;
     LP.pos = Object.assign({}, s.pos || {}); LP.docked = Object.assign({}, s.docked || {}); LP.orient = Object.assign({}, s.orient || {}); LP.qc = Array.isArray(s.qc) ? s.qc.slice() : QC_DEFAULT.slice();
+    var pt = s.portrait && typeof s.portrait === 'object' ? s.portrait : {}; LP.port = { pos: Object.assign({}, pt.pos || {}), orient: Object.assign({}, pt.orient || {}) }; LP.one = !!s.one;   // V4.35
   }
   function layoutSave() {
-    LP.saved = JSON.stringify({ pos: LP.pos, docked: LP.docked, orient: LP.orient, qc: LP.qc });
+    var o = { pos: LP.pos, docked: LP.docked, orient: LP.orient, qc: LP.qc };
+    if (Object.keys(LP.port.pos).length || Object.keys(LP.port.orient).length) o.portrait = LP.port;   // V4.35 — portrait's own places
+    if (LP.one) o.one = true;
+    LP.saved = JSON.stringify(o);
     try { saveSettings({ labPills: JSON.parse(LP.saved) }); } catch (e) { warn('pills layout', e); }
   }
+  /* V4.35 (Gabe: "Switching from horizontal to vertical layout on a tablet via rotation of the device (now with the rotate
+     button) should allow pills to move dynamically with that system and go back to their original position"): a note taller
+     than it is wide (a tablet held upright, the app turned a quarter by ⊕'s Rotate, a narrow pane) reads and writes the
+     portrait layout (labPills.portrait {pos, orient}); a pill not placed there yet keeps its landscape place, as a share of
+     the note, so it follows the turn; turning back finds the landscape places untouched. labPills.one: one layout for both
+     (Settings → Pills). Where the note changes shape, the pills are painted again and glide to their places. */
+  function portrait(host) { var w = host.clientWidth || 0, hh = host.clientHeight || 0; return !LP.one && w > 0 && hh > w * 1.05; }
+  function lay(host) { return portrait(host) ? LP.port : LP; }
   layoutLoad();
-  LAB.pillLayout = { load: layoutLoad, save: layoutSave };
+  LAB.pillLayout = { load: layoutLoad, save: layoutSave, portrait: function (host) { return portrait(host); } };
   /* at: where a pill sits until it is moved (its centre in the host, w × h); orient: its docked form until it is dropped
      against an edge ('h' a row, 'v' a column) */
   var PILLS = { hand: { icon: '✎', label: 'Zoom · move · pen · highlighter · lasso · pen settings (double-tap: the last mode)', side: 'right', vert: 'up', dock: true, orient: 'v', at: function (w, h) { return [w - 36, h - 38]; } },
@@ -82,6 +94,7 @@ const LABPILLS = { start(LAB) {
     tools: { icon: '✦', label: 'Tools', side: 'right', vert: 'down', dock: true, orient: 'h', at: function (w) { return [w - 36, 36]; } },
     view: { icon: '⊕', label: 'Zoom', side: 'left', vert: 'down', dock: true, orient: 'v', at: function () { return [36, 36]; } } };
   var HAND_NAMES = { zoom: 'Zoom', move: 'Move', pen: 'Pen', hl: 'Highlighter', lasso: 'Lasso', eraser: 'Eraser' };
+  LAB.pillDefs = PILLS;   // V4.35 — where each pill sits until it is moved (Settings → Pills draws its canvas from it)
   var FAN_RINGS = [[5, 84], [7, 140], [9, 196]];
   function fanPos(i, n, side, vert) {
     var k = i, start = 0, ring = 0;
@@ -181,6 +194,9 @@ const LABPILLS = { start(LAB) {
           items.push({ icon: k.icon, label: k.name + ' — the cursor becomes the ' + (k.id === 'float' ? 'cloud' : 'golden tag') + '; click a component to make it ' + (k.id === 'float' ? 'a float' : 'a reference') + (LABELS.opt('keep', true) !== false ? ' (hold Ctrl to label several)' : ''),
             sub: true, subIdx: j, subN: LK.length, cls: 'lab-lbl-' + k.id, sel: LABELS.armed === k.id, run: function () { LP.lbl = false; LABELS.arm(k.id); } }); });
       }
+      /* V4.33 (Gabe) — Freewrite, after Label: a blank page over the whole app for typing and the voice, turned into
+         components (the app's FREEW, 14j-freewrite.js; its icon is the app's) */
+      if (typeof FREEW !== 'undefined' && FREEW.on()) items.push({ icon: FREEW.ICON, label: 'Freewrite — a blank page for typing and your voice; it becomes components', cls: 'lab-fw', run: function () { FREEW.open(d, { pane: pane }); } });
       qcRows(d).forEach(function (x) { var lab = typeof x.label === 'function' ? x.label(d) : x.label;
         items.push({ icon: INS_PICS[x.id] && PILL_ICONS[INS_PICS[x.id]] ? pic(INS_PICS[x.id]) : '<span class="lab-insic">' + esc(x.icon || '•') + '</span>', label: lab + (x.sub ? ' — ' + x.sub : ''), run: function () { x.run(d, centerAt(pane), pane); } }); });
       items.push({ icon: pic('ellipsis-horizontal'), label: 'Everything that can go in this note — the bolt on a row puts it in your Quick cast', run: function (el) { INSERT.menu(pane, el); } });
@@ -193,8 +209,8 @@ const LABPILLS = { start(LAB) {
       items.push({ icon: pic('variable'), label: 'An equation — new, or a registered one', run: function (el) { var r = el.getBoundingClientRect(); EQ.newMenu(pane, { clientX: r.left, clientY: r.top, currentTarget: el, target: el, preventDefault: function () {}, stopPropagation: function () {} }); } });
       if (typeof SPLITBTN !== 'undefined') items.push({ icon: pic('split'), label: 'Split — side by side, or a quadrant', run: function (el) { var r = el.getBoundingClientRect(); SPLITBTN.menu(pane, { clientX: r.left, clientY: r.bottom, currentTarget: el, target: el, preventDefault: function () {}, stopPropagation: function () {} }); } });
       items.push({ icon: pic('maximize-2'), label: document.fullscreenElement ? 'Leave full screen' : 'Full screen', run: function () { App.toggleFocus(); } });   // V3.992: the maximise sign of pages and PDFs (⤢), no Focus mode wording
-      if (Object.keys(LP.pos).length || Object.keys(LP.orient).length || Object.keys(LP.docked).some(function (k) { return LP.docked[k]; })) items.push({ icon: pic('home'), label: 'Put the pills back in their places (and fold the docked rows)',
-        run: function () { LP.pos = {}; LP.docked = {}; LP.orient = {}; layoutSave(); paintAll(); } });
+      if (Object.keys(LP.pos).length || Object.keys(LP.orient).length || Object.keys(LP.port.pos).length || Object.keys(LP.docked).some(function (k) { return LP.docked[k]; })) items.push({ icon: pic('home'), label: 'Put the pills back in their places (and fold the docked rows)',
+        run: function () { LP.pos = {}; LP.docked = {}; LP.orient = {}; LP.port = { pos: {}, orient: {} }; layoutSave(); paintAll(); } });
     } else if (name === 'view') {
       items.push({ icon: pic('plus'), label: 'Zoom in', keep: true, run: function () { zoomBy(pane, 1.25); } });
       items.push({ icon: '<b class="lab-100">1:1</b>', label: '100 %', keep: true, run: function () { zoom100(pane); } });
@@ -226,13 +242,13 @@ const LABPILLS = { start(LAB) {
     var C = 22;
     if (name === 'insert' && !open && !docked) LP.lbl = false;   // V4.9: the Label's two fold away with the Quick cast
     var items = open || docked ? pillItems(name, pane) : [];
-    var bw = host.clientWidth || 800, bh = host.clientHeight || 600, sz = 44, pp = LP.pos[name], side = def.side, vert = def.vert || 'up', style = null, at = def.at(bw, bh);
+    var bw = host.clientWidth || 800, bh = host.clientHeight || 600, sz = 44, pp = (portrait(host) && LP.port.pos[name]) || LP.pos[name], side = def.side, vert = def.vert || 'up', style = null, at = def.at(bw, bh);   // V4.35
     if (pp && isFinite(+pp.fx) && isFinite(+pp.fy)) {
       var left = Math.round(Math.max(0, Math.min(bw - sz, pp.fx * bw - sz / 2))), top = Math.round(Math.max(0, Math.min(bh - sz, pp.fy * bh - sz / 2)));
       style = { left: left + 'px', top: top + 'px', right: 'auto', bottom: 'auto' }; at = [left + sz / 2, top + sz / 2];
       side = name === 'insert' && Math.abs(at[0] - bw / 2) < bw / 6 ? 'center' : at[0] > bw / 2 ? 'right' : 'left'; vert = at[1] < Math.min(bh / 2, 240) ? 'down' : 'up';
     }
-    var orient = LP.orient[name] || def.orient;   // V3.941
+    var orient = (portrait(host) && LP.port.orient[name]) || LP.orient[name] || def.orient;   // V3.941; V4.35 portrait's own
     var hm = handNow(), face;
     if (name === 'hand') face = pic(hm === 'zoom' ? 'magnifying-glass' : hm === 'move' ? 'hand' : hm === 'hl' ? 'highlighter' : hm === 'lasso' ? 'lasso' : 'pencil');
     else if (name === 'view') face = '<span class="lab-pill-glyph">' + def.icon + '</span>';
@@ -346,10 +362,11 @@ const LABPILLS = { start(LAB) {
         if (!dragging) return;
         LP.suppress = Date.now();
         var L = parseFloat(pill.style.left) || 0, T = parseFloat(pill.style.top) || 0;
-        LP.pos[name] = { fx: Math.round((L + pr.width / 2) / r.width * 1000) / 1000, fy: Math.round((T + pr.height / 2) / r.height * 1000) / 1000 };
+        var Y = lay(host);   // V4.35 — the portrait layout while the note is upright
+        Y.pos[name] = { fx: Math.round((L + pr.width / 2) / r.width * 1000) / 1000, fy: Math.round((T + pr.height / 2) / r.height * 1000) / 1000 };
         // V3.941 — dropped against the left or right edge it docks as a column; the top or bottom, a row (a corner keeps it)
         var E = 6, side = L <= E || L + pr.width >= r.width - E, end = T <= E || T + pr.height >= r.height - E;
-        if (side !== end) LP.orient[name] = side ? 'v' : 'h';
+        if (side !== end) Y.orient[name] = side ? 'v' : 'h';
         layoutSave(); paintAll();
       }
       b.addEventListener('pointermove', mv); b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up);
@@ -378,7 +395,15 @@ const LABPILLS = { start(LAB) {
     host.classList.toggle('lab-ro', !!pane.travel);   // V3.941 — a read-only note keeps Gabe's bar ("Back to now"); otherwise the Quick cast is it
     if (!fitHand() && ZF.el) zfitMark(null);
     box.classList.toggle('fan-open', !!(LP.open && LP.open.doc === pane.docId));
-    box.replaceChildren.apply(box, (pane.travel ? ['view'] : LAB.simple ? ['insert', 'hand', 'view'] : ['insert', 'tools', 'hand', 'view']).map(function (n) { return pillEl(n, pane, host); }));   // V3.983 — no ✦ in the simple notebook   // V3.899 — nothing to add to a read-only note
+    var before = {}, shape = (host.clientWidth || 0) + 'x' + (host.clientHeight || 0), moved = host._lpShape && host._lpShape !== shape;   // V4.35
+    if (moved) $$(':scope > .lab-pill', box).forEach(function (p) { before[p.dataset.pill] = [p.offsetLeft, p.offsetTop]; });   // the note's own frame (right under Rotate too)
+    host._lpShape = shape;
+    box.replaceChildren.apply(box, (pane.travel ? ['view'] : LAB.simple ? ['insert', 'hand', 'view'] : ['insert', 'tools', 'hand', 'view']).map(function (n) { var el = pillEl(n, pane, host); if (el && el.dataset) el.dataset.pill = n; return el; }));   // V3.983 — no ✦ in the simple notebook   // V3.899 — nothing to add to a read-only note
+    if (moved && !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) $$(':scope > .lab-pill', box).forEach(function (p) {   // V4.35 — they glide to their places in the new shape
+      var o = before[p.dataset.pill]; if (!o || !p.animate) return; var dx = o[0] - p.offsetLeft, dy = o[1] - p.offsetTop;
+      if (Math.abs(dx) + Math.abs(dy) > 2) p.animate([{ transform: 'translate(' + dx + 'px,' + dy + 'px)' }, { transform: 'none' }], { duration: 320, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    });
+    if (window.ResizeObserver) { if (!LP.ro) LP.ro = new ResizeObserver(debounce(paintAll, 90)); if (!host._lpRO) { host._lpRO = 1; LP.ro.observe(host); } }   // V4.35 — a turned tablet, Rotate, a narrower pane
   }
   function paintAll() { try { App.panes().forEach(paintPills); } catch (e) { warn('pills', e); } }
   LAB.paintPills = paintAll; LAB.setHand = setHand; LAB.handNow = handNow;
