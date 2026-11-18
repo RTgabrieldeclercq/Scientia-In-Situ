@@ -72,6 +72,17 @@ const PV = {
     preview: () => [PV.box({ num: 'Block', label: 'Notes', body: ['The edge held at 2 ng/mL ', h('span.pv-caret', '/cl') ] }),
       h('div.pv-menu', [['/claim', 'mark the sentence as a claim'], ['/cite', 'a citation from the Library'], ['/clear-format', 'plain text again']].map(([a, b], i) => h('div' + (i ? '' : '.on'), h('b', a), h('span', b))))] });
 
+  // V4.33 (14j): Freewrite — a blank page over the app for typing and the voice; the words become components, kinds and links
+  D({ id: 'freewrite', group: 'canvas', label: 'Freewrite', isNew: true, presets: { simple: true }, desc: 'Freewrite in the Quick cast (and /freewrite, and ⋯ on a note) opens a blank page over the whole app for the note you are in. Type, or press Speak: record, pause and play back at any time, the words appearing as you speak where the browser can (otherwise written when the recording stops), and correct them by typing. Convert reads the sentences with the freewrite rules — “X supports Y” makes two components and a supports link, “Y is supported by X” the other way, a sentence with “barrier” a barrier, “… which results in …” a Result waiting for what you add, “Evidence from … explains …” a bridge waiting for a note whose title shares its words — colours each in words saying what it became, and draws the note it will make beside them. Click coloured words (or a box) to change its kind, its link, or make it plain words. Apply puts it in the note under the freewrite, which folds there, kept. Beside the note puts the page in half the window, the note live in the other half. Select words with the pointer to say what they are — a new component, or one that exists (from another note it is bridged in) — just for this freewrite, or for every freewrite (a rule). The rules, built in and yours, are below: add, change or delete them. Off: no button, no /freewrite; the freewrites stay in their notes.',
+    tune: [T('colour', 'The words are coloured', 'seg', { isNew: true, def: 'convert', opts: [['convert', 'When you press Convert'], ['live', 'As you write']], d: 'Once converted they follow every correction' }),
+      T('plain', 'A sentence no rule reads', 'seg', { isNew: true, def: 'words', opts: [['words', 'Stays words'], ['component', 'Becomes a component']], d: 'Words: the note gets only what the rules found (a partial canvas); component: every sentence is a component' }),
+      T('voice', 'Words appear as you speak', 'switch', { isNew: true, def: true, d: 'With the browser’s speech recognition (Chrome, Edge, Safari). Off, or where there is none: written when the recording stops — by the computer on the desktop, by Transcribe on the website' }),
+      T('side', 'Beside the note, the page goes', 'seg', { isNew: true, def: 'right', opts: [['right', 'On the right'], ['left', 'On the left']] }),
+      T('fold', 'After Apply, the freewrite folds', 'switch', { isNew: true, def: true, d: 'Kept in the note either way; its ▸ opens it' }),
+      // V4.34: the rules — built in and yours — added, changed and deleted here; kept in the notebook's settings (settings().fwRules)
+      T('rules', 'Rules', 'node', { isNew: true, d: 'What words become: each rule’s patterns ([A] and [B] are the parts), what each part becomes, the link, and an example read live. Words you associate “for every freewrite” are here too. They follow you on every device.', render: () => FREEW.editor() })],
+    preview: () => FREEW.pv() });
+
   D({ id: 'wires', group: 'canvas', label: 'Connections', desc: 'Lines between components, each relation in its own colour, routed the shortest way round what is in between, with chips for connections to other notes and suggestions from recent notes.',
     tune: [T('infer', 'Suggest connections from the last', 'range', Object.assign({ min: 7, max: 90, unit: ' days' }, B('inferWindowDays', () => changed())))],
     preview: () => [PV.abs(150, PV.at(0, 0, '46%', run3({ stamp: null, body: 'The edge collapsed.' })), PV.at('54%', 70, '46%', PV.box({ num: 'Block', label: 'Gels', body: 'Batch 14 is stiffer.' })),
@@ -155,9 +166,14 @@ const PV = {
     preview: () => [h('div.pv-edge', h('span.l', '‹‹'), run3({ stamp: null, body: 'The edge collapsed.' }), h('span.r', '››'))] });
 
   /* V4.20 — the lab's pills in every build (lab-mode.js §11; vendor/lab-pills.js + 99z-pills.js where the lab layer isn't) */
-  D({ id: 'pills', group: 'pen', label: 'Pills', isNew: true, presets: { simple: true }, desc: 'Four round buttons on every note that you drag anywhere: ✎ the hand (zoom, move, pen, highlighter, lasso, and a cog for the pen’s colours and widths), ＋ the Quick cast (Pull in, Flag and Label, then what you add most — it takes the bottom bar’s place), ✦ tools (timer, head start, calculator, equation, split, full screen) and ⊕ zoom (in, 100 %, out, fit). A wheel left open rolls into a row; drop a pill against an edge and its row turns into a column. The layout is yours, the same in every note and on every computer. Off: no pills — the bottom bar and the row of buttons at the top right come back.',
+  D({ id: 'pills', group: 'pen', label: 'Pills', isNew: true, presets: { simple: true }, desc: 'Four round buttons on every note that you drag anywhere: ✎ the hand (zoom, move, pen, highlighter, lasso, and a cog for the pen’s colours and widths), ＋ the Quick cast (Pull in, Flag and Label, then what you add most — it takes the bottom bar’s place), ✦ tools (timer, head start, calculator, equation, split, full screen) and ⊕ zoom (in, 100 %, out, fit). A wheel left open rolls into a row; drop a pill against an edge and its row turns into a column. The layout is yours, the same in every note and on every computer. Off: no pills — the bottom bar and the row of buttons at the top right come back. Place them on the empty note here: the layout is kept in the notebook, so every device has it; a note held upright keeps its own places, and they glide back when it turns again.',
     changed: v => { try { PILLS.changed(v); } catch (e) { } },
+    // V4.35 — a note held upright keeps its own places (lab-mode §11 labPills.portrait), or shares one layout (labPills.one)
+    tune: [T('one', 'Portrait and landscape', 'seg', { isNew: true, def: 'own', opts: [['own', 'Each keeps its own places'], ['same', 'The same places']],
+      d: 'A note taller than it is wide — a tablet turned, or the app turned by Rotate — has pills of its own, and turning back finds yours as they were',
+      get: () => (typeof PILLCANVAS !== 'undefined' && PILLCANVAS.one()) ? 'same' : 'own', set: v => { try { PILLCANVAS.setOne(v === 'same'); } catch (e) { } } })],
     preview: () => {
+      if (FEAT.on('pills') && typeof PILLCANVAS !== 'undefined') return [PILLCANVAS.el()];   // V4.35 — an empty note to place them on, kept in the notebook (every device)
       const on = FEAT.on('pills'), pill = (g, cls, extra) => h('span.pv-pill' + (cls ? '.' + cls : ''), g, extra || null);
       const note = h('div.pv-pills' + (on ? '' : '.off'), run3({ stamp: null, body: 'Seed at 40k/cm² on the 30 kPa gels.' }),
         on ? [pill('⊕', 'tl', h('i', '100%')), pill('✦', 'tr'), pill('＋', 'bc'), pill('✎', 'br')]
@@ -517,6 +533,45 @@ const PV = {
       };
       draw(); return [wrap];
     } });
+  /* V4.29 — reading sets by project and the Reader button (17i, 34-readsets.css) */
+  D({ id: 'rsets', group: 'reading', needs: 'rtabs', label: 'Reading sets by project', isNew: true,
+    desc: 'The reader’s tabs are kept by project. A tab belongs to the project of the note it was opened from; a paper opened from two projects is a tab in both. The project you are in shows its set — its tabs together in a band of the project’s colour, like a region — and every other project’s set is folded into one chip with its name and count: click one to open it at the tab you read last there (the open one folds). Clicking a tab takes the note to its paper only inside that project. Only × on a tab closes it: ✕ on the row, leaving the note or closing the reader keeps every set. Off: one row of tabs, as before.',
+    changed: () => { try { RDOCK.save(); RDOCK.S = RDOCK.load(); if (RDOCK.wrap) { if (RDOCK.S_.tabs.length) RDOCK.remount(); else RDOCK.close(true); } } catch (e) { } },
+    tune: [T('follow', 'Going to a note of another project opens its set', 'switch', { isNew: true, def: true, d: 'A project with no set yet: the reader steps aside until you come back or press the Reader button. Off: the set stays as you chose it until you click another chip.' }),
+      T('tint', 'Each project in its own quiet colour', 'switch', { isNew: true, def: true, d: 'The band round the open set and the chips. Off: grey', changed: rdRedraw }),
+      T('max', 'The tab row stays in the maximised view', 'switch', { isNew: true, def: true, d: 'A pane in full screen and a maximised card keep the set’s tabs across the top; a tab clicked there is read full screen', changed: () => { try { RLIB.paint(); RLIB.paintCards(); } catch (e) { } } })],
+    preview: () => {
+      const wrap = h('div', { style: { minWidth: '0' } }), tint = tune('rsets', 'tint') !== false, follow = tune('rsets', 'follow') !== false; let open = 0;
+      const sets = [['Cell mechanics', 205, [['PDF', 'Style 2014'], ['Page', 'Traction force microscopy — Wikipedia']]], ['Detection', 25, [['PDF', 'Plotnikov 2014'], ['PDF', 'Engler 2006'], ['Page', 'Bead tracking']]], ['No project', null, [['PDF', 'Harris 1980']]]];
+      const draw = () => {
+        const row = sets.map(([n, hu, tabs], i) => { const st = hu == null ? {} : { '--rs-h': String(hu) };
+          return i === open ? h('div.rs-set.rs-open' + (hu == null ? '.rs-none' : ''), { style: st }, h('span.rs-nm', n), tabs.map(([k, t], j) => h('span.pv-rd-tab' + (j === 0 ? '.act' : ''), h('i', k), t, h('b', '×'))))
+            : h('button.rs-chip' + (hu == null ? '.rs-none' : ''), { type: 'button', style: st, title: 'Open this set', on: { click: e => { e.stopPropagation(); open = i; draw(); } } }, h('span.rs-nm', n), h('span.rs-n', String(tabs.length))); });
+        wrap.replaceChildren(h('div.pv-rset' + (tint ? '' : '.rs-plain'), h('div.pv-rset-row', row), rdPage()),
+          PV.cap('In a note of ' + sets[open][0] + ': its set is open, the others are folded into chips — click one to open it here. ' + (follow ? 'Going to a note of another project opens its set.' : 'The set stays as you chose it until you click another chip.') + ' Only × closes a tab.')); };
+      draw(); return [wrap];
+    } });
+  D({ id: 'rbtn', group: 'reading', needs: 'rtabs', label: 'Reader button', isNew: true, presets: { simple: true },
+    desc: 'The book at the top right of every page opens the Reader. In a note: the reading set of the note’s project, at the tab you read last — none yet: the papers and pages of that project’s notes to pick from. Anywhere else: the last thing you read — of the project selected in the Portfolio (or whose page you are on), else of any project — beside the note it was opened from. Clicked while the reader is open, it closes it; the tabs stay.',
+    tune: [T('away', 'Outside a note, it opens the last paper', 'seg', { isNew: true, def: 'note', opts: [['note', 'Beside its note'], ['full', 'Full screen']], d: 'Its note: the one it was opened from. Full screen: there too, and Esc comes back beside it' })],
+    preview: () => { const full = tune('rbtn', 'away') === 'full', bk = h('span.pv-rbtn', { title: 'Reader', html: RDOCK.BOOK });
+      return [h('div.pv-hd', h('b', 'Scientia'), h('span.sp'), h('span', '⌕ Search'), h('span', '+ Note'), bk),
+        h('div.pv-rbtn-out', h('b', 'In a note'), h('span', 'Its project’s reading set, at the tab read last'), h('b', 'Elsewhere'), h('span', 'The last paper read — of the project selected — ' + (full ? 'full screen, in the note it was opened from' : 'beside the note it was opened from'))),
+        PV.cap('The book is the last button at the top right. Clicked again, the reader closes and keeps its tabs.')]; } });
+  /* V4.30 — the mini library in the maximised reader; shelves assigned to projects (17j, 35-minilib.css) */
+  D({ id: 'rlib', group: 'reading', needs: 'rtabs', label: 'Mini library', isNew: true,
+    desc: 'In the maximised reader — a pane in full screen, or a maximised card — a thin grip on the left edge: drag it to the right (with the mouse, a finger or the pen) or click it, and the mini library slides out: the tabs open in this reading set, then the shelves assigned to this project, each with its foci and their papers that have a PDF or a page here, and All shelves for the rest. Click a paper: it opens as a tab of this set, read in the maximised view (a paper not in a note yet opens on its literature note, as + does). It closes when you drag it back, press Esc or click outside. A shelf is assigned to projects with the project button beside it in the Library’s tree, or below. Off: no grip, no project buttons; what was assigned stays.',
+    changed: () => { try { RLIB.close(); App.refresh(); } catch (e) { } },
+    tune: [T('start', 'It opens on', 'seg', { isNew: true, def: 'project', opts: [['project', 'This project’s shelves'], ['all', 'All shelves, this project’s first']] }),
+      T('after', 'After a paper is picked, it', 'seg', { isNew: true, def: 'close', opts: [['close', 'Closes'], ['stay', 'Stays open']], d: 'Closed, the page has the whole width again' }),
+      T('shelves', 'Shelves and their projects', 'node', { isNew: true, d: 'In a project, the mini library shows its shelves first', render: () => RLIB.settingsNode() })],
+    preview: () => { const all = tune('rlib', 'start') === 'all', stay = tune('rlib', 'after') === 'stay';
+      const pp = (k, t, a) => h('div.pv-rl-p' + (a ? '.act' : ''), h('i', k), h('b', t));
+      return [h('div.pv-rl', h('div.pv-rl-tabs', h('div.rs-set.rs-open', { style: { '--rs-h': '205' } }, h('span.rs-nm', 'Cell mechanics'), h('span.pv-rd-tab.act', h('i', 'PDF'), 'Style 2014', h('b', '×')))),
+        h('div.pv-rl-body', h('div.pv-rl-page', rdPage()), h('div.pv-rl-panel', h('div.pv-rl-h', h('b', 'Library'), h('span', 'Cell mechanics')), h('div.pv-rl-seg', h('span' + (all ? '' : '.on'), 'This project'), h('span' + (all ? '.on' : ''), 'All shelves')),
+          h('div.pv-rl-sh', { style: { '--sh': '205' } }, h('span.lg-sw'), 'Traction methods'), h('div.pv-rl-f', 'FTTC & regularization'), pp('PDF', 'Style 2014', true), pp('PDF', 'Plotnikov 2012'),
+          all ? [h('div.pv-rl-sh', { style: { '--sh': '45' } }, h('span.lg-sw'), 'Confocal optics'), pp('PDF', 'Pawley 2006')] : h('div.pv-rl-more', 'All shelves (1 more)')), h('span.pv-rl-grip'))),
+        PV.cap('Drag the grip on the left edge of the maximised reader, or click it. ' + (all ? 'It opens on every shelf, this project’s first. ' : 'It opens on this project’s shelves; All shelves shows the rest. ') + (stay ? 'A paper picked is read and the panel stays open.' : 'A paper picked is read and the panel closes.'))]; } });
   /* =============================== Widgets =============================== */
   const W = (id, label, desc, rows, pv, o = {}) => D(Object.assign({ id, group: 'widgets', label, desc: desc + ' Off: it leaves + Insert and the / commands; those already in your notes stay.', inserts: rows, preview: pv }, o));
   W('equations', 'Equations', '∑ Equation in a note, or in the text, and the registered equations shared by every note.', ['equation', 'equation-reg'],

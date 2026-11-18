@@ -1,0 +1,82 @@
+/* ==========================================================================
+   35 · The maximised reader keeps its tabs; the mini library; shelves'
+   projects (V4.30 — 17j-minilib.js).
+   ========================================================================== */
+/* a pane in full screen: the reader's tab row across the top of the window, the pane under it */
+body.rs-maxrow .rd-wrap:has(> .rd-panes > .embed-max.rd-dock:not(.rd-docked)) > .rd-tabs{position:fixed;left:0;right:0;top:0;z-index:1201;box-shadow:0 1px 0 var(--rule)}
+body.rs-maxrow .rd-wrap > .rd-panes > .embed-max.rd-dock:not(.rd-docked){top:var(--rs-th,35px)}
+/* a maximised card: the set's row over it */
+.embed-max > .rs-maxrow{flex:none}
+.embed-max > .rs-maxrow .rd-tab.act{cursor:default}
+/* the grip on the left edge, and the panel it pulls out (inside the maximised view, below its bar) */
+.embed-max.mx-hl > .mx-row{position:relative}
+.rs-grip{position:absolute;left:0;top:0;bottom:0;width:12px;z-index:8;cursor:e-resize;touch-action:none;display:flex;align-items:center}
+.rs-grip i{display:block;width:4px;height:56px;margin-left:3px;border-radius:3px;background:color-mix(in srgb,var(--ink) 24%,transparent);transition:background .15s,height .15s}
+.rs-grip:hover i{background:var(--teal);height:84px}
+@media (pointer:coarse){.rs-grip{width:22px} .rs-grip i{margin-left:5px}}
+.embed-max.rd-docked .rs-grip,.embed-max.rd-docked .rs-lib,body.f-off-rlib .rs-grip,body.f-off-rlib .rs-lib{display:none!important}
+.rs-lib{position:absolute;left:0;top:0;bottom:0;width:min(310px,86vw);z-index:9;display:flex;flex-direction:column;background:var(--surface);border-right:1px solid var(--rule);box-shadow:14px 0 32px -14px rgba(0,0,0,.4);touch-action:pan-y;
+  visibility:hidden;transform:translateX(-104%);transition:transform .17s ease-out,visibility 0s linear .17s}
+.rs-lib.open{visibility:visible;transform:none;transition:transform .17s ease-out}
+.rs-lib.drag{visibility:visible;transition:none}
+.rs-lh{display:flex;align-items:center;gap:7px;padding:9px 10px 6px 12px;flex:none}
+.rs-lh b{font-size:13px} .rs-lh .sp{flex:1}
+.rs-li{display:inline-grid;color:var(--ink-3)}
+.rs-lp{font-size:11.5px;color:var(--ink-3);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rs-lx{flex:none;width:24px;height:24px;border:0;border-radius:6px;background:transparent;color:var(--ink-3);font-size:16px;line-height:1;cursor:pointer}
+.rs-lx:hover{background:color-mix(in srgb,var(--ink) 8%,transparent);color:var(--ink)}
+.rs-seg{display:flex;gap:2px;margin:0 10px 6px 12px;padding:2px;border-radius:8px;background:color-mix(in srgb,var(--ink) 6%,transparent);flex:none}
+.rs-seg button{flex:1;border:0;border-radius:6px;background:transparent;color:var(--ink-2);font:inherit;font-size:11.5px;padding:3px 6px;cursor:pointer}
+.rs-seg button.on{background:var(--paper);color:var(--ink);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.rs-lbody{flex:1;min-height:0;overflow:auto;padding:0 8px 14px 10px;overscroll-behavior:contain}
+.rs-sec{display:grid;gap:4px;margin-top:8px}
+.rs-sh{font-family:var(--f-m);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);padding:2px 4px}
+.rs-shelf{display:grid;gap:3px;padding:4px 0 6px;border-top:1px solid var(--rule)}
+.rs-shelf:first-of-type{border-top:0}
+.rs-shh{display:flex;align-items:center;gap:7px;padding:3px 4px;font-size:12.5px;min-width:0}
+.rs-shh b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rs-shh .lg-sw{height:14px}
+.rs-yours{flex:none;margin-left:auto;font-family:var(--f-m);font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--sc,var(--ink-3))}
+.rs-focus{display:grid;gap:2px;padding-left:10px}
+.rs-fh{display:flex;align-items:baseline;gap:6px;font-size:11.5px;color:var(--ink-2);padding:2px 4px}
+.rs-fh .rs-c{font-family:var(--f-m);font-size:10px;color:var(--ink-3)}
+.rs-paper{display:grid;grid-template-columns:auto auto minmax(0,1fr);align-items:center;gap:6px;width:100%;text-align:left;border:1px solid transparent;border-radius:7px;background:transparent;padding:4px 6px;cursor:pointer;color:var(--ink);font:inherit;font-size:12px;min-width:0}
+.rs-paper:hover{background:color-mix(in srgb,var(--ink) 6%,transparent);border-color:var(--rule)}
+.rs-paper.in .rs-pr::after{content:'';display:inline-block;width:5px;height:5px;margin-left:5px;border-radius:50%;background:color-mix(in srgb,var(--teal) 70%,transparent);vertical-align:middle}
+.rs-paper.act{background:color-mix(in srgb,var(--teal) 12%,transparent);border-color:color-mix(in srgb,var(--teal) 40%,transparent)}
+.rs-pr{font-weight:600;white-space:nowrap}
+.rs-pt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-3);font-size:11.5px}
+.rs-none{font-size:11.5px;color:var(--ink-3);padding:2px 6px 4px 14px}
+.rs-empty-l{padding:10px 6px;line-height:1.45}
+.rs-more{margin:10px 4px 0;border:1px dashed var(--rule-2);border-radius:7px;background:transparent;color:var(--ink-2);font:inherit;font-size:12px;padding:6px 8px;cursor:pointer;text-align:left}
+.rs-more:hover{border-color:var(--teal);color:var(--teal)}
+/* a shelf's projects in the Library's tree */
+.rs-shp{flex:none;display:inline-flex;align-items:center;gap:3px;height:20px;padding:0 5px;border:0;border-radius:5px;background:transparent;color:var(--ink-3);opacity:.5;cursor:pointer;font:inherit;font-size:10.5px}
+.rs-shp > span{display:inline-grid}
+.rs-shp.on{opacity:1;color:var(--sc,var(--ink-2))}
+.rs-shp:hover,.rs-shp:focus-visible{opacity:1;background:color-mix(in srgb,var(--ink) 8%,transparent);color:var(--ink)}
+.rs-shn{font-family:var(--f-m);font-size:10px}
+body.f-off-rlib .rs-shp{display:none}
+/* Settings: the shelves and their projects */
+.rs-stl{display:grid;gap:4px}
+.rs-str{display:grid;grid-template-columns:auto minmax(0,auto) minmax(0,1fr) auto;align-items:center;gap:8px;font-size:12.5px}
+.rs-str b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rs-stp{color:var(--ink-3);font-size:11.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rs-str .rs-shp{opacity:1}
+/* the preview */
+.pv-rl{border:1px solid var(--rule);border-radius:8px;overflow:hidden;background:var(--paper)}
+.pv-rl-tabs{display:flex;align-items:stretch;padding:4px 4px 0;background:color-mix(in srgb,var(--ink) 5%,var(--paper));border-bottom:1px solid var(--rule);min-height:26px;overflow:hidden}
+.pv-rl-body{position:relative;display:grid;grid-template-columns:minmax(0,1fr);min-height:170px}
+.pv-rl-page{padding:8px 8px 8px 46%}
+.pv-rl-panel{position:absolute;left:0;top:0;bottom:0;width:44%;background:var(--surface);border-right:1px solid var(--rule);box-shadow:8px 0 18px -10px rgba(0,0,0,.35);padding:6px;display:grid;align-content:start;gap:3px;font-size:10.5px;overflow:hidden}
+.pv-rl-h{display:flex;gap:6px;align-items:baseline} .pv-rl-h span{color:var(--ink-3);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pv-rl-seg{display:flex;gap:2px;padding:2px;border-radius:6px;background:color-mix(in srgb,var(--ink) 6%,transparent)}
+.pv-rl-seg span{flex:1;text-align:center;border-radius:4px;padding:1px 2px;color:var(--ink-3);font-size:9.5px;white-space:nowrap}
+.pv-rl-seg span.on{background:var(--paper);color:var(--ink);font-weight:600}
+.pv-rl-sh{display:flex;align-items:center;gap:5px;font-weight:600;margin-top:3px} .pv-rl-sh .lg-sw{height:11px;width:7px}
+.pv-rl-f{color:var(--ink-2);padding-left:8px}
+.pv-rl-p{display:flex;align-items:center;gap:4px;padding:2px 4px 2px 10px;border-radius:5px;white-space:nowrap;overflow:hidden}
+.pv-rl-p i{font-style:normal;font-family:var(--f-m);font-size:7.5px;border:1px solid var(--rule-2);border-radius:2px;padding:0 2px;color:var(--ink-3)}
+.pv-rl-p.act{background:color-mix(in srgb,var(--teal) 14%,transparent)}
+.pv-rl-more{margin-top:4px;border:1px dashed var(--rule-2);border-radius:5px;padding:2px 5px;color:var(--ink-3)}
+.pv-rl-grip{position:absolute;left:44%;top:50%;width:3px;height:40px;margin-top:-20px;border-radius:2px;background:var(--teal)}

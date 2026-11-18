@@ -1,0 +1,33 @@
+/* ==========================================================================
+   34 · Read beside: Fit, zoom and 100%, full screen and back, in a note
+   (V4.31 — 13zzzb-rview.js).
+   ========================================================================== */
+/* a pane's stage keeps room for its scrollbar, so a fitted page is exactly as wide as what shows */
+.embed-max.rd-dock .pdfw.maxed .pdf-stage{scrollbar-gutter:stable}
+/* − 100% + Fit (an HTML page's group is the same) */
+.rd-grp .btn.xs.rv-fit{font-weight:600;padding:0 7px}
+.rd-grp .btn.xs.rv-fit.on{color:var(--teal);background:color-mix(in srgb,var(--teal) 13%,var(--surface))}
+.rd-bar .rv-in{display:inline-flex;align-items:center;justify-content:center;padding:0 6px;min-width:28px}
+.rd-bar .rv-in svg{display:block}
+/* an HTML page zoomed: the frame is scaled, its box clipped to the pane */
+.embed-max.rd-dock.rv-hzoom .dk-maxc{overflow:hidden;justify-content:flex-start;align-items:flex-start}
+/* on a card that came out of the reader: ◧ Back beside */
+.rv-back{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:1px;padding:2px;border-radius:999px;background:var(--surface);border:1px solid color-mix(in srgb,var(--teal) 45%,var(--rule-2));box-shadow:0 6px 18px -8px rgba(0,0,0,.35);white-space:nowrap}
+.rv-bk{border:0;background:transparent;color:var(--teal);font:600 12px/1 var(--f-b);padding:6px 11px;border-radius:999px;cursor:pointer}
+.rv-bk:hover{background:color-mix(in srgb,var(--teal) 11%,transparent)}
+.rv-bx{border:0;background:transparent;color:var(--ink-3);font-size:14px;line-height:1;width:22px;height:22px;border-radius:50%;cursor:pointer;padding:0}
+.rv-bx:hover{background:color-mix(in srgb,var(--ink) 9%,transparent);color:var(--ink)}
+/* off: no Fit, no zoom on pages, no "in a note" */
+body.f-off-rview :is(.rv-fit,.rv-in,.rv-hgrp,.rv-back){display:none!important}
+/* the live preview (Settings → Reading & sources → Fit, zoom and full screen beside a note) */
+.pv-rv{border:1px solid var(--rule);border-radius:8px;overflow:hidden;background:var(--paper)}
+.pv-rv-bar{display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--surface);border-bottom:1px solid var(--rule);font-size:11px;min-width:0}
+.pv-rv-bar > b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pv-rv-g{display:inline-flex;align-items:center;gap:1px;padding:1px 4px;border-radius:6px;background:color-mix(in srgb,var(--ink) 6%,transparent);color:var(--ink-2);white-space:nowrap;font-family:var(--f-m);font-size:10px}
+.pv-rv-b{border:0;background:transparent;color:var(--ink-2);font:600 10.5px/1 var(--f-b);padding:3px 5px;border-radius:4px;cursor:pointer}
+.pv-rv-b:hover{background:var(--surface)}
+.pv-rv-b.on{color:var(--teal);background:color-mix(in srgb,var(--teal) 13%,var(--surface))}
+.pv-rv-i{display:inline-flex;color:var(--ink-2)} .pv-rv-i svg{width:13px;height:13px}
+.pv-rv-desk{background:color-mix(in srgb,var(--ink) 7%,var(--paper));padding:10px 8px;overflow:hidden;height:118px}
+.pv-rv-page{margin:0 auto;background:var(--surface);border-radius:2px;box-shadow:0 1px 2px rgba(0,0,0,.1),0 8px 20px -8px rgba(0,0,0,.2);padding:10px 12px;display:grid;gap:7px;transition:width .2s}
+@media (prefers-reduced-motion:reduce){.pv-rv-page{transition:none}}

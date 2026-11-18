@@ -1,0 +1,46 @@
+/* ==========================================================================
+   34 · The Reader button and reading sets by project (V4.29 — 17i-readsets.js).
+   A set's colour: --rs-h, the project's hue (none: grey); --rs-c derived.
+   ========================================================================== */
+/* the Reader button, last on the header row */
+#readerbtn{color:var(--ink-2)}
+#readerbtn svg{width:16px;height:16px}
+#readerbtn.on{color:var(--teal);background:color-mix(in srgb,var(--teal) 12%,transparent)}
+body.mobile #readerbtn,body.f-off-rbtn #readerbtn{display:none}
+/* a set: its tabs in one band, like a region of a note; the others folded into chips */
+.rs-set,.rs-chip{--rs-c:hsl(var(--rs-h,210) 52% 46%)}
+.rs-set.rs-none,.rs-chip.rs-none,.rs-plain .rs-set,.rs-plain .rs-chip{--rs-c:var(--ink-3)}
+:root[data-theme="dark"] .rs-set:not(.rs-none),:root[data-theme="dark"] .rs-chip:not(.rs-none){--rs-c:hsl(var(--rs-h,210) 48% 64%)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .rs-set:not(.rs-none),:root:not([data-theme="light"]) .rs-chip:not(.rs-none){--rs-c:hsl(var(--rs-h,210) 48% 64%)}}
+.rs-plain .rs-set:not(.rs-none),.rs-plain .rs-chip:not(.rs-none){--rs-c:var(--ink-3)!important}
+.rs-set{display:flex;align-items:stretch;gap:3px;flex:none;min-width:0;padding:0 3px 0 0;border-radius:9px 9px 0 0;background:color-mix(in srgb,var(--rs-c) 10%,transparent);box-shadow:inset 0 2px 0 color-mix(in srgb,var(--rs-c) 70%,transparent)}
+.rs-nm{flex:none;align-self:center;max-width:24ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--f-m);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:color-mix(in srgb,var(--rs-c) 80%,var(--ink))}
+.rs-set > .rs-nm{padding:0 6px 0 9px}
+.rs-chip{flex:none;align-self:center;display:inline-flex;align-items:center;gap:6px;max-width:220px;margin:0 1px 3px;padding:2px 5px 2px 9px;border-radius:999px;border:1px solid color-mix(in srgb,var(--rs-c) 38%,transparent);background:color-mix(in srgb,var(--rs-c) 8%,var(--paper));cursor:pointer;font:inherit}
+.rs-chip:hover{border-color:var(--rs-c);background:color-mix(in srgb,var(--rs-c) 15%,var(--paper))}
+.rs-chip:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
+.rs-chip .rs-nm{text-transform:none;letter-spacing:0;font-family:inherit;font-size:11.5px;color:var(--ink-2);max-width:16ch}
+.rs-chip:hover .rs-nm{color:var(--ink)}
+.rs-n{flex:none;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:color-mix(in srgb,var(--rs-c) 22%,transparent);color:var(--ink-2);font-family:var(--f-m);font-size:10px;line-height:16px;text-align:center}
+/* the set with no tab yet */
+.rs-empty .rd-empty-in{max-width:360px}
+.rs-eic{color:var(--ink-3)} .rs-eic svg{width:22px;height:22px}
+.rs-empty .rd-eopt{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:7px}
+.rs-et{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rs-en{font-size:11px;color:var(--ink-3);max-width:14ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* the previews (Settings → Features) */
+.pv-rset{border:1px solid var(--rule);border-radius:8px;overflow:hidden;background:var(--paper)}
+.pv-rset-row{display:flex;align-items:stretch;gap:4px;padding:4px 4px 0;background:color-mix(in srgb,var(--ink) 5%,var(--paper));border-bottom:1px solid var(--rule);overflow:hidden;min-height:28px}
+.pv-rset .rs-set{flex:1 1 auto;min-width:55%;overflow:hidden}
+.pv-rset .rs-set .pv-rd-tab{max-width:110px;min-width:28px;flex:0 1 auto;overflow:hidden}
+.pv-rset .rs-set .pv-rd-tab.act{flex:0 0 auto}
+.pv-rset .rs-set > .rs-nm{max-width:10ch}
+.pv-rset .rs-chip{font-size:11px;flex:0 1 auto;min-width:0}
+.pv-rset .rs-chip .rs-nm{min-width:5ch;flex:0 1 auto}
+.pv-rset .pv-page{margin:8px}
+.pv-hd .pv-rbtn{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:5px;color:var(--teal);background:color-mix(in srgb,var(--teal) 12%,transparent);box-shadow:0 0 0 2px color-mix(in srgb,var(--teal) 30%,transparent)}
+.pv-hd .pv-rbtn svg{width:15px;height:15px}
+.pv-rbtn-out{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;font-size:11.5px;color:var(--ink-2);padding:8px 2px 0}
+.pv-rbtn-out b{font-family:var(--f-m);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:400}
+/* a narrow window (not the phone layout): the header row tightens a little so the button fits */
+@media (max-width:480px){#hd .hrow{gap:5px}}

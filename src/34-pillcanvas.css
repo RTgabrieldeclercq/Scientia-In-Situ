@@ -1,0 +1,24 @@
+/* 34 · V4.35: Settings → Pills — your pill layout on an empty note (20c PILLCANVAS); the bridges' half-moons and beads over the pills (13zzv) */
+.pcv{display:grid;gap:8px;--pcv-s:24px;min-width:0}
+.pcv-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pcv-t{font:600 12px/1 var(--f-d);color:var(--ink-2)}
+.pcv-seg{display:inline-flex;gap:2px;background:var(--surface-2);border-radius:999px;padding:3px}
+.pcv-seg button{font:500 11px/1 var(--f-d);border:0;background:none;color:var(--ink-3);padding:5px 10px;border-radius:999px;cursor:pointer}
+.pcv-seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.pcv-seg button:disabled{opacity:.45;cursor:default}
+.pcv-note{position:relative;width:100%;max-width:520px;box-sizing:border-box;border-radius:10px;background-color:var(--paper);
+  background-image:linear-gradient(var(--grid-line) 1px,transparent 1px),linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);background-size:14px 14px;
+  box-shadow:inset 0 0 0 1px var(--rule);overflow:hidden;touch-action:none}
+.pcv[data-shape="port"] .pcv-note{max-width:250px}
+.pcv-pill{position:absolute;width:var(--pcv-s);height:var(--pcv-s);margin:calc(var(--pcv-s) / -2) 0 0 calc(var(--pcv-s) / -2);padding:0;border:0;border-radius:50%;
+  background:var(--surface);box-shadow:var(--shadow);color:var(--ink);font:500 calc(var(--pcv-s) * .55)/1 var(--f-d);display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none}
+.pcv-pill:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.pcv-pill.drag{cursor:grabbing;box-shadow:var(--shadow-lg);z-index:2}
+.pcv.off .pcv-pill{opacity:.35;cursor:default}
+.pcv-cap{font-size:11.5px;line-height:1.4;color:var(--ink-3);max-width:520px}
+
+/* V4.35 (Gabe: "Bridge half moons and dots when in full screen should appear over the pills"): a note's bridge circles
+   (half-moons at its edges, beads in full screen) and their threads sit above the pills (the lab layer's .lab-pills,
+   z-index 21, in the same note); an open wheel goes above both, so its items stay reachable */
+.canvas-host .paper > .bw-edge,.canvas-host .paper > .bw-threads{z-index:22}
+.canvas-host > .lab-pills.fan-open{z-index:23}
