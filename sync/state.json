@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "7026bb7a699700b4ed3dd908d618439ea20b8a3e",
-  "subject": "V4.37: Scientia — Freewrite: sentences no rule reads go on with the component before them, or are one text component between the links",
-  "date": "2026-11-18"
+  "commit": "214a40e0d95731413e12bdca4aa6f72874501e9d",
+  "subject": "V4.39: Scientia — popups stay on every page: leaving a note no longer hides them",
+  "date": "2026-11-19"
  },
- "cut": "be04953528d7349b321447157bdcfd05f5146755",
+ "cut": "4d0e26f8a40707b52c34821f40e95b705138ddd8",
  "names": [
   "DESKLAB",
   "LABSYNC",
