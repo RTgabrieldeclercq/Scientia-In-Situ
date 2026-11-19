@@ -93,7 +93,7 @@ const RVIEW = {
     clearTimeout(p._rt); p._rt = setTimeout(() => { if (!p.ov || !p.ov.isConnected) return; const c2 = $('.dk-maxc', p.ov), w2 = c2 ? c2.clientWidth : 0; if (Math.abs(w2 - (p._rw || 0)) < 2) return;
       p._rw = w2; if (p.kind === 'pdf') { if (RVIEW.isFit(p)) RDOCK.draw(p); } else { RVIEW.hz(p); RVIEW.mark(p); } }, 140);
   },
-  /** What a pane's bar gains: − 100% + Fit (an HTML page's too), In a note, and Close in full screen coming back beside. */
+  /** What a pane's bar gains: − 100% + Fit (an HTML page's too), and ✕ (no tabs) in full screen coming back beside. */
   dress(p, b) {
     if (!p || !p.ov) return; const bar = $(':scope > .em-bar', p.ov); if (!bar) return;
     const btn = (label, title, fn, cls) => h('button.btn.xs' + (cls || ''), { type: 'button', title, on: { click: e => { e.stopPropagation(); fn(e); } } }, label);
@@ -101,8 +101,7 @@ const RVIEW = {
     let grp = p.zl.parentNode && p.zl.parentNode.classList && p.zl.parentNode.classList.contains('rd-grp') ? p.zl.parentNode : null;
     if (!grp) { grp = h('div.rd-grp.rv-hgrp', btn('−', 'Smaller', () => RDOCK.zoom(-1, true, p)), p.zl, btn('+', 'Larger', () => RDOCK.zoom(1, true, p))); const t = $('.rd-ttl', bar); t ? t.after(grp) : bar.prepend(grp); }
     p.fitB = btn('Fit', 'Fit the width to the pane — it stays fitted as the pane changes size, until you zoom by hand', () => RVIEW.fit(p), '.rv-fit'); grp.append(p.fitB);
-    p.inB = h('button.btn.xs.rv-in', { type: 'button', title: 'Show it in a note — its card, or another note it is in (“◧ Back beside” on the card brings it back here)', 'aria-label': 'Show it in a note', html: RVIEW.IN, on: { click: e => { e.stopPropagation(); RVIEW.noteMenu(p, e); } } });
-    const sw = $('.rd-swap', bar); sw ? sw.before(p.inB) : p.fs.before(p.inB);
+    // V4.40 (Gabe: "Show it in a note button should be removed"): no In a note on the bar (the title goes to its note; ◧ Back beside on a card still brings it back)
     const x = $('.rd-x', bar); if (x) { x._t0 = x.title; x.addEventListener('click', e => { if (p.full && RVIEW.tn('fullClose', 'beside') !== 'close') { e.stopImmediatePropagation(); e.stopPropagation(); RDOCK.full(p); } }, true); }
     if (p.kind === 'html') RVIEW.hz(p); RVIEW.mark(p);
   },
@@ -183,10 +182,10 @@ addEventListener('message',function(e){var d=e.data||{};if(d.sis==='rv-to'){scro
     const draw = () => {
       const shown = fit ? FZ : z, b = (t, title, fn, on) => h('button.pv-rv-b' + (on ? '.on' : ''), { type: 'button', title, on: { click: e => { e.stopPropagation(); fn(); draw(); } } }, t);
       const page = h('div.pv-rv-page', { style: { width: Math.round(100 * shown / FZ) + '%' } }, h('div.pv-pl'), h('div.pv-pl.s'), h('div.pv-pl'), h('div.pv-pl.s'), h('div.pv-pl'));
-      wrap.replaceChildren(h('div.pv-rv', h('div.pv-rv-bar', h('b', 'Style et al., 2014'), h('span.pv-rv-g', '‹ 3 / 9 ›'),
+      wrap.replaceChildren(h('div.pv-rv', h('div.pv-rv-bar', h('b.pv-rv-t', 'Style et al., 2014 — Traction force microscopy in physics and biology'), h('span.pv-rv-g', '‹ ', h('span.pv-rv-pg', '3'), ' / 9 ›'),
         h('span.pv-rv-g', b('−', 'Smaller', () => { z = Math.max(.6, Math.round(((fit ? FZ : z) - .15) * 100) / 100); fit = false; }), b(Math.round(shown * 100) + '%', 'Back to 100%', () => { fit = false; z = 1; }), b('+', 'Larger', () => { z = Math.min(1.6, Math.round(((fit ? FZ : z) + .15) * 100) / 100); fit = false; }), b('Fit', 'Fit the width', () => { fit = true; }, fit)),
-        h('span.pv-rv-i', { html: RVIEW.IN }), h('span.pv-rv-g', '⤢')), h('div.pv-rv-desk', page)),
-        PV.cap((fit ? 'Fitted: the page fills the pane and stays fitted as the pane changes size. ' : 'At ' + Math.round(shown * 100) + '%: the page keeps its size; the % goes back to 100%. ') + 'A new tab opens ' + ({ fit: 'fitted', last: 'at the last zoom you used', 100: 'at 100%' }[start] || 'fitted') + '; Close in full screen ' + (fc === 'close' ? 'closes the tab.' : 'brings it back beside, the tab still open.') + ' Try − + and Fit here.'));
+        h('span.sp'), h('span.pv-rv-g', '⤢')), h('div.pv-rv-desk', page)),
+        PV.cap((fit ? 'Fitted: the page fills the pane and stays fitted as the pane changes size. ' : 'At ' + Math.round(shown * 100) + '%: the page keeps its size; the % goes back to 100%. ') + 'A new tab opens ' + ({ fit: 'fitted', last: 'at the last zoom you used', 100: 'at 100%' }[start] || 'fitted') + '; the title takes you to its note, and the page is a box you type in. Try − + and Fit here.'));
     };
     draw(); return [wrap];
   },
@@ -241,10 +240,10 @@ RDOCK.rel = p => RVIEW.rel(p);
     RVIEW.msg.forEach(f => { try { f(d, fr); } catch (er) { console.warn('[rview msg]', er); } }); });
   // Settings → Reading & sources (after the other reading features: 20a registers them later)
   FEAT.def({ id: 'rview', group: 'reading', label: 'Fit, zoom and full screen beside a note', isNew: true, presets: { simple: true },
-    desc: 'Each paper or page read beside a note gets − and + with its zoom, which goes back to 100% (the page at its own size) when clicked, and Fit: its width to the pane, kept fitted as the pane changes size until you zoom by hand. HTML pages and saved websites too. ⤢ full screen keeps the page, the place in it and the zoom, and so does coming back; Close in full screen brings it back beside, the tab still open. The arrow into a box shows it in a note — its card, or another note it is embedded in — at the page you were on, out of the reader; “◧ Back beside” on that card puts it back where it was. Off: no Fit, no zoom on pages, no “in a note”; a PDF’s zoom is a share of the pane’s width, as before.',
+    desc: 'Each paper or page read beside a note gets − and + with its zoom, which goes back to 100% (the page at its own size) when clicked, and Fit: its width to the pane, kept fitted as the pane changes size until you zoom by hand. HTML pages and saved websites too. ⤢ full screen keeps the page, the place in it and the zoom, and so does coming back (⤢ again or Esc). The title above the bar, on its own row, takes you to its note, the reader staying open; the page number is a box: type one and press Enter. With reading tabs off, ✕ on the bar puts it back in its card (in full screen, back beside first, as set below). Off: no Fit, no zoom on pages; a PDF’s zoom is a share of the pane’s width, as before.',
     changed: () => { try { if (RDOCK.wrap) RDOCK.remount(); App.refresh(); } catch (e) { } },
     tune: [{ key: 'start', label: 'A paper or page opens at', type: 'seg', isNew: true, def: 'fit', opts: [['fit', 'Fit'], ['last', 'The last zoom you used'], ['100', '100%']], d: 'The first time it is opened in a tab; after that, as you left it' },
-      { key: 'fullClose', label: 'Close, in full screen', type: 'seg', isNew: true, def: 'beside', opts: [['beside', 'Brings it back beside'], ['close', 'Closes the tab']], d: 'Esc and ◧ always bring it back beside', changed: () => { try { RVIEW.all().forEach(RVIEW.closeTitle); } catch (e) { } } }],
+      { key: 'fullClose', label: '✕, in full screen (reading tabs off)', type: 'seg', isNew: true, def: 'beside', opts: [['beside', 'Brings it back beside'], ['close', 'Puts it back in its card']], d: 'With tabs, a tab’s × closes it; Esc and ⤢ always bring it back beside', changed: () => { try { RVIEW.all().forEach(RVIEW.closeTitle); } catch (e) { } } }],
     preview: () => RVIEW.preview() });
   RVIEW.late('rview');
 }
