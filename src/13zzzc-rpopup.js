@@ -43,6 +43,9 @@
    you hover on it."): × at the top right of the popup's border shows while the pointer is on the popup (after the same
    rest as the anchors; with the anchors on a tablet's tap); it closes the popup and the paper or page is back in its card.
    They still stay from note to note — now one click takes one away.
+   V4.41 (Gabe: "popup closing should bring it back in the reader"): × puts the paper or page back in the reader — a tab of
+   its reading set, read beside the note at the same page and zoom (RPOP.back); on a page that isn't a note, into its set,
+   read there when the reader opens next. Reading tabs off: back in its card, as before.
    A popup is a pane object like RDOCK's (p.i = -1, p.pop): RDOCK.draw,
    RDOCK.zoom, RVIEW.fit work on it, RDOCK.paneOf / has count it (so its
    card says it is in a popup and quotes go to it).
@@ -96,8 +99,8 @@ const RPOP = {
     const strip = k => h('div.rp-rim.rp-rim-' + k), mv = k => h('div.rp-mv', { 'data-e': k, title: 'Drag to move' }), rz = k => h('div.rp-rz', { 'data-c': k, title: 'Drag to resize' });
     const body = h('div.rp-body', p.ov, p.ui);
     p.el = h('div.rp-pop', { 'data-id': p.id, role: 'dialog', 'aria-label': (M.block(p.id) || {}).label || 'Popup', style: { '--rp-reach': RPOP.reach() + 'px' } }, body, strip('n'), strip('e'), strip('s'), strip('w'), mv('n'), mv('e'), mv('s'), mv('w'), rz('nw'), rz('ne'), rz('sw'), rz('se'));
-    p.el.append(h('button.rp-x', { type: 'button', title: 'Close the popup — the ' + (p.kind === 'pdf' ? 'paper' : 'page') + ' goes back in its card', 'aria-label': 'Close the popup', html: RPOP.X,
-      on: { pointerdown: e => e.stopPropagation(), click: e => { e.stopPropagation(); RPOP.remove(p); } } }));   // V4.36
+    p.el.append(h('button.rp-x', { type: 'button', title: 'Close the popup — the ' + (p.kind === 'pdf' ? 'paper' : 'page') + ' goes back in the reader', 'aria-label': 'Close the popup', html: RPOP.X,
+      on: { pointerdown: e => e.stopPropagation(), click: e => { e.stopPropagation(); RPOP.back(p); } } }));   // V4.36; V4.41: back in the reader
     document.body.append(p.el); RPOP.geo(p, RPOP.place(p.id)); RPOP.wire(p, body); RPOP.front(p); RPOP.sync();
   },
   wire(p, body) {
@@ -172,6 +175,20 @@ const RPOP = {
   /** Take one down (its card shows the file again unless `quiet`). */
   remove(p, quiet) { const i = RPOP.list.indexOf(p); if (i >= 0) RPOP.list.splice(i, 1); if (p.el) p.el.remove(); p.el = null; if (CLIP.on.has(p.id) && !RDOCK.has(p.id)) CLIP.toggle(p.id, false); RPOP.persist(); if (!quiet) { const b = M.block(p.id); if (b) RDOCK.card(b); } },
   close(id) { const p = RPOP.of(id); if (p) RPOP.remove(p); },
+  /** × (V4.41): back in the reader — a tab of its reading set, beside the note, at the same page and zoom; away from a note, into its set for the next time. */
+  back(p) {
+    const b = M.block(p.id); if (!b || !RDOCK.live(b.id) || !RDOCK.tabsOn() || RDOCK.phone()) return RPOP.remove(p);
+    const from = (p.pop || {}).from || {}, at = p.kind === 'pdf' ? RDOCK.where(p) : null, fr = RVIEW.frame(p), hs = fr && fr._rv ? { x: fr._rv.x, y: fr._rv.y } : null, fit = RVIEW.isFit(p), zoom = p.zoom, clip = CLIP.on.has(p.id);
+    RPOP.remove(p, true); const S = RDOCK.S_; S.fit = S.fit || {}; if (fit) S.fit[b.id] = 1; else { delete S.fit[b.id]; S.zoom[b.id] = zoom || 1; }
+    if (!App.panes().length) {   // a page that isn't a note: its card shows it again; the reader has it as a tab for next time
+      if (at && b.view !== 'page') { b.cur = at.p - 1; DOCS.save(b); }
+      if (typeof RSET !== 'undefined' && RSET.live()) RSET.carry(b.id, null); else { if (!S.tabs.includes(b.id)) { S.tabs.push(b.id); RDOCK.trimTabs(); } if (!S.show.includes(b.id)) S.show[clamp(S.act, 0, (S.n || 1) - 1)] = b.id; RDOCK.save(); }
+      RDOCK.card(b); return;
+    }
+    const o = { _rp: 1 }; if (!RDOCK.wrap && from.side) o.side = from.side;
+    RDOCK.open(b, o); const q = RDOCK.paneOf(b.id); if (!q) return;
+    if (at) RVIEW.goAt(q, at); if (hs) { const f2 = RVIEW.frame(q); if (f2) f2._rvWant = hs; } if (clip) setTimeout(() => CLIP.toggle(b.id, true), 400);
+  },
   /** Maximize: back where it was before it became a popup, at the same page and zoom. */
   max(p) {
     const b = M.block(p.id), st = p.pop || {}, from = st.from || { k: 'pane' }, at = p.kind === 'pdf' ? RDOCK.where(p) : null, fr = RVIEW.frame(p), hs = fr && fr._rv ? { x: fr._rv.x, y: fr._rv.y } : null, clip = CLIP.on.has(p.id), fit = RVIEW.isFit(p), zoom = p.zoom;
@@ -210,7 +227,7 @@ addEventListener('wheel',function(){var n=Date.now();if(n-w>250){w=n;P.postMessa
     const pop = h('div.pv-rp-pop', { style: { '--pr': Math.round(r * .6) + 'px' } }, h('div.pv-rp-rim'), h('div.pv-rp-in', h('div.pv-rp-ui', h('span', 'Fit'), h('span', '−'), h('i', '112%'), h('span', '+'), h('span.pv-rp-mx', { html: RPOP.MAX })), pl()),
       ['n', 'e', 's', 'w'].map(k => h('span.pv-rp-mv', { 'data-e': k })), ['nw', 'ne', 'sw', 'se'].map(k => h('span.pv-rp-rz', { 'data-c': k })), h('span.pv-rp-x', { html: RPOP.X }));   // V4.36
     return [h('div.pv-rp' + (on ? '' : '.off'), h('div.pv-rp-note', h('div.pv-rd-nt', '30 kPa series'), PV.box({ num: 'Step 2', label: 'Run 3', body: 'The edge collapsed at 10 ng/mL.' }), PV.box({ num: 'Block', label: 'Seeding', body: 'Seed at 40k/cm².' })), on ? pop : null),
-      PV.cap(on ? 'As if your pointer rested on it: × closes it (the paper goes back in its card), the four anchors move it, the four corners resize it (they show after ' + (rev ? rev + ' s' : 'no wait') + ', on a band ' + r + ' px wide). Holding still ' + still + ' s inside shows the bar: Fit, − +, Maximize.' : 'Off: no ⧉, and open popups go back where they came from.')];
+      PV.cap(on ? 'As if your pointer rested on it: × closes it (the paper goes back in the reader, a tab of its reading set), the four anchors move it, the four corners resize it (they show after ' + (rev ? rev + ' s' : 'no wait') + ', on a band ' + r + ' px wide). Holding still ' + still + ' s inside shows the bar: Fit, − +, Maximize.' : 'Off: no ⧉, and open popups go back where they came from.')];
   },
 };
 {
@@ -257,7 +274,7 @@ addEventListener('wheel',function(){var n=Date.now();if(n-w>250){w=n;P.postMessa
   { const fa = FEAT.apply; FEAT.apply = function () { const r = fa.apply(this, arguments); try { if (RPOP.list.length && !RPOP.on()) setTimeout(() => { if (!RPOP.on()) RPOP.dockAll(); }, 0); } catch (e) { } return r; }; }
   // Settings → Reading & sources → Popup windows
   FEAT.def({ id: 'rpop', group: 'reading', label: 'Popup windows', isNew: true,
-    desc: '⧉ on a paper or page read beside a note — or “⧉ Popup” when it is maximised — makes it a popup: a window inside the app, over everything, that you move and resize while the note stays usable around it. At rest it is a rounded rectangle with a light shadow and no buttons. Rest the pointer on its border and four anchors (the middle of each side) and four corners show: drag an anchor to move it, a corner to resize it (on a tablet, tap the border). Inside it works like the reader: scroll, pan, select text, highlight, use the page. Hold the pointer still in it and a small bar shows Fit (its width to the window), − and +, and Maximize, which puts it back where it came from — its pane beside the note, or the maximised view. One popup per paper or page; click one to bring it to the front. Their places and sizes are kept on this device, and they stay from note to note. Off: no ⧉, and open popups go back where they came from. × at its top right, shown while the pointer is on it (a tap on the border, on a tablet), closes it: the paper or page is back in its card. Open popups stay on every page — the Portfolio, the Library, Today — and come back after a reload; Maximize from a page that isn’t a note goes to the paper’s note and puts it beside.',
+    desc: '⧉ on a paper or page read beside a note — or “⧉ Popup” when it is maximised — makes it a popup: a window inside the app, over everything, that you move and resize while the note stays usable around it. At rest it is a rounded rectangle with a light shadow and no buttons. Rest the pointer on its border and four anchors (the middle of each side) and four corners show: drag an anchor to move it, a corner to resize it (on a tablet, tap the border). Inside it works like the reader: scroll, pan, select text, highlight, use the page. Hold the pointer still in it and a small bar shows Fit (its width to the window), − and +, and Maximize, which puts it back where it came from — its pane beside the note, or the maximised view. One popup per paper or page; click one to bring it to the front. Their places and sizes are kept on this device, and they stay from note to note. Off: no ⧉, and open popups go back where they came from. × at its top right, shown while the pointer is on it (a tap on the border, on a tablet), closes it: the paper or page goes back in the reader, a tab of its reading set beside the note (from a page that isn’t a note, it waits in its set for the next time the reader opens). Open popups stay on every page — the Portfolio, the Library, Today — and come back after a reload; Maximize from a page that isn’t a note goes to the paper’s note and puts it beside.',
     changed: v => { try { if (!v) RPOP.dockAll(); } catch (e) { } },
     tune: [{ key: 'still', label: 'The bar shows after holding the pointer still for', type: 'seg', isNew: true, def: '2000', opts: [['1000', '1 s'], ['2000', '2 s'], ['3000', '3 s']], d: 'Inside the popup; moving away hides it' },
       { key: 'reveal', label: 'The anchors, corners and × show after resting on it for', type: 'seg', isNew: true, def: '1000', opts: [['0', 'No wait'], ['500', '0.5 s'], ['1000', '1 s']], d: 'They can be dragged before they show — the pointer changes over them' },

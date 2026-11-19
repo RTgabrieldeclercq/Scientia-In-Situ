@@ -56,7 +56,16 @@ const RSET = {
   live: () => RSET.on() && RDOCK.S_.mode === 'sets',
   /** A note's set: its project's id, or '-' (no project). */
   keyOf: d => d && d.projectId && M.project(d.projectId) ? d.projectId : RSET.NONE,
-  keyOfBlock: id => { const b = M.block(id); return RSET.keyOf(b && M.doc(b.docId)); },
+  keyOfBlock: id => { const b = M.block(id); return RSET.docKey(b && M.doc(b.docId)); },
+  /** V4.41: a note's set, the reader's own literature note following its paper — the paper's home (its shelf's project, else where it appears most), else no project.
+      (That note sits in READER.project(), the first project unless one was chosen: Gabe's TF-ELISA papers kept opening in Auto In-Vitro.) */
+  docKey(d) { if (!RSET.auto(d)) return RSET.keyOf(d); const b = DB.where('blocks', x => x.docId === d.id && RDOCK.KINDS[x.kind] && x.status === 'live')[0]; return (b && RSET.home(b)) || RSET.NONE; },
+  /** V4.41 (Gabe: "A new shelf and new focus added to TF-ELISA still opens in Auto In-vitro"): the projects a paper is shelved for — the shelves
+      (assigned to projects, V4.30) of the foci it is in. */
+  shelved(b) {
+    const lib = b && typeof RDX !== 'undefined' && RDX.libOf ? RDX.libOf(b) : null; if (!lib || typeof LGROUP === 'undefined') return []; const out = [];
+    try { LGROUP.groupsOf(lib.id).forEach(g => { const t = LGROUP.shelfOf(g); ((t && t.projectIds) || []).forEach(k => { if (M.project(k) && !out.includes(k)) out.push(k); }); }); } catch (e) { } return out;
+  },
   /* V4.38 (Gabe: "Papers that are not assigned a project get assigned to a project based on the greatest number of appearance in a
      project out of all of them … Right now, all papers open in Auto In-Vitro so project assignment is not working properly"). A
      paper read from the Library sits on its literature note (17b litDoc), made in READER.project() — the first project unless one
@@ -70,12 +79,15 @@ const RSET = {
     const es = lib ? RDX.embedsOf(lib) : DB.where('blocks', x => RDOCK.KINDS[x.kind] && x.status === 'live' && !!x.media && x.media === b.media); if (!es.some(x => x.id === b.id)) es.push(b);
     es.forEach(add); if (lib) { try { RDX.citedIn(lib).forEach(r => add(r.b)); } catch (e) { } }
     const eid = new Set(es.map(x => x.id)); DB.where('blocks', x => x.status === 'live' && x.quote && eid.has(x.quote.src)).forEach(add);
+    RSET.shelved(b).forEach(k => A.set(k, (A.get(k) || 0) + 1));   // V4.41: on a shelf of the project: it appears there
     return A;
   },
-  /** A paper's project: the note it is a card in, when that note is in a project (not the reader's own literature note); else the project it appears in most (none: null). */
+  /** A paper's project: the note it is a card in, when that note is in a project (not the reader's own literature note); else the project its shelf is
+      assigned to (V4.41; shelves of several: the one where it appears most); else the project it appears in most (none: null). */
   home(b, A) {
     const d = b && M.doc(b.docId); if (d && !RSET.auto(d) && d.projectId && M.project(d.projectId)) return d.projectId;
-    let best = null, n = 0; (A || RSET.appears(b)).forEach((c, k) => { if (c > n) { best = k; n = c; } }); return best;
+    A = A || RSET.appears(b); const sh = RSET.shelved(b); if (sh.length) return sh.slice().sort((x, y) => (A.get(y) || 0) - (A.get(x) || 0))[0];
+    let best = null, n = 0; A.forEach((c, k) => { if (c > n) { best = k; n = c; } }); return best;
   },
   /** Once (V4.38): tabs that went into a set they do not belong to (it does not appear in that project, and it has a home elsewhere) move to their home. */
   rehome(S) {
@@ -87,9 +99,25 @@ const RSET = {
     if (moved) { if (!RSET.tabsOf(S.cur, S).length) { const k2 = RSET.lastSet(S); if (k2) S.cur = k2; } RSET.fill(S); }
     return moved;
   },
+  /** V4.41: the app has started — the state as kept (not as read while the notebook loaded), and the reader back with the note. */
+  ready() {
+    if (RDOCK.wrap) { RDOCK.save(); return; }
+    RDOCK.S = null; RSET.lastCtx = null; if (RDOCK.phone() || !RDOCK.tabsOn()) return;
+    if (App.panes().length) RDOCK.restore(); RSET.follow();
+  },
+  /** V4.41: cards that were not here when the state was read have arrived. */
+  arrived() {
+    const back = [...RSET._pend].filter(id => M.block(id)); if (!back.length) return; back.forEach(id => RSET._pend.delete(id)); if (!window.__ready || !RSET.live()) return;
+    const S = RDOCK.S_, x = RSET.set(S.cur, S), mine = back.filter(id => x.tabs.includes(id) && RDOCK.live(id) && !S.tabs.includes(id)); if (!mine.length) return;
+    S.tabs = x.tabs.filter(RDOCK.live); if (!S.show.some(Boolean)) RSET.fill(S);
+    if (RDOCK.wrap) RDOCK.tabsRow(); else if (S.open && App.panes().length && !RDOCK.phone()) { RDOCK.mount(); RDOCK.remount(); }
+  },
   /** The note in focus (a split: the pane last touched), or null on a page that isn't a note. */
   ctxDoc() { const ps = App.panes(); if (!ps.length) return null; const p = ps.includes(App.pane) ? App.pane : ps[0]; return M.doc(p.docId) || null; },
-  ctxKey() { const ps = App.panes(); return ps.length ? RSET.keyOf(RSET.ctxDoc()) : null; },
+  ctxKey() { const ps = App.panes(); return ps.length ? RSET.docKey(RSET.ctxDoc()) : null; },
+  /** V4.41: a tab whose card is not here yet (the notebook still loading, a sync on its way) is kept, not dropped; one deleted since goes. */
+  keep: id => { const b = id && M.block(id); return !!id && (!b || (b.status === 'live' && !!RDOCK.KINDS[b.kind])); },
+  _pend: new Set(), folded: false,
   name: k => k === RSET.NONE ? 'No project' : ((M.project(k) || {}).name || 'A project'),
   hue: k => k === RSET.NONE ? null : hashHue(k),
   blank: () => ({ tabs: [], at: {}, from: {}, show: [], act: 0 }),
@@ -107,12 +135,12 @@ const RSET = {
   /* ---------- the state ---------- */
   /** RDOCK.load's state, given its sets (13zzb read the shown set's tabs, filtered to what is still there). */
   adopt(S, t) {
-    const norm = x => { x = Object.assign(RSET.blank(), x && typeof x === 'object' ? x : {}); x.tabs = [...new Set((Array.isArray(x.tabs) ? x.tabs : []).filter(RDOCK.live))]; x.at = Object.assign({}, x.at); x.from = Object.assign({}, x.from); x.show = Array.isArray(x.show) ? x.show.slice() : []; x.act = +x.act || 0; return x; };
+    const norm = x => { x = Object.assign(RSET.blank(), x && typeof x === 'object' ? x : {}); x.tabs = [...new Set((Array.isArray(x.tabs) ? x.tabs : []).filter(RSET.keep))]; x.tabs.forEach(id => { if (!M.block(id)) RSET._pend.add(id); }); x.at = Object.assign({}, x.at); x.from = Object.assign({}, x.from); x.show = Array.isArray(x.show) ? x.show.slice() : []; x.act = +x.act || 0; return x; };
     const sets = {}; Object.entries(t.sets && typeof t.sets === 'object' ? t.sets : {}).forEach(([k, x]) => {
       const n = norm(x), key = k === RSET.NONE || M.project(k) ? k : RSET.NONE;   // a project deleted since: its tabs join "no project"
       if (!sets[key]) sets[key] = n; else { n.tabs.forEach(id => { if (!sets[key].tabs.includes(id)) { sets[key].tabs.push(id); sets[key].at[id] = n.at[id]; sets[key].from[id] = n.from[id]; } }); } });
     S.sets = sets; S.cur = typeof t.cur === 'string' ? (t.cur === RSET.NONE || M.project(t.cur) ? t.cur : RSET.NONE) : null;
-    if (t.mode === 'sets' && S.cur) RSET.set(S.cur, S).tabs = S.tabs.slice();   // what was saved as the row is the shown set, as it was last
+    if (t.mode === 'sets' && S.cur) { const x = RSET.set(S.cur, S); S.tabs.forEach(id => { if (!x.tabs.includes(id)) x.tabs.push(id); }); }   // what was saved as the row is the shown set, as it was last (V4.41: its tabs not here yet kept)
     if (!RSET.on()) {   // off: one flat row of every set's tabs — the one shown first, then by when last read
       if (t.mode === 'sets') { const flat = []; [S.cur, ...Object.keys(sets).filter(k => k !== S.cur).sort((a, b) => RSET.last(b, S) - RSET.last(a, S))].forEach(k => ((sets[k] || {}).tabs || []).forEach(id => { if (!flat.includes(id)) flat.push(id); }));
         S.tabs = flat; S.show = S.show.map(x => x && flat.includes(x) ? x : null); if (!S.show.some(Boolean) && flat.length) S.show[0] = flat[0]; }
@@ -127,7 +155,7 @@ const RSET = {
     S.mode = 'sets';
     if (!S.cur) S.cur = RSET.lastSet(S) || RSET.NONE;
     RSET.decide(S); RSET.fill(S);
-    S.open = !!t.open && Object.keys(sets).some(k => RSET.tabsOf(k, S).length);
+    S.open = !!t.open && Object.values(sets).some(x => x.tabs.length);   // V4.41: open stays open while its tabs are on their way
     return S;
   },
   /** The note in focus came from another project than the last one: its set is the one shown (Settings). */
@@ -141,12 +169,12 @@ const RSET = {
   },
   /** The row back into its set (what 13zzb changed: the tabs, the panes, the focus). */
   sync(S = RDOCK.S) {
-    if (!S || S.mode !== 'sets' || !S.cur) return; const x = RSET.set(S.cur, S); x.tabs = S.tabs.slice(); x.show = (S.show || []).slice(); x.act = S.act || 0;
+    if (!S || S.mode !== 'sets' || !S.cur) return; const x = RSET.set(S.cur, S); x.tabs = S.tabs.concat(x.tabs.filter(id => !S.tabs.includes(id) && !M.block(id)));   // V4.41: the row, and the tabs not here yet x.show = (S.show || []).slice(); x.act = S.act || 0;
     Object.keys(x.at).forEach(id => { if (!x.tabs.includes(id)) delete x.at[id]; }); Object.keys(x.from).forEach(id => { if (!x.tabs.includes(id)) delete x.from[id]; });
   },
   /** Show set k: its tabs in the row, the panes as it left them (else its most recent tab); `quiet`: the state only. A set with no tab: the empty set (`empty`) or the reader steps aside. */
   use(k, o = {}) {
-    const S = RDOCK.S_; if (!RSET.live()) return; RSET.sync(S); S.cur = k; RSET.set(k, S); RSET.fill(S); RDOCK.save();
+    const S = RDOCK.S_; if (!RSET.live()) return; RSET.sync(S); if (S.cur !== k) RSET.folded = false; S.cur = k; RSET.set(k, S); RSET.fill(S); RDOCK.save();
     if (o.quiet || !RDOCK.wrap) return;
     if (!S.tabs.length) return o.empty ? RSET.showEmpty() : RDOCK.close(true);
     const full = RDOCK.panes.some(p => p && p.full); RDOCK.remount(); if (full) RSET.refull();
@@ -159,11 +187,11 @@ const RSET = {
       are. A tab of the set shown, from a menu or a key, stays in it. */
   target(b) {
     const S = RDOCK.S_, ev = window.event, t = ev && ev.target && ev.target.closest ? ev.target : null, fromReader = !!(t && t.closest('.rd-wrap, .rs-lib, .rs-maxrow, .ovl'));
-    let ctx = fromReader ? S.cur : RSET.ctxKey(); if (ctx == null) ctx = S.cur;
-    if (!fromReader && ctx !== S.cur && S.tabs.includes(b.id) && !(t && t.closest('.canvas-host, .embed-max:not(.rd-dock), .nav'))) return S.cur;   // a tab of the set shown, from a menu or a key
+    const ctx = fromReader ? S.cur : RSET.ctxKey();   // V4.41: away from a note (the Library, its reader) there is no project you are in: the paper's own goes first
+    if (!fromReader && ctx != null && ctx !== S.cur && S.tabs.includes(b.id) && !(t && t.closest('.canvas-host, .embed-max:not(.rd-dock), .nav'))) return S.cur;   // a tab of the set shown, from a menu or a key
     const A = RSET.appears(b), home = RSET.home(b, A);
     if (ctx && ctx !== RSET.NONE && (A.get(ctx) || home === ctx)) return ctx;
-    return home || ctx || RSET.NONE;
+    return home || (ctx != null ? ctx : S.cur) || RSET.NONE;
   },
   /** Going to a note: the set of its project, when the project changed (Settings). */
   follow() {
@@ -177,23 +205,36 @@ const RSET = {
   later() { const id = RSET._full; if (!id) return; RSET._full = null; setTimeout(() => { const p = RDOCK.paneOf(id); if (p && !p.full) RDOCK.full(p); }, 120); },
   /** A chip clicked: that set opens (the one open folds), at the tab read last there. */
   pick(k) { if (!RSET.live() || k === RDOCK.S_.cur) return; RSET.use(k, { empty: true }); RSET.paintBtn(); },
+  /** V4.41 (Gabe: "Clicking on a reading set collapses it"): the open set folds into a chip like the others (the paper read stays); its chip opens it again. */
+  fold(v) { if (!RSET.live()) return; RSET.folded = !!v; if (RDOCK.wrap) RDOCK.tabsRow(); },
+  /** V4.40 / V4.41 (Gabe: "the cited in should go to the note when you click on the note it is cited in, without closing the reader"): going to note
+      docId (a Cited in chip, the title) with paper id read beside — the paper goes in that note's set, shown there, so the reader stays on it when
+      the set changes. No note (a popup closed on a page that isn't a note): the paper's own set, or the one shown. */
+  carry(id, docId) {
+    if (!RSET.live()) return; const S = RDOCK.S_, b = M.block(id), d = docId ? M.doc(docId) : null; if (!b || !RDOCK.live(id)) return;
+    const k = d ? RSET.docKey(d) : (RSET.home(b) || S.cur || RSET.NONE); RSET.sync(S);
+    if (k === S.cur) { if (!S.tabs.includes(id)) { S.tabs.push(id); RSET.set(k, S).from[id] = docId || b.docId; } RSET.set(k, S).at[id] = Date.now(); if (!S.show.includes(id)) S.show[clamp(S.act, 0, (S.n || 1) - 1)] = id; RSET.sync(S); RDOCK.save(); return; }
+    const x = RSET.set(k, S); if (!x.tabs.includes(id)) { x.tabs.push(id); x.from[id] = docId || b.docId; } x.at[id] = Date.now();
+    x.show = Array.isArray(x.show) ? x.show : []; const at = x.show.indexOf(id); if (at >= 0) x.act = at; else x.show[clamp(x.act || 0, 0, (S.n || 1) - 1)] = id; RDOCK.save();
+  },
   /* ---------- the row ---------- */
   band(k, tabs) {
     const hu = RSET.hue(k), n = tabs.length;
-    return h('div.rs-set.rs-open' + (hu == null ? '.rs-none' : ''), { 'data-set': k, style: hu == null ? {} : { '--rs-h': String(hu) }, title: 'The reading set of ' + RSET.name(k) + ' — ' + (n ? plural(n, 'tab') + ', opened from its notes' : 'no tab yet') },
-      h('span.rs-nm', RSET.name(k)), ...tabs);
+    return h('div.rs-set.rs-open' + (hu == null ? '.rs-none' : ''), { 'data-set': k, style: hu == null ? {} : { '--rs-h': String(hu) }, title: 'The reading set of ' + RSET.name(k) + ' — ' + (n ? plural(n, 'tab') + ', opened from its notes' : 'no tab yet') + '\nClick its name: fold it',
+      on: { click: e => { if (e.target.closest('.rd-tab, button')) return; e.stopPropagation(); RSET.fold(true); } } },   // V4.41: a click on the set (not on a tab) folds it
+      h('span.rs-nm', { role: 'button', tabindex: '0', 'aria-label': 'Fold the reading set of ' + RSET.name(k), on: { keydown: e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); RSET.fold(true); } } } }, RSET.name(k)), ...tabs);
   },
-  chip(k) {
+  chip(k, cur) {
     const hu = RSET.hue(k), n = RSET.tabsOf(k).length;
-    return h('button.rs-chip' + (hu == null ? '.rs-none' : ''), { type: 'button', 'data-set': k, style: hu == null ? {} : { '--rs-h': String(hu) }, title: RSET.name(k) + ' · ' + plural(n, 'tab') + '\nClick: open this reading set (the one open folds)', 'aria-label': 'Open the reading set of ' + RSET.name(k),
-      on: { click: e => { e.stopPropagation(); RSET.pick(k); } } }, h('span.rs-nm', RSET.name(k)), h('span.rs-n', String(n)));
+    return h('button.rs-chip' + (hu == null ? '.rs-none' : '') + (cur ? '.rs-cur' : ''), { type: 'button', 'data-set': k, style: hu == null ? {} : { '--rs-h': String(hu) }, title: RSET.name(k) + ' · ' + plural(n, 'tab') + (cur ? '\nThe set you are reading, folded — click: its tabs again' : '\nClick: open this reading set (the one open folds)'), 'aria-label': (cur ? 'Unfold' : 'Open') + ' the reading set of ' + RSET.name(k), 'aria-expanded': cur ? 'false' : null,
+      on: { click: e => { e.stopPropagation(); if (cur) RSET.fold(false); else RSET.pick(k); } } }, h('span.rs-nm', RSET.name(k)), h('span.rs-n', String(n)));
   },
   /** 13zzb drew the shown set's tabs: they go in their project's band, every other set folds into a chip. */
   paintRow(row) {
     if (!row || !RSET.live()) return; const S = RDOCK.S_, tl = $('.rd-tl', row); if (!tl) return;
     row.classList.add('rs-row'); row.classList.toggle('rs-plain', RDOCK.tn('rsets', 'tint', true) === false);
     const tabs = [...tl.children].filter(x => x.classList.contains('rd-tab'));
-    tl.replaceChildren(...RSET.keys(S).map(k => k === S.cur ? RSET.band(k, tabs) : RSET.chip(k)));
+    tl.replaceChildren(...RSET.keys(S).map(k => k === S.cur ? (RSET.folded && tabs.length ? RSET.chip(k, true) : RSET.band(k, tabs)) : RSET.chip(k)));
     const x = $('.rd-tclose', row); if (x) x.title = 'Close the reader — your tabs stay in their sets';
     const on = $('.rd-tab.act', tl); if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   },
@@ -272,6 +313,7 @@ const RSET = {
     if (S2.mode === 'sets' && !t.home438) { try { RSET.rehome(S2); } catch (e) { console.warn('[reading sets] rehome', e); } S2.home438 = 1; }   // V4.38: once — tabs filed under the default project go home
     return S2; } catch (e) { console.warn('[reading sets]', e); return S; } };
   const sv = RDOCK.save; RDOCK.save = function () {
+    if (!window.__ready) return;   // V4.41 (Gabe: "My reader, after hard reload, was not saved"): nothing is written while the notebook is still starting (RSET.ready reads it again then)
     const S = RDOCK.S_; if (S.mode !== 'sets') return sv.apply(this, arguments);
     RSET.sync(S); const keep = {}; Object.values(S.sets || {}).forEach(x => x.tabs.forEach(id => { if (S.zoom[id] != null) keep[id] = S.zoom[id]; }));
     const r = sv.apply(this, arguments); Object.assign(S.zoom, keep); _ls.set('rtabs', S); return r;   // 13zzb keeps the zoom of the row's tabs only: the other sets' too
@@ -298,12 +340,12 @@ const RSET = {
     RSET._closingTab = true; try { return ct.apply(this, arguments); } finally { RSET._closingTab = false; }
   };
   // a tab clicked takes the note to its paper only within the set's project (else it would leave the project, and the set with it)
-  const fw = RDOCK.follow; RDOCK.follow = function (id) { const b = M.block(id), t = window.event && window.event.target; if (b && RSET.live() && t && t.closest && t.closest('.rd-tab') && RSET.keyOf(M.doc(b.docId)) !== RDOCK.S_.cur) return; return fw.apply(this, arguments); };
+  const fw = RDOCK.follow; RDOCK.follow = function (id) { const b = M.block(id), t = window.event && window.event.target; if (b && RSET.live() && t && t.closest && t.closest('.rd-tab') && RSET.docKey(M.doc(b.docId)) !== RDOCK.S_.cur) return; return fw.apply(this, arguments); };
   const tr = RDOCK.tabsRow; RDOCK.tabsRow = function () { const r = tr.apply(this, arguments); try { if (RDOCK.wrap) RSET.paintRow($('.rd-tabs', RDOCK.wrap)); } catch (e) { console.warn('[reading sets]', e); } return r; };
   const ly = RDOCK.layout; RDOCK.layout = function () { const r = ly.apply(this, arguments); RSET.paintBtn(); return r; };
   // from outside a note (the Library's reader, + there): the tab goes in the set of the note it is read beside
   const gt = RDX.goTab; RDX.goTab = function (id) {
-    try { const b = M.block(id); if (b && RSET.live() && !(RDOCK.wrap && App.panes().length)) { const S = RDOCK.S_, k = RSET.keyOf(M.doc(b.docId)); if (S.cur !== k) RSET.use(k, { quiet: true }); const x = RSET.set(k, S); if (!S.tabs.includes(id)) x.from[id] = b.docId; x.at[id] = Date.now(); RSET.lastCtx = k; } } catch (e) { console.warn('[reading sets]', e); }
+    try { const b = M.block(id); if (b && RSET.live() && !(RDOCK.wrap && App.panes().length)) { const S = RDOCK.S_, k = RSET.docKey(M.doc(b.docId)); if (S.cur !== k) RSET.use(k, { quiet: true }); const x = RSET.set(k, S); if (!S.tabs.includes(id)) x.from[id] = b.docId; x.at[id] = Date.now(); RSET.lastCtx = k; } } catch (e) { console.warn('[reading sets]', e); }
     return gt.apply(this, arguments);
   };
   // going to a note: its project's set
@@ -312,4 +354,8 @@ const RSET = {
   // the button, at the top right of every page
   if (!RDOCK.wrap) RDOCK.S = null;
   RSET.mountBtn();
+  // V4.41: once the notebook has started, the state is read again (what was read while it loaded may have missed cards) and the reader comes back
+  const ready = setInterval(() => { if (!window.__ready) return; clearInterval(ready); try { RSET.ready(); } catch (e) { console.warn('[reading sets] ready', e); } }, 150);
+  // a card that was not here yet arrives (a sync): its tab is back in its set — in the row when that set is shown, and the reader opens again if it was open
+  { const ch = changed; let t = null; changed = function (...a) { const r = ch.apply(this, a); if (RSET._pend.size) { clearTimeout(t); t = setTimeout(() => { try { RSET.arrived(); } catch (e) { } }, 300); } return r; }; }
 }

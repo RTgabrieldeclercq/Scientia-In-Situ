@@ -58,15 +58,19 @@ const RDOCK = {
   load() {
     const t = _ls.get('rtabs', null) || {}, S = { tabs: (Array.isArray(t.tabs) ? t.tabs : []).filter(RDOCK.live), side: t.side === 'right' ? 'right' : 'left', zoom: Object.assign({}, t.zoom || {}), open: !!t.open, n: [1, 2, 4].includes(t.n) ? t.n : 1, act: +t.act || 0 };
     S.tabs = [...new Set(S.tabs)]; S.show = Array.from({ length: S.n }, (_, j) => { const x = (t.show || [])[j]; return x && S.tabs.includes(x) ? x : null; });
-    if (!S.show.some(Boolean) && S.tabs.length) S.show[0] = S.tabs[0]; S.act = clamp(S.act, 0, S.n - 1); if (!S.tabs.length) S.open = false; return S;
+    if (!S.show.some(Boolean) && S.tabs.length) S.show[0] = S.tabs[0]; S.act = clamp(S.act, 0, S.n - 1); if (!S.tabs.length && !(t.tabs || []).some(id => id && !M.block(id))) S.open = false; return S;   // V4.41: open stays open while its tabs are not here yet
   },
   get S_() { return RDOCK.S || (RDOCK.S = RDOCK.load()); },
   save() {
-    const S = RDOCK.S_; Object.keys(S.zoom).forEach(k => { if (!S.tabs.includes(k)) delete S.zoom[k]; }); _ls.set('rtabs', S);
+    const S = RDOCK.S_; Object.keys(S.zoom).forEach(k => { if (!S.tabs.includes(k)) delete S.zoom[k]; });
+    const was = _ls.get('rtabs', null) || {}, later = (Array.isArray(was.tabs) ? was.tabs : []).filter(id => id && !S.tabs.includes(id) && !M.block(id));   // V4.41: tabs whose card is not here yet stay kept
+    _ls.set('rtabs', later.length && S.mode !== 'sets' ? Object.assign({}, S, { tabs: S.tabs.concat(later) }) : S);
     RDOCK.panes.forEach(p => { if (p) _ls.set('rdock:' + p.docId, { id: p.id, side: S.side, zoom: p.zoom }); });   // the note's own record, as before (what the reader goes back to with the feature off)
   },
   trimTabs() { const S = RDOCK.S_, max = +RDOCK.tn('rtabs', 'max', 12) || 12; while (S.tabs.length > max) { const old = S.tabs.find(x => !S.show.includes(x)); if (!old) break; S.tabs = S.tabs.filter(x => x !== old); } },
   paneOf: id => RDOCK.panes.find(p => p && p.id === id) || null,
+  /** V4.40: its title clicked — the paper's note (where it is embedded), the reader staying open with it (17i carries it into that project's reading set). */
+  toNote(p) { const b = p && M.block(p.id); if (!b) return; if (typeof RSET !== 'undefined' && RSET.carry) RSET.carry(b.id, b.docId); RDOCK.follow(b.id); },
   has: id => !!RDOCK.paneOf(id),
   stage: (p = RDOCK.st) => p && $('.pdf-stage', p.ov),
   /* ---------- open: a paper or page in a pane (the one way a pane is filled) ---------- */
@@ -100,15 +104,21 @@ const RDOCK = {
     const S = RDOCK.S_, pdf = b.kind === 'pdf', p = { i, id: b.id, docId: b.docId, kind: b.kind, side: S.side, zoom: S.zoom[b.id] || 1, full: false, hover: false };
     S.show[i] = b.id;
     const btn = (label, title, fn) => h('button.btn.xs', { title, on: { click: e => { e.stopPropagation(); fn(e); } } }, label);
-    p.pg = h('span.rd-pg.mono', '…'); p.zl = h('button.btn.xs.rd-zl.mono', { title: 'Fit the width', on: { click: e => { e.stopPropagation(); RDOCK.zoom(1, false, p); } } }, '100%');
+    // V4.40 (Gabe: "You should be able to input a page number in the page count"): the page is a box you type in (Enter goes there)
+    p.pgIn = h('input.rd-pgin.mono', { type: 'text', inputmode: 'numeric', 'aria-label': 'Page', title: 'The page — type one and press Enter', on: { pointerdown: e => e.stopPropagation(), click: e => e.stopPropagation(), focus: e => e.target.select(),
+      keydown: e => { e.stopPropagation(); if (e.key === 'Enter') { const n = parseInt(e.target.value, 10); if (n > 0) RDOCK.goTo(p, n); e.target.blur(); } else if (e.key === 'Escape') e.target.blur(); }, blur: () => RDOCK.onScroll(p) } });
+    p.pgN = h('span.rd-pgn.mono', '/ …'); p.pg = h('span.rd-pg', p.pgIn, p.pgN); p.zl = h('button.btn.xs.rd-zl.mono', { title: 'Fit the width', on: { click: e => { e.stopPropagation(); RDOCK.zoom(1, false, p); } } }, '100%');
     p.hl = btn('Highlights', 'Your highlights in this ' + (pdf ? 'paper' : 'page') + ' — click one to go there', () => p.ov.classList.toggle('rd-side-on'));
+    p.hl.classList.add('rd-hl');   // V4.40: hidden — the side panel folds at the edge instead; kept as the place other modules put their buttons (13zze ✎ Note)
     p.fs = btn('⤢', 'Full screen (Esc comes back)', () => RDOCK.full(p));
     const extra = RDOCK.extras.map(f => { try { return f(p, b); } catch (e) { console.warn('[reader bar]', e); return null; } }).filter(Boolean);
-    const bar = h('div.em-bar.rd-bar', h('b.rd-ttl', { title: b.label || '' }, b.label || (pdf ? 'PDF' : 'Page')),
+    // V4.40 (Gabe: "Have the title be on its own row, and the buttons just below it … Clicking on the title brings you to its note")
+    const toNote = e => { e.stopPropagation(); RDOCK.toNote(p); };
+    const bar = h('div.em-bar.rd-bar.rd-bar2', h('b.rd-ttl', { role: 'link', tabindex: '0', title: (b.label || '') + ' — go to its note', on: { click: toNote, keydown: e => { if (e.key === 'Enter') toNote(e); } } }, b.label || (pdf ? 'PDF' : 'Page')),
       pdf ? h('div.rd-grp', btn('‹', 'Previous page (←)', () => RDOCK.step(-1, p)), p.pg, btn('›', 'Next page (→)', () => RDOCK.step(1, p))) : null,
       pdf ? h('div.rd-grp', btn('−', 'Smaller (Ctrl + scroll)', () => RDOCK.zoom(-1, true, p)), p.zl, btn('+', 'Larger (Ctrl + scroll)', () => RDOCK.zoom(1, true, p))) : null,
-      pdf ? CLIP.btn(b) : null, ...extra, p.hl, h('button.btn.xs.rd-swap', { title: 'Put it on the other side', on: { click: e => { e.stopPropagation(); RDOCK.swap(); } } }, '⇄'), p.fs,
-      h('button.btn.sm.rd-x', { title: RDOCK.tabsOn() ? 'Close this tab — the ' + (pdf ? 'paper' : 'page') + ' goes back in its card' : 'Put the ' + (pdf ? 'paper' : 'page') + ' back in its card', on: { click: e => { e.stopPropagation(); RDOCK.closeTab(p.id); } } }, 'Close ✕'));
+      ...extra, p.hl, h('span.rd-bsp'), h('button.btn.xs.rd-swap', { title: 'Put it on the other side', on: { click: e => { e.stopPropagation(); RDOCK.swap(); } } }, '⇄'), p.fs,
+      RDOCK.tabsOn() ? null : h('button.btn.xs.rd-x', { title: 'Put the ' + (pdf ? 'paper' : 'page') + ' back in its card', on: { click: e => { e.stopPropagation(); RDOCK.closeTab(p.id); } } }, '✕'));   // V4.40: with tabs, the tab’s × closes; without them (Settings), this is the only way back
     const ov = p.ov = h('div.embed-max.dk-max.rd-dock.rd-docked', { 'data-pane': i }, bar, h('div.dk-maxc'));
     RDOCK.place(ov, i); $('.rd-panes', RDOCK.wrap).append(ov); MXHL.open(ov, b.id);
     ov.addEventListener('pointerenter', () => { p.hover = true; }); ov.addEventListener('pointerleave', () => { p.hover = false; });
@@ -253,7 +263,11 @@ const RDOCK = {
   where(p = RDOCK.st) { const s = RDOCK.stage(p); if (!s || !s.scrollTop) return null; const y = s.getBoundingClientRect().top, sl = $$('.pdf-slot', s).find(x => x.getBoundingClientRect().bottom > y + 1); return sl ? { p: +sl.dataset.p, f: (y - sl.getBoundingClientRect().top) / (sl.offsetHeight || 1) } : null; },
   page(p = RDOCK.st) { const s = RDOCK.stage(p); if (!s) return 1; const y = s.getBoundingClientRect().top + s.clientHeight * .3, sl = $$('.pdf-slot', s).find(x => x.getBoundingClientRect().bottom > y); return sl ? +sl.dataset.p : ((p && M.block(p.id)) || {}).cur + 1 || 1; },
   onScroll(p = RDOCK.st) { if (!p || p.kind !== 'pdf' || p.raf) return; p.raf = requestAnimationFrame(() => { p.raf = 0; const b = M.block(p.id), n = (b && b.pages) || $$('.pdf-slot', p.ov).length || 0;
-    p.pg.textContent = (b && b.view === 'page' ? (b.cur || 0) + 1 : RDOCK.page(p)) + ' / ' + (n || '…'); }); },
+    const cur = b && b.view === 'page' ? (b.cur || 0) + 1 : RDOCK.page(p);
+    if (p.pgIn) { if (document.activeElement !== p.pgIn) p.pgIn.value = String(cur); p.pgN.textContent = '/ ' + (n || '…'); p.pgIn.style.width = (Math.max(2, String(n || cur).length) + 1.2) + 'ch'; } else p.pg.textContent = cur + ' / ' + (n || '…'); }); },
+  /** V4.40: page n of pane p, typed in the bar's box — scrolled to (or turned to, a PDF shown page by page); out of range, the nearest. */
+  goTo(p, n) { const b = p && M.block(p.id); if (!b) return; const N = b.pages || $$('.pdf-slot', p.ov).length || n; n = Math.max(1, Math.min(N, n));
+    if (b.view === 'page') return PDFW.go(b, n - 1); RDOCK.goPage(p, n); },
   /** Go to page n of pane p (1-based), at a fraction f down it. */
   goPage(p, n, f = 0) { const s = RDOCK.stage(p), sl = s && $(`.pdf-slot[data-p="${n}"]`, s); if (!sl) return false; s.scrollTo({ top: RDOCK.top(s, sl) + f * sl.offsetHeight - 12, behavior: 'smooth' }); return true; },
   step(d, p = RDOCK.st) {

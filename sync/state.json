@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "214a40e0d95731413e12bdca4aa6f72874501e9d",
-  "subject": "V4.39: Scientia — popups stay on every page: leaving a note no longer hides them",
+  "commit": "f76f1029aba896d5c7dcebb13f95ba68b7ee6027",
+  "subject": "V4.41: Scientia — reading sets: a popup's close puts the paper back in the reader; the open set folds; shelves say where a paper belongs; the reader is kept across a reload; Cited in keeps the reader",
   "date": "2026-11-19"
  },
- "cut": "4d0e26f8a40707b52c34821f40e95b705138ddd8",
+ "cut": "f3ff6091c63a00a71e22f8d8db3072bfc7f08a9e",
  "names": [
   "DESKLAB",
   "LABSYNC",

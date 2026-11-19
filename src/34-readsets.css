@@ -61,3 +61,9 @@ body.mobile #readerbtn,body.f-off-rbtn #readerbtn{display:none}
 .rd-tabs.rs-row .rs-chip .rs-nm{font-family:var(--f-d);font-size:11.5px;font-weight:500;max-width:14ch}
 .rd-tabs.rs-row > .btn,.rd-tabs.rs-row > button{align-self:center}
 .rd-tabs.rs-row .rd-tbtn{padding:4px 6px;margin:0;font-size:13px}
+/* V4.41: the open set folds when clicked — its chip says it is the one read (filled), a click opens its tabs again */
+.rs-set{cursor:default}
+.rs-set > .rs-nm{cursor:pointer;border-radius:6px}
+.rs-set > .rs-nm:hover,.rs-set > .rs-nm:focus-visible{color:var(--rs-c);text-decoration:underline;text-underline-offset:3px;outline:0}
+.rs-chip.rs-cur{border-color:var(--rs-c);background:color-mix(in srgb,var(--rs-c) 18%,var(--paper));box-shadow:inset 0 -2px 0 var(--rs-c)}
+.rs-chip.rs-cur .rs-nm{color:var(--ink);font-weight:600}

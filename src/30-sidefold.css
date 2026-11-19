@@ -13,28 +13,34 @@
 .sf-b:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
 .sf-b svg{transition:transform .24s}
 .sf-n{display:none}
-/* folded: a strip at the side, its count written down it; a click anywhere on it opens the panel */
-body.sf-fold:not(.f-off-sidefold) :is(.embed-max:not(.rd-docked) .mx-row,.rd-main) > .sf-col{width:30px;cursor:pointer}
-body.sf-fold:not(.f-off-sidefold) :is(.embed-max:not(.rd-docked) .mx-row,.rd-main) > .sf-col:hover{background:var(--surface-2)}
-body.sf-fold:not(.f-off-sidefold) :is(.embed-max:not(.rd-docked) .mx-row,.rd-main) > .sf-col > .sf-top{flex:1;height:auto;flex-direction:column;justify-content:flex-start;gap:10px;padding:4px 0;border-bottom:0}
-body.sf-fold:not(.f-off-sidefold) :is(.embed-max:not(.rd-docked) .mx-row,.rd-main) > .sf-col > .sf-top .sp{display:none}
-body.sf-fold:not(.f-off-sidefold) :is(.embed-max:not(.rd-docked) .mx-row,.rd-main) > .sf-col .sf-b{order:-1}
-body.sf-fold:not(.f-off-sidefold) :is(.embed-max:not(.rd-docked) .mx-row,.rd-main) > .sf-col .sf-b svg{transform:rotate(180deg)}
-body.sf-fold:not(.f-off-sidefold) :is(.embed-max:not(.rd-docked) .mx-row,.rd-main) > .sf-col :is(.sf-tt,.sf-n){writing-mode:vertical-rl;letter-spacing:.08em}
-body.sf-fold:not(.f-off-sidefold) :is(.embed-max:not(.rd-docked) .mx-row,.rd-main) > .sf-col.has-n .sf-tt{display:none}
-body.sf-fold:not(.f-off-sidefold) :is(.embed-max:not(.rd-docked) .mx-row,.rd-main) > .sf-col.has-n .sf-n{display:block}
-body.sf-fold:not(.f-off-sidefold) :is(.embed-max:not(.rd-docked) .mx-row,.rd-main) > .sf-col > :is(.mx-side,.rd-side){display:none}
-/* beside a note: the overlay Highlights opens, as before, with the strip at its top (› closes it) */
-.embed-max.rd-docked .mx-row > .sf-col{display:none;position:absolute;top:0;right:0;bottom:0;width:min(340px,88%);z-index:6;box-shadow:-12px 0 30px rgba(0,0,0,.16)}
-.embed-max.rd-docked.rd-side-on .mx-row > .sf-col{display:flex}
+/* folded (V4.40): a small capsule at the right edge — the highlighter, a badge with the count, a click opens the panel; the page has all the room.
+   Full screen and the Library's reader: when the feature folds it. Beside a note: its own fold (body.sf-fold-b), whatever the feature says, the app able to open it (rd-side-on). */
+.sf-host{position:relative}
+.sf-ic{position:relative;display:none;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;color:var(--ink-2);transition:background .2s,transform .25s cubic-bezier(.2,.9,.25,1.4)}
+.sf-ic svg{display:block}
+.sf-k{position:absolute;top:-2px;right:-3px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--ink);color:var(--paper);font:600 9.5px/16px var(--f-m);text-align:center;letter-spacing:0}
+.sf-k:empty{display:none}
+:is(body.sf-fold:not(.f-off-sidefold) :is(.embed-max:not(.rd-docked) .mx-row,.rd-main),body.sf-fold-b .embed-max.rd-docked:not(.rd-side-on):not(.rp-ov) .mx-row) > .sf-col{position:absolute;top:50%;right:14px;bottom:auto;width:auto;height:auto;transform:translateY(-50%);z-index:7;padding:6px;border:0;border-radius:26px;background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.10),0 18px 34px -20px rgba(0,0,0,.55),inset 0 0 0 1px var(--rule);cursor:pointer;overflow:visible;animation:sf-in .45s cubic-bezier(.2,.9,.25,1.25)}
+:is(body.sf-fold:not(.f-off-sidefold) :is(.embed-max:not(.rd-docked) .mx-row,.rd-main),body.sf-fold-b .embed-max.rd-docked:not(.rd-side-on):not(.rp-ov) .mx-row) > .sf-col > .sf-top{height:auto;padding:0;border:0;gap:0}
+:is(body.sf-fold:not(.f-off-sidefold) :is(.embed-max:not(.rd-docked) .mx-row,.rd-main),body.sf-fold-b .embed-max.rd-docked:not(.rd-side-on):not(.rp-ov) .mx-row) > .sf-col > .sf-top > :not(.sf-ic){display:none}
+:is(body.sf-fold:not(.f-off-sidefold) :is(.embed-max:not(.rd-docked) .mx-row,.rd-main),body.sf-fold-b .embed-max.rd-docked:not(.rd-side-on):not(.rp-ov) .mx-row) > .sf-col .sf-ic{display:inline-flex}
+:is(body.sf-fold:not(.f-off-sidefold) :is(.embed-max:not(.rd-docked) .mx-row,.rd-main),body.sf-fold-b .embed-max.rd-docked:not(.rd-side-on):not(.rp-ov) .mx-row) > .sf-col:hover .sf-ic{background:var(--surface-2);color:var(--ink);transform:scale(1.08)}
+:is(body.sf-fold:not(.f-off-sidefold) :is(.embed-max:not(.rd-docked) .mx-row,.rd-main),body.sf-fold-b .embed-max.rd-docked:not(.rd-side-on):not(.rp-ov) .mx-row) > .sf-col > :is(.mx-side,.rd-side){display:none}
+@keyframes sf-in{from{opacity:0;transform:translate(60%,-50%)}to{opacity:1;transform:translateY(-50%)}}
+/* beside a note, open: the panel lies over the paper, its strip at the top (› folds it back) */
+.embed-max.rd-docked .mx-row > .sf-col{display:flex;position:absolute;top:0;right:0;bottom:0;width:min(340px,88%);z-index:6;box-shadow:-12px 0 30px rgba(0,0,0,.16);animation:sf-slide .3s cubic-bezier(.2,.9,.25,1)}
+@keyframes sf-slide{from{opacity:.4;transform:translateX(24px)}to{opacity:1;transform:none}}
 .embed-max.rd-docked .sf-col > .mx-side{display:block;position:static;width:auto;box-shadow:none}
-/* off: no strip, and the panel never folds */
-body.f-off-sidefold .sf-top{display:none}
+.embed-max.rd-docked.rp-ov .mx-row > .sf-col{display:none}
+/* off: no strip, and the panel never folds (beside a note it still does: there is no other way to open it) */
+body.f-off-sidefold :is(.embed-max:not(.rd-docked) .mx-row,.rd-main) > .sf-col > .sf-top{display:none}
+@media (pointer:coarse){.sf-ic{width:42px;height:42px}}
 @media (max-width:760px){.embed-max:not(.rd-docked) .mx-row > .sf-col,.rd-main > .sf-col{display:none}.rd-main.sf-host{grid-template-columns:1fr}}
-@media (prefers-reduced-motion:reduce){.sf-col,.sf-b svg{transition:none}}
+@media (prefers-reduced-motion:reduce){.sf-col,.sf-b svg,.sf-ic,.pv-sf-cap{transition:none;animation:none!important}}
 /* the live preview (Settings → Reading & sources → Fold the side panel) */
 .pv-sf{display:grid;grid-template-columns:minmax(0,1fr) 140px;min-height:150px;border:1px solid var(--rule);border-radius:8px;overflow:hidden;background:color-mix(in srgb,var(--ink) 8%,var(--paper));transition:grid-template-columns .24s cubic-bezier(.2,.8,.3,1)}
-.pv-sf.f{grid-template-columns:minmax(0,1fr) 24px}
+.pv-sf{position:relative}
+.pv-sf.f{grid-template-columns:minmax(0,1fr) 0}
 .pv-sf > .pv-page{margin:12px 14px;align-self:start}
 .pv-sf-side{display:flex;flex-direction:column;min-width:0;overflow:hidden;background:var(--surface);border-left:1px solid var(--rule)}
 .pv-sf-top{display:flex;align-items:center;gap:4px;height:22px;padding:0 2px 0 8px;border-bottom:1px solid var(--rule);font:600 8.5px/1 var(--f-b);letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);white-space:nowrap}
@@ -46,3 +52,5 @@ body.f-off-sidefold .sf-top{display:none}
 .pv-sf.f .pv-sf-side{cursor:pointer;align-items:center;gap:8px;padding-top:3px}
 .pv-sf.f .pv-sf-b svg{transform:rotate(180deg)}
 .pv-sf-rail{writing-mode:vertical-rl;font:600 8.5px/1 var(--f-b);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);white-space:nowrap}
+.pv-sf-cap{position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:var(--surface);color:var(--ink-2);box-shadow:0 1px 2px rgba(0,0,0,.1),0 10px 20px -12px rgba(0,0,0,.5),inset 0 0 0 1px var(--rule);cursor:pointer;animation:sf-in .45s cubic-bezier(.2,.9,.25,1.25)}
+.pv-sf-cap .sf-k{top:-3px;right:-4px}

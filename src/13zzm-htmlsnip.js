@@ -200,9 +200,7 @@ QUOTE.more = (more => srcId => (more ? more(srcId) : '') + HSNIP.SCRIPT)(QUOTE.m
   const em = EMBED.max; EMBED.max = function (b) { const r = em.apply(this, arguments), ov = [...$$('.embed-max')].pop(), bar = ov && $(':scope > .em-bar', ov);
     if (bar && HSNIP.editable(M.block(b.id), null)) { const at = [...bar.children].find(x => /Export ink labels/.test(x.textContent)) || $('a.btn', bar); const s = HSNIP.btn(b, 'button.btn.sm.clip-btn.hs-btn', 'Snip'); at ? at.after(s) : bar.append(s); }
     return r; };
-  const ro = RDOCK.open; RDOCK.open = function (b) { const r = ro.apply(this, arguments), st = RDOCK.st;
-    if (st && b && st.id === b.id && b.kind === 'html' && st.hl && !$('.hs-btn', st.hl.parentNode)) st.hl.before(HSNIP.btn(b, 'button.btn.xs.clip-btn.hs-btn'));
-    return r; };
+  // V4.40 (Gabe: "Clip already suggests"): no scissors on the reader's bar — pointing at a figure in the page outlines it (＋ Figure); the card and the maximised page keep theirs
   // Esc ends clip mode first (the maximised view would close on it)
   window.addEventListener('keydown', e => { if (e.key !== 'Escape' || !HSNIP.on.size || $('.ovl')) return; e.preventDefault(); e.stopPropagation(); [...HSNIP.on].forEach(id => HSNIP.toggle(id, false)); }, true);
 }
