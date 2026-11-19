@@ -57,6 +57,36 @@ const RSET = {
   /** A note's set: its project's id, or '-' (no project). */
   keyOf: d => d && d.projectId && M.project(d.projectId) ? d.projectId : RSET.NONE,
   keyOfBlock: id => { const b = M.block(id); return RSET.keyOf(b && M.doc(b.docId)); },
+  /* V4.38 (Gabe: "Papers that are not assigned a project get assigned to a project based on the greatest number of appearance in a
+     project out of all of them … Right now, all papers open in Auto In-Vitro so project assignment is not working properly"). A
+     paper read from the Library sits on its literature note (17b litDoc), made in READER.project() — the first project unless one
+     was chosen — so every such paper fell in that project's set. Now: */
+  /** The reader's own literature note of a Library paper: its project was only a default, never an assignment. */
+  auto: d => !!d && d.type === 'literature' && !!d.libId && !d.review,
+  /** Where a paper or page appears, by project: its cards in notes, the components that cite it (/cite), bridge it in or quote it. */
+  appears(b) {
+    const A = new Map(), seen = new Set(), add = x => { if (!x || seen.has(x.id)) return; seen.add(x.id); const d = M.doc(x.docId); if (!d || d.deleted || RSET.auto(d)) return; const k = RSET.keyOf(d); if (k !== RSET.NONE) A.set(k, (A.get(k) || 0) + 1); };
+    const lib = typeof RDX !== 'undefined' && RDX.libOf ? RDX.libOf(b) : null;
+    const es = lib ? RDX.embedsOf(lib) : DB.where('blocks', x => RDOCK.KINDS[x.kind] && x.status === 'live' && !!x.media && x.media === b.media); if (!es.some(x => x.id === b.id)) es.push(b);
+    es.forEach(add); if (lib) { try { RDX.citedIn(lib).forEach(r => add(r.b)); } catch (e) { } }
+    const eid = new Set(es.map(x => x.id)); DB.where('blocks', x => x.status === 'live' && x.quote && eid.has(x.quote.src)).forEach(add);
+    return A;
+  },
+  /** A paper's project: the note it is a card in, when that note is in a project (not the reader's own literature note); else the project it appears in most (none: null). */
+  home(b, A) {
+    const d = b && M.doc(b.docId); if (d && !RSET.auto(d) && d.projectId && M.project(d.projectId)) return d.projectId;
+    let best = null, n = 0; (A || RSET.appears(b)).forEach((c, k) => { if (c > n) { best = k; n = c; } }); return best;
+  },
+  /** Once (V4.38): tabs that went into a set they do not belong to (it does not appear in that project, and it has a home elsewhere) move to their home. */
+  rehome(S) {
+    if (!S || S.mode !== 'sets' || !S.sets) return 0; RSET.sync(S); let moved = 0;
+    Object.keys(S.sets).forEach(k => { const x = S.sets[k]; x.tabs.slice().forEach(id => { const b = M.block(id); if (!b) return; const A = RSET.appears(b), home = RSET.home(b, A);
+      if ((k !== RSET.NONE && A.get(k)) || !home || home === k) return;
+      const y = RSET.set(home, S); if (!y.tabs.includes(id)) { y.tabs.push(id); y.at[id] = x.at[id] || 0; y.from[id] = x.from[id] || b.docId; }
+      x.tabs = x.tabs.filter(t => t !== id); delete x.at[id]; delete x.from[id]; x.show = (x.show || []).map(v => v === id ? null : v); moved++; }); });
+    if (moved) { if (!RSET.tabsOf(S.cur, S).length) { const k2 = RSET.lastSet(S); if (k2) S.cur = k2; } RSET.fill(S); }
+    return moved;
+  },
   /** The note in focus (a split: the pane last touched), or null on a page that isn't a note. */
   ctxDoc() { const ps = App.panes(); if (!ps.length) return null; const p = ps.includes(App.pane) ? App.pane : ps[0]; return M.doc(p.docId) || null; },
   ctxKey() { const ps = App.panes(); return ps.length ? RSET.keyOf(RSET.ctxDoc()) : null; },
@@ -91,7 +121,7 @@ const RSET = {
     if (t.mode !== 'sets') {   // the first time (the tabs kept before V4.29), or the switch on again: each tab into the set of its note's project; one in a set already stays there
       const flat = S.tabs.slice(), inSet = new Set(), now = Date.now();
       Object.values(sets).forEach(x => { x.tabs = x.tabs.filter(id => flat.includes(id)); x.tabs.forEach(id => inSet.add(id)); });
-      flat.forEach((id, i) => { if (inSet.has(id)) return; const b = M.block(id), k = RSET.keyOf(M.doc(b.docId)), x = sets[k] || (sets[k] = RSET.blank()); x.tabs.push(id); x.from[id] = b.docId; x.at[id] = x.at[id] || now - (flat.length - i) * 1000; });
+      flat.forEach((id, i) => { if (inSet.has(id)) return; const b = M.block(id), k = RSET.home(b) || RSET.keyOf(M.doc(b.docId)), x = sets[k] || (sets[k] = RSET.blank()); x.tabs.push(id); x.from[id] = b.docId; x.at[id] = x.at[id] || now - (flat.length - i) * 1000; });
       const shown = S.show[S.act] || S.show.find(Boolean); if (shown) { const k = RSET.keyOfBlock(shown); RSET.set(k, S).at[shown] = now; S.cur = k; }
     }
     S.mode = 'sets';
@@ -123,13 +153,17 @@ const RSET = {
   },
   /** A pane was in full screen when the set changed: the pane in focus is again (V4.30 keeps the maximised view). */
   refull() { const p = RDOCK.st || RDOCK.panes.find(Boolean); if (p && !p.full) RDOCK.full(p); },
-  /** The set a paper being opened goes in: from the reader itself (a tab, a free pane, +, the mini library) the set shown; from a note, the note's project's. */
+  /** The set a paper being opened goes in (V4.38): the set of the project you are in — the note's, or from the reader itself the set
+      shown — when the paper appears in that project (cited, embedded, quoted, bridged there: a paper of two projects is in both);
+      otherwise its own project (RSET.home: its note's, else where it appears most); a paper that appears in no project stays where you
+      are. A tab of the set shown, from a menu or a key, stays in it. */
   target(b) {
-    const S = RDOCK.S_, ev = window.event, t = ev && ev.target && ev.target.closest ? ev.target : null;
-    if (t && t.closest('.rd-wrap, .rs-lib, .rs-maxrow, .ovl')) return S.cur;
-    const k = RSET.ctxKey(); if (k == null) return S.cur;
-    if (k !== S.cur && S.tabs.includes(b.id) && !(t && t.closest('.canvas-host, .embed-max:not(.rd-dock), .nav'))) return S.cur;   // a tab of the set shown, from a menu or a key
-    return k;
+    const S = RDOCK.S_, ev = window.event, t = ev && ev.target && ev.target.closest ? ev.target : null, fromReader = !!(t && t.closest('.rd-wrap, .rs-lib, .rs-maxrow, .ovl'));
+    let ctx = fromReader ? S.cur : RSET.ctxKey(); if (ctx == null) ctx = S.cur;
+    if (!fromReader && ctx !== S.cur && S.tabs.includes(b.id) && !(t && t.closest('.canvas-host, .embed-max:not(.rd-dock), .nav'))) return S.cur;   // a tab of the set shown, from a menu or a key
+    const A = RSET.appears(b), home = RSET.home(b, A);
+    if (ctx && ctx !== RSET.NONE && (A.get(ctx) || home === ctx)) return ctx;
+    return home || ctx || RSET.NONE;
   },
   /** Going to a note: the set of its project, when the project changed (Settings). */
   follow() {
@@ -234,7 +268,9 @@ const RSET = {
 };
 {
   // the state: sets around 13zzb's row
-  const ld = RDOCK.load; RDOCK.load = function () { const S = ld.apply(this, arguments); try { return RSET.adopt(S, _ls.get('rtabs', null) || {}); } catch (e) { console.warn('[reading sets]', e); return S; } };
+  const ld = RDOCK.load; RDOCK.load = function () { const S = ld.apply(this, arguments); try { const t = _ls.get('rtabs', null) || {}, S2 = RSET.adopt(S, t);
+    if (S2.mode === 'sets' && !t.home438) { try { RSET.rehome(S2); } catch (e) { console.warn('[reading sets] rehome', e); } S2.home438 = 1; }   // V4.38: once — tabs filed under the default project go home
+    return S2; } catch (e) { console.warn('[reading sets]', e); return S; } };
   const sv = RDOCK.save; RDOCK.save = function () {
     const S = RDOCK.S_; if (S.mode !== 'sets') return sv.apply(this, arguments);
     RSET.sync(S); const keep = {}; Object.values(S.sets || {}).forEach(x => x.tabs.forEach(id => { if (S.zoom[id] != null) keep[id] = S.zoom[id]; }));

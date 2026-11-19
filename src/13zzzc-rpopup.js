@@ -34,8 +34,11 @@
      view, at the same page. Leaving the popup hides the bar.
    • Clicking one brings it to the front. Places and sizes are kept per
      paper or page on this device (a new one takes the last used); open
-     popups stay from note to note, step aside on pages that aren't notes
-     and come back with the next note, and after a reload (_ls 'rpop').
+     popups stay from note to note and after a reload (_ls 'rpop').
+   • V4.39 (Gabe: "Popups are also closing when I'm leaving a note, which is not how it's supposed to work"): they stay on
+     every page — the Portfolio, the Library, Today, Settings — instead of stepping aside off a note (only a phone, where
+     there are none, hides them); after a reload they come back wherever you are; Maximize away from a note goes to the
+     paper's note first, and puts it back beside there.
    V4.36 (Gabe: "Popups don't close even when you leave notes or move through the notebook. Add a close button to it when
    you hover on it."): × at the top right of the popup's border shows while the pointer is on the popup (after the same
    rest as the anchors; with the anchors on a tablet's tap); it closes the popup and the paper or page is back in its card.
@@ -141,8 +144,8 @@ const RPOP = {
     addEventListener('pointermove', mv, true); addEventListener('pointerup', up, true); addEventListener('pointercancel', up, true);
   },
   front(p) { const i = RPOP.list.indexOf(p); if (i < 0) return; if (i !== RPOP.list.length - 1) { RPOP.list.splice(i, 1); RPOP.list.push(p); } RPOP.list.forEach((q, k) => { if (q.el) q.el.style.zIndex = String(RPOP.Z + k); }); },
-  /** Popups belong to notes: they step aside on pages that aren't notes (and on a phone). */
-  sync() { const away = !App.panes().length || RDOCK.phone(); RPOP.list.forEach(p => p.el && p.el.classList.toggle('rp-away', away)); },
+  /** V4.39: popups stay on every page (they used to step aside off a note); a phone has none. */
+  sync() { const away = RDOCK.phone(); RPOP.list.forEach(p => p.el && p.el.classList.toggle('rp-away', away)); },
   /* ---------- in and out ---------- */
   /** Open b as a popup with this state: { from, zoom, fit, at, hs }. */
   open(b, st) {
@@ -172,6 +175,8 @@ const RPOP = {
   /** Maximize: back where it was before it became a popup, at the same page and zoom. */
   max(p) {
     const b = M.block(p.id), st = p.pop || {}, from = st.from || { k: 'pane' }, at = p.kind === 'pdf' ? RDOCK.where(p) : null, fr = RVIEW.frame(p), hs = fr && fr._rv ? { x: fr._rv.x, y: fr._rv.y } : null, clip = CLIP.on.has(p.id), fit = RVIEW.isFit(p), zoom = p.zoom;
+    if (!App.panes().length) { const b0 = M.block(p.id); if (!b0) return; p._mt = (p._mt || 0) + 1; if (p._mt > 25) { p._mt = 0; return; }   // V4.39: away from a note — go to the paper's note, then put it back there
+      if (p._mt === 1) App.go('#/doc/' + b0.docId); setTimeout(() => RPOP.max(p), 200); return; } p._mt = 0;
     RPOP.remove(p, true); if (!b || !RDOCK.live(b.id)) return;
     if (from.k === 'max') {
       if (at && b.view !== 'page') { b.cur = at.p - 1; DOCS.save(b); } RDOCK.card(b);
@@ -188,7 +193,7 @@ const RPOP = {
   dockAll() { RPOP.list.slice().forEach(p => RPOP.max(p)); },
   /** Back after a reload, with the next note. */
   restore() {
-    if (RPOP.list.length || RPOP._restored || !RPOP.on() || RDOCK.phone() || !App.panes().length) return; RPOP._restored = true;
+    if (RPOP.list.length || RPOP._restored || !RPOP.on() || RDOCK.phone() || !window.__ready) return; RPOP._restored = true;   // V4.39: on any page, once the app has started
     RPOP.store().open.forEach(o => { const b = o && M.block(o.id); if (!b || !RDOCK.live(b.id) || RDOCK.has(b.id)) return; const p = RPOP.open(b, { from: o.from || { k: 'pane' }, zoom: o.zoom || 1, fit: o.fit !== false, at: o.at || null, hs: o.hs || null }); if (p && !p.el) RPOP.show(p, false); });
   },
   /** The pane's bar: ⧉. */
@@ -243,7 +248,8 @@ addEventListener('wheel',function(){var n=Date.now();if(n-w>250){w=n;P.postMessa
   }, true);
   // from note to note they stay; on other pages they step aside; after a reload they come back with the next note; a file gone takes its popup
   const rr = DocView.render; DocView.render = function () { const r = rr.apply(this, arguments); setTimeout(() => { try { RPOP.restore(); RPOP.sync(); } catch (e) { } }, 0); return r; };
-  addEventListener('hashchange', () => setTimeout(() => RPOP.sync(), 0));
+  addEventListener('hashchange', () => setTimeout(() => { try { RPOP.restore(); } catch (e) { } RPOP.sync(); }, 0));
+  { const tick = () => { if (window.__ready) { try { RPOP.restore(); RPOP.sync(); } catch (e) { } } else setTimeout(tick, 400); }; setTimeout(tick, 600); }   // V4.39: after a reload, on whatever page
   addEventListener('resize', () => RPOP.list.forEach(p => { if (p.el && p.geo) RPOP.geo(p, p.geo); }));
   { const ch = changed; let t = null; changed = function (...a) { const r = ch.apply(this, a); clearTimeout(t); t = setTimeout(() => RPOP.list.slice().forEach(p => { if (!RDOCK.live(p.id)) RPOP.remove(p, true); }), 300); return r; }; }
   addEventListener('pagehide', () => { try { if (RPOP.list.length) RPOP.persist(); } catch (e) { } });
@@ -251,7 +257,7 @@ addEventListener('wheel',function(){var n=Date.now();if(n-w>250){w=n;P.postMessa
   { const fa = FEAT.apply; FEAT.apply = function () { const r = fa.apply(this, arguments); try { if (RPOP.list.length && !RPOP.on()) setTimeout(() => { if (!RPOP.on()) RPOP.dockAll(); }, 0); } catch (e) { } return r; }; }
   // Settings → Reading & sources → Popup windows
   FEAT.def({ id: 'rpop', group: 'reading', label: 'Popup windows', isNew: true,
-    desc: '⧉ on a paper or page read beside a note — or “⧉ Popup” when it is maximised — makes it a popup: a window inside the app, over everything, that you move and resize while the note stays usable around it. At rest it is a rounded rectangle with a light shadow and no buttons. Rest the pointer on its border and four anchors (the middle of each side) and four corners show: drag an anchor to move it, a corner to resize it (on a tablet, tap the border). Inside it works like the reader: scroll, pan, select text, highlight, use the page. Hold the pointer still in it and a small bar shows Fit (its width to the window), − and +, and Maximize, which puts it back where it came from — its pane beside the note, or the maximised view. One popup per paper or page; click one to bring it to the front. Their places and sizes are kept on this device, and they stay from note to note. Off: no ⧉, and open popups go back where they came from. × at its top right, shown while the pointer is on it (a tap on the border, on a tablet), closes it: the paper or page is back in its card.',
+    desc: '⧉ on a paper or page read beside a note — or “⧉ Popup” when it is maximised — makes it a popup: a window inside the app, over everything, that you move and resize while the note stays usable around it. At rest it is a rounded rectangle with a light shadow and no buttons. Rest the pointer on its border and four anchors (the middle of each side) and four corners show: drag an anchor to move it, a corner to resize it (on a tablet, tap the border). Inside it works like the reader: scroll, pan, select text, highlight, use the page. Hold the pointer still in it and a small bar shows Fit (its width to the window), − and +, and Maximize, which puts it back where it came from — its pane beside the note, or the maximised view. One popup per paper or page; click one to bring it to the front. Their places and sizes are kept on this device, and they stay from note to note. Off: no ⧉, and open popups go back where they came from. × at its top right, shown while the pointer is on it (a tap on the border, on a tablet), closes it: the paper or page is back in its card. Open popups stay on every page — the Portfolio, the Library, Today — and come back after a reload; Maximize from a page that isn’t a note goes to the paper’s note and puts it beside.',
     changed: v => { try { if (!v) RPOP.dockAll(); } catch (e) { } },
     tune: [{ key: 'still', label: 'The bar shows after holding the pointer still for', type: 'seg', isNew: true, def: '2000', opts: [['1000', '1 s'], ['2000', '2 s'], ['3000', '3 s']], d: 'Inside the popup; moving away hides it' },
       { key: 'reveal', label: 'The anchors, corners and × show after resting on it for', type: 'seg', isNew: true, def: '1000', opts: [['0', 'No wait'], ['500', '0.5 s'], ['1000', '1 s']], d: 'They can be dragged before they show — the pointer changes over them' },
