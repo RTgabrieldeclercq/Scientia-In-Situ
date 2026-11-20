@@ -138,3 +138,67 @@ body.f-off-freewrite .fwc .fw-open{display:none}
 .fw-gbx{font:400 14px/1.45 var(--f-b);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:7;overflow:hidden}
 .fw-tb[hidden]{display:none}
 @media (prefers-reduced-motion:reduce){.fw-ghosts{animation:none}}
+/* V4.53 — a component's title and structures on its words: their own stretches inside it; the chips of a click and of a selection inside one component */
+.fw-s .fw-tt{box-shadow:inset 0 -4px 0 var(--fc)}
+.fw-s .fw-mk{position:relative;background:color-mix(in srgb,var(--mc) 22%,transparent);box-shadow:inset 0 -2px 0 var(--mc)}
+.fw-s .fw-mk::after{content:attr(data-m);position:absolute;left:0;top:calc(100% + 1px);font:600 8.5px/1.2 var(--f-m);letter-spacing:.05em;text-transform:uppercase;color:color-mix(in srgb,var(--mc) 80%,var(--ink));white-space:nowrap;pointer-events:none}
+.fw-chips{position:absolute;z-index:3;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.fw-chips .fw-chip{position:static}
+.fw-chip2{padding:3px 9px;font-weight:600;color:var(--ink)}
+.fw-cw{font:italic 12px var(--f-b);color:var(--ink-3);padding:0 2px}
+.fw-mbh{display:block;font:600 11px/1.25 var(--f-d);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* V4.54: the labels are buttons — a click: kind and structure; a drag onto another component: a link */
+.fw-page.fw-tg .fw-back .fw-s::before,.fw-page.fw-tg .fw-back .fw-l::before{visibility:hidden}
+.fw-tags{position:absolute;left:0;top:0;width:0;height:0;z-index:2}
+.fw-tag{position:absolute;transform:translate(-3px,calc(-100% + 1px));display:inline-flex;align-items:center;gap:4px;margin:0;padding:0 3px;border:0;border-radius:4px;background:transparent;font:600 9px/1.25 var(--f-m);letter-spacing:.05em;text-transform:uppercase;color:var(--fct);white-space:nowrap;cursor:pointer;touch-action:none;--fct:color-mix(in srgb,var(--fc) 82%,var(--ink));transition:background .12s,box-shadow .12s}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .fw-tag{--fct:color-mix(in srgb,var(--fc) 58%,#fff)} }
+:root[data-theme="dark"] .fw-tag{--fct:color-mix(in srgb,var(--fc) 58%,#fff)}
+.fw-tag:hover,.fw-tag.on,.fw-tag.fw-tgt{background:color-mix(in srgb,var(--fc) 16%,var(--surface));box-shadow:0 0 0 1px color-mix(in srgb,var(--fc) 45%,transparent)}
+.fw-tag:focus-visible{outline:2px solid var(--fc);outline-offset:1px}
+.fw-tag .fw-tln{font-style:normal;font-weight:500;opacity:.85}
+.fw-back .fw-s.fw-tgt{outline:2px solid var(--fc);outline-offset:1px}
+.fw-mb.fw-tgt{box-shadow:0 0 0 2px var(--fc)}
+body.fw-linking,body.fw-linking *{cursor:alias!important}
+.fw-wire{position:fixed;inset:0;z-index:1250;pointer-events:none;color:var(--ink-3)}
+.fw-wire.ok{color:var(--teal)}
+.fw-wire line{stroke:currentColor;stroke-width:2;stroke-dasharray:5 4} .fw-wire circle{fill:currentColor}
+.pop.fw-qk{width:min(380px,calc(100vw - 16px));padding:4px 0 6px}
+.fw-qk h5{display:flex;align-items:baseline;gap:8px;margin:4px 10px 6px;font:500 13px/1.3 var(--f-d);color:var(--ink);min-width:0}
+.fw-qk h5 .serif{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.fw-qt{flex:none;font:600 9px/1.25 var(--f-m);letter-spacing:.05em;text-transform:uppercase;color:color-mix(in srgb,var(--fc) 82%,var(--ink))}
+.fw-qh{margin:6px 10px 4px;font:600 9.5px/1.2 var(--f-m);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.fw-qk .rd-kinds{padding:0 10px 2px;max-width:none}
+.fw-qline{display:flex;align-items:center;gap:8px;margin:6px 10px 0;font:13px var(--f-d)} .fw-qline .fw-qh{margin:0}
+.fw-qlinks{display:flex;flex-direction:column;gap:2px;padding:0 6px}
+.fw-qlink{display:flex;align-items:baseline;gap:8px;padding:3px 6px;border:0;border-radius:6px;background:transparent;text-align:left;cursor:pointer;font:12px var(--f-d);color:var(--ink-2);min-width:0}
+.fw-qlink b{flex:none;color:var(--fc);font-weight:600} .fw-qlink .serif{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fw-qlink:hover{background:var(--hover,color-mix(in srgb,var(--ink) 6%,transparent))}
+.fw-qfoot{display:flex;align-items:center;gap:8px;margin:8px 10px 0;padding-top:6px;border-top:1px solid var(--rule);font:11px var(--f-d);color:var(--ink-3)}
+.fw-qk h5,.fw-qk h5 .serif{text-transform:none;letter-spacing:0} .fw-qk h5 .serif{font:italic 400 13px/1.3 var(--f-b);color:var(--ink-2)}
+.fw-sh{flex-wrap:wrap;row-gap:4px} .fw-sh>b,.fw-sh>span{white-space:nowrap}
+/* V4.55: merging two sentences; what a merged component has to correct */
+.fw-seam{position:absolute;transform:translate(-50%,3px);display:inline-grid;place-items:center;width:16px;height:16px;padding:0;border:1px solid var(--rule-2);border-radius:50%;background:var(--surface);color:var(--ink-3);cursor:pointer;opacity:.55;transition:opacity .12s,color .12s,border-color .12s,transform .12s}
+.fw-seam .fw-ic{display:inline-flex}
+.fw-seam:hover,.fw-seam:focus-visible{opacity:1;color:var(--ink);border-color:var(--ink-3);transform:translate(-50%,3px) scale(1.12)}
+.fw-seam.on{opacity:.9;color:var(--teal);border-color:color-mix(in srgb,var(--teal) 55%,transparent)}
+.fw-tag.flagged{box-shadow:0 0 0 1px color-mix(in srgb,var(--warn,#b7791f) 70%,transparent)}
+.fw-tag .fw-flag{display:inline-flex;align-items:center;gap:3px;font-style:normal;color:var(--warn,#b7791f)}
+.fw-mb.flag{border-color:var(--warn,#b7791f);border-left-color:var(--fc)} .fw-mb.flag .fw-mbt{color:var(--warn,#b7791f)}
+.fw-flagline{display:flex;align-items:flex-start;gap:6px;margin:0 0 10px;padding:6px 8px;border:1px solid color-mix(in srgb,var(--warn,#b7791f) 45%,transparent);border-radius:8px;background:color-mix(in srgb,var(--warn,#b7791f) 8%,transparent);font:12px/1.4 var(--f-d);color:var(--ink-2)}
+.fw-flagline .fw-ic{color:var(--warn,#b7791f);flex:none;margin-top:1px}
+.fw-qflag{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 10px 2px;padding:5px 8px;border-radius:7px;background:color-mix(in srgb,var(--warn,#b7791f) 10%,transparent);font:12px/1.35 var(--f-d);color:var(--ink-2)}
+.fw-qflag>.fw-ic{color:var(--warn,#b7791f)}
+.kpick.fw-qx{border-style:dashed;border-color:var(--kc)}
+.fw-qparts{display:flex;flex-direction:column;gap:3px;padding:0 10px}
+.fw-qpart{display:flex;align-items:center;gap:8px;font:12px var(--f-d);min-width:0} .fw-qpart .serif{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;color:var(--ink-2)}
+.fw-qn{flex:none;width:16px;height:16px;border-radius:50%;display:inline-grid;place-items:center;font:600 9.5px var(--f-m);color:var(--ink-3);border:1px solid var(--rule-2)}
+.fw-qflag>span{flex:1 1 200px;min-width:0} .fw-qflag>.fw-ic{flex:none;align-self:flex-start;margin-top:2px} .fw-tag .fw-flag{margin-left:2px}
+.fw-s.fw-mem>.fw-mk:first-child::after{left:14px}
+/* V4.56: placeholders in the words; the bar; the slash menu */
+.fw-s .fw-phh{background:color-mix(in srgb,var(--fc) 22%,transparent);border-radius:2px}
+.fw-bar{position:sticky;top:0;z-index:4;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px;padding:8px 16px 6px;background:color-mix(in srgb,var(--fw-page) 92%,transparent);backdrop-filter:blur(6px)}
+.fw-barb{font:12px var(--f-d)} .fw-barh{margin-left:8px;font:11.5px var(--f-d);color:var(--ink-3)}
+.fw-slash{min-width:300px} .fw-slash .sm-row b{min-width:84px}
+.fw-pvtools{display:flex;align-items:center;gap:4px;margin:0 0 6px;font:11px var(--f-d);color:var(--ink-3)} .fw-pvtool{padding:1px 7px;border:1px solid var(--rule-2);border-radius:6px;color:var(--ink-2)}
+.fw-slotbar .fw-addany{margin-left:2px}
+@media (max-width:720px){ .fw-barh{display:none} }
