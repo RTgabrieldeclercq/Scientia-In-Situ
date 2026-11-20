@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "f76f1029aba896d5c7dcebb13f95ba68b7ee6027",
-  "subject": "V4.41: Scientia — reading sets: a popup's close puts the paper back in the reader; the open set folds; shelves say where a paper belongs; the reader is kept across a reload; Cited in keeps the reader",
+  "commit": "d01dc9919ba29e3a7a5c0a2d52bba20d10434770",
+  "subject": "V4.42: Scientia — Look and motion: the notebook in B's edge-rail style; capsule rails for both reader sidebars; the mini library as spines or a list",
   "date": "2026-11-19"
  },
- "cut": "f3ff6091c63a00a71e22f8d8db3072bfc7f08a9e",
+ "cut": "0ab8b548898abdc4d4711dec6179aa0475a4e19b",
  "names": [
   "DESKLAB",
   "LABSYNC",

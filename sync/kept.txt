@@ -52,6 +52,8 @@ src/20c-pillcanvas.js	one the pills themselves keep (settings().labPills, lab-mo
 src/31-pills.css	body.f-off-pills .lab-pills{display:none!important}
 src/34-pillcanvas.css	(half-moons at its edges, beads in full screen) and their threads sit above the pills (the lab layer's .lab-pills,
 src/34-pillcanvas.css	.canvas-host > .lab-pills.fan-open{z-index:23}
+src/36-look.css	body:not(.f-off-look) .lab-pill-btn{border:0;background:var(--lk-rail);box-shadow:var(--lk-sh2),inset 0 0 0 1px var(--lk-ring);transition:transform var(--lk-ds) var(--lk-spring),background var(--lk-dh) ease}
+src/36-look.css	body:not(.f-off-look) .lab-pill-insert:not(.open):not(.docked) .lab-pill-btn{background:var(--ink);box-shadow:0 14px 26px -14px rgba(36,33,28,.8)}
 src/99z-pills.js	/** The lab's builds carry lab-mode.js, which runs its own section 11. */
 src/99z-pills.js	app's modules — where lab-mode.js would run — with a LAB of its own (the
 src/99z-pills.js	are lab-mode.js's section 11; the lab's builds run lab-mode.js itself. A
