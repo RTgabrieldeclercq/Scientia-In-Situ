@@ -11,6 +11,11 @@
    • Motion: five curves (glide, spring, rise, pop, hover), their times as
      variables so Movement (Full / Calm / Still) and reduced motion change
      them in one place. Hover changes colour and shadow only.
+   • V4.43 (Gabe: "Don't change the Portfolio, it looks good as it is"): nothing
+     here reaches inside the Portfolio (.pf-root) — its list, rows, buttons,
+     banners, and the page coming in, are as before. The header around it
+     (tabs, search, buttons) and what floats over it (menus, dialogs, toasts)
+     are the app's, and keep the look.
    ========================================================================== */
 :root{
   --lk-card:#F8F5EF; --lk-rail:#FBF9F4; --lk-ring:#DED7C9; --lk-ring-2:#CFC7B7; --lk-hov:#EFEAE0; --lk-shelf:#CFC6B5;
@@ -39,7 +44,8 @@ body{--lk-glide:cubic-bezier(.65,0,.15,1);--lk-spring:cubic-bezier(.2,.9,.25,1.2
 body.lk-calm{--lk-spring:var(--lk-rise);--lk-soft:var(--lk-rise);--lk-pop:var(--lk-rise);--lk-dg:.33s;--lk-ds:.27s;--lk-dr:.2s;--lk-dp:.16s}
 body.lk-still{--lk-dg:0s;--lk-ds:0s;--lk-dr:0s;--lk-dp:0s}
 @media (prefers-reduced-motion:reduce){ body{--lk-dg:0s;--lk-ds:0s;--lk-dr:0s;--lk-dp:0s} }
-@keyframes lk-pop{from{opacity:0;transform:scale(.94) translateY(-4px)}to{opacity:1;transform:none}}
+/* V4.44: a menu comes in short and without overshoot — its rows hardly move, so a quick click lands where it aims (the stage stays still under the pointer) */
+@keyframes lk-pop{from{opacity:0;transform:scale(.98) translateY(-2px)}to{opacity:1;transform:none}}
 @keyframes lk-sheet{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
 @keyframes lk-fade{from{opacity:0}to{opacity:1}}
 @keyframes lk-toast{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
@@ -52,6 +58,7 @@ body.lk-still{--lk-dg:0s;--lk-ds:0s;--lk-dr:0s;--lk-dp:0s}
 /* ---------- the header: a pill for the tab you are on, gliding between tabs; round icon buttons; pill buttons ---------- */
 body:not(.f-off-look) #brand{width:26px;height:26px;border-radius:8px}
 body:not(.f-off-look) #hd .ib{border-radius:50%;min-width:28px;height:28px;transition:background var(--lk-dh) ease,color var(--lk-dh) ease}
+@media (max-width:760px){ body:not(.f-off-look) #hd .ib{min-width:24px;height:24px} }   /* V4.44: on a phone the header row keeps its old width (nothing sticks out at 400 px) */
 body:not(.f-off-look) #search{height:28px;border-radius:999px;border:0;background:var(--surface);box-shadow:inset 0 0 0 1px var(--rule)}
 body:not(.f-off-look) #search kbd{border:0;border-radius:6px;background:var(--paper)}
 body:not(.f-off-look) :is(#newnote,#newexp){height:28px;border-radius:999px;transition:transform var(--lk-ds) var(--lk-spring),background var(--lk-dh) ease,filter var(--lk-dh) ease}
@@ -60,18 +67,18 @@ body:not(.f-off-look) #tabs .tab{z-index:1;border-radius:999px;padding:5px 11px 
 body:not(.f-off-look) #tabs .tink{z-index:0;top:1px;bottom:3px;height:auto;border-radius:999px;background:var(--lk-rail);box-shadow:var(--lk-sh1),inset 0 0 0 1px var(--lk-ring);transition:transform .45s var(--lk-soft),width .45s var(--lk-soft)}
 body.lk-still:not(.f-off-look) #tabs .tink{transition:none}
 /* a page you go to fades in and rises 6 px (only when you navigate: 20d sets #view.lk-nav for a moment) */
-body:not(.f-off-look) #view.lk-nav > *{animation:lk-rise .28s var(--lk-rise) both}
+body:not(.f-off-look) #view.lk-nav > :not(.pf-root){animation:lk-rise .28s var(--lk-rise) both}
 body.lk-still:not(.f-off-look) #view.lk-nav > *{animation:none}
 
 /* ---------- buttons and fields ---------- */
-body:not(.f-off-look) .btn{border-radius:8px;transition:background var(--lk-dh) ease,border-color var(--lk-dh) ease,color var(--lk-dh) ease,transform var(--lk-dp) var(--lk-pop)}
-body:not(.f-off-look) .btn:active{transform:scale(.97)}
-body:not(.f-off-look) .btn.sm{border-radius:7px}
-body:not(.f-off-look) .btn.xs{border-radius:6px}
-body:not(.f-off-look) .inp{border-radius:9px}
+body:not(.f-off-look) .btn:not(.pf-root *){border-radius:8px;transition:background var(--lk-dh) ease,border-color var(--lk-dh) ease,color var(--lk-dh) ease,transform var(--lk-dp) var(--lk-pop)}
+body:not(.f-off-look) .btn:not(.pf-root *):active{transform:scale(.97)}
+body:not(.f-off-look) .btn.sm:not(.pf-root *){border-radius:7px}
+body:not(.f-off-look) .btn.xs:not(.pf-root *){border-radius:6px}
+body:not(.f-off-look) .inp:not(.pf-root *){border-radius:9px}
 
 /* ---------- menus and popovers: the rail surface, popping from where they open ---------- */
-body:not(.f-off-look) .pop{border:0;border-radius:14px;background:var(--lk-rail);box-shadow:var(--lk-sh2),inset 0 0 0 1px var(--lk-ring);transform-origin:16px 0;animation:lk-pop var(--lk-dp) var(--lk-pop) both}
+body:not(.f-off-look) .pop{border:0;border-radius:14px;background:var(--lk-rail);box-shadow:var(--lk-sh2),inset 0 0 0 1px var(--lk-ring);transform-origin:16px 0;animation:lk-pop calc(var(--lk-dp) * .6) var(--lk-rise) both}
 body:not(.f-off-look) .pop :is(.opt,.op){border-radius:9px;transition:background var(--lk-dh) ease}
 body:not(.f-off-look) .pop :is(.opt,.op):hover,body:not(.f-off-look) .pop .opt.on{background:var(--lk-hov)}
 body:not(.f-off-look) .pop .sep{background:var(--lk-ring);margin:5px 6px}
@@ -101,14 +108,9 @@ body:not(.f-off-look) .dt-r{position:relative;border-radius:8px}
 body:not(.f-off-look) .dt-r:hover{background:var(--lk-hov)}
 body:not(.f-off-look) .dt-tg{transition:transform .3s var(--lk-rise)}
 
-/* ---------- the Portfolio: the project list as a docked panel, the open project lifted on the rail surface ---------- */
-body:not(.f-off-look) .pf-list{background:var(--surface)}
-body:not(.f-off-look) .pf-row{border-radius:12px}
-body:not(.f-off-look) .pf-row:hover{background:var(--lk-rail)}
-body:not(.f-off-look) .pf-ind{border-radius:12px;background:var(--lk-rail);box-shadow:var(--lk-sh1),inset 0 0 0 1px var(--lk-ring);transition:transform .45s var(--lk-soft),height .45s var(--lk-soft)}
-body:not(.f-off-look) .tb-ban{border-radius:14px}
-body:not(.f-off-look) .tb-ban[data-place="page"]{border-radius:16px}
-body:not(.f-off-look) .pf-gl.pf-box{border-radius:9px}
+/* ---------- the Portfolio keeps its own look (V4.43); a project's page and its banner take the new one ---------- */
+body:not(.f-off-look) .tb-ban:not(.pf-root *){border-radius:14px}
+body:not(.f-off-look) .tb-ban[data-place="page"]:not(.pf-root *){border-radius:16px}
 
 /* ---------- Settings: the live preview on the rail surface ---------- */
 body:not(.f-off-look) .fp-pv{border-radius:14px}
@@ -190,25 +192,64 @@ body:not(.f-off-look) .rs-lib.lk-book .rs-shelf .rs-paper.in > .rs-pr::after{dis
 body:not(.f-off-look) .rs-lib.lk-book.open .rs-shelf .rs-paper{animation:lk-spine .5s var(--lk-soft) both;animation-delay:var(--d,0ms)}
 
 /* ---------- popups: a rounded sheet floating a little above the note ---------- */
-body:not(.f-off-look) .rp-pop{border-radius:16px;background:var(--lk-rail);box-shadow:var(--lk-sh3),inset 0 0 0 1px var(--lk-ring)}
+body:not(.f-off-look) .rp-pop{border-radius:12px;background:var(--lk-rail);box-shadow:var(--lk-sh3),inset 0 0 0 1px var(--lk-ring)}
 body:not(.f-off-look) .rp-body{border-color:var(--lk-ring)}
 
 /* ---------- Freewrite: its bar's buttons in pill groups ---------- */
 body:not(.f-off-look) .fw-top .btn{border-radius:9px}
-@keyframes lk-up{from{transform:translateY(100%)}to{transform:none}}
-body:not(.f-off-look) .fw:not(.beside){animation:lk-up var(--lk-dg) var(--lk-glide) both}
-body.lk-still:not(.f-off-look) .fw{animation:none}
+/* V4.44: the page itself is in place at once (it covers the app from the first frame); its bar, words and preview rise into it */
+@keyframes lk-up{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+body:not(.f-off-look) .fw:not(.beside) > :is(.fw-top,.fw-main,.fw-foot){animation:lk-up var(--lk-dr) var(--lk-rise) both}
+body:not(.f-off-look) .fw:not(.beside) > .fw-main{animation-delay:40ms}
+body:not(.f-off-look) .fw:not(.beside) > .fw-foot{animation-delay:80ms}
+body.lk-still:not(.f-off-look) .fw > :is(.fw-top,.fw-main,.fw-foot){animation:none}
 
 /* ---------- the pills: round capsules of the rail surface; a wheel's buttons spring out; the docked row is a capsule ---------- */
 body:not(.f-off-look) .lab-pill-btn{border:0;background:var(--lk-rail);box-shadow:var(--lk-sh2),inset 0 0 0 1px var(--lk-ring);transition:transform var(--lk-ds) var(--lk-spring),background var(--lk-dh) ease}
 body:not(.f-off-look) .lab-pill-insert:not(.open):not(.docked) .lab-pill-btn{background:var(--ink);box-shadow:0 14px 26px -14px rgba(36,33,28,.8)}
 body:not(.f-off-look) .lab-dock-rail{border:0;background:var(--lk-rail);box-shadow:var(--lk-sh2),inset 0 0 0 1px var(--lk-ring)}
 
+/* ---------- V4.44 — the rest of the boards ---------- */
+/* highlights by page on a thread (20d's LOOK.thread: a .lk-pn marker before each page's first highlight; .lk-thr on their list) */
+.lk-pn{display:none}
+body:not(.f-off-look) .lk-thr{position:relative;padding-left:18px}
+body:not(.f-off-look) .lk-thr::before{content:'';position:absolute;left:17px;top:14px;bottom:10px;width:2px;border-radius:1px;background:var(--lk-ring);pointer-events:none}
+body:not(.f-off-look) .lk-pn{display:block;position:relative;margin:14px 10px 2px;font:500 10.5px/1.2 var(--f-m);letter-spacing:.03em;color:var(--ink-3)}
+body:not(.f-off-look) .lk-pn::before{content:'';position:absolute;left:-16px;top:0;width:12px;height:12px;border-radius:50%;background:var(--surface);box-shadow:inset 0 0 0 2px var(--ink-4)}
+body:not(.f-off-look) .lk-thr > .lk-pn:first-child{margin-top:8px}
+/* the beside ↔ full screen glide: while it runs, the reader's column is over the header and the pills */
+body:not(.f-off-look) .rd-wrap:has(.embed-max.lk-gliding){z-index:1200}
+body:not(.f-off-look) .embed-max.lk-gliding{box-shadow:var(--lk-sh3)}
+/* popups flying: no handles or buttons on the way */
+body:not(.f-off-look) .rp-pop.lk-flying :is(.rp-x,.rp-ui,.rp-mv,.rp-rz,.rp-rim){opacity:0!important;pointer-events:none!important}
+/* the pills' wheels (CSS only — lab-pills is never edited): rail-surface buttons that spring out one after another, and fold back quickly */
+body:not(.f-off-look) .lab-pill .lab-fan-item:not(.sel):not(.lab-sub){border-color:transparent;background:var(--lk-rail)}
+body:not(.f-off-look) .lab-pill .lab-fan-item:not(.sel){box-shadow:var(--lk-sh2),inset 0 0 0 1px var(--lk-ring)}
+body:not(.f-off-look) .lab-pill .lab-fan-item:not(.sel):not(.lab-sub):hover{background:var(--lk-hov)}
+body:not(.f-off-look) .lab-pill:not(.docked) .lab-fan-item{transition:transform calc(var(--lk-dp) * .7) ease-in,opacity calc(var(--lk-dp) * .6) ease-in,background var(--lk-dh) ease}
+body:not(.f-off-look) .lab-pill.fanned:not(.docked):not(.lbl-open) .lab-fan-item{transition:transform var(--lk-ds) var(--lk-spring) min(calc(var(--d,0ms) * 3),320ms),opacity calc(var(--lk-ds) * .45) ease min(calc(var(--d,0ms) * 3),320ms),background var(--lk-dh) ease}
+body:not(.f-off-look) .lab-pill-btn:active{transform:scale(.94)}
+/* Freewrite's Convert: the boxes of the note it will make come in one after another, their links after them */
+@keyframes lk-pip{from{opacity:0;transform:translateY(10px) scale(.9)}to{opacity:1;transform:none}}
+body:not(.f-off-look) .fw-side.lk-conv .fw-mb{animation:lk-pip var(--lk-ds) var(--lk-soft) both;animation-delay:calc(var(--lk-i,0) * 70ms)}
+body:not(.f-off-look) .fw-side.lk-conv .fw-msvg{animation:lk-fade var(--lk-dr) ease both;animation-delay:calc(var(--lk-n,0) * 70ms)}
+/* the data tree: a folder opened, its files drop in one after another */
+@keyframes lk-drop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+body:not(.f-off-look) .dt-r.lk-drop{animation:lk-drop var(--lk-dr) var(--lk-rise) both;animation-delay:calc(var(--lk-di,0) * 45ms)}
+/* Settings: the sections as a docked panel, the one you are on lifted on the rail surface */
+body:not(.f-off-look) .st-side{padding:8px;border-radius:16px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--rule)}
+body:not(.f-off-look) .st-side button{border-radius:10px;padding:8px 10px;transition:background var(--lk-dh) ease,color var(--lk-dh) ease,box-shadow var(--lk-dh) ease}
+body:not(.f-off-look) .st-side button:hover{background:var(--lk-rail)}
+body:not(.f-off-look) .st-side button[aria-current="true"]{background:var(--lk-rail);box-shadow:var(--lk-sh1),inset 0 0 0 1px var(--lk-ring)}
+body:not(.f-off-look) .st-sgh{padding:12px 10px 6px}
+body:not(.f-off-look) .st-search{border-color:transparent;box-shadow:inset 0 0 0 1px var(--rule)}
+body:not(.f-off-look) .fp-head .ft-gl{border-radius:13px;background:var(--lk-rail);box-shadow:inset 0 0 0 1px var(--lk-ring)}
+
 /* ---------- Still and reduced motion: nothing slides or springs ---------- */
-body.lk-still:not(.f-off-look) :is(.pop,.modal,.toast,.ovl,.lk-rail,.rs-grip.lk-grip,.rs-lib .rs-paper){animation:none!important}
+body.lk-still:not(.f-off-look) :is(.pop,.modal,.toast,.ovl,.lk-rail,.rs-grip.lk-grip,.rs-lib .rs-paper,.fw > :is(.fw-top,.fw-main,.fw-foot),.fw-mb,.fw-msvg,.dt-r){animation:none!important}
 @media (prefers-reduced-motion:reduce){
-  body:not(.f-off-look) :is(.pop,.modal,.toast,.lk-rail,.rs-grip.lk-grip,.rs-lib .rs-paper,#view.lk-nav > *){animation:lk-fade .12s ease both!important}
-  body:not(.f-off-look) :is(.sf-col,.rs-lib,#tabs .tink,.pf-ind,.rs-lib .rs-paper){transition:none!important}
+  body:not(.f-off-look) :is(.pop,.modal,.toast,.lk-rail,.rs-grip.lk-grip,.rs-lib .rs-paper,#view.lk-nav > :not(.pf-root),.fw > :is(.fw-top,.fw-main,.fw-foot),.fw-side.lk-conv .fw-mb,.dt-r.lk-drop){animation:lk-fade .12s ease both!important}
+  body:not(.f-off-look) :is(.sf-col,.rs-lib,#tabs .tink,.rs-lib .rs-paper,.lab-pill .lab-fan-item){transition:none!important}
 }
 
 /* ---------- the live preview (Settings → Look and motion) ---------- */

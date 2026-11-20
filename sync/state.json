@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "d01dc9919ba29e3a7a5c0a2d52bba20d10434770",
-  "subject": "V4.42: Scientia — Look and motion: the notebook in B's edge-rail style; capsule rails for both reader sidebars; the mini library as spines or a list",
+  "commit": "87deb5fcdd83e6d537eb3d45e34896c79ff12748",
+  "subject": "V4.45: Scientia — demonstrations: Look and motion (new), Fold the side panel (again)",
   "date": "2026-11-19"
  },
- "cut": "0ab8b548898abdc4d4711dec6179aa0475a4e19b",
+ "cut": "b2534572c370c7aa686bef82cce26fb53c3cd657",
  "names": [
   "DESKLAB",
   "LABSYNC",

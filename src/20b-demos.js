@@ -340,13 +340,14 @@ FEAT.demo("rtabs", { by: "", at: "2026-11-18", use: "Keep several papers and pag
     [16.5,"Add the saved report page as a third tab, then close one"]] });
 /* /demo:rtabs */
 /* demo:sidefold */
-FEAT.demo("sidefold", { by: "", at: "2026-11-18", use: "Give the page the whole width while you read, and bring your highlights back with one click.",
-  video: "demos/sidefold.mp4", poster: "demos/sidefold.jpg", v: "1806e4dd", w: 1280, h: 800, dur: 23.6, kb: 546,
+FEAT.demo("sidefold", { by: "", at: "2026-11-20", use: "Give the page the whole width while you read, and bring your highlights back with one click.",
+  video: "demos/sidefold.mp4", poster: "demos/sidefold.jpg", v: "bac72554", w: 1280, h: 800, dur: 35.2, kb: 837,
   steps: [
-    [0,"Maximise the paper: the panel of highlights and notes sits beside it"],
-    [4.1,"Fold the panel with ›: a thin strip with its count written down it"],
-    [9.2,"Click the strip: the panel opens again"],
-    [13.7,"Fold it again, close the paper and open it in the Library’s reader: the panel is folded there too"]] });
+    [1.1,"Maximise the paper: the panel of highlights and notes sits beside it"],
+    [5.4,"Fold the panel with ›: it glides shut, and a small capsule of its highlight colours stays at the edge"],
+    [12.5,"Click a colour on the capsule: the panel opens at that highlight"],
+    [16.9,"Fold it again, close the paper and open it in the Library’s reader: folded there too"],
+    [25.6,"Back in the note, read the paper beside it: there too the panel waits folded at the edge (V4.40)"]] });
 /* /demo:sidefold */
 /* demo:slash */
 FEAT.demo("slash", { by: "", at: "2026-11-18", use: "Type / in the text to act on what you just wrote or to insert anything, without leaving the keyboard.",
@@ -593,3 +594,13 @@ FEAT.demo("tasks", { by: "", at: "2026-11-18", use: "Everything you have to do, 
     [18.4,"Click a task to open its note, and add a subtask"],
     [25.7,"Tick a task done in the list: it is logged in the day note, and listed under Done lately"]] });
 /* /demo:tasks */
+/* demo:look */
+FEAT.demo("look", { by: "", at: "2026-11-20", use: "The notebook in the edge-rail look: panels glide, folded panels become small capsules, and papers sit on a shelf.",
+  video: "demos/look.mp4", poster: "demos/look.jpg", v: "a079ba2d", w: 1280, h: 800, dur: 40.9, kb: 1125,
+  steps: [
+    [1.1,"Read the paper beside the note: its highlights fold into a capsule of their colours — yellow 2, blue 1, pink 1"],
+    [6.7,"Click yellow: the panel glides open at the first yellow highlight; › folds it again"],
+    [14,"Full screen, then the capsule at the left: the mini library slides in, its papers as spines on the project’s shelf"],
+    [22.1,"List, then back to spines — the mini library remembers which on this computer"],
+    [31.1,"Save the note’s structure as a template from its ⋯ menu: the menu pops from where you click, the dialog rises, and a toast springs up"]] });
+/* /demo:look */
