@@ -1,0 +1,25 @@
+/* ---------- 14a · Captures on the Today tab: cards, each with a footer holding Move to… ---------- */
+.tcap{margin:2px 0 14px}
+.tcp-h{display:flex;align-items:baseline;gap:8px;padding:0 2px 7px}
+.tcp-n{font:650 12px/1.2 var(--f-d);color:var(--ink-2)}
+.tcp-k{margin-left:auto;font:500 10px/1 var(--f-m);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-4)}
+.tcp-list{display:grid;gap:8px}
+.tcp-card{border-radius:12px;background:var(--lk-card);box-shadow:var(--lk-sh1),inset 0 0 0 1px var(--lk-ring);overflow:hidden;transition:box-shadow .2s ease}
+.tcp-card:hover,.tcp-card:focus-within{box-shadow:var(--lk-lift),inset 0 0 0 1px var(--lk-ring-2)}
+.tcp-top{display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:9px 12px 0}
+.tcp-t{font:500 11px/1 var(--f-m);color:var(--ink-4)}
+.tcp-d{font:500 10px/16px var(--f-m);padding:0 7px;border-radius:9px;background:color-mix(in srgb,var(--ink) 7%,transparent);color:var(--ink-3)}
+.tcp-x{padding:5px 12px 10px;font:400 14px/1.45 var(--f-s,Georgia,serif);color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere;max-height:9.5em;overflow:hidden;cursor:pointer;outline:0}
+.tcp-x:focus-visible{box-shadow:inset 0 0 0 2px var(--teal)}
+.tcp-foot{display:flex;align-items:center;padding:5px 8px;border-top:1px solid var(--lk-ring);background:color-mix(in srgb,var(--ink) 3%,transparent)}
+.tcp-mv{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px 0 9px;border:0;border-radius:8px;background:transparent;color:var(--ink-2);font:600 12px/1 var(--f-d);cursor:pointer;transition:background .15s ease,color .15s ease}
+.tcp-mv:hover{background:color-mix(in srgb,var(--teal) 14%,transparent);color:var(--ink)}
+.tcp-mv:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
+.tcp-i{display:inline-flex}
+.tcp-i svg{display:block}
+.tcp-none{padding:12px 14px;border-radius:12px;box-shadow:inset 0 0 0 1px var(--lk-ring);font:400 12.5px/1.45 var(--f-d);color:var(--ink-3)}
+.tcp-gone{display:grid;gap:3px;margin-top:9px;padding:0 4px;font:400 11.5px/1.4 var(--f-d);color:var(--ink-3)}
+.tcp-gt{color:var(--ink-2)}
+.tcp-g a{color:var(--teal);cursor:pointer}
+.tcp-u{color:var(--ink-4)}
+body.f-off-todaycaps .tcap{display:none}

@@ -73,12 +73,12 @@ const Search = {
       const txt = (b.label ? b.label + ' — ' : '') + b.body.text, kw = score(txt); if (!kw) continue;
       const d = M.doc(b.docId); if (!d) continue;
       const ctx = [...IX.kindsOf(b).map(k => kchip(k)), ...IX.wiresOf(b.id).slice(0, 3).map(w => { const o = M.block(w.from === b.id ? w.to : w.from); return h('span.wchip', (w.from === b.id ? '→ ' : '← ') + (REL[w.rel] || {}).label + ' · ' + snippet(M.blockName(o), 26)); }), ...[...(IX.blockTerms.get(b.id) || [])].map(M.term).filter(Boolean).map(t => h('span.pill', t.label))];
-      out.push({ kind: 'component', old: b.status === 'superseded', kw, deg: IX.degree(b.id) + IX.itemsOf(b.id).length, t: +new Date(b.modified || b.created), html: hl(txt), path: M.docPath(d) + ' › ' + M.blockName(b), badge: b.status === 'superseded' ? 'superseded' : 'component', ctx, go: () => App.openBlock(b.id) });
+      out.push({ kind: 'component', old: b.status === 'superseded', kw, deg: IX.degree(b.id) + IX.itemsOf(b.id).length, t: +new Date(b.modified || b.created), html: hl(txt), path: M.docPath(d) + ' › ' + M.blockName(b), badge: b.status === 'superseded' ? 'superseded' : 'component', ctx, go: () => App.openComponent(b.id) });
     }
     if (F === 'all' || F === 'structure') for (const it of DB.all('items')) {
       const kw = score(it.text); if (!kw) continue; const ob = M.block(it.originBlockId);
       out.push({ kind: 'structure', old: !!(ob && ob.status === 'superseded'), kw, deg: IX.degree(it.id) + (IX.refsOfItem.get(it.id) || []).length * 2 + (IX.resolutions.get(it.id) || []).length, t: +new Date(it.created), html: hl(it.text), path: M.docPath(M.doc(it.originDocId)), badge: KIND[it.kind].label + (IX.status(it) ? ' · ' + IX.status(it) : ''),
-        ctx: [kchip(it.kind), ...((IX.refsOfItem.get(it.id) || []).length ? [h('span.pill.teal', 'in ' + plural((IX.refsOfItem.get(it.id) || []).length + 1, 'note'))] : [])], go: () => App.openBlock(it.originBlockId) });
+        ctx: [kchip(it.kind), ...((IX.refsOfItem.get(it.id) || []).length ? [h('span.pill.teal', 'in ' + plural((IX.refsOfItem.get(it.id) || []).length + 1, 'note'))] : [])], go: () => App.openComponent(it.originBlockId) });
     }
     if (F === 'all' || F === 'note') for (const d of DB.all('documents')) { const kw = score(d.title + ' ' + d.synthesis.text); if (kw) out.push({ kind: 'note', kw, deg: d.blockIds.length, t: +new Date(d.modified), html: hl(d.title), path: M.docPath(d), badge: prof(d.type).label, go: () => App.go('#/doc/' + d.id) }); }
     if (F === 'all' || F === 'term') for (const t of DB.all('terms')) { const kw = score(t.label); if (kw) out.push({ kind: 'term', kw: kw + 2, deg: (IX.termOcc.get(t.id) || []).length, t: +new Date(t.created), html: '<span class="term-demo">' + hl(t.label) + '</span>', path: (M.project(t.projectId) || {}).name + ' · term', badge: 'term', go: () => App.go('#/lens/' + t.id) }); }

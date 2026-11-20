@@ -144,3 +144,7 @@ body.f-off-libsmart .lg-star{display:none}
 .pv-lm .lm-board{min-height:90px}
 .pv-lgs{position:static;max-height:none}
 .pv-lst{display:flex;gap:22px;align-items:flex-end} .pv-lst div{display:grid;gap:6px;justify-items:center}
+/* WIP doi-ris: the tick while selecting for .ris export, and the sample record in Features → Library */
+.lib-pick{width:16px;height:16px;margin:0 4px 0 0;accent-color:var(--teal);cursor:pointer;flex:none}
+.pv-ris{margin-top:10px}.pv-ris .row{gap:6px;margin:6px 0}
+.pv-ris-r{margin:0;padding:8px 10px;border-radius:10px;background:var(--lk-card,var(--surface));box-shadow:inset 0 0 0 1px var(--lk-ring,var(--rule-2));font:11px/1.45 var(--f-m);color:var(--ink-2);overflow:auto;white-space:pre}

@@ -77,10 +77,10 @@ const DocView = {
   focusPending() {
     const f = this.pendingFocus; if (!f) return; this.pendingFocus = null;
     requestAnimationFrame(() => {
-      let id = f.focus || f.reveal || f.id, el = id && $(`.box[data-id="${id}"]`, this.paper.world);
+      let id = f.focus || f.reveal || f.id, el = id && ($(`.box[data-id="${id}"]`, this.paper.world) || (REGION.isRg(id) ? $(`:scope > .region[data-rg="${id}"]`, this.paper.world) : null));   // V4.86: a region lands too
       if (!el && id && M.block(id) && M.block(id).status === 'superseded') { const g = M.block(id), live = DocView.anchorOf(g); if (live && !this.openGhosts.has(live)) { this.openGhosts.add(live); this.pendingFocus = { reveal: live }; this.update(this.docId); return; } id = live; el = live && $(`.box[data-id="${live}"]`, this.paper.world); }
       if (!el) return;
-      this.select(id); this.reveal(id);
+      if (!REGION.isRg(id)) this.select(id); f.reveal ? this.landOn(id, !!f.arrive) : this.reveal(id);
       if (f.reveal) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
       if (f.focus || f.id) { const ed = $('.ed', el); if (ed && ed.contentEditable === 'true') { ed.focus({ preventScroll: true }); ED.setCaret(ed, f.pos != null ? f.pos : ED.read(ed, []).text.length); } }
     });
@@ -261,7 +261,8 @@ const DocView = {
     ctxMenu(e.clientX, e.clientY + 10, [{ head: `“${snippet(A, 24)}” ${(REL[x.rel] || REL.related).verb} “${snippet(B, 24)}”` },
       ...RELATIONS.filter(r => r.id !== x.rel).map(r => ({ label: 'Make it: ' + r.label, run: () => M.setWire(x, { rel: r.id, directed: r.dir }) })),
       { label: 'Make it: your own words…', run: async () => { const v = customRel(await askText('Name this connection', 'Connection', REL[x.rel] && REL[x.rel].custom ? REL[x.rel].label : '')); if (v) M.setWire(x, { rel: v, directed: true }); } }, 'sep',
-      { label: '⇄ Reverse direction', run: () => M.setWire(x, { from: x.to, to: x.from }) },
+      ...(typeof STEPLINK !== 'undefined' ? STEPLINK.menuItems(x, this) : []),   // V4.68: change what either end connects to; move it to another step (13zpb)
+      { label: '⇄ Reverse direction', run: () => M.setWire(x, { from: x.to, to: x.from, fromCell: x.toCell, toCell: x.fromCell }) },
       { label: x.directed ? 'Make undirected' : 'Make directed', run: () => M.setWire(x, { directed: !x.directed }) },
       { label: 'Remove connection', danger: true, run: () => M.unwire(x.id) }]);
     setTimeout(() => { this.selWire = null; }, 0);
@@ -330,6 +331,16 @@ const DocView = {
   /* ---------------- selection, layout helpers ---------------- */
   select(id, quiet) {
     this.sel = id; $$('.box.sel', this.paper && this.paper.world).forEach(x => x.classList.toggle('sel', x.dataset.id === id)); if (id) { const el = $(`.box[data-id="${id}"]`, this.paper.world); el && el.classList.add('sel'); }
+  },
+  /** V4.67: the one way the canvas arrives at a component that was asked for (Gabe: "centers the canvas view around it in 50% zoom. This should become the
+      standard for every 'click to navigate to a component' workflow"). Centres it at the zoom set in Settings → Open a component (50% unless changed); `arrive`:
+      a note just opened takes the view at once, a note already open glides. Off, or on a phone, it falls back to reveal (move only if it is off screen). */
+  landOn(id, arrive) {
+    const r = this.rectOf(id); if (!r || !this.paper) return;
+    if (!FEAT.on('opencomp')) return this.reveal(id);
+    const P = this.paper, want = FEAT.tune('opencomp', 'zoom'), z = want === 'keep' ? P.view.z : clamp((+want || 50) / 100, P.o.minZ, P.o.maxZ), pr = P.rect();
+    const to = { z, x: pr.width / 2 - (r.x + r.w / 2) * z, y: pr.height / 2 - (r.y + Math.min(r.h, 520) / 2) * z };
+    if (arrive) { P.stop(); Object.assign(P.view, to); P.apply(); } else P.animateView(to);
   },
   reveal(id) { const r = this.rectOf(id); if (!r) return; const P = this.paper, s = P.toScreen(r.x, r.y), pr = P.rect(); const inView = s.x > pr.left + 20 && s.y > pr.top + 20 && s.x + r.w * P.view.z < pr.right - 20 && s.y + Math.min(r.h, 300) * P.view.z < pr.bottom - 20;
     if (!inView) P.centerOn(r.x + r.w / 2, r.y + Math.min(r.h, 300) / 2, Math.max(P.view.z, .8)); },

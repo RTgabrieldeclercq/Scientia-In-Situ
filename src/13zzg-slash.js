@@ -89,7 +89,7 @@ const SLASH = {
   people(d) {
     const rows = []; M.liveBlocks(d.id).forEach(b => (b.body && b.body.marks || []).forEach(m => { if (m.type === 'person') rows.push({ name: m.name, uid: m.uid, b }); }));
     const by = {}; rows.forEach(r => { (by[r.name] = by[r.name] || { name: r.name, uid: r.uid, in: [] }).in.push(r.b); });
-    modal({ title: 'People mentioned · ' + d.title, actions: [{ label: 'Close' }], body: h('div.list', Object.values(by).length ? Object.values(by).sort((a, b) => a.name.localeCompare(b.name)).map(p => h('div.li', h('span.mn', '@' + p.name), h('span.t', plural(p.in.length, 'mention'), h('span.s', p.in.map(b => M.blockName(b)).join(' · '))), h('button.btn.xs', { on: { click: () => App.openBlock(p.in[0].id) } }, 'Go'))) : h('div.li.muted', 'No one is named in this note yet — type @ in a component.')) });
+    modal({ title: 'People mentioned · ' + d.title, actions: [{ label: 'Close' }], body: h('div.list', Object.values(by).length ? Object.values(by).sort((a, b) => a.name.localeCompare(b.name)).map(p => h('div.li', h('span.mn', '@' + p.name), h('span.t', plural(p.in.length, 'mention'), h('span.s', p.in.map(b => M.blockName(b)).join(' · '))), h('button.btn.xs', { on: { click: () => App.openComponent(p.in[0].id) } }, 'Go'))) : h('div.li.muted', 'No one is named in this note yet — type @ in a component.')) });
   },
 };
 {

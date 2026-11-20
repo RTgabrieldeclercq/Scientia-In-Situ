@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "be5da74a0e36075154787746594bdf82a0181e9c",
-  "subject": "V4.66: Scientia — terms in notes: three readable looks (A · Quiet underline by default, B · Soft tag, C · Ghost until you look) and one card, the Ledger with a timeline of every note down its left",
+  "commit": "985bf628e7ddec059f9045891075fc6db637f593",
+  "subject": "V4.89: Scientia — Shift+click a component and the canvas zooms onto it — in every build, with the mouse or the pen; Shift+drag still moves it by the grid",
   "date": "2026-11-20"
  },
- "cut": "fcb9c93edd01cf9a56fa7e84ba8b72b6a79b40b4",
+ "cut": "13720c33398241d57643c49430ec8792386db063",
  "names": [
   "DESKLAB",
   "LABSYNC",

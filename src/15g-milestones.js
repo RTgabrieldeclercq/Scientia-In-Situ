@@ -79,7 +79,7 @@ const MILE = {
       ro ? null : h('div.row', { style: { marginTop: '8px' } }, h('span.tiny.muted', { style: { flex: 1 } }, 'Its completeness is the share of its deliverables delivered. Re-scoping makes a new version, so past weeks keep their numbers.'), h('button.btn.xs', { on: { click: () => MILE.dialog(a.themeId, a) } }, 'Re-scope…')));
   },
   row(a, m, ro, w) {
-    const met = MILE.met(m), T = MILE.type(m), go = id => App.openBlock ? App.openBlock(id) : null;
+    const met = MILE.met(m), T = MILE.type(m), go = id => App.openComponent(id);
     const tick = h('span.mi-tick' + (met ? '.on' : ''), { title: met ? 'Delivered' + (m.metAt ? ' ' + fmtDay(m.metAt) : '') : 'Not delivered yet', 'aria-label': met ? 'Delivered' : 'Not delivered' }, met ? '✓' : '');
     let what, act = null;
     if (T === 'synthesis') {

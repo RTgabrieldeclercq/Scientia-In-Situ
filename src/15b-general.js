@@ -20,11 +20,9 @@ const GENERAL = {
   touches(d) { const ps = new Map(); GENERAL.linked(d).forEach(x => { if (x.projectId && M.project(x.projectId)) { const p = M.project(x.projectId); ps.set(p.id, (ps.get(p.id) || 0) + 1); } }); return [...ps].map(([id, n]) => ({ p: M.project(id), n })).sort((a, b) => b.n - a.n); },
   /** ⋯ → Project & theme… */
   move(d) {
-    const rows = [{ id: '', label: 'No project (general)', sub: 'Outside every project' }];
-    DB.all('projects').forEach(p => { rows.push({ id: p.id, theme: null, label: p.name, sub: 'project-wide' }); DB.where('themes', t => t.projectId === p.id && t.status === 'active').forEach(t => rows.push({ id: p.id, theme: t.id, label: p.name + ' › ' + t.name, sub: 'theme' })); });
-    const m = modal({ title: 'Move “' + snippet(d.title, 40) + '”', actions: [{ label: 'Cancel' }], body: optionPicker({ placeholder: 'Project or theme…', items: q => rows.filter(r => !q || r.label.toLowerCase().includes(q)),
-      render: r => h('div', h('b', r.label), h('span.s', r.sub + ((d.projectId || '') === r.id && (d.themeId || null) === (r.theme || null) ? ' · here now' : ''))),
-      onPick: r => { m.close(); const cur = M.doc(d.id); cur.projectId = r.id || null; cur.themeId = r.id && prof(cur.type).scope === 'theme' ? r.theme || null : null; M.touchDoc(cur); DB.put('documents', cur); changed(); toast('Moved to ' + (r.id ? r.label : 'General (no project)')); } }) });
+    // 13zzzd: the move panel, listing the places (no notes to choose here, so no Portfolio view)
+    MPANEL.pick({ title: 'Move “' + snippet(d.title, 40) + '”', notes: false, places: MPANEL.projectRows({ general: true, here: d }) }).then(r => {
+      if (!r) return; const cur = M.doc(d.id); if (!cur) return; cur.projectId = r.projectId || null; cur.themeId = r.projectId && prof(cur.type).scope === 'theme' ? r.themeId || null : null; M.touchDoc(cur); DB.put('documents', cur); changed(); toast('Moved to ' + (r.projectId ? r.label : 'General (no project)')); });
   },
 };
 {

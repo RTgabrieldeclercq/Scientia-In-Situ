@@ -348,10 +348,10 @@ const LensView = {
   /** Port in: visit the note itself, at the component; the back bubble on it (or Esc, or Alt+←) comes back here. Alt+click: beside the note you were in. */
   port(id, glass, e) {
     const b = M.block(id); if (!b) return; const A = LensView._A;
-    if (e && e.altKey) { const last = BUBBLE.lastDoc; if (last && last !== b.docId && M.doc(last) && typeof SplitView !== 'undefined') { PANES[1] && (PANES[1].pendingFocus = { reveal: id }); return App.go(SplitView.route([last, b.docId], id)); } return App.openBlock(id); }
+    if (e && e.altKey) { const last = BUBBLE.lastDoc; if (last && last !== b.docId && M.doc(last) && typeof SplitView !== 'undefined') { PANES[1] && (PANES[1].pendingFocus = { reveal: id }); return App.go(SplitView.route([last, b.docId], id)); } return App.openComponent(id); }
     const st = LensView.st(A.t.id); if (LensView._scroll) st.scroll = LensView._scroll.scrollTop;
     BUBBLE.back.arm({ hash: location.hash, label: A.ts.map(x => M.term(x).label).join(' × ') });
-    BUBBLE.port(glass, () => App.openBlock(id));
+    BUBBLE.port(glass, () => App.openComponent(id));
   },
   arcNote(a, b, D) {
     const mine = id => id === b.id || b.inside.some(n => n.id === id); if (mine(a.from) === mine(a.to)) return null;
@@ -419,7 +419,7 @@ const LensView = {
     side.append(h('div.ins-h', h('div.k', 'Synergies and threads'), h('div.tiny.muted', 'What meets “' + t.label + '”, and what its components led to.')), syn,
       folded.length && !A.others.length ? h('div.ins-s', h('h6', 'Bridges folded in', h('span.muted', folded.length)), h('div.tiny.muted', { style: { marginBottom: '6px' } }, 'A bridged component shows once, with a green bead for each note it went to.'),
         h('div.tbb-fold', folded.map(({ b, x }) => { const a = M.doc(M.block(b.id).docId), z = M.doc(x.docId); return h('div.tbb-fr', { on: { mouseenter: () => LensView.lite(b.id, true), mouseleave: () => LensView.lite(b.id, false), click: e => App.jump(x.ref, e) } }, h('span', (a && a.title) || '—'), h('i', ' ⇄ '), h('span', (z && z.title) || '—')); }))) : null,
-      G.insights.length ? h('div.ins-s', h('h6', 'What the wiring says', h('span.muted', G.insights.length)), G.insights.map(i => h('div.insight' + (i.cls ? '.' + i.cls : ''), { on: { mouseenter: () => i.path.forEach(id => LensView.lite(id, true)), mouseleave: () => i.path.forEach(id => LensView.lite(id, false)), click: () => App.openBlock(i.path[i.path.length - 1]) } }, h('b', i.title), i.body))) : null,
+      G.insights.length ? h('div.ins-s', h('h6', 'What the wiring says', h('span.muted', G.insights.length)), G.insights.map(i => h('div.insight' + (i.cls ? '.' + i.cls : ''), { on: { mouseenter: () => i.path.forEach(id => LensView.lite(id, true)), mouseleave: () => i.path.forEach(id => LensView.lite(id, false)), click: () => App.openComponent(i.path[i.path.length - 1]) } }, h('b', i.title), i.body))) : null,
       h('div.ins-s', h('h6', 'Key'), h('div.tbb-key', h('div', h('span.k-b'), 'a component and its neighbours, in glass'), h('div', h('span.k-s'), 'bridged to another note'), h('div', h('span.k-l'), 'the bridge, to that note’s bubble'), h('div', h('span.k-w'), 'a connection between notes'), h('div', h('span.k-a'), 'a barrier resolved or a takeaway reached, through another term'))),
       h('div.ins-s.tbb-acts', fam.length > 1 ? h('label.switch', h('input', { type: 'checkbox', checked: st.imported, on: { change: e => { st.imported = e.target.checked; App._mounted = false; App.refresh(); } } }), 'with linked projects') : null,
         h('button.btn.sm', { on: { click: () => { const others = DB.where('projects', p => p.id !== t.projectId); if (!others.length) return toast('No other project to import into'); pickModal('Import “' + t.label + '” into…', 'The imported term stays linked to this one, so the lens can chain across both projects.', others.map(p => ({ label: p.name, run: () => { M.importTerm(t.id, p.id); toast('Imported into ' + p.name); } }))); } } }, 'Import into…'),
@@ -543,7 +543,7 @@ const LensView = {
         `<text x="10" y="30">${esc(snippet(M.blockName(n.b), 22))}</text><text x="10" y="44" style="fill:var(--ink-3);font-size:9.5px">${esc(snippet((PROFILE[d.type] || {}).label + ' · ' + d.title, 26))}</text></g>`; });
     svg.innerHTML = html;
     svg.addEventListener('click', e => {
-      const n = e.target.closest('.node'); if (n) return App.openBlock(n.dataset.id);
+      const n = e.target.closest('.node'); if (n) return App.openComponent(n.dataset.id);
       const p = e.target.closest('path.e.s'); if (p) { const ed = LensView._G.edges[+p.dataset.ei]; LensView.suggest(ed, e.clientX, e.clientY + 10); }
     });
     return svg;
@@ -559,7 +559,7 @@ const LensView = {
     const rows = occ.map(o => ({ o, b: M.block(o.blockId) })).filter(x => x.b).sort((a, b) => +new Date(M.blockTime(b.b)) - +new Date(M.blockTime(a.b)));
     return h('div.list', h('table.t', h('thead', h('tr', h('th', 'When'), h('th', 'Structures'), h('th', 'Component'), h('th', 'Note · theme'), h('th', 'Context'))),
       h('tbody', rows.map(({ o, b }) => { const d = M.doc(b.docId), th = d.themeId && M.theme(d.themeId), s = b.stamp.sessionId && M.session(b.stamp.sessionId);
-        return h('tr', { style: { cursor: 'pointer' }, on: { click: () => App.openBlock(b.id) } },
+        return h('tr', { style: { cursor: 'pointer' }, on: { click: () => App.openComponent(b.id) } },
           h('td.mono', { style: { whiteSpace: 'nowrap', fontSize: '11.5px' } }, fmtDay(M.blockTime(b)), ' ', fmtTime(M.blockTime(b))),
           h('td', o.itemIds.map(M.item).filter(Boolean).map(it => kchip(it.kind)), o.direct ? null : h('span.pill', 'carried')),
           h('td', M.blockName(b)), h('td', h('span', typechip(d.type), ' ', d.title), h('div.tiny.muted', th ? th.name : 'project-wide')),

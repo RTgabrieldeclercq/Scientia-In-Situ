@@ -12,7 +12,7 @@
 .sf-b:hover{background:var(--surface-2);color:var(--ink)}
 .sf-b:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
 .sf-b svg{transition:transform .24s}
-.sf-n{display:none}
+.sf-top > .sf-n{display:none}
 /* folded (V4.40): a small capsule at the right edge — the highlighter, a badge with the count, a click opens the panel; the page has all the room.
    Full screen and the Library's reader: when the feature folds it. Beside a note: its own fold (body.sf-fold-b), whatever the feature says, the app able to open it (rd-side-on). */
 .sf-host{position:relative}

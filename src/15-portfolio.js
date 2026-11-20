@@ -253,7 +253,7 @@ function aimEl(a, opts = {}) {
     h('div.bar', { style: { margin: '6px 0 10px' } }, h('i', { style: { width: met * 100 + '%' } })),
     a.milestones.map(m => { const ev = m.evidenceRef && (m.evidenceRef.type === 'item' ? M.item(m.evidenceRef.id) : M.block(m.evidenceRef.id));
       return h('div.msrow', h('input', { type: 'checkbox', checked: !!m.metAt, disabled: ro, on: { change: () => m.metAt ? M.meetMilestone(a.id, m.id) : evidencePick(a, m) } }),
-        h('span', { style: { flex: 1 } }, m.label, ev ? h('div.tiny.muted', '↳ evidence: ', h('a', { on: { click: () => App.openBlock(ev.originBlockId || ev.id) } }, snippet(ev.text || M.blockName(ev), 60))) : m.metAt ? h('div.tiny', { style: { color: 'var(--warn)' } }, 'met without cited evidence') : null),
+        h('span', { style: { flex: 1 } }, m.label, ev ? h('div.tiny.muted', '↳ evidence: ', h('a', { on: { click: () => App.openComponent(ev.originBlockId || ev.id) } }, snippet(ev.text || M.blockName(ev), 60))) : m.metAt ? h('div.tiny', { style: { color: 'var(--warn)' } }, 'met without cited evidence') : null),
         m.metAt ? h('span.tiny.mono.muted', 'met ' + fmtDay(m.metAt)) : null, h('span.pill', 'w ' + m.weight.toFixed(2))); }),
     ro ? null : h('div.row', { style: { marginTop: '8px' } }, h('span.tiny.muted', { style: { flex: 1 } }, 'Weights are fixed when the aim is written. Re-scoping creates a new version, so past grades keep their numbers.'), h('button.btn.xs', { on: { click: () => newAimDialog(a.themeId, a) } }, 'Re-scope…')));
 }

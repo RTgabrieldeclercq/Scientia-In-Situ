@@ -152,7 +152,7 @@ const SYNTH = {
     const mine = SYNTH.of(docId); if (mine.length === 1 && !ask) return mine[0];
     const own = new Set(mine.map(x => x.id)), all = DB.where('documents', x => x.type === 'reflection' && !x.deleted && x.id !== docId).sort((a, b) => (own.has(b.id) - own.has(a.id)) || String(b.modified || '').localeCompare(String(a.modified || '')));
     if (!all.length) { toast('No Synthesis note yet — /synthesis makes one of the notes you pick'); return null; }
-    const v = await CMD.picker('Flag ' + (what || 'it') + ' for which synthesis?', '', q => all.filter(x => !q || (x.title || '').toLowerCase().includes(q)).map(x => ({ label: x.title || 'Synthesis', sub: own.has(x.id) ? 'synthesizes this note' : M.docPath(x), v: x })));
+    const v = await MPANEL.note({ title: 'Flag ' + (what || 'it') + ' for which synthesis?', pool: () => all, rank: x => own.has(x.id) ? 1 : 0, hint: x => own.has(x.id) ? 'synthesizes this note' : null, refuse: 'That note is not a Synthesis — pick one of the Synthesis notes' });   // 13zzzd: the move panel
     return v || null;
   },
   /** V3.996: components (whole) flagged for a Synthesis note, chosen once. */

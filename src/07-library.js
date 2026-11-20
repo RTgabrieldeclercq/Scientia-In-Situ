@@ -5,9 +5,18 @@
    V3.958: the demo's journal tables in full (PLOS Computational Biology,
    EMBO, JAMA, BMJ, npj…), and its test suite runs against this module
    (scripts/tests/scientia-doi-lookup.test.mjs).
+   WIP doi-ris (Gabe: "Library captures .ris from DOI lookup."): the lookup also
+   asks doi.org for the paper's RIS record (Accept: application/x-research-info-
+   systems — a second, best-effort request: offline or refused, the paper is
+   still added from the CSL answer) and keeps it on the item as `ris`. A paper
+   exports as .ris — the kept record as the publisher wrote it, or one made from
+   its fields — and a .ris file of one or many records imports, making items or
+   filling in the ones with the same DOI (LIB.importRis). Features → Library →
+   RIS records is the switch.
    ========================================================================== */
 const LIB = {
   CSL_ACCEPT: 'application/vnd.citationstyles.csl+json',
+  RIS_ACCEPT: 'application/x-research-info-systems',
   normalizeDoi: s => String(s || '').trim().replace(/^https?:\/\/(dx\.)?doi\.org\//i, '').replace(/^doi:\s*/i, '').replace(/\s+/g, ''),
   async resolveDoi(raw) {
     const doi = LIB.normalizeDoi(raw);
@@ -16,7 +25,26 @@ const LIB = {
     if (hit) return Object.assign({}, hit, { _cache: true });
     const res = await fetch('https://doi.org/' + doi, { headers: { Accept: LIB.CSL_ACCEPT }, redirect: 'follow' });
     if (!res.ok) throw new Error('HTTP ' + res.status + ' from doi.org');
-    return LIB.fromCsl(await res.json());
+    const rec = LIB.fromCsl(await res.json());
+    if (LIB.risOn()) { const ris = await LIB.fetchRis(doi); if (ris) rec.ris = ris; }   // the second request never stops the first's answer
+    return rec;
+  },
+  /** Keep, export and import RIS records? (Features → Library → RIS records.) */
+  risOn: () => typeof FEAT === 'undefined' || FEAT.tune('library', 'ris') !== false,
+  /** The paper's RIS record from doi.org by content negotiation; '' when offline, refused or not a record. */
+  async fetchRis(doi) {
+    try {
+      const res = await fetch('https://doi.org/' + doi, { headers: { Accept: LIB.RIS_ACCEPT }, redirect: 'follow' });
+      if (!res || !res.ok || typeof res.text !== 'function') return '';
+      const t = LIB.cleanRis(await res.text()); return /^TY\s+-\s/m.test(t) ? t : '';
+    } catch (e) { return ''; }
+  },
+  /** A record in one shape: LF lines, no byte-order mark, ending with ER. */
+  cleanRis(t) { t = String(t || '').replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').trim(); return t ? t.replace(/\n?ER\s+-[^\n]*$/, '').trimEnd() + '\nER  - ' : ''; },
+  /** A paper that is in the library already, without its record: ask for it now and keep it. */
+  async attachRis(r) {
+    if (!r || !r.doi) return ''; const t = await LIB.fetchRis(r.doi); if (!t) return '';
+    DB.put('library', Object.assign({}, DB.get ? DB.get('library', r.id) || r : r, { ris: t })); changed(); return t;
   },
   fromCsl(csl) {
     const first = v => Array.isArray(v) ? v[0] : v;
@@ -51,12 +79,77 @@ const LIB = {
     .replace(/\\([&%$#_])/g, '$1'),
   parseRis(src) {
     const f = {}, authors = [];
+    src = String(src).replace(/^\uFEFF/, '');
     src.split(/\r?\n/).forEach(line => { const m = line.match(/^([A-Z][A-Z0-9])\s+-\s*(.*)$/); if (!m) return; const [, tag, val] = m;
       if (tag === 'AU' || tag === 'A1') { if (val.includes(',')) { const [fa, gi] = val.split(','); authors.push({ family: fa.trim(), given: (gi || '').trim() }); } else { const p = val.trim().split(/\s+/); authors.push({ family: p.pop() || '', given: p.join(' ') }); } }
       else if (!(tag in f)) f[tag] = val.trim(); });
     const container = f.JO || f.JF || f.T2 || '';
-    return { doi: f.DO || '', cslType: f.TY || '', title: f.TI || f.T1 || '', authors, container, publisher: f.PB || '', year: parseInt((f.PY || f.DA || '').slice(0, 4), 10) || null,
+    return { doi: LIB.normalizeDoi(f.DO), cslType: f.TY || '', ris: LIB.cleanRis(src), title: f.TI || f.T1 || '', authors, container, publisher: f.PB || '', year: parseInt((f.PY || f.DA || '').slice(0, 4), 10) || null,
       volume: f.VL || '', issue: f.IS || '', page: f.SP ? (f.EP ? f.SP + '-' + f.EP : f.SP) : (f.C7 || ''), issn: f.SN || '', url: f.UR || '', isPreprint: !container, csl: { _source: 'ris', fields: f } };
+  },
+  /** A .ris file's records — one or many, each with its own text kept as `ris` (a record ends at ER, or where the next TY starts). */
+  parseRisMany(src) {
+    const out = []; let cur = [];
+    const flush = () => { if (cur.some(l => /^TY\s+-/.test(l))) { const raw = LIB.cleanRis(cur.join('\n')); try { out.push(Object.assign(LIB.parseRis(raw), { ris: raw })); } catch (e) { } } cur = []; };
+    String(src || '').replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').split('\n').forEach(line => {
+      if (/^TY\s+-/.test(line) && cur.some(l => /^TY\s+-/.test(l))) flush();
+      cur.push(line); if (/^ER\s+-/.test(line)) flush(); });
+    flush(); return out;
+  },
+  looksRis: t => /^\s*TY\s+-\s/m.test(String(t || '')),
+  RISTYPE: { 'journal-article': 'JOUR', 'posted-content': 'UNPB', book: 'BOOK', 'book-chapter': 'CHAP', 'proceedings-article': 'CPAPER', report: 'RPRT', dissertation: 'THES', dataset: 'DATA',
+    article: 'JOUR', inproceedings: 'CPAPER', inbook: 'CHAP', incollection: 'CHAP', phdthesis: 'THES', mastersthesis: 'THES', techreport: 'RPRT', misc: 'GEN', unpublished: 'UNPB' },
+  /** A record made from an item's fields, for a paper that has none kept (a pasted BibTeX, a CSL file, an older lookup). */
+  toRis(r) {
+    const L = [], one = (tag, v) => { v = String(v == null ? '' : v).replace(/\s*\n\s*/g, ' ').trim(); if (v) L.push(tag + '  - ' + v); };
+    const src = r.csl && r.csl._source === 'ris' && r.csl.fields && r.csl.fields.TY;
+    const ty = src || (r.kind === 'link' ? 'ELEC' : LIB.RISTYPE[String(r.cslType || '').toLowerCase()] || (r.isPreprint ? 'UNPB' : 'JOUR'));
+    one('TY', ty);
+    (r.authors || []).forEach(a => one('AU', a.family ? a.family + (a.given ? ', ' + a.given : '') : a.given));
+    one('TI', r.title || (r.kind === 'link' ? r.url : ''));
+    one(ty === 'JOUR' ? 'JO' : 'T2', r.container);
+    one('PY', r.year); one('VL', r.volume); one('IS', r.issue);
+    const pg = String(r.page || '').match(/^(.+?)\s*[-\u2013\u2014]+\s*(.+)$/); if (pg) { one('SP', pg[1]); one('EP', pg[2]); } else one('SP', r.page);
+    one('PB', r.publisher); one('SN', r.issn); one('DO', r.doi); one('UR', r.url || (r.doi ? 'https://doi.org/' + r.doi : ''));
+    L.push('ER  - ');
+    return L.join('\n');
+  },
+  /** What the paper exports as: the record kept from the lookup, else one made from its fields. */
+  risOf: r => (r && r.ris) ? LIB.cleanRis(r.ris) : LIB.toRis(r),
+  /** The file for some papers: { text, name, n } — CRLF lines, a blank line between records. */
+  risFile(list, name) {
+    const L = (list || []).filter(Boolean), slug = String(name || 'library').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'library';
+    return { n: L.length, name: slug + '.ris', text: L.map(LIB.risOf).join('\n\n').replace(/\n/g, '\r\n') + '\r\n' };
+  },
+  /** Save them as a .ris file; false when there is nothing to save. */
+  exportRis(list, name) {
+    const f = LIB.risFile(list, name); if (!f.n) { toast('No papers to export'); return false; }
+    const a = h('a', { href: URL.createObjectURL(new Blob([f.text], { type: 'application/x-research-info-systems' })), download: f.name }); document.body.append(a); a.click(); a.remove();
+    toast('Exported ' + plural(f.n, 'paper') + ' as ' + f.name); return f;
+  },
+  /** A .ris file's records into the library: a new item each, or — the same DOI (or, with none, the same title and year) — the item filled in where it was blank, with the record kept.
+      Items that come from the lab's library (rm) are left as they are. One undo step. Returns { total, added, updated, same, kept }. */
+  importRis(src) {
+    const recs = LIB.parseRisMany(src), out = { total: recs.length, added: 0, updated: 0, same: 0, kept: 0 }; if (!recs.length) return out;
+    if (DB.beginGroup) DB.beginGroup('Import .ris');
+    const all = DB.all('library').slice(), key = t => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    recs.forEach(rec => {
+      const doi = LIB.normalizeDoi(rec.doi).toLowerCase();
+      const ex = (doi && all.find(l => (l.doi || '').toLowerCase() === doi)) || (!doi && key(rec.title) && all.find(l => !l.doi && key(l.title) === key(rec.title) && (!rec.year || !l.year || l.year === rec.year)));
+      if (!ex) { const r = Object.assign({ id: uid('l'), kind: rec.url && !rec.doi && !(rec.authors || []).length ? 'link' : 'paper', added: isoLocal(new Date()) }, rec); delete r._cache; DB.put('library', r); all.push(r); out.added++; return; }
+      if (ex.rm) { out.kept++; return; }
+      const n = Object.assign({}, ex); let ch = false;
+      ['title', 'container', 'publisher', 'year', 'volume', 'issue', 'page', 'issn', 'url', 'doi', 'cslType'].forEach(k => { if ((n[k] == null || n[k] === '') && rec[k]) { n[k] = rec[k]; ch = true; } });
+      if (!(n.authors || []).length && (rec.authors || []).length) { n.authors = rec.authors; ch = true; }
+      if (rec.ris && n.ris !== rec.ris) { n.ris = rec.ris; ch = true; }
+      if (ch) { DB.put('library', n); out.updated++; } else out.same++;
+    });
+    changed(); return out;
+  },
+  /** The import's result in a sentence. */
+  risSummary(o, name) {
+    if (!o.total) return (name ? name + ': ' : '') + 'no RIS records found';
+    return (name ? name + ': ' : '') + [o.added && plural(o.added, 'paper') + ' added', o.updated && plural(o.updated, 'paper') + ' filled in', o.same && o.same + ' already complete', o.kept && o.kept + ' from the lab’s library left as they are'].filter(Boolean).join(' · ');
   },
   parseAny(src) {
     const t = src.trim(); if (!t) throw new Error('Nothing to parse.');

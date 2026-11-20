@@ -651,7 +651,7 @@ const ATLAS3 = (() => {
     if (S.action !== 'open' && S.from && v) return ATLAS.act(v);
     if (e && e.altKey && d.blockId) { const lastDoc = BUBBLE.lastDoc, b = M.block(d.blockId); if (lastDoc && b && lastDoc !== b.docId && M.doc(lastDoc) && typeof SplitView !== 'undefined') { PANES[1] && (PANES[1].pendingFocus = { reveal: d.blockId }); return App.go(SplitView.route([lastDoc, b.docId], d.blockId)); } }
     BUBBLE.back.arm({ hash: '#/atlas', label: 'Atlas', text: 'Back to the Atlas · Esc' });
-    const go = () => d.blockId ? App.openBlock(d.blockId) : d.type === 'note' ? App.go('#/doc/' + d.id) : v && v.go ? v.go() : null;
+    const go = () => d.blockId ? App.openComponent(d.blockId) : d.type === 'note' ? App.go('#/doc/' + d.id) : v && v.go ? v.go() : null;
     BUBBLE.port(glass || d.bd, go);
   }
 
@@ -659,7 +659,7 @@ const ATLAS3 = (() => {
     const b = blockId && M.block(blockId); if (!b || BUBBLE._porting) return;
     if (e && e.altKey) { const lastDoc = BUBBLE.lastDoc; if (lastDoc && lastDoc !== b.docId && M.doc(lastDoc) && typeof SplitView !== 'undefined') { PANES[1] && (PANES[1].pendingFocus = { reveal: blockId }); return App.go(SplitView.route([lastDoc, b.docId], blockId)); } }
     BUBBLE.back.arm({ hash: '#/atlas', label: 'Atlas', text: 'Back to the Atlas · Esc' }); st.tp = null;
-    BUBBLE.port(glass, () => App.openBlock(blockId));
+    BUBBLE.port(glass, () => App.openComponent(blockId));
   }
 
   /* ---------- a thread's popup: its two ends as bubbles with what is near them, the pulse between, why, every note it bridges to or from ---------- */

@@ -74,7 +74,7 @@ const CAL = {
     const r = ev.repeat || 'none'; if (r === 'none') return ev.day === day; if (r === 'daily') return true;
     if (r === 'weekly') return parseDay(day).getDay() === parseDay(ev.day).getDay(); return false;
   },
-  save(ev, label) { DB.beginGroup(label || 'Calendar'); ev.modified = isoLocal(new Date()); DB.put('events', ev); changed(); },
+  save(ev, label) { DB.beginGroup(label || 'Calendar'); ev.modified = isoLocal(new Date()); DB.put('events', ev); changed(); try { REM.badge(); } catch (e) { } },
   make(o) {
     const ev = Object.assign({ id: uid('ev'), title: '', day: CAL.today(), start: 540, end: 600, allDay: false, kind: 'other', tags: [], projectId: null, docId: null, repeat: 'none', skip: [], created: isoLocal(new Date()) }, o);
     ev.title = String(ev.title || '').trim() || 'New event'; if (ev.end <= ev.start) ev.end = Math.min(1440, ev.start + 15); return ev;
@@ -83,7 +83,7 @@ const CAL = {
   remOn(r, day) { try { if (!r.at || r.done) return null; const at = REM.when(r, dayStart(parseDay(day))); return localDate(at) === day ? at : null; } catch (e) { return null; } },
   /** What has a time on a day: events, and reminders with an end (a meeting). */
   dayItems(day) {
-    const out = CAL.all().filter(ev => !ev.allDay && ev.kind !== 'run' && CAL.occurs(ev, day)).map(ev => ({ k: ev.id + '@' + day, ev, day, s: ev.start, e: Math.max(ev.start + 15, ev.end), title: ev.title }));
+    const out = CAL.all().filter(ev => !ev.allDay && ev.kind !== 'run' && ev.kind !== 'deliv' && CAL.occurs(ev, day)).map(ev => ({ k: ev.id + '@' + day, ev, day, s: ev.start, e: Math.max(ev.start + 15, ev.end), title: ev.title }));
     if (typeof REM !== 'undefined') REM.all().forEach(r => { if (r.allDay || !r.end) return; const at = CAL.remOn(r, day); if (!at) return;
       const s = at.getHours() * 60 + at.getMinutes(), e = Math.min(1440, s + Math.max(15, Math.round((+new Date(r.end) - +new Date(r.at)) / 6e4)));
       out.push({ k: 'rem:' + r.id + '@' + day, rem: r, at, day, s, e, title: r.title || 'Reminder' }); });
@@ -91,7 +91,7 @@ const CAL = {
   },
   /** The all-day row: all-day events, reminders without an end (a deadline, a reminder), dated tasks. */
   allDayItems(day) {
-    const out = CAL.all().filter(ev => ev.allDay && ev.kind !== 'run' && CAL.occurs(ev, day)).map(ev => ({ k: ev.id + '@' + day, ev, day, s: 0, e: 0, title: ev.title, ad: true }));
+    const out = CAL.all().filter(ev => ev.allDay && ev.kind !== 'run' && ev.kind !== 'deliv' && CAL.occurs(ev, day)).map(ev => ({ k: ev.id + '@' + day, ev, day, s: 0, e: 0, title: ev.title, ad: true }));
     if (typeof REM !== 'undefined') REM.all().forEach(r => { if (r.end && !r.allDay) return; if (r.taskId) return; const at = CAL.remOn(r, day); if (!at) return;
       out.push({ k: 'rem:' + r.id + '@' + day, rem: r, at, day, ad: true, title: r.title || 'Reminder', time: r.allDay ? '' : fmtTime(at) }); });
     if (typeof TASK !== 'undefined') TASK.all().forEach(b => { const d = TASK.dueAt(b); if (!d || localDate(d) !== day) return; const t = TASK.t(b);
@@ -187,7 +187,7 @@ const CAL = {
       h('button.cal-btn.pri', { title: 'A new event (N)', on: { click: e => { const d = CAL.days().includes(CAL.today()) ? CAL.today() : CAL.days()[0]; const r = e.currentTarget.getBoundingClientRect(); CAL.create({ day: d, start: CAL.snap(Math.min(1380, CAL.nowMin() + 30)), x: r.left - 300, y: r.bottom + 8 }); } } }, '＋ New'));
   },
   ic(k) {
-    const P = { l: 'M15 18l-6-6 6-6', r: 'M9 6l6 6-6 6', x: 'M6 6l12 12M18 6 6 18', ck: 'M20 6 9 17l-5-5', bell: 'M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5h4', note: 'M7 3h7l5 5v13H7zM14 3v5h5', rep: 'M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3', focus: 'M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M12 7.5a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z', warn: 'M12 3.5 2.5 20h19L12 3.5zM12 10v4.5M12 17.4v.2', link: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1' };
+    const P = { l: 'M15 18l-6-6 6-6', r: 'M9 6l6 6-6 6', x: 'M6 6l12 12M18 6 6 18', ck: 'M20 6 9 17l-5-5', bell: 'M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5h4', note: 'M7 3h7l5 5v13H7zM14 3v5h5', rep: 'M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3', focus: 'M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M12 7.5a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z', warn: 'M12 3.5 2.5 20h19L12 3.5zM12 10v4.5M12 17.4v.2', dv: 'M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5zM3.5 7.5 12 12l8.5-4.5M12 12v9', link: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1' };
     return h('span.cal-i', { html: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${P[k]}"/></svg>` });
   },
   planner(D) {
@@ -212,6 +212,7 @@ const CAL = {
     if (CAL.tn('slots', true) !== false) CAL.frees(list).forEach(([s, e]) => cin.append(h('button.cal-slot', { tabindex: '-1', 'data-s': s, style: { top: `calc(var(--hpx) * ${s / 60} + 2px)`, height: `calc(var(--hpx) * ${(e - s) / 60} - 4px)` }, title: 'Free ' + CAL.hm(s) + '–' + CAL.hm(e) + ' — click to add an event' },
       e - s >= 45 ? h('span', 'Free') : null, e - s >= 30 ? h('b', CAL.dur(e - s)) : null)));
     list.forEach(it => cin.append(CAL.card(it, lanes.get(it.k))));
+    if (CAL.delivOn()) CAL.dvs().filter(d => !CAL.dvWhen(d).ev && d.day === day).forEach(d => cin.append(CAL.dvChip(d)));   // V4.70
     runs.forEach(it => el.append(CAL.runEl(it, rl.get(it.k).c)));
     if (day === t) el.append(h('div.cal-now', { style: { top: `calc(var(--hpx) * ${CAL.nowMin() / 60})` } }));
     return el;
@@ -238,7 +239,9 @@ const CAL = {
         h('span.ec-time', CAL.hm(it.s) + '–' + CAL.hm(it.e) + (CAL.st.by === 'load' ? ' · ' + CAL.dur(len) : '')), h('span.ec-t', it.title)),
       ev && (ev.tags || []).length && !short ? h('span.ec-tags', ev.tags.map(t => h('button.ec-tag', { title: 'Show only #' + t, on: { pointerdown: e => e.stopPropagation(), click: e => { e.stopPropagation(); CAL.st.tag = CAL.st.tag === t ? null : t; CAL.paint(); } } }, '#' + t))) : null,
       !short ? CAL.offLinks(ev, CAL._vis || new Set()) : null,
-      h('span.ec-ic', has ? CAL.ic('link') : null, ev && ev.repeat && ev.repeat !== 'none' ? CAL.ic('rep') : null, CAL.docOf(it) ? CAL.ic('note') : null, it.rem ? CAL.ic('bell') : null),
+      h('span.ec-ic', ev && CAL.delivOn() ? (L => { if (!L.length) return null; const op = L.filter(CAL.dvOpen), due = op.filter(CAL.dvDue);
+        return due.length ? h('button.ec-tkn.ec-dv.due', { type: 'button', title: 'Due: ' + due.map(d => CAL.DV[d.deliv.what].label + ' · ' + d.title).join(', ') + ' — attach it', on: { pointerdown: e => e.stopPropagation(), click: e => { e.stopPropagation(); CAL.attach(due[0]); } } }, CAL.ic('dv'))
+          : h('span.ec-tkn.ec-dv', { title: 'Expected from it: ' + L.map(d => CAL.DV[d.deliv.what].label + ' · ' + d.title + (CAL.dvOpen(d) ? '' : ' (attached)')).join(', ') }, CAL.ic(op.length ? 'dv' : 'ck'), (L.length - op.length) + '/' + L.length); })(CAL.dvFor(ev.id).filter(d => CAL.dvWhen(d).day === it.day)) : null, ev && (ev.rg || {})[it.day] && (ev.rg[it.day].list || []).length ? h('span.ec-tkn', { title: 'What was written during it is a region in its note' }, CAL.ic('note'), (ev.rg[it.day].list || []).length > 1 ? String(ev.rg[it.day].list.length) : '') : null, ev && CAL.tasksOf(ev).length ? h('span.ec-tkn', { title: 'Tasks for this event' }, CAL.ic('ck'), CAL.tasksOf(ev).filter(b => !TASK.t(b).done).length + '/' + CAL.tasksOf(ev).length) : null, has ? CAL.ic('link') : null, ev && ev.repeat && ev.repeat !== 'none' ? CAL.ic('rep') : null, CAL.docOf(it) ? CAL.ic('note') : null, it.rem ? CAL.ic('bell') : null),
       ln.n > 1 && !short ? h('span.ec-conf', 'Overlaps') : null,
       ev ? h('span.ec-rz', { 'aria-hidden': 'true' }) : null);
     if (CAL.isFocus(ev)) {   // V4.64: a focus block — warm gold, breathing; what its session did
@@ -538,16 +541,16 @@ const CAL = {
     draw(); modal({ title: 'Event types', body: list, actions: [{ label: 'Done', pri: true }] });
   },
   /** Choose a note in the Portfolio: the calendar waits; a click on a note links it and brings you back. */
-  pickInPortfolio(ctx) { CAL.closeAll(); CAL.pickFor = ctx; CAL.pickBanner(); App.go('#/portfolio'); },
-  pickBanner() {
-    let b = $('#cal-pick'); if (!CAL.pickFor) { if (b) b.remove(); return; }
-    const t = CAL.pickFor.kind === 'event' ? ((DB.get('events', CAL.pickFor.id) || {}).title || 'the event') : ((CAL.pickFor.state || {}).title || 'the new event');
-    if (!b) { b = h('div#cal-pick.cal-pick', { role: 'status' }); document.body.append(b); }
-    b.replaceChildren(CAL.ic('note'), h('span', 'Click a note to link it to “' + t + '”'), h('button.cal-btn', { type: 'button', on: { click: () => CAL.pickCancel() } }, 'Cancel'));
+  pickInPortfolio(ctx) {
+    CAL.closeAll(); CAL.pickFor = ctx;
+    // the bar, the click on a note and Cancel are the shared PFPICK (13zzzd, the move panel's Portfolio view); the calendar brings itself back (pickBack)
+    PFPICK.start({ id: 'cal-pick', btnCls: 'cal-btn', icon: CAL.ic('note'), back: false,
+      text: () => { const P = CAL.pickFor || ctx, t = P.kind === 'event' ? ((DB.get('events', P.id) || {}).title || 'the event') : ((P.state || {}).title || 'the new event'); return 'Click a note to link it to “' + t + '”'; },
+      onPick: id => CAL.pickDone(id), onCancel: () => CAL.pickCancel() });
   },
-  pickCancel() { const P = CAL.pickFor; CAL.pickFor = null; CAL.pickBanner(); CAL.pickBack(P, null); },
+  pickCancel() { const P = CAL.pickFor; CAL.pickFor = null; CAL.pickBack(P, null); },
   pickDone(docId) {
-    const P = CAL.pickFor; CAL.pickFor = null; CAL.pickBanner(); if (!P) return; const d = M.doc(docId);
+    const P = CAL.pickFor; CAL.pickFor = null; if (!P) return; const d = M.doc(docId);
     if (P.kind === 'event') { const ev = DB.get('events', P.id); if (ev) { DB.beginGroup('Note'); ev.docId = docId; if (!ev.projectId) ev.projectId = (d || {}).projectId || null; ev.modified = isoLocal(new Date()); DB.put('events', ev); changed(); toast('“' + ((d || {}).title || 'The note') + '” linked to “' + ev.title + '”', 2600); } }
     CAL.pickBack(P, docId);
   },
@@ -588,6 +591,186 @@ const CAL = {
     };
     addEventListener('pointermove', mv); addEventListener('pointerup', up); addEventListener('pointercancel', up);
   },
+
+  /* ---------------- V4.67: all-day events, once in the bell ---------------- */
+  bellOn: () => CAL.tn('bell', true) !== false,
+  /** Today's all-day events (calendar events; reminders and dated tasks are in the bell already). */
+  bellItems() { const t = CAL.today(); return CAL.all().filter(ev => ev.allDay && ev.kind !== 'run' && ev.kind !== 'deliv' && CAL.occurs(ev, t)).map(ev => ({ k: ev.id + '@' + t, ev, day: t, ad: true, title: ev.title })); },
+  bellSeen() { let v = null; try { v = _ls.get('calBellSeen', null); } catch (e) { } const t = CAL.today(); return v && v.day === t && Array.isArray(v.ids) ? v.ids : []; },
+  bellUnseen() { if (!CAL.bellOn()) return []; const S = CAL.bellSeen(); return CAL.bellItems().filter(it => !S.includes(it.k)); },
+  bellMark() { const L = CAL.bellItems().map(it => it.k); try { _ls.set('calBellSeen', { day: CAL.today(), ids: [...new Set(CAL.bellSeen().concat(L))] }); } catch (e) { } },
+  /** The bell's section: today's all-day events — new ones first (shown once), then those already seen. */
+  bellSection() {
+    if (!CAL.bellOn()) return null; const L = CAL.bellItems(); if (!L.length) return null; const S = CAL.bellSeen(), fresh = L.filter(it => !S.includes(it.k)), seen = L.filter(it => S.includes(it.k));
+    const row = (it, isNew) => { const c = CAL.colour(it); return h('button.cal-bl' + (isNew ? '.new' : ''), { type: 'button', style: { '--ecol': c.col }, title: 'Open it in the calendar', on: { click: () => { closePop(); CAL.st.day = it.day; CAL.st.view = CAL.st.view === 'month' ? 'month' : 'day'; App.go('#/calendar'); setTimeout(() => { try { CAL.paint(); } catch (e) { } }, 60); } } },
+      h('i'), h('b', it.title), h('span', c.label + (CAL.docOf(it) ? ' · ' + CAL.docOf(it).title : ''))); };
+    return h('div.cal-bell', fresh.length ? [h('div.cal-blh', 'Today · all day'), fresh.map(it => row(it, true))] : null, seen.length ? [h('div.cal-blh.seen', 'Seen'), seen.map(it => row(it, false))] : null);
+  },
+
+  /* ---------------- V4.68: tasks for an event, kept in its note ---------------- */
+  tasksOf: ev => (ev.tasks || []).map(id => M.block(id)).filter(b => b && b.status === 'live' && b.kind === 'task'),
+  /** A task for this event: a task component in the event's note, due when the event starts (or that day, for an all-day one). */
+  addTask(ev, it, text) {
+    const doc = CAL.docOf(it); text = String(text || '').trim(); if (!doc || !text) return null;
+    DB.beginGroup('Task for ' + ev.title);
+    const b = TASK.create(doc.id, null, { text, task: { due: ev.allDay ? it.day : it.day + 'T' + CAL.hm(ev.start), allDay: !!ev.allDay, prio: 'normal', repeat: 'none', subs: [], done: null, log: [] } });
+    b.eventId = ev.id; DB.put('blocks', b); const cur = DB.get('events', ev.id); cur.tasks = [...new Set((cur.tasks || []).concat([b.id]))]; cur.modified = isoLocal(new Date()); DB.put('events', cur); changed();
+    toast('“' + text + '” — a task in “' + doc.title + '”, due ' + (ev.allDay ? fmtDay(parseDay(it.day)) : CAL.hm(ev.start)), 2600); return b;
+  },
+  /** The card's Tasks row: the event's tasks (tick, open where it is, take off), and one more. */
+  taskRow(ev, it) {
+    const doc = CAL.docOf(it); if (!doc) return h('span.bub-note', 'Link a note above: its tasks are kept in it.');
+    const L = CAL.tasksOf(ev), inp = h('input.bub-tagin.cal-tkin', { placeholder: '+ a task for this event', 'aria-label': 'A task for this event', on: { keydown: e => { if (e.key === 'Enter') { e.preventDefault(); if (CAL.addTask(ev, it, e.target.value)) setTimeout(() => CAL.bubFill(), 0); } } } });
+    return h('div.cal-tks', L.map(b => { const done = !!TASK.t(b).done;
+      return h('div.cal-tk' + (done ? '.done' : ''), h('button.cal-tkb', { type: 'button', 'aria-pressed': String(done), 'aria-label': (done ? 'Not done: ' : 'Done: ') + TASK.text(b), on: { click: () => { TASK.toggle(b); setTimeout(() => CAL.bubFill(), 0); } } }, done ? CAL.ic('ck') : null),
+        h('span', TASK.text(b)), h('button.cal-tko', { type: 'button', title: 'Open it where it is, in “' + doc.title + '”', on: { click: () => { CAL.closeBub(); App.openComponent(b.id); } } }, CAL.ic('note')),
+        h('button.cal-tkx', { type: 'button', title: 'Take it off this event (the task stays in its note)', 'aria-label': 'Take off', on: { click: () => { const cur = DB.get('events', ev.id); cur.tasks = (cur.tasks || []).filter(x => x !== b.id); CAL.save(cur, 'Task off'); setTimeout(() => CAL.bubFill(), 0); } } }, '×')); }), inp);
+  },
+
+  /* ---------------- V4.69: what was written during an event becomes a region named after it ---------------- */
+  RGDAYS: 14,
+  regionsOn: () => CAL.tn('regions', true) !== false,
+  startMs(ev, day) { const d = parseDay(day || ev.day); return +new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, ev.start); },
+  /** Once an event has ended (in the last two weeks): the components written during it — in its note, or in any note if it has none — become a region in their note, named after it; nothing written, it asks. */
+  regionSweep() {
+    if (!CAL.regionsOn() || typeof REGION === 'undefined') return; const now = Date.now(), t = CAL.today(); let grp = false;
+    CAL.all().forEach(ev => { if (ev.allDay || ev.kind === 'run' || ev.kind === 'focus' || ev.kind === 'deliv') return;
+      for (let i = 0; i <= CAL.RGDAYS; i++) { const day = CAL.addD(t, -i); if (!CAL.occurs(ev, day) || (ev.rg || {})[day] || CAL.endMs(ev, day) > now) continue;
+        if (+new Date(ev.created || 0) > CAL.endMs(ev, day)) { ev.rg = Object.assign({}, ev.rg, { [day]: { skip: true } }); DB.put('events', ev); continue; }   // made after it ended: nothing to gather
+        if (!grp) { DB.beginGroup('Regions from the calendar'); grp = true; }
+        const cur = DB.get('events', ev.id); cur.rg = Object.assign({}, cur.rg, { [day]: CAL.regionFor(cur, day) }); DB.put('events', cur); } });
+    if (grp) { CAL.regionLinks(); changed(); }
+  },
+  regionFor(ev, day) {
+    const a = CAL.startMs(ev, day), b = CAL.endMs(ev, day), noteId = ((ev.repeat && ev.repeat !== 'none') ? (ev.notes || {})[day] : ev.docId) || null;
+    const made = DB.where('blocks', x => { if (x.status !== 'live' || /^(ref|freewrite|ink)$/.test(x.kind) || x.synthHead) return false; if (noteId && x.docId !== noteId) return false;
+      if (x.kind === 'component' && !String((x.body || {}).text || '').trim() && !x.label) return false; const tm = +new Date(x.made || x.created); return tm >= a && tm <= b; });
+    if (!made.length) return { none: true, docId: noteId };
+    const byDoc = new Map(); made.forEach(x => { if (!byDoc.has(x.docId)) byDoc.set(x.docId, []); byDoc.get(x.docId).push(x.id); });
+    const list = []; byDoc.forEach((ids, docId) => { const d = M.doc(docId); if (!d || d.deleted) return; const r = REGION.create(d, ids), rr = REGION.list(d).find(x => x.id === r.id);
+      if (rr) { rr.name = ev.title; rr.event = { id: ev.id, day }; REGION.save(d); } list.push({ docId, rg: r.id }); });
+    return { list };
+  },
+  /** Linked events, once both have their regions: in one note a connection between the regions; across notes a bridge on each. */
+  regionLinks() {
+    const last = ev => { const R = Object.values(ev.rg || {}).filter(x => x && x.list && x.list.length); return R.length ? R[R.length - 1].list : null; };
+    CAL.all().forEach(a => (a.then || []).forEach(bid => { const b = DB.get('events', bid); if (!b) return; const A = last(a), B = last(b); if (!A || !B) return;
+      A.forEach(x => B.forEach(y => {
+        if (x.docId === y.docId) { if (!DB.where('wires', w => (w.from === x.rg && w.to === y.rg) || (w.from === y.rg && w.to === x.rg)).length) M.wire(x.rg, y.rg, 'leads', true); return; }
+        [[x, y], [y, x]].forEach(([p, q]) => { const d = M.doc(p.docId), r = d && REGION.list(d).find(z => z.id === p.rg); if (!r) return; r.bridges = (r.bridges || []).filter(z => z.rg !== q.rg).concat([{ docId: q.docId, rg: q.rg }]); REGION.save(d); });
+      })); }));
+  },
+  /** Events whose time passed with nothing written: [{ev, day, docId}] (for one note, or all). */
+  asks(docId) {
+    const out = []; CAL.all().forEach(ev => Object.entries(ev.rg || {}).forEach(([day, x]) => { if (!x || !x.none || x.dismissed) return; const nid = ((ev.repeat && ev.repeat !== 'none') ? (ev.notes || {})[day] : ev.docId) || x.docId || null;
+      if (docId && nid !== docId) return; out.push({ ev, day, docId: nid }); })); return out.sort((p, q) => q.day.localeCompare(p.day));
+  },
+  /** "Log anything from it?" — yes: a component in its note, in a region named after it, ready to write in. */
+  askMake(q) {
+    const ev = DB.get('events', q.ev.id), doc = q.docId && M.doc(q.docId); if (!ev) return;
+    if (!doc) { return CAL.open({ ev, day: q.day, k: ev.id + '@' + q.day, s: ev.start, e: ev.end, title: ev.title }); }   // no note yet: make it; the question then waits in it
+    DB.beginGroup('Log from ' + ev.title); const bs = M.docBlocks(doc.id).filter(Boolean), y = bs.length ? Math.max(...bs.map(b => (b.y || 0) + 200)) : 80;
+    const b = M.addBlock(doc.id, null, { label: 'From ' + ev.title, x: 0, y: Math.round(y / 14) * 14, w: 420 }); b.body = { text: '', marks: [] }; DB.put('blocks', b);
+    const r = REGION.create(doc, [b.id]), rr = REGION.list(doc).find(x => x.id === r.id); if (rr) { rr.name = ev.title; rr.event = { id: ev.id, day: q.day }; REGION.save(doc); }
+    ev.rg = Object.assign({}, ev.rg, { [q.day]: { list: [{ docId: doc.id, rg: r.id }], asked: true } }); DB.put('events', ev); CAL.regionLinks(); changed();
+    App.go('#/doc/' + doc.id); setTimeout(() => { try { App.openComponent(b.id); } catch (e) { } }, 250); toast('A region for “' + ev.title + '” — write what happened', 2600);
+  },
+  askSkip(q) { const ev = DB.get('events', q.ev.id); if (!ev) return; DB.beginGroup('Not this time'); ev.rg = Object.assign({}, ev.rg, { [q.day]: Object.assign({}, (ev.rg || {})[q.day], { dismissed: true }) }); DB.put('events', ev); changed(); },
+  askRow(q) { return h('div.cal-ask', h('span', CAL.ic('note'), 'Nothing was written during ', h('b', q.ev.title), ' (' + fmtDay(parseDay(q.day)) + ' ' + CAL.hm(q.ev.start) + '–' + CAL.hm(q.ev.end) + '). Log anything from it?'),
+    h('button.cal-btn.pri', { type: 'button', on: { click: () => CAL.askMake(q) } }, q.docId ? 'Make its region' : 'Make its note'), h('button.cal-btn', { type: 'button', on: { click: () => CAL.askSkip(q) } }, 'Not this time')); },
+  /** In a note: its question, at the top of the canvas. */
+  askBar() {
+    let bar = $('#cal-askbar'); const r = App.route || {}, id = r.name === 'doc' ? r.args[0] : null, L = id && CAL.regionsOn() ? CAL.asks(id) : [], DV = id ? CAL.dvAsks().filter(d => d.deliv.docId === id) : [];
+    if (!L.length && !DV.length) { if (bar) bar.remove(); return; } const host = $('#view'); if (!host) return;
+    if (!bar || bar.parentNode !== host) { if (bar) bar.remove(); bar = h('div#cal-askbar.cal-askbar'); host.append(bar); } bar.replaceChildren(...L.slice(0, 2).map(CAL.askRow), ...DV.slice(0, 2).map(CAL.dvAskRow));
+  },
+
+  /* ---------------- V4.70: deliverables — on an event or at the end of the day ---------------- */
+  DV: { result: { label: 'Result', struct: 'result' }, takeaway: { label: 'Takeaway', struct: 'takeaway' }, verdict: { label: 'Verdict', kind: 'verdict' }, synth: { label: 'Mini synthesis' } },
+  EOD: 18 * 60,
+  delivOn: () => CAL.tn('deliv', true) !== false,
+  isDv: ev => !!ev && ev.kind === 'deliv',
+  dvs: () => CAL.all().filter(CAL.isDv),
+  dvFor: evId => CAL.dvs().filter(d => d.deliv && d.deliv.eventId === evId),
+  /** When it is due: an event's end (following the event if it moved), or its own time on its day. */
+  dvWhen(d) { const ev = d.deliv && d.deliv.eventId && DB.get('events', d.deliv.eventId); if (!ev || CAL.isDv(ev)) return { day: d.day, at: d.start, ev: null };
+    return { day: (ev.repeat && ev.repeat !== 'none') ? d.day : ev.day, at: ev.allDay ? CAL.EOD : ev.end, ev }; },
+  dvDue(d) { const w = CAL.dvWhen(d); return CAL.endMs({ end: w.at }, w.day) <= Date.now(); },
+  dvOpen: d => !!d.deliv && d.deliv.state !== 'done' && d.deliv.state !== 'dropped',
+  dvNote: d => { const id = d.deliv && d.deliv.docId, x = id && M.doc(id); return x && !x.deleted ? x : null; },
+  /** What is due now and not attached yet (the last two weeks). */
+  dvAsks() { if (!CAL.delivOn()) return []; const t0 = CAL.addD(CAL.today(), -CAL.RGDAYS); return CAL.dvs().filter(d => CAL.dvOpen(d) && CAL.dvWhen(d).day >= t0 && CAL.dvDue(d)).sort((a, b) => { const x = CAL.dvWhen(a), y = CAL.dvWhen(b); return (x.day + CAL.hm(x.at)).localeCompare(y.day + CAL.hm(y.at)); }); },
+  /** A deliverable: a structure (Result, Takeaway), a kind (Verdict) or a mini synthesis into a region — on an event (due when it ends) or at the end of a day. */
+  addDv(o) {
+    const what = CAL.DV[o.what] ? o.what : 'result', ev = o.eventId && DB.get('events', o.eventId), day = ev ? (o.day || ev.day) : (o.day || CAL.today()), at = ev ? (ev.allDay ? CAL.EOD : ev.end) : (o.at != null ? o.at : CAL.EOD);
+    const docId = o.docId !== undefined ? o.docId : ev ? (((ev.repeat && ev.repeat !== 'none') ? (ev.notes || {})[day] : ev.docId) || null) : null;
+    const d = CAL.make({ title: String(o.title || '').trim() || CAL.DV[what].label + (ev ? ' from ' + ev.title : ' of the day'), day, start: at, end: Math.min(1440, at + 15), kind: 'deliv', projectId: (docId && (M.doc(docId) || {}).projectId) || (ev && ev.projectId) || null, deliv: { what, docId, eventId: ev ? ev.id : null, state: 'open' } });
+    DB.beginGroup('Deliverable'); DB.put('events', d); changed(); try { REM.badge(); } catch (e) { } return d;
+  },
+  /** Attach it: a component of its note — or one written here — becomes the result, takeaway or verdict; a mini synthesis goes into a region; with no note it is a float. */
+  attach(dv) {
+    const d0 = DB.get('events', dv.id); if (!d0) return; const D = d0.deliv, K = CAL.DV[D.what], doc = CAL.dvNote(d0), w = CAL.dvWhen(d0);
+    const list = doc ? M.docBlocks(doc.id).filter(b => b && b.status === 'live' && b.kind === 'component' && String((b.body || {}).text || '').trim()).sort((a, b) => String(b.made || b.created || '').localeCompare(String(a.made || a.created || ''))).slice(0, 8) : [];
+    const ta = h('textarea.cal-attw', { rows: 3, placeholder: K.label + ': ' + d0.title, 'aria-label': 'Write the ' + K.label.toLowerCase() });
+    const body = h('div.cal-att', h('p.serif', { style: { marginTop: 0 } }, (w.ev ? 'Expected from “' + w.ev.title + '”. ' : 'Expected by the end of the day. ') + (doc ? 'Choose the component in “' + doc.title + '” that is the ' + K.label.toLowerCase() + (D.what === 'synth' ? ' (it joins ' + (w.ev ? 'the event’s region' : 'a region of the day’s work') + ')' : '') + ', or write it below.' : 'No note is assigned: what you write is a float — it waits for the note it belongs to (/float brings it into one).')),
+      list.length ? h('div.cal-attl', list.map(b => h('button.cal-atti', { type: 'button', on: { click: () => { CAL.dvApply(d0, b); m.close(); } } }, h('b', M.blockName(b)), h('span', snippet((b.body || {}).text || '', 110))))) : null, ta);
+    const m = modal({ title: 'Attach the ' + K.label.toLowerCase() + ' — “' + d0.title + '”', body, actions: [{ label: 'Not now' }, { label: 'Write it', pri: true, run: () => {
+      const target = doc || (typeof DAY !== 'undefined' ? DAY.doc(CAL.today(), true) : null); if (!target) return;
+      DB.beginGroup('Attach ' + K.label); const at = CAL.dvSpot(target, d0), b = M.addBlock(target.id, null, { label: D.what === 'synth' ? 'Synthesis' : '', x: at.x, y: at.y, w: 420 });
+      b.body = { text: ta.value.trim() || d0.title, marks: [] }; DB.put('blocks', b); CAL.dvApply(d0, b); } }] });
+    setTimeout(() => { try { (list.length ? $('.cal-atti', body) : ta).focus(); } catch (e) { } }, 30);
+  },
+  /** Where a written one goes: under the event's region in its note, or under the note's last component. */
+  dvSpot(doc, d0) {
+    const r = CAL.dvRegion(doc, d0), ids = r ? REGION.blocksOf(r, doc) : M.docBlocks(doc.id).filter(Boolean).map(b => b.id), bs = ids.map(M.block).filter(b => b && b.x != null);
+    return bs.length ? { x: Math.min(...bs.map(b => b.x)), y: Math.round(Math.max(...bs.map(b => (b.y || 0) + 180)) / 14) * 14 } : { x: 0, y: 80 };
+  },
+  dvRegion(doc, d0) { const D = d0.deliv; if (!D.eventId || !doc) return null; const ev = DB.get('events', D.eventId), x = ev && Object.values(ev.rg || {}).flatMap(z => (z && z.list) || []).find(z => z.docId === doc.id); return x ? REGION.list(doc).find(z => z.id === x.rg) || null : null; },
+  dvApply(d0, b) {
+    const D = d0.deliv, K = CAL.DV[D.what]; DB.beginGroup('Attach ' + K.label); const cur = M.block(b.id), text = String((cur.body || {}).text || '').replace(/￼/g, '');
+    if (K.struct && text.trim()) { const it = M.createItem(K.struct, text, cur); cur.body.marks = (cur.body.marks || []).concat([{ id: uid('m'), type: 'struct', from: 0, to: text.length, ref: it.id }]); }
+    if (K.kind) cur.ckind = K.kind;
+    if (!D.docId) cur.afloat = { at: isoLocal(new Date()), t: Date.now() };   // no note: a float, waiting for the note it belongs to
+    cur.modified = isoLocal(new Date()); DB.put('blocks', cur);
+    let rgId = null; const d = M.doc(cur.docId);
+    if (D.what === 'synth' && d && typeof REGION !== 'undefined') {   // into the event's region, or a region of what was written that day in the note
+      const r = CAL.dvRegion(d, d0);
+      if (r) { REGION.join(d, r, cur.id); rgId = r.id; }
+      else { const day = CAL.dvWhen(d0).day, mates = M.docBlocks(d.id).filter(x => x && x.id !== cur.id && x.status === 'live' && x.kind === 'component' && localDate(new Date(x.made || x.created)) === day && !REGION.of(x.id)).map(x => x.id);
+        const nr = REGION.create(d, mates.concat([cur.id])), rr = REGION.list(d).find(z => z.id === nr.id); if (rr) { rr.name = d0.title; REGION.save(d); } rgId = nr.id; } }
+    const nd = DB.get('events', d0.id); nd.deliv = Object.assign({}, nd.deliv, { state: 'done', blockId: cur.id, regionId: rgId, at: isoLocal(new Date()) }); nd.modified = isoLocal(new Date()); DB.put('events', nd);
+    changed(); try { REM.badge(); } catch (e) { } try { if (!D.docId && typeof FLOATS !== 'undefined') FLOATS.redraw(); } catch (e) { }
+    toast(K.label + ' attached' + (D.docId ? ' in “' + ((M.doc(D.docId) || {}).title || '') + '”' : ' — a float, waiting for its note') + ' — Ctrl+Z undoes it', 3000);
+  },
+  dvDrop(d) { const nd = DB.get('events', d.id); if (!nd) return; nd.deliv = Object.assign({}, nd.deliv, { state: 'dropped' }); CAL.save(nd, 'Not needed'); },
+  /** The event card's Deliver row: what is expected of it, and one more. */
+  dvRow(ev, it) {
+    const L = CAL.dvFor(ev.id).filter(d => CAL.dvWhen(d).day === it.day); let what = 'result';
+    const nm = h('input.bub-tagin.cal-tkin', { placeholder: 'what (optional)', 'aria-label': 'What the deliverable is' });
+    const chips = h('div.cw-chips.cal-dvk', Object.entries(CAL.DV).map(([k, o]) => h('button.cw-c' + (k === what ? '.on' : ''), { type: 'button', 'data-w': k, style: { '--ecol': 'var(--teal)' }, on: { click: e => { what = k; $$('.cw-c', chips).forEach(x => x.classList.toggle('on', x === e.currentTarget)); } } }, h('i'), o.label)));
+    const add = () => { CAL.addDv({ eventId: ev.id, day: it.day, what, title: nm.value }); setTimeout(() => CAL.bubFill(), 0); };
+    nm.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); add(); } });
+    return h('div.cal-tks', L.map(d => { const open = CAL.dvOpen(d);
+      return h('div.cal-tk' + (open ? '' : '.done'), h('span', CAL.DV[d.deliv.what].label + ' · ' + d.title),
+        open ? h('button.cw-d.cal-dvat', { type: 'button', title: CAL.dvDue(d) ? 'Due — attach it' : 'Due when it ends — attach it now if it is ready', on: { click: () => { CAL.closeBub(); CAL.attach(d); } } }, 'Attach…')
+          : d.deliv.blockId ? h('button.cal-tko', { type: 'button', title: 'Open what was attached', on: { click: () => { CAL.closeBub(); App.openComponent(d.deliv.blockId); } } }, CAL.ic('ck')) : null,
+        h('button.cal-tkx', { type: 'button', 'aria-label': 'Remove it', title: 'Remove this deliverable (what was attached stays)', on: { click: () => { DB.beginGroup('Remove deliverable'); DB.del('events', d.id); changed(); try { REM.badge(); } catch (e) { } setTimeout(() => CAL.bubFill(), 0); } } }, '×')); }),
+      chips, h('div.cal-dvadd', nm, h('button.cw-d', { type: 'button', on: { click: add } }, 'Add')));
+  },
+  /** One not tied to an event, on the planner: a chip at its time. */
+  dvChip(d) { const due = CAL.dvDue(d), open = CAL.dvOpen(d), K = CAL.DV[d.deliv.what], nt = CAL.dvNote(d), w = CAL.dvWhen(d);
+    return h('button.cal-dv' + (open ? (due ? '.due' : '') : '.done'), { type: 'button', 'data-dv': d.id, style: { top: `calc(var(--hpx) * ${w.at / 60} - 11px)` },
+      title: K.label + ': ' + d.title + ' — ' + (open ? (due ? 'due, attach it' : 'due at ' + CAL.hm(w.at)) : d.deliv.state === 'dropped' ? 'not needed' : 'attached, open it') + (nt ? ' · in “' + nt.title + '”' : ' · no note: a float'),
+      on: { pointerdown: e => e.stopPropagation(), click: e => { e.stopPropagation(); if (open) CAL.attach(d); else if (d.deliv.blockId) App.openComponent(d.deliv.blockId); } } },
+      CAL.ic(open ? 'dv' : 'ck'), h('b', K.label), h('span', d.title)); },
+  /** "… is due — attach it" (in its note, on Today). */
+  dvAskRow(d) { const K = CAL.DV[d.deliv.what], w = CAL.dvWhen(d), nt = CAL.dvNote(d);
+    return h('div.cal-ask.dv', h('span', CAL.ic('dv'), K.label + ' due: ', h('b', d.title), ' (' + (w.ev ? 'from ' + w.ev.title + ', ' : '') + fmtDay(parseDay(w.day)) + ' ' + CAL.hm(w.at) + ')' + (nt ? '' : ' — no note: it will be a float')),
+      h('button.cal-btn.pri', { type: 'button', on: { click: () => CAL.attach(d) } }, 'Attach…'), h('button.cal-btn', { type: 'button', on: { click: () => CAL.dvDrop(d) } }, 'Not needed')); },
+  /** The bell: what is due and not attached. */
+  dvSection() { const L = CAL.dvAsks(); if (!L.length) return null;
+    return h('div.cal-bell.dv', h('div.cal-blh', 'Deliverables due'), L.slice(0, 6).map(d => { const K = CAL.DV[d.deliv.what], w = CAL.dvWhen(d), nt = CAL.dvNote(d);
+      return h('button.cal-bl.new', { type: 'button', style: { '--ecol': 'var(--teal)' }, title: 'Attach it', on: { click: () => { closePop(); CAL.attach(d); } } }, h('i'), h('b', K.label + ': ' + d.title), h('span', (w.ev ? w.ev.title + ' · ' : '') + CAL.hm(w.at) + (nt ? ' · ' + nt.title : ' · no note'))); })); },
 
   /* ---------------- gestures ---------------- */
   minAt(colEl, y) { const r = colEl.getBoundingClientRect(); return clamp((y - r.top) / CAL.hpx * 60, 0, 1440); },
@@ -646,7 +829,7 @@ const CAL = {
     if (CAL.st.linkFrom) return CAL.linkTo(it);
     if (it.ev && CAL.isFocus(it.ev)) return CAL.focusSheet(it);   // V4.64
     CAL.closeAll();
-    if (it.task) return App.openBlock(it.task.id);
+    if (it.task) return App.openComponent(it.task.id);
     if (it.rem) { if (it.rem.kind === 'meeting' && REM.meetingNote) return REM.meetingNote(it.rem, it.at); return REM.edit({ id: it.rem.id }); }
     const ev = it.ev, d = CAL.docOf(it), rep = ev.repeat && ev.repeat !== 'none';
     const mine = rep ? (ev.notes || {})[it.day] : null, md = mine && M.doc(mine);
@@ -674,7 +857,7 @@ const CAL = {
     const dayI = h('input.cw-in', { type: 'date', value: st.day, 'aria-label': 'Day', on: { change: e => { if (e.target.value) st.day = e.target.value; when(); } } });
     const sI = h('input.cw-in', { type: 'time', step: 900, value: CAL.hm(st.s), 'aria-label': 'Start', on: { change: e => { const m = CAL.pm(e.target.value); if (m == null) return; const len = st.e - st.s; st.s = m; st.e = Math.min(1440, m + len); eI.value = CAL.hm(st.e % 1440); when(); } } });
     const eI = h('input.cw-in', { type: 'time', step: 900, value: CAL.hm(st.e % 1440), 'aria-label': 'End', on: { change: e => { let m = CAL.pm(e.target.value); if (m == null) return; if (m === 0) m = 1440; st.e = Math.max(st.s + 15, m); when(); } } });
-    const wh = h('span.cw-when'); const when = () => { wh.textContent = fmtDayLong(parseDay(st.day)) + (st.allDay ? ' · all day' : ' · ' + CAL.hm(st.s) + '–' + CAL.hm(st.e) + ' · ' + CAL.dur(st.e - st.s)); durs.forEach(b => b.classList.toggle('on', st.e - st.s === +b.dataset.m)); tr.hidden = st.allDay; };
+    const wh = h('span.cw-when'); const when = () => { wh.textContent = fmtDayLong(parseDay(st.day)) + (st.allDay ? ' · all day' : ' · ' + CAL.hm(st.s) + '–' + CAL.hm(st.e) + ' · ' + CAL.dur(st.e - st.s)); durs.forEach(b => b.classList.toggle('on', st.e - st.s === +b.dataset.m)); tr.hidden = st.allDay || !!st.dv; if (st.dv) wh.textContent = fmtDayLong(parseDay(st.day)) + ' · due ' + CAL.hm(st.due); };
     const durs = [[30, '30 min'], [60, '1 h'], [120, '2 h']].map(([m, l]) => h('button.cw-d', { type: 'button', 'data-m': m, on: { click: () => { st.e = Math.min(1440, st.s + m); eI.value = CAL.hm(st.e % 1440); when(); } } }, l));
     const adB = h('label.cw-ad', h('input', { type: 'checkbox', checked: st.allDay, on: { change: e => { st.allDay = e.target.checked; when(); } } }), 'All day');
     const tr = h('div.cw-r', h('span.cw-k', 'Time'), h('div.cw-tm', h('div.cw-times', sI, h('span', '–'), eI), h('div.cw-durs', durs)));
@@ -685,20 +868,30 @@ const CAL = {
     else if (by === 'tag') { const tg = h('input.cw-in', { placeholder: '#tag', 'aria-label': 'Tag', list: 'cal-tags', value: st.tag || '', on: { input: e => { st.tag = e.target.value.replace(/^#/, '').trim(); } } }); sort = h('div.cw-r', h('span.cw-k', 'Tag'), h('div', tg, h('datalist#cal-tags', CAL.tagOrder().map(t => h('option', { value: t }))))); }
     else sort = h('div.cw-r.top', h('span.cw-k', 'Event type'), CAL.typeChips(() => st.kind, v => { st.kind = v; }));
     const note = CAL.notePick(() => st.docId, id => { st.docId = id; }, 'Note', () => ({ kind: 'draft', state: Object.assign({}, st, { title: ti.value }), x: o.x, y: o.y }));
-    const typ = CAL.st.agents ? h('div.cal-seg.cw-type', { role: 'group', 'aria-label': 'What it is' }, [['ev', 'Event'], ['run', 'Agent run']].map(([k, l]) => h('button' + (k === 'ev' ? '.on' : ''), { type: 'button', on: { click: e => { st.run = k === 'run'; $$('button', typ).forEach(x => x.classList.toggle('on', x === e.currentTarget)); sort.hidden = st.run; adB.hidden = st.run; if (st.run) { st.allDay = false; $('input', adB).checked = false; when(); } } } }, l))) : null;
+    // V4.70: a deliverable — due at the end of the day (or a time), a structure, a kind or a mini synthesis
+    if (st.due == null) st.due = CAL.EOD; st.what = CAL.DV[st.what] ? st.what : 'result';
+    const dueI = h('input.cw-in', { type: 'time', step: 900, value: CAL.hm(st.due), 'aria-label': 'Due', on: { change: e => { const m = CAL.pm(e.target.value); if (m != null) st.due = m; when(); } } });
+    const dvR = h('div.cw-r', h('span.cw-k', 'Due'), h('div.cw-dayr', dueI, h('button.cw-d', { type: 'button', title: 'Due at the end of the day (' + CAL.hm(CAL.EOD) + ')', on: { click: () => { st.due = CAL.EOD; dueI.value = CAL.hm(CAL.EOD); when(); } } }, 'End of day')));
+    const whatC = h('div.cw-chips.cal-dvk', Object.entries(CAL.DV).map(([k, o]) => h('button.cw-c' + (st.what === k ? '.on' : ''), { type: 'button', 'data-w': k, style: { '--ecol': 'var(--teal)' }, on: { click: e => { st.what = k; $$('.cw-c', whatC).forEach(x => x.classList.toggle('on', x === e.currentTarget)); } } }, h('i'), o.label)));
+    const whatR = h('div.cw-r.top', h('span.cw-k', 'What'), whatC), hd = h('b', 'New event');
+    const modes = [['ev', 'Event']].concat(CAL.delivOn() ? [['dv', 'Deliverable']] : []).concat(CAL.st.agents ? [['run', 'Agent run']] : []);
+    const mode = k => { st.run = k === 'run'; st.dv = k === 'dv'; if (typ) $$('button', typ).forEach(x => x.classList.toggle('on', x.dataset.m === k)); sort.hidden = st.run || st.dv; adB.hidden = st.run || st.dv; dvR.hidden = whatR.hidden = !st.dv;
+      if (st.run || st.dv) { st.allDay = false; $('input', adB).checked = false; } ti.placeholder = st.dv ? 'What is due? (optional)' : 'What is it?'; hd.textContent = st.dv ? 'New deliverable' : st.run ? 'New agent run' : 'New event'; when(); };
+    const typ = modes.length > 1 ? h('div.cal-seg.cw-type', { role: 'group', 'aria-label': 'What it is' }, modes.map(([k, l]) => h('button' + (k === 'ev' ? '.on' : ''), { type: 'button', 'data-m': k, on: { click: () => mode(k) } }, l))) : null;
     const go = () => {
+      if (st.dv) { CAL.close(); const d = CAL.addDv({ day: st.day, at: st.due, what: st.what, title: ti.value, docId: st.docId || null }); toast('“' + d.title + '” — due ' + CAL.hm(d.start) + (d.deliv.docId ? ', in “' + ((M.doc(d.deliv.docId) || {}).title || '') + '”' : '; with no note it will be a float') + ' — Ctrl+Z undoes it', 2600); return; }
       const ev = CAL.make({ title: ti.value, day: st.day, start: st.allDay ? 0 : st.s, end: st.allDay ? 0 : st.e, allDay: st.allDay, kind: st.run ? 'run' : st.kind, projectId: st.projectId || (st.docId && (M.doc(st.docId) || {}).projectId) || null, tags: st.tag ? [st.tag] : [], docId: st.docId });
-      if (st.allDay) ev.end = 0; if (st.run) ev.run = { did: '', done: false }; CAL.close(); DB.beginGroup('New event'); DB.put('events', ev); changed(); toast('“' + ev.title + '” added — Ctrl+Z undoes it', 2200);
+      if (st.allDay) ev.end = 0; if (st.run) ev.run = { did: '', done: false }; CAL.close(); DB.beginGroup('New event'); DB.put('events', ev); changed(); try { REM.badge(); } catch (e) { } toast('“' + ev.title + '” added — Ctrl+Z undoes it', 2200);
     };
-    win.append(h('div.cw-h', h('b', 'New event'), wh, h('button.cal-ib.sm', { type: 'button', 'aria-label': 'Cancel (Esc)', on: { click: () => CAL.close() } }, CAL.ic('x'))),
-      typ, ti, h('div.cw-r', h('span.cw-k', 'Day'), h('div.cw-dayr', dayI, adB)), tr, sort, note.el,
+    win.append(h('div.cw-h', hd, wh, h('button.cal-ib.sm', { type: 'button', 'aria-label': 'Cancel (Esc)', on: { click: () => CAL.close() } }, CAL.ic('x'))),
+      typ, ti, h('div.cw-r', h('span.cw-k', 'Day'), h('div.cw-dayr', dayI, adB)), tr, dvR, whatR, sort, note.el,
       h('div.cw-f', h('span.cw-hint', 'Enter adds · Esc cancels'), h('button.cal-btn.pri', { type: 'button', on: { click: go } }, 'Create')));
     win.addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); CAL.close(); } else if (e.key === 'Enter' && !e.target.closest('.cw-np') && e.target.tagName !== 'BUTTON') { e.preventDefault(); go(); } });
     win.addEventListener('mousedown', e => e.stopPropagation());
-    document.body.append(win); when();
+    document.body.append(win); mode(st.dv || o.dv ? 'dv' : st.run ? 'run' : 'ev');
     const r = win.getBoundingClientRect(); win.style.left = clamp((o.x || 200) + 14, 8, innerWidth - r.width - 8) + 'px'; win.style.top = clamp((o.y || 120) - 24, 8, innerHeight - r.height - 8) + 'px';
     CAL.cw = win; setTimeout(() => ti.focus(), 20);
-    if (o.day) { const g = $(`.cal-col[data-day="${o.day}"]`, CAL.root || document); if (g && !st.allDay) { const dr = h('div.cal-draft', { style: { top: `calc(var(--hpx) * ${st.s / 60} + 2px)`, height: `calc(var(--hpx) * ${(st.e - st.s) / 60} - 4px)` } }); ($('.cal-cin', g) || g).append(dr); win._draft = dr; } }
+    if (o.day) { const g = $(`.cal-col[data-day="${o.day}"]`, CAL.root || document); if (g && !st.allDay && !st.dv) { const dr = h('div.cal-draft', { style: { top: `calc(var(--hpx) * ${st.s / 60} + 2px)`, height: `calc(var(--hpx) * ${(st.e - st.s) / 60} - 4px)` } }); ($('.cal-cin', g) || g).append(dr); win._draft = dr; } }
   },
   /** A note to link (V4.65): a click opens the recent notes, a search, and Pick in the Portfolio…; its chip, × unlinks. */
   /** A window that grew (a list opened in it) moves up to stay on the screen. */
@@ -755,6 +948,8 @@ const CAL = {
         CAL.afterOf(ev).map(a => h('span.bub-lk', h('em', '← after'), a.title, h('button', { type: 'button', 'aria-label': 'Unlink ' + a.title, on: { click: () => { CAL.unlink(a, ev); setTimeout(() => CAL.bubFill(), 0); } } }, '×'))),
         CAL.thenOf(ev).map(b => h('span.bub-lk', h('em', 'then →'), b.title, h('button', { type: 'button', 'aria-label': 'Unlink ' + b.title, on: { click: () => { CAL.unlink(ev, b); setTimeout(() => CAL.bubFill(), 0); } } }, '×'))),
         h('button.cw-d', { type: 'button', title: 'Then click the event that comes after it', on: { click: () => CAL.linkStart(ev) } }, CAL.ic('link'), 'Link → then…'))) : null,
+      !CAL.isFocus(ev) ? h('div.bub-r.top', h('span.cw-k', 'Tasks'), CAL.taskRow(ev, it)) : null,
+      !CAL.isFocus(ev) && CAL.delivOn() ? h('div.bub-r.top', h('span.cw-k', 'Deliver'), CAL.dvRow(ev, it)) : null,
       h('div.bub-f', h('button.cal-btn' + (CAL.isFocus(ev) ? '.pri' : ''), { type: 'button', on: { click: () => CAL.open(it) } }, CAL.isFocus(ev) ? 'Start focus' : CAL.docOf(it) ? 'Open its note' : 'Make its note'),
         h('span.cal-sp'),
         h('button.cal-btn', { type: 'button', on: { click: () => { const cp = CAL.make(Object.assign(JSON.parse(JSON.stringify(ev)), { id: uid('ev'), day: it.day, repeat: 'none', skip: [], notes: null, docId: null, created: isoLocal(new Date()) })); DB.beginGroup('Duplicate'); DB.put('events', cp); changed(); CAL.closeBub(); toast('Duplicated'); } } }, 'Duplicate'),
@@ -781,7 +976,7 @@ const CAL = {
           cards.filter(x => x[0] === c).map(([, s, e, t, col]) => h('div.pv-ec', { style: { top: (s - 8) * hp + 2 + 'px', height: Math.max(14, (e - s) * hp - 4) + 'px', background: col } }, t)),
           c === 1 ? h('i.pv-run', { style: { top: (9 - 8) * hp + 'px', height: 3 * hp + 'px' } }, h('span', 'Digest papers'), CAL.tn('electrons', true) !== false ? [h('b', { style: { top: '30%' } }), h('b', { style: { top: '65%' } })] : null) : null,
           c === 1 ? h('i.pv-now', { style: { top: (10.6 - 8) * hp + 'px' } }) : null)))),
-      PV.cap(n + ' hours fill the height; the rest scrolls. ' + (slots ? 'Free time between events shows dashed (7:00–21:00); a click adds an event there.' : 'Free time is not drawn; a click on an empty stretch still adds an event.') + ' Weeks start on ' + (CAL.wk0() ? 'Monday' : 'Sunday') + '.' + (CAL.focusOn() ? ' Focus (gold): full screen, your activity counts double (2×); leaving asks first, then 5 minutes to come back before the session ends and the doubling goes.' : ' Focus is off.') + ' With Agent runs on (G), a run is a line beside the day' + (CAL.tn('electrons', true) !== false ? ', electrons flowing down it while it runs.' : '; a running one glows, without electrons.'))];
+      PV.cap(n + ' hours fill the height; the rest scrolls. ' + (slots ? 'Free time between events shows dashed (7:00–21:00); a click adds an event there.' : 'Free time is not drawn; a click on an empty stretch still adds an event.') + ' Weeks start on ' + (CAL.wk0() ? 'Monday' : 'Sunday') + '.' + (CAL.bellOn() ? ' Today’s all-day events show once in the bell.' : '') + (CAL.regionsOn() ? ' What you write during an event becomes a region named after it.' : '') + (CAL.delivOn() ? ' Deliverables (what an event or a day should produce) ask to be attached once due.' : '') + (CAL.focusOn() ? ' Focus (gold): full screen, your activity counts double (2×); leaving asks first, then 5 minutes to come back before the session ends and the doubling goes.' : ' Focus is off.') + ' With Agent runs on (G), a run is a line beside the day' + (CAL.tn('electrons', true) !== false ? ', electrons flowing down it while it runs.' : '; a running one glows, without electrons.'))];
   },
 };
 function isoWeekNo(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); const n = d.getUTCDay() || 7; d.setUTCDate(d.getUTCDate() + 4 - n); const y0 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)); return Math.ceil(((d - y0) / 864e5 + 1) / 7); }
@@ -798,11 +993,25 @@ VIEWS.calendar = CalendarView;
   document.addEventListener('keydown', e => { try { CAL.key(e); } catch (er) { console.warn('[calendar] key', er); } });
   document.addEventListener('mousedown', e => { if (CAL.cw && !CAL.cw.contains(e.target) && !e.target.closest('.ovl')) { CAL._swallow = !!e.target.closest('.cal-grid'); CAL.close(); setTimeout(() => { CAL._swallow = false; }, 400); }
     if (CAL.bubEl && !CAL.bubEl.contains(e.target) && !e.target.closest('.ovl')) CAL.closeBub(); }, true);
-  // V4.65 — Pick in the Portfolio: a note opened there is linked instead, and you are back in the calendar
-  { const go0 = App.go; App.go = function (hash) { if (CAL.pickFor && /^#\/doc\//.test(String(hash))) { const id = decodeURIComponent(String(hash).slice(6).split('/')[0]); if (M.doc(id)) return CAL.pickDone(id); } return go0.apply(this, arguments); }; }
-  document.addEventListener('click', e => { if (!CAL.pickFor) return; const a = e.target.closest && e.target.closest('a[href^="#/doc/"]'); if (!a) return; e.preventDefault(); e.stopPropagation(); const id = decodeURIComponent(a.getAttribute('href').slice(6).split('/')[0]); if (M.doc(id)) CAL.pickDone(id); }, true);
+  // V4.65 — Pick in the Portfolio: a note opened there is linked instead, and you are back in the calendar (the click on a note is PFPICK's, 13zzzd)
   // now moves: the line, once a minute
   setInterval(() => { if (App.route && App.route.name === 'calendar' && CAL.root && CAL.root.isConnected) { const n = $('.cal-now', CAL.root); if (n) n.style.top = `calc(var(--hpx) * ${CAL.nowMin() / 60})`; } }, 60000);
+  // V4.67 — the bell: today's all-day events count until it is opened once, then sit under "Seen"
+  if (typeof REM !== 'undefined') {
+    const b0 = REM.badge; REM.badge = function () { b0.apply(this, arguments); try { const b = $('#remindbtn'); if (!b) return; const u = CAL.bellUnseen().length, dv = CAL.dvAsks().length; if (!u && !dv) return; const n = (+b.dataset.n || 0) + u + dv; b.dataset.n = n; b.title = [u ? plural(u, 'all-day event') + ' today' : '', dv ? plural(dv, 'deliverable') + ' due' : ''].filter(Boolean).join(' · ') + (n > u + dv ? ' · ' + plural(n - u - dv, 'reminder') + ' in the next 24 h' : ''); } catch (e) { } };
+    const p0 = REM.panel; REM.panel = function () { const r = p0.apply(this, arguments); try { const pop = $('.pop.rmpop'), sec = CAL.bellSection(), dsec = CAL.dvSection(); if (pop && (sec || dsec)) { const head = $('.rm-ph', pop), L = [sec, dsec].filter(Boolean); head ? head.after(...L) : pop.prepend(...L); } CAL.bellMark(); REM.badge(); } catch (e) { console.warn('[calendar] bell', e); } return r; };
+    setInterval(() => { try { REM.badge(); } catch (e) { } }, 60000);
+  }
+  // V4.69 — regions from the calendar: gathered once an event has ended (each minute, and after a start); the question in its note and on Today; the regions say where they came from
+  setInterval(() => { try { CAL.regionSweep(); } catch (e) { console.warn('[calendar] regions', e); } }, 60000);
+  { const w = setInterval(() => { if (!window.__ready && !(typeof DB !== 'undefined' && DB.mode)) return; clearInterval(w); setTimeout(() => { try { CAL.regionSweep(); } catch (e) { } }, 1500); }, 500); }
+  { const r0 = App.refresh; App.refresh = function () { const x = r0.apply(this, arguments); try { CAL.askBar(); } catch (e) { } return x; }; }
+  if (VIEWS.home && VIEWS.home.render) { const h0 = VIEWS.home.render; VIEWS.home.render = function () { const el = h0.apply(this, arguments); try { const L = CAL.regionsOn() ? CAL.asks(null) : [], DV = CAL.dvAsks(); if ((L.length || DV.length) && el) { const sec = h('div.cal-today', h('div.sec-h', h('h2', 'From your calendar'), h('span.k', [DV.length ? plural(DV.length, 'deliverable') + ' due' : '', L.length ? plural(L.length, 'event') + ' with nothing written' : ''].filter(Boolean).join(' · '))), DV.slice(0, 6).map(CAL.dvAskRow), L.slice(0, 6).map(CAL.askRow)); const at = el.querySelector('.sec-h'); at ? at.parentNode.insertBefore(sec, at) : el.append(sec); } } catch (e) { console.warn('[calendar] today', e); } return el; }; }
+  if (typeof REGION !== 'undefined') { const rr0 = REGION.render; REGION.render = function (pane) { const x = rr0.apply(this, arguments); try { const d = M.doc(pane.docId); if (!d || !pane.paper) return x;
+    $$(':scope > .region', pane.paper.world).forEach(el => { const r = REGION.list(d).find(z => z.id === el.dataset.rg), tab = $('.rg-tab', el); if (!r || !tab) return; const name = $('.rg-name', tab);
+      const chips = []; if (r.event) { const ev = DB.get('events', r.event.id); chips.push(h('button.rg-chip.rg-ev', { type: 'button', title: 'From the calendar' + (ev ? ': ' + ev.title + ', ' + fmtDay(parseDay(r.event.day)) + ' ' + CAL.hm(ev.start) + '–' + CAL.hm(ev.end) : '') + ' — open the day', on: { pointerdown: e => e.stopPropagation(), click: e => { e.stopPropagation(); CAL.st.day = r.event.day; CAL.st.view = 'day'; App.go('#/calendar'); } } }, CAL.ic('focus'), fmtDay(parseDay(r.event.day)))); }
+      (r.bridges || []).forEach(b => { const od = M.doc(b.docId); if (!od) return; chips.push(h('button.rg-chip.rg-br', { type: 'button', title: 'Bridged: its event is linked to one written in “' + od.title + '” — open it', on: { pointerdown: e => e.stopPropagation(), click: e => { e.stopPropagation(); App.go('#/doc/' + od.id); } } }, CAL.ic('link'), od.title)); });
+      if (chips.length && name) name.after(...chips); }); } catch (e) { console.warn('[calendar] region chips', e); } return x; }; }
   // V4.64 — focus: Esc in a session asks first; leaving full screen starts the 5 minutes; a session left running (a reload) is away
   document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; let L = null; try { L = CAL.live(); } catch (er) { } if (!L || L.s.state !== 'live' || !document.fullscreenElement || $('.ovl') || (typeof _pop !== 'undefined' && _pop)) return; e.preventDefault(); e.stopPropagation(); CAL.confirmLeave(); }, true);
   document.addEventListener('fullscreenchange', () => { if (document.fullscreenElement) return; try { const L = CAL.live(); if (L && L.s.state === 'live') CAL.away(); } catch (e) { } });

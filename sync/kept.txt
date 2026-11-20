@@ -26,6 +26,7 @@ src/02-schema.js	mwsteps:   { key: 'id',  doc: 'My Week steps from RM, mirrored 
 src/09-editor.js	for (const m of cov.filter(m => m.type === 'person')) node = h('span.mn', { 'data-m': m.id, 'data-uid': m.uid || '', title: (m.name || '') + (m.uid ? ' · a lab member' : '') }, node);   // V3.947: @Name (13zzg)
 src/11b-commands.js	ALIAS: { rmpaper: 'paper', rmprotocol: 'protocol', rmaction: 'action', rmcollection: 'collection', 'material-new': 'newmaterial', 'equation-reg': 'registered', 'table-empty': 'emptytable', 'canvas-add': 'canvas', 'pull-barrier': 'barrier', 'pull-item': 'structure', 'pull-comp': 'component' },
 src/11b-commands.js	ALIAS: { rmpaper: 'paper', rmprotocol: 'protocol', rmaction: 'action', rmcollection: 'labcollection', 'material-new': 'newmaterial', 'equation-reg': 'registered', 'table-empty': 'emptytable', 'canvas-add': 'canvas', 'pull-barrier': 'barrier', 'pull-item': 'structure', 'pull-comp': 'component' },
+src/12e-shiftzoom.js	The canvas pills (vendor/lab-pills.js) already fit a component on a
 src/13c-chain.js	// the lab's build (V3.885, rm/scientia/lab-mode.js) makes + Experiment a note at once; Gabe now wants it to ask the name and offer a series —
 src/13zza-clip.js	Found by the lab site's detectors (rm/js/page-layout.js figures and tables
 src/13zzd-board.js	empty cell): the Lab Notebook's own board (pen, highlighter, cards,

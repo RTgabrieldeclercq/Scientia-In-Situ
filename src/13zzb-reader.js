@@ -186,7 +186,7 @@ const RDOCK = {
   /** The note to where the paper or page is embedded: its component in view, lit. */
   follow(id) {
     const b = M.block(id); if (!b || !M.doc(b.docId)) return; const show = App.panes().find(p => p.docId === b.docId);
-    if (show) { show.pendingFocus = { reveal: id }; show.focusPending(); } else App.openBlock(id);
+    if (show) { show.pendingFocus = { reveal: id }; show.focusPending(); } else App.openComponent(id);
     setTimeout(() => $$(`.box[data-id="${id}"]`).forEach(x => { x.classList.add('rd-lit'); setTimeout(() => x.classList.remove('rd-lit'), 2200); }), 420);
   },
   tabMenu(id, e) {
