@@ -66,7 +66,7 @@ body:not(.f-off-look) :is(#newnote,#newexp):active{transform:scale(.96)}
 body:not(.f-off-look) #tabs .tab{z-index:1;border-radius:999px;padding:5px 11px 6px}
 /* V4.46: the pill covers the whole tab (20d LOOK.tabPill); an empty count gives back its gap, so the name sits in the middle of it (it stays, so the header keeps its height) */
 body:not(.f-off-look) #tabs .tab > .tc:empty{margin-left:-4px}
-body:not(.f-off-look) #tabs .tink{z-index:0;top:1px;bottom:3px;height:auto;border-radius:999px;background:var(--lk-rail);box-shadow:var(--lk-sh1),inset 0 0 0 1px var(--lk-ring);transition:transform .45s var(--lk-soft),width .45s var(--lk-soft)}
+body:not(.f-off-look) #tabs .tink{z-index:0;top:1px;bottom:auto;height:calc(100% - 4px);border-radius:999px;background:var(--lk-rail);box-shadow:var(--lk-sh1),inset 0 0 0 1px var(--lk-ring);transition:transform .45s var(--lk-soft),width .45s var(--lk-soft)}
 body.lk-still:not(.f-off-look) #tabs .tink{transition:none}
 /* a page you go to fades in and rises 6 px (only when you navigate: 20d sets #view.lk-nav for a moment) */
 body:not(.f-off-look) #view.lk-nav > :not(.pf-root){animation:lk-rise .28s var(--lk-rise) both}
@@ -277,3 +277,4 @@ body.lk-still:not(.f-off-look) :is(.pop,.modal,.toast,.ovl,.lk-rail,.rs-grip.lk-
 .pv-lk-shelf span{width:16px;border-radius:3px 3px 1px 1px;background:var(--teal)}
 .pv-lk-list{display:grid;gap:4px;min-width:150px}
 .pv-lk-list span{display:block;height:16px;border-radius:6px;background:var(--surface-2)}
+/* V4.51: the pill is the tab's own box (20d sets its top and height too), so the name is in its middle both ways */

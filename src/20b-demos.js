@@ -523,13 +523,13 @@ FEAT.demo("lock", { by: "", at: "2026-11-18", use: "Once the day has turned, wha
     [13.2,"Add a correction, “it was 12 ng/mL, not 10”: the wording stays recorded, and the structure’s card carries it"]] });
 /* /demo:lock */
 /* demo:materials */
-FEAT.demo("materials", { by: "", at: "2026-11-18", use: "Know what every gel batch, cell line and antibody lot is, and which notes used it.",
-  video: "demos/materials.mp4", poster: "demos/materials.jpg", v: "70c709a4", w: 1280, h: 800, dur: 42.9, kb: 687,
+FEAT.demo("materials", { by: "", at: "2026-11-20", use: "Know what every gel batch, cell line and antibody lot is, and which notes used it.",
+  video: "demos/materials.mp4", poster: "demos/materials.jpg", v: "1afea60e", w: 1280, h: 800, dur: 48.5, kb: 947,
   steps: [
-    [0,"Materials tab → + New material: “PAA gel batch 15”, a gel batch made here. Fill in its stiffness"],
-    [15.8,"Log what happens to it: type “poured”"],
-    [21.7,"In the run note: right-click → Insert… → Material; type “used 2 coverslips” on its card to log it"],
-    [35,"The Materials tab: every material by kind, with the notes that used it"]] });
+    [1.1,"Atlas → Materials → + New material: “PAA gel batch 15”, a gel batch made here. Fill in its stiffness"],
+    [18.9,"Log what happens to it: type “poured”"],
+    [24.9,"In the run note: right-click → Insert… → Material; type “used 2 coverslips” on its card to log it"],
+    [37.9,"The Atlas’s Materials: every material by kind, with the notes that used it"]] });
 /* /demo:materials */
 /* demo:pfdots */
 FEAT.demo("pfdots", { by: "", at: "2026-11-18", use: "See from the Portfolio which notes hold takeaways, open barriers, evidence and things to look into.",

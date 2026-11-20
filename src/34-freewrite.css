@@ -131,10 +131,10 @@ body.f-off-freewrite .fwc .fw-open{display:none}
 @keyframes fw-gin{from{opacity:0}to{opacity:1}}
 .fw-gsvg{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible}
 .fw-gsvg svg{overflow:visible;display:block}
-.fw-gl{font:600 12px var(--f-b)}
+.fw-gl{font:600 12px var(--f-d)}
 .fw-gb{position:absolute;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;padding:12px 14px;border:1.5px dashed var(--fc,var(--ink-3));border-radius:12px;background:color-mix(in srgb,var(--fc,var(--ink-3)) 7%,var(--surface));color:var(--ink);opacity:.94}
 .fw-gb::before{content:'Preview';position:absolute;top:-9px;right:12px;padding:2px 7px;border-radius:999px;background:var(--fc,var(--ink-3));color:#fff;font:600 9px/1.4 var(--f-m);letter-spacing:.08em;text-transform:uppercase}
 .fw-gbt{align-self:flex-start;padding:1px 6px;border-radius:5px;background:color-mix(in srgb,var(--fc,var(--ink-3)) 16%,transparent);color:var(--ink-2);font:600 10px/1.5 var(--f-m);letter-spacing:.05em;text-transform:uppercase}
-.fw-gbx{font:400 14px/1.45 var(--f-s);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:7;overflow:hidden}
+.fw-gbx{font:400 14px/1.45 var(--f-b);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:7;overflow:hidden}
 .fw-tb[hidden]{display:none}
 @media (prefers-reduced-motion:reduce){.fw-ghosts{animation:none}}
