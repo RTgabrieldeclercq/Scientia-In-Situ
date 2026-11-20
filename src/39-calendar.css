@@ -304,3 +304,75 @@ svg.cal-links{position:absolute;left:0;top:0;z-index:6;overflow:visible;pointer-
 .pv-run span{position:absolute;right:4px;top:2px;writing-mode:vertical-rl;font:600 8px/9px var(--f-m);color:#5B4FC4;white-space:nowrap}
 .pv-run b{position:absolute;left:-1.5px;width:5px;height:5px;border-radius:50%;background:#5B4FC4;box-shadow:0 0 4px #5B4FC4}
 @media (prefers-reduced-motion:reduce){.cal-run.running .re{animation:none;opacity:1}}
+
+/* V4.64 — focus: gold blocks that breathe; the sheet that says the rules; the capsule while a session runs; the warning */
+.cal-root{--fx1:#E7C373;--fx2:#F7E6BC;--fx-ink:#4A3510;--fx-glow:rgba(201,140,28,.42)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .cal-root{--fx1:#7A5A1E;--fx2:#9C7A32;--fx-ink:#FBEFD2;--fx-glow:rgba(232,182,84,.30)}}
+:root[data-theme="dark"] .cal-root{--fx1:#7A5A1E;--fx2:#9C7A32;--fx-ink:#FBEFD2;--fx-glow:rgba(232,182,84,.30)}
+.cal-ec.focus{color:var(--fx-ink);background:linear-gradient(115deg,var(--fx1) 0%,var(--fx2) 46%,var(--fx1) 92%);background-size:230% 100%;box-shadow:var(--lk-sh1),inset 0 0 0 1px color-mix(in srgb,var(--fx1) 70%,transparent);animation:cal-sheen 8s ease-in-out infinite,cal-breathe 5s ease-in-out infinite}
+.cal-ec.focus.live{animation-duration:4s,2.4s}
+.cal-ec.focus.away{animation:none;opacity:.8;box-shadow:var(--lk-sh1),inset 0 0 0 2px var(--fx1)}
+.cal-ec.focus.done{animation:none}
+.cal-ec.focus.invalid{animation:none;opacity:.55}
+.cal-ec.focus.invalid .ec-t{text-decoration:line-through}
+.cal-ec .ec-fs{font:600 10px/1.2 var(--f-m);opacity:.85}
+@keyframes cal-sheen{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@keyframes cal-breathe{0%,100%{box-shadow:var(--lk-sh1),inset 0 0 0 1px color-mix(in srgb,var(--fx1) 70%,transparent),0 0 0 0 var(--fx-glow)}50%{box-shadow:var(--lk-sh1),inset 0 0 0 1px color-mix(in srgb,var(--fx1) 70%,transparent),0 0 22px 3px var(--fx-glow)}}
+body.lk-still .cal-ec.focus{animation:none}
+.cal-dh .dfo{padding:1px 6px;border-radius:999px;background:color-mix(in srgb,#C9971F 18%,transparent);color:color-mix(in srgb,#8F5600 80%,var(--ink));font:600 9.5px/1.4 var(--f-m)}
+.cal-fbtn{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 12px;border:0;border-radius:999px;background:linear-gradient(115deg,#E7C373,#F7E6BC);color:#4A3510;font:650 12px/1 var(--f-d);box-shadow:var(--lk-sh1);cursor:pointer}
+.cal-fbtn:hover{box-shadow:var(--lk-lift)}
+.cal-fdot{width:8px;height:8px;border-radius:50%;background:#B07D12;box-shadow:0 0 0 0 rgba(201,140,28,.5);animation:cal-fpulse 2.4s ease-in-out infinite}
+@keyframes cal-fpulse{0%,100%{box-shadow:0 0 0 0 rgba(201,140,28,.5)}50%{box-shadow:0 0 0 5px rgba(201,140,28,0)}}
+.cal-tg.cal-pf.on{background:color-mix(in srgb,#C9971F 14%,var(--lk-card));box-shadow:inset 0 0 0 1.5px #C9971F}
+body.cal-focusing .cal-fbtn{outline:2px solid #C9971F;outline-offset:2px}
+.cal-fsheet{display:flex;flex-direction:column;gap:12px;max-width:460px}
+.cal-fhead{display:flex;align-items:center;gap:8px;font:600 13.5px/1.35 var(--f-d)}
+.cal-fhead .cal-i{color:#B07D12}
+.cal-frules{margin:0;padding:12px 14px 12px 30px;border-radius:12px;background:color-mix(in srgb,#C9971F 9%,var(--lk-card));box-shadow:inset 0 0 0 1px color-mix(in srgb,#C9971F 30%,transparent);font:400 13px/1.5 var(--f-d);color:var(--ink-2)}
+.cal-frules li{margin:2px 0}
+.cal-frules b{color:var(--ink)}
+.cal-flen{display:flex;align-items:center;gap:10px}
+.cal-fwarn{display:flex;gap:12px;align-items:flex-start;max-width:440px}
+.cal-fwarn .cal-i{flex:none;width:34px;height:34px;border-radius:10px;background:color-mix(in srgb,var(--bad) 12%,transparent);color:var(--bad)}
+.cal-fwarn .cal-i svg{width:20px;height:20px}
+.cal-fwarn b{font:650 14px var(--f-d)}
+.cal-fwarn p{margin:4px 0 0;font:400 13px/1.5 var(--f-d);color:var(--ink-2)}
+.cal-fcap{position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:900;display:flex;align-items:center;gap:10px;height:40px;padding:0 6px 0 14px;border-radius:999px;background:linear-gradient(115deg,#E7C373,#F7E6BC 50%,#E7C373);background-size:230% 100%;color:#4A3510;font:500 13px/1 var(--f-m);box-shadow:0 10px 30px -12px rgba(0,0,0,.5),0 0 0 1px rgba(201,140,28,.5);animation:cal-sheen 8s ease-in-out infinite}
+.cal-fcap b{font:650 13px var(--f-d)}
+.cal-fcap .cal-f2{padding:2px 8px;border-radius:999px;background:rgba(74,53,16,.14);font-weight:650}
+.cal-fcap .cal-btn{height:28px;background:rgba(255,255,255,.55);color:#4A3510;box-shadow:none}
+.cal-fcap .cal-btn.pri{background:#4A3510;color:#F7E6BC}
+.cal-fcap.away{background:var(--lk-rail);color:var(--ink);animation:none;box-shadow:0 10px 30px -12px rgba(0,0,0,.5),0 0 0 2px #C9971F}
+.cal-fcap.away .cal-fg{color:var(--bad);font-weight:600}
+.cal-fcap.away .cal-btn:not(.pri){background:var(--surface-2);color:var(--ink)}
+@media (prefers-reduced-motion:reduce){.cal-ec.focus,.cal-fcap,.cal-fdot{animation:none}}
+.cal-dh{white-space:nowrap;overflow:hidden;gap:6px} .cal-dh .dfo,.cal-dh .dl{white-space:nowrap;flex:none} .cal-dh .dfo{margin-left:auto} .cal-dh .dfo + .dl{margin-left:0}
+
+/* V4.65 — event types of your own; the note picker; Pick in the Portfolio; Barrier → Custom…; drag to create */
+.cw-r,.bub-r{grid-template-columns:76px minmax(0,1fr)}
+.cw-c.cw-add{color:var(--teal);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--teal) 40%,transparent)}
+.cw-tform{flex-basis:100%;display:flex;flex-direction:column;gap:7px;margin-top:4px;padding:9px;border-radius:10px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--lk-ring)}
+.cw-tform[hidden]{display:none}
+.cw-tfr{display:flex;gap:6px;flex-wrap:wrap}
+.cw-sw{display:flex;gap:5px;flex-wrap:wrap}
+.cw-swc{width:20px;height:20px;padding:0;border:0;border-radius:6px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+.cw-swc.on{box-shadow:0 0 0 2px var(--lk-rail),0 0 0 4px var(--ink)}
+.cal-tlist{display:flex;flex-direction:column;gap:8px;min-width:420px}
+.cal-trow{display:flex;align-items:center;gap:10px}
+.cal-trow > i{width:12px;height:12px;border-radius:4px;flex:none}
+.cal-trow b{font:600 13px var(--f-d)} .cal-trow .cal-tb{font:500 10.5px var(--f-m);color:var(--ink-3)}
+.cal-trow .cw-in{flex:1;min-width:120px}
+.cw-link{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border:0;border-radius:8px;background:var(--surface);color:var(--ink-2);font:600 12px/1 var(--f-d);box-shadow:inset 0 0 0 1px var(--lk-ring);cursor:pointer}
+.cw-link:hover{color:var(--ink);box-shadow:inset 0 0 0 1px var(--lk-ring-2)}
+.cw-npop{display:flex;flex-direction:column;gap:6px;padding:8px;border-radius:10px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--lk-ring)}
+.cw-nh{padding:2px 4px 0;font:600 9.5px/1 var(--f-m);letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+.cw-nl{max-height:220px;overflow:auto}
+.cw-pf{align-self:flex-start;height:28px;padding:0 10px;border:0;border-radius:8px;background:transparent;color:var(--teal);font:600 12px/1 var(--f-d);cursor:pointer}
+.cw-pf:hover{background:color-mix(in srgb,var(--teal) 10%,transparent)}
+.cal-pick{position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:900;display:flex;align-items:center;gap:10px;height:40px;padding:0 6px 0 14px;border-radius:999px;background:var(--teal);color:var(--lk-card);font:600 13px/1 var(--f-d);box-shadow:0 10px 30px -12px rgba(0,0,0,.5)}
+.cal-pick .cal-btn{height:28px;background:rgba(255,255,255,.18);color:inherit;box-shadow:none}
+.cw-d.cw-cust{color:var(--teal);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--teal) 40%,transparent)}
+.cal-ghost.cal-push{border-color:#C9971F;background:color-mix(in srgb,#C9971F 12%,transparent);color:#8F5600}
+.cal-ghost.cal-push.bad{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 8%,transparent);color:var(--bad)}
+.cal-ghost.cal-new{z-index:9}

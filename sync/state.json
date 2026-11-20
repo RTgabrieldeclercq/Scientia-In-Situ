@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "8e89b1bf699ca6d7f002898126ae8fd25054b41a",
-  "subject": "V4.63: Scientia — the Terms page as cards, in the new look: each term a card with its uses, its last 12 weeks, its structures and when it was last used",
+  "commit": "be5da74a0e36075154787746594bdf82a0181e9c",
+  "subject": "V4.66: Scientia — terms in notes: three readable looks (A · Quiet underline by default, B · Soft tag, C · Ghost until you look) and one card, the Ledger with a timeline of every note down its left",
   "date": "2026-11-20"
  },
- "cut": "6ecfc0ec6d16914514b7f6c2b3b7c43fe99302e2",
+ "cut": "fcb9c93edd01cf9a56fa7e84ba8b72b6a79b40b4",
  "names": [
   "DESKLAB",
   "LABSYNC",

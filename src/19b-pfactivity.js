@@ -92,7 +92,7 @@ const PFACT = {
       h('div.pfa-top', h('div.pfa-big', h('b', String(A.score)), h('span', 'activity · 4 wk')), h('span.pfa-st' + (st.cls ? '.' + st.cls : ''), st.word)),
       h('p.pfa-why', st.why),
       h('div.pfa-n', [['components made', n.comp, '+1'], ['structures marked', n.struct, '+3'], ['takeaways', n.take, '+10'], ['results', n.res, '+10']].map(([l, c, w]) => h('div', h('b', String(c)), h('span', l), h('i', w + ' each')))),
-      h('p.pfa-how', 'How it is counted: a note scores only in the two weeks from its date — a component made +1, a structure marked +3, a takeaway or a result +10; lit reviews score nothing. The score is the last four weeks.'));
+      h('p.pfa-how', 'How it is counted: a note scores only in the two weeks from its date — a component made +1, a structure marked +3, a takeaway or a result +10; lit reviews score nothing. The score is the last four weeks. While in focus (Calendar → Focus) each moment counts double.'));
     const act = sec('Activity', '8 weeks', PFKIT.heat(A.perDay, { weeks: 8, cell: 11 }));
     // time recorded (presence, not progress)
     const t4 = PFACT.ms(S.themeIds, 28), t1 = PFACT.ms(S.themeIds, 7);
