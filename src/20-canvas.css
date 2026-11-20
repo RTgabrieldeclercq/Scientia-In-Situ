@@ -937,6 +937,17 @@ div.fg-cap{font-size:12px;color:var(--ink-2)}
 .fg-preset:hover{border-color:var(--teal)}
 .fg-mini{display:grid;gap:2px;width:56px;height:42px}
 .fg-mini i{background:color-mix(in srgb,var(--teal) 22%,var(--surface-2));border-radius:2px}
+/* V4.67 — start empty, and the one m×n box with its shape drawn as you type */
+.fg-mini.e i,.fg-preset.e .fg-mini i{background:transparent;outline:1px dashed color-mix(in srgb,var(--ink) 35%,transparent);outline-offset:-1px}
+.fg-custom{display:flex;align-items:center;gap:16px;margin-top:14px;padding:12px 14px;border:1px solid var(--rule);border-radius:10px;background:var(--surface-2)}
+.fg-prevbox{width:176px;height:120px;display:grid;place-items:center;flex:none}
+.fg-cfield{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.fg-mn.bad{border-color:var(--mag);color:var(--mag)}
+.fg-shape{display:grid;gap:3px;transition:width .12s,height .12s}
+.fg-shape i{position:relative;background:color-mix(in srgb,var(--teal) 24%,var(--surface));border-radius:3px;min-width:0;min-height:0}
+.fg-shape.e i{background:var(--surface);outline:1.5px dashed var(--rule-2);outline-offset:-1.5px}
+.fg-shape.e i::after{content:'+';position:absolute;inset:0;display:grid;place-items:center;font-size:11px;line-height:1;color:var(--ink-3)}
+.fg-shape.dim{opacity:.35}
 .fgc-wrap{display:grid;place-items:center;background:#111;padding:12px;border-radius:8px}
 .fgc-stage{position:relative;user-select:none;touch-action:none;cursor:crosshair}
 .fgc-shade{position:absolute;inset:0;background:rgba(0,0,0,.55);pointer-events:none}
@@ -1095,3 +1106,6 @@ html,body{overscroll-behavior:none}
 .pl-lab { margin: 8px 0 2px; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
 .pl-ys { display: flex; flex-direction: column; gap: 3px; max-height: 220px; overflow: auto; }
 .pl-y { display: flex; align-items: center; gap: 6px; font-size: 12.5px; } .pl-y select { margin-left: auto; max-width: 140px; font-size: 11.5px; }
+.pv-figdlg{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.pv-figrow{display:flex;align-items:center;gap:14px}
+.pv-mn{display:inline-block;padding:3px 10px;margin-top:4px;border:1px solid var(--rule-2);border-radius:5px;background:var(--surface)}

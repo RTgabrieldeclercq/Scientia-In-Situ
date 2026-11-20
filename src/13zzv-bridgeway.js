@@ -185,7 +185,7 @@ const BWAY = {
     BWAY.arm(from, to, via);
     if (e && e.altKey) return App.openSide(land || to, el || null, !land);
     if (el && App.route.name === 'split') return App.replacePane(land || to, el, !land);
-    if (land) App.openBlock(land); else App.go('#/doc/' + to);
+    if (land) App.openComponent(land); else App.go('#/doc/' + to);
   },
   /** After every drawing of the page: what the bar shows. Out of the notes it closes; the trail stays for Alt+← / Alt+→. */
   route() {

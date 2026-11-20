@@ -1,0 +1,39 @@
+/* ==========================================================================
+   41 · Shortcuts (20f-shortcuts.js): the list of every key and gesture, in
+   Settings → Keys & commands and in the ? dialog. Uses the look's tokens, so
+   it follows light and dark.
+   ========================================================================== */
+.sk{display:flex;flex-direction:column;gap:10px;min-width:0}
+.sk-top{display:flex;align-items:center;gap:12px;position:sticky;top:-16px;z-index:2;background:var(--paper);padding:2px 0 4px}
+.sk-ql{flex:1;display:flex;align-items:center;gap:8px;min-width:0;padding:0 12px;height:36px;border-radius:999px;background:var(--lk-card,var(--surface));box-shadow:inset 0 0 0 1px var(--lk-ring,var(--rule-2));color:var(--ink-3)}
+.sk-ql:focus-within{box-shadow:inset 0 0 0 1.5px var(--teal)}
+.sk-q{flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--ink);font:inherit;font-size:13px}
+.sk-n{font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+.sk-chips{display:flex;flex-wrap:wrap;gap:6px}
+.sk-chips button{border:0;cursor:pointer;font:inherit;font-size:12px;padding:4px 11px;border-radius:999px;background:var(--lk-card,var(--surface));color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--lk-ring,var(--rule-2))}
+.sk-chips button:hover{background:var(--lk-hov,var(--surface-2))}
+.sk-chips button.on{background:var(--teal);color:var(--paper);box-shadow:none}
+.sk-list{display:flex;flex-direction:column;gap:14px}
+.sk-g h4{margin:0 0 4px;font-size:12px;font-weight:650;letter-spacing:.02em;color:var(--ink);display:flex;align-items:baseline;gap:8px}
+.sk-g h4 em{font-style:normal;font-weight:400;color:var(--ink-3);font-size:11px}
+.sk-g h4 span{font-weight:400;color:var(--ink-3);font-size:11.5px}
+.sk-rows{display:flex;flex-direction:column;border-radius:12px;background:var(--lk-card,var(--surface));box-shadow:inset 0 0 0 1px var(--lk-ring,var(--rule-2));overflow:hidden}
+.sk-r{display:grid;grid-template-columns:185px 1fr;gap:4px 18px;align-items:baseline;padding:7px 12px;font-size:12.5px}
+.sk-r+.sk-r{border-top:1px solid var(--lk-ring,var(--rule))}
+.modal .sk-top{background:var(--lk-rail,var(--surface))}
+.sk-r.off{opacity:.55}
+.sk-k{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;min-width:0}
+.sk-or{font-size:10.5px;color:var(--ink-3)}
+.sk-combo{display:inline-flex;align-items:center;gap:2px}
+.sk-combo i{font-style:normal;font-size:10px;color:var(--ink-3)}
+.sk-gs{font-size:12px;color:var(--ink-2);font-style:italic}
+.sk-d{color:var(--ink-2);min-width:0}
+.sk-bind,.sk-off{display:inline-flex;align-items:center;gap:6px;margin-left:8px;font-size:10.5px;color:var(--ink-3);padding:1px 8px;border-radius:999px;box-shadow:inset 0 0 0 1px var(--lk-ring,var(--rule-2))}
+.sk-chg{border:0;background:none;cursor:pointer;font:inherit;font-size:10.5px;color:var(--teal);padding:0;text-decoration:underline;text-underline-offset:2px}
+.sk-none{margin:8px 0;color:var(--ink-3);font-size:13px}
+.sk-set{margin-bottom:6px}
+@media (max-width:560px){.sk-r{grid-template-columns:1fr}}
+/* the preview in Settings → Features */
+.sk-pv .sk-rows{box-shadow:inset 0 0 0 1px var(--lk-ring,var(--rule-2))}
+.sk-pv .sk-r{padding:6px 10px;grid-template-columns:1fr}
+.sk-pv .sk-top{position:static}

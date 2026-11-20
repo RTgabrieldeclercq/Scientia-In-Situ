@@ -40,8 +40,8 @@ const ATLAS = {
     const held = only ? new Set(blocks.map(b => b.docId)) : null;
     docs.forEach(d => { if (!held || held.has(d.id)) add(d.id, 'note', d.title || 'Untitled', { t: d.created, go: () => App.go('#/doc/' + d.id), sub: M.docPath(d) }); });
     blocks.forEach(b => { if (!only && (b.kind === 'ref' || b.kind === 'noteref')) return; const K = typeof CKINDS !== 'undefined' && CKINDS.of(b), i = only ? which(b) : -1;
-      add(b.id, 'cmp', M.blockName(b) + (b.body && b.body.text ? ' — ' + snippet(b.body.text, 40) : ''), { t: b.created, ck: i >= 0 ? only[i].label : K && K.label, color: i >= 0 ? ATLAS.ccol(i) : K && K.color, go: () => App.openBlock(b.id), sub: (M.doc(b.docId) || {}).title }); });
-    const items = DB.where('items', it => docIds.has(it.originDocId) && !it.correctedBy); items.forEach(it => add(it.id, 'item', (KIND[it.kind] ? KIND[it.kind].label : it.kind) + ': ' + snippet(it.text, 50), { t: it.created, sk: it.kind, go: () => App.openBlock(it.originBlockId) }));
+      add(b.id, 'cmp', M.blockName(b) + (b.body && b.body.text ? ' — ' + snippet(b.body.text, 40) : ''), { t: b.created, ck: i >= 0 ? only[i].label : K && K.label, color: i >= 0 ? ATLAS.ccol(i) : K && K.color, go: () => App.openComponent(b.id), sub: (M.doc(b.docId) || {}).title }); });
+    const items = DB.where('items', it => docIds.has(it.originDocId) && !it.correctedBy); items.forEach(it => add(it.id, 'item', (KIND[it.kind] ? KIND[it.kind].label : it.kind) + ': ' + snippet(it.text, 50), { t: it.created, sk: it.kind, go: () => App.openComponent(it.originBlockId) }));
     const people = new Map(); DB.all('terms').forEach(t => { if (t.kind === 'person') people.set(t.label.toLowerCase(), t.id); });
     blocks.forEach(b => {
       edge(b.id, b.docId, 'in', 'in');
@@ -50,7 +50,7 @@ const ATLAS = {
         if (m.type === 'cite' && M.lib(m.ref)) { const r = M.lib(m.ref); add(r.id, 'paper', r.title || r.url || 'Paper', { t: r.added, go: () => App.go('#/read/' + r.id) }); edge(b.id, r.id, 'cites', 'cite'); }
         if (m.type === 'term' && M.term(m.ref)) { const t = M.term(m.ref); add(t.id, t.kind === 'person' ? 'person' : 'term', t.label, { t: t.created, go: () => App.go('#/lens/' + t.id) }); edge(b.id, t.id, 'mentions', 'term'); }
         if (m.type === 'link' && m.ref) { if (N.has(m.ref)) edge(b.id, m.ref, 'links to', 'link'); }
-        if (m.type === 'person' && m.name) { const pid = people.get(m.name.toLowerCase()) || 'person:' + m.name.toLowerCase(); add(pid, 'person', m.name, { t: b.created, go: () => App.openBlock(b.id) }); edge(b.id, pid, 'names', 'term'); }
+        if (m.type === 'person' && m.name) { const pid = people.get(m.name.toLowerCase()) || 'person:' + m.name.toLowerCase(); add(pid, 'person', m.name, { t: b.created, go: () => App.openComponent(b.id) }); edge(b.id, pid, 'names', 'term'); }
       });
       if (b.kind === 'noteref' && b.refDocId && N.has(b.refDocId)) edge(b.docId, b.refDocId, 'note card', 'link');
       if (b.kind === 'ref' && b.refBlockId && N.has(b.refBlockId)) edge(b.docId, b.refBlockId, 'pulled in', 'link');

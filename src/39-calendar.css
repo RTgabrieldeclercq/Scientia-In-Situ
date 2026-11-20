@@ -370,9 +370,65 @@ body.cal-focusing .cal-fbtn{outline:2px solid #C9971F;outline-offset:2px}
 .cw-nl{max-height:220px;overflow:auto}
 .cw-pf{align-self:flex-start;height:28px;padding:0 10px;border:0;border-radius:8px;background:transparent;color:var(--teal);font:600 12px/1 var(--f-d);cursor:pointer}
 .cw-pf:hover{background:color-mix(in srgb,var(--teal) 10%,transparent)}
-.cal-pick{position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:900;display:flex;align-items:center;gap:10px;height:40px;padding:0 6px 0 14px;border-radius:999px;background:var(--teal);color:var(--lk-card);font:600 13px/1 var(--f-d);box-shadow:0 10px 30px -12px rgba(0,0,0,.5)}
-.cal-pick .cal-btn{height:28px;background:rgba(255,255,255,.18);color:inherit;box-shadow:none}
 .cw-d.cw-cust{color:var(--teal);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--teal) 40%,transparent)}
 .cal-ghost.cal-push{border-color:#C9971F;background:color-mix(in srgb,#C9971F 12%,transparent);color:#8F5600}
 .cal-ghost.cal-push.bad{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 8%,transparent);color:var(--bad)}
 .cal-ghost.cal-new{z-index:9}
+
+/* V4.67 — today's all-day events in the bell: new ones first (once), then Seen */
+.cal-bell{display:flex;flex-direction:column;gap:2px;margin:4px 0 6px;padding:6px;border-radius:10px;background:color-mix(in srgb,var(--teal) 6%,transparent)}
+.cal-blh{padding:4px 6px 2px;font:600 9.5px/1 var(--f-m);letter-spacing:.08em;text-transform:uppercase;color:var(--teal)}
+.cal-blh.seen{color:var(--ink-3)}
+.cal-bl{display:grid;grid-template-columns:10px minmax(0,1fr);grid-template-rows:auto auto;column-gap:8px;align-items:center;padding:6px 8px;border:0;border-radius:8px;background:transparent;color:var(--ink);text-align:left;cursor:pointer}
+.cal-bl:hover{background:var(--lk-hov,var(--surface-2))}
+.cal-bl i{grid-row:1/3;width:10px;height:10px;border-radius:3px;background:var(--ecol)}
+.cal-bl b{font:600 13px/1.25 var(--f-d)} .cal-bl.new b{font-weight:700}
+.cal-bl span{font:500 10.5px/1.3 var(--f-m);color:var(--ink-3)}
+.cal-bl:not(.new){opacity:.75}
+
+/* V4.68 — tasks for an event */
+.cal-tks{display:flex;flex-direction:column;gap:3px;min-width:0}
+.cal-tk{display:flex;align-items:center;gap:7px;min-width:0;height:26px;padding:0 4px;border-radius:7px}
+.cal-tk:hover{background:var(--lk-hov,var(--surface-2))}
+.cal-tk span{flex:1;min-width:0;font:500 12.5px var(--f-d);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-tk.done span{text-decoration:line-through;color:var(--ink-3)}
+.cal-tkb{flex:none;display:grid;place-items:center;width:16px;height:16px;padding:0;border:0;border-radius:4px;background:var(--lk-card);box-shadow:inset 0 0 0 1.5px var(--teal);color:var(--lk-card);cursor:pointer}
+.cal-tk.done .cal-tkb{background:var(--teal)}
+.cal-tkb .cal-i svg{width:10px;height:10px}
+.cal-tko,.cal-tkx{flex:none;width:22px;height:22px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--ink-3);cursor:pointer;opacity:0;transition:opacity .15s}
+.cal-tk:hover .cal-tko,.cal-tk:hover .cal-tkx,.cal-tko:focus-visible,.cal-tkx:focus-visible{opacity:1}
+.cal-tko .cal-i svg{width:12px;height:12px}
+.cal-tkin{width:100%;max-width:260px}
+.cal-ec .ec-tkn{display:inline-flex;align-items:center;gap:2px;font:600 9.5px/1 var(--f-m)}
+
+/* V4.69 — regions from the calendar: the question (in its note, on Today); the region's chips */
+.cal-askbar{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:30;display:flex;flex-direction:column;gap:6px;max-width:min(760px,calc(100% - 24px))}
+.cal-ask{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:8px 8px 8px 12px;border-radius:12px;background:var(--lk-rail,var(--surface));box-shadow:var(--lk-sh2,var(--shadow)),inset 0 0 0 1px var(--lk-ring,var(--rule));font:400 13px/1.4 var(--f-d);color:var(--ink-2)}
+.cal-ask > span{flex:1;min-width:220px;display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.cal-ask b{color:var(--ink)}
+.cal-ask .cal-btn{height:28px}
+.cal-today{display:flex;flex-direction:column;gap:6px;margin:0 0 18px}
+.rg-chip{display:inline-flex;align-items:center;gap:4px;height:18px;margin-left:4px;padding:0 7px;border:0;border-radius:999px;background:color-mix(in srgb,var(--rg,#2A9D8F) 16%,transparent);color:inherit;font:600 9.5px/1 var(--f-m);cursor:pointer;white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis}
+.rg-chip:hover{background:color-mix(in srgb,var(--rg,#2A9D8F) 28%,transparent)}
+.rg-chip .cal-i svg{width:10px;height:10px}
+
+/* V4.70 — deliverables: a chip at its time, the card's mark, the window that attaches it */
+.cal-dv{position:absolute;right:6px;z-index:6;display:inline-flex;align-items:center;gap:5px;max-width:calc(100% - 12px);height:22px;padding:0 9px 0 6px;border:0;border-radius:999px;background:var(--lk-card,var(--surface));box-shadow:var(--lk-sh1),inset 0 0 0 1.5px color-mix(in srgb,var(--teal) 55%,transparent);color:var(--teal);font:600 10.5px/1 var(--f-d);cursor:pointer;white-space:nowrap;overflow:hidden}
+.cal-dv span{min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--ink-2);font-weight:500}
+.cal-dv.due{background:var(--teal);color:var(--lk-card);box-shadow:var(--lk-sh1)} .cal-dv.due span{color:inherit}
+.cal-dv.done{opacity:.6;box-shadow:inset 0 0 0 1px var(--lk-ring,var(--rule))}
+.cal-dv .cal-i svg{width:12px;height:12px}
+.cal-ec button.ec-dv{display:inline-grid;place-items:center;width:18px;height:18px;padding:0;border:0;border-radius:999px;background:var(--lk-card);color:var(--teal);cursor:pointer}
+.cal-ec button.ec-dv:hover{box-shadow:0 0 0 2px color-mix(in srgb,var(--lk-card) 50%,transparent)}
+.cal-ec .ec-dv .cal-i svg{width:11px;height:11px}
+.cal-dvk .cw-c{height:26px}
+.cal-dvadd{display:flex;gap:6px;align-items:center}
+.cal-dvat{height:22px;padding:0 8px}
+.cal-att{display:flex;flex-direction:column;gap:10px}
+.cal-attl{display:flex;flex-direction:column;gap:4px;max-height:300px;overflow:auto}
+.cal-atti{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px;border:0;border-radius:9px;background:var(--surface-2);color:var(--ink);text-align:left;cursor:pointer}
+.cal-atti:hover,.cal-atti:focus-visible{box-shadow:inset 0 0 0 1.5px var(--teal);outline:none}
+.cal-atti b{font:600 12.5px/1.3 var(--f-d)} .cal-atti span{font:400 12.5px/1.4 var(--f-s,var(--f-d));color:var(--ink-2)}
+.cal-attw{width:100%;box-sizing:border-box;padding:8px 10px;border:0;border-radius:9px;background:var(--surface-2);color:var(--ink);font:400 13.5px/1.45 var(--f-s,var(--f-d));resize:vertical}
+.cal-attw:focus{outline:none;box-shadow:inset 0 0 0 2px var(--teal)}
+.cal-ask.dv > span .cal-i{color:var(--teal)}

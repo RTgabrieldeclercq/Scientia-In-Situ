@@ -164,7 +164,7 @@ const MONTHLY = {
   delta(n, p) { if (!MONTHLY.t('compare', true) || p == null) return null; const d = n - p; return h('span.mr-d' + (d > 0 ? '.up' : d < 0 ? '.dn' : ''), d > 0 ? '+' + d : d < 0 ? String(d) : '±0'); },
   line(x) {
     const b = x.blockId && M.block(x.blockId), img = x.block && x.block.kind === 'figure' ? (() => { try { const c = FIG.cells(x.block).find(c => c.media), rec = c && MEDIA.get(c.media); return rec ? h('img.mr-fig', { src: MEDIA.url(rec), alt: x.text, loading: 'lazy' }) : null; } catch (e) { return null; } })() : null;
-    return h('div.mr-ln.k-' + x.kind, { role: 'button', tabindex: '0', title: 'Open it in its note', on: { click: () => b && App.openBlock(b.id), keydown: e => { if (e.key === 'Enter' && b) App.openBlock(b.id); } } },
+    return h('div.mr-ln.k-' + x.kind, { role: 'button', tabindex: '0', title: 'Open it in its note', on: { click: () => b && App.openComponent(b.id), keydown: e => { if (e.key === 'Enter' && b) App.openComponent(b.id); } } },
       img, h('span.mr-tx', x.text || '—', x.kind === 'resolved' ? h('span.mr-sub', ' — resolved' + (x.days ? ' in ' + plural(x.days, 'day') : '') + (x.through.length ? ' · through ' : ''), x.through.map(t => h('span.term-demo', t + ' '))) : null,
         x.kind === 'open' ? h('span.mr-open', 'open') : null));
   },

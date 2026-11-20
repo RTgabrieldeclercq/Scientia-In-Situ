@@ -30,10 +30,10 @@ const MOVE = {
     const take = new Set(preset || [b.id]); take.add(b.id);
     const extra = others.length ? h('details.mv-more', h('summary', 'Take other components along'), h('div.list.mv-list', others.map(x => h('label.li.click', h('input', { type: 'checkbox', checked: take.has(x.id), on: { change: e => e.target.checked ? take.add(x.id) : take.delete(x.id) } }), h('span.t', h('b', M.blockName(x)), ' ', h('span.serif.muted', snippet(x.body.text, 60))))))) : null;
     if (preset && preset.length > 1 && extra) extra.open = true;
-    const m = modal({ title: 'Move to another note', wide: true, actions: [{ label: 'Cancel' }], body: h('div',
-      h('p.serif', { style: { marginTop: 0 } }, `“${snippet(M.blockName(b), 50)}”${take.size > 1 ? ' and the ticked components' : ''} will belong to the note you pick — structures, terms, marks and time go with it, and nothing stays here.`), extra,
-      optionPicker({ placeholder: 'Search notes…', sort: 'move', items: q => DB.where('documents', d => d.id !== src.id && !d.deleted && (!q || (d.title + ' ' + M.docPath(d)).toLowerCase().includes(q))),
-        render: d => h('div', typechip(d.type), ' ', d.title, h('span.s', M.docPath(d))), onPick: d => { m.close(); MOVE.ask([...take], d.id, null); } })) });
+    // 13zzzd: the move panel — a search with results, or a click on a note in the Portfolio; the ticked components go along either way
+    MPANEL.note({ title: 'Move to another note', exclude: [src.id], intro: h('div',
+      h('p.serif', { style: { marginTop: 0 } }, `“${snippet(M.blockName(b), 50)}”${take.size > 1 ? ' and the ticked components' : ''} will belong to the note you pick — structures, terms, marks and time go with it, and nothing stays here.`), extra) })
+      .then(d => { if (d) MOVE.ask([...take], d.id, null); });
   },
   /** Ask about connections that would cross, then move. */
   ask(ids, destId, pos, regionsToo) {

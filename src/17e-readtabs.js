@@ -121,7 +121,7 @@ const RDX = {
     let src = c.src && c.src.status === 'live' ? c.src : null;
     if (!src && c.lib) src = RDX.embedFor(c.lib);
     if (!src) { if (c.lib && c.lib.pdf) return App.go('#/read/' + c.lib.id + (c.page ? '/' + c.page : '')); return toast('The paper isn’t here any more'); }
-    if (RDOCK.tn('citeband', 'click', 'beside') === 'card' || RDOCK.phone() || (e && e.altKey)) { if (c.q && c.q.quote) return QUOTE.goto(M.block(c.q.id)); return App.openBlock(src.id); }
+    if (RDOCK.tn('citeband', 'click', 'beside') === 'card' || RDOCK.phone() || (e && e.altKey)) { if (c.q && c.q.quote) return QUOTE.goto(M.block(c.q.id)); return App.openComponent(src.id); }
     RDOCK.open(M.block(src.id));
     const q = c.q && c.q.quote ? M.block(c.q.id) : null, page = c.page; let n = 0;
     const go = () => { const p = RDOCK.paneOf(src.id); if (!p) return; const pdf = src.kind === 'pdf';
@@ -150,10 +150,10 @@ const RDX = {
   /** From outside a note (the Library's reader): this tab, read beside the note it is in. */
   goTab(id) {
     const b = M.block(id); if (!b) return; const S = RDOCK.S_;
-    if (!RDOCK.tabsOn()) { App.openBlock(id); return setTimeout(() => RDOCK.open(M.block(id)), 400); }
+    if (!RDOCK.tabsOn()) { App.openComponent(id); return setTimeout(() => RDOCK.open(M.block(id)), 400); }
     if (!S.tabs.includes(id)) { S.tabs.push(id); RDOCK.trimTabs(); } const k = S.show.indexOf(id); if (k >= 0) S.act = k; else S.show[clamp(S.act, 0, S.n - 1)] = id; S.open = true; RDOCK.save();
     if (RDOCK.wrap && App.panes().length) { RDOCK.open(b); return RDOCK.follow(id); }
-    App.openBlock(id);
+    App.openComponent(id);
   },
 };
 {

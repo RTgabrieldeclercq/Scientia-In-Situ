@@ -109,7 +109,7 @@ const PFACT = {
     // what moved: each moment that scored in the last four weeks, by day
     const days = new Map(); recent.slice(0, 60).forEach(e => { const k = localDate(new Date(e.t)); (days.get(k) || days.set(k, []).get(k)).push(e); });
     const line = e => { const id = e.b ? e.b.id : e.it.originBlockId, d = e.d;
-      return h('a.pfa-li.pfa-mv', { href: '#/doc/' + d.id, title: 'Go to it in ' + (d.title || 'the note'), on: { click: go(() => id && M.block(id) ? App.openBlock(id) : App.go('#/doc/' + d.id)) } },
+      return h('a.pfa-li.pfa-mv', { href: '#/doc/' + d.id, title: 'Go to it in ' + (d.title || 'the note'), on: { click: go(() => id && M.block(id) ? App.openComponent(id) : App.go('#/doc/' + d.id)) } },
         e.b ? h('span.pfa-kd', 'component') : kchip(e.it.kind), h('span.pfa-t', snippet(e.b ? (String((e.b.body || {}).text || '').trim() || M.blockName(e.b)) : e.it.text, 90)),
         h('span.pfa-m', (d.title ? snippet(d.title, 34) + ' · ' : '') + '+' + e.s)); };
     const moved = sec('What moved', recent.length ? plural(recent.length, 'moment') + ' · 4 weeks' : '4 weeks',

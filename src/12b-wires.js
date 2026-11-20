@@ -7,7 +7,8 @@
    column; longer spans arch wider, so they nest) and where it crosses a
    component it is drawn above it, faint, with a soft shadow beneath — as
    if lifted — so what it covers stays readable. An end can be one image of
-   an image panel (wire.fromCell / wire.toCell = that image's media id).
+   an image panel (wire.fromCell / wire.toCell = that image's media id) or
+   one step of a protocol (the same field, 'st:<step id>' — 13zpb: the end is that step's row, at the box's left or right edge).
    V3.982 — routed (Gabe: "Component links should be the lowest path of
    resistance in terms of distance and navigating around void spaces in the
    note canvas, while making it readable and easy to follow."). A wire is the
@@ -49,7 +50,7 @@ const ROUTE = {
     const M = ROUTE.M, inf = r => ({ x0: r.x - M, y0: r.y - M, x1: r.x + r.w + M, y1: r.y + r.h + M });
     const I = O.map(inf); I.push(inf(A), inf(B));
     const end = (R, s, f) => { const p = WIRES.at(R, s, f), n = WIRES.N[s], q = { x: p.x + n[0] * M, y: p.y + n[1] * M }; return { s, f, p, q, n, skip: I.filter(r => ROUTE.inside(q.x, q.y, r)) }; };
-    const SIDES = ['r', 'l', 'b', 't'], S = (fx ? [fx.sa] : SIDES).map(s => end(A, s, fx ? fx.fa : ROUTE.mid(A, s))), T = (fx ? [fx.sb] : SIDES).map(s => end(B, s, fx ? fx.fb : ROUTE.mid(B, s)));
+    const SIDES = ['r', 'l', 'b', 't'], S = (fx ? [fx.sa] : A.only || SIDES).map(s => end(A, s, fx ? fx.fa : ROUTE.mid(A, s))), T = (fx ? [fx.sb] : B.only || SIDES).map(s => end(B, s, fx ? fx.fb : ROUTE.mid(B, s)));   // V4.68: a step of a protocol (A.only) leaves by a side of its box only
     // the corners of what is in the way (outside everything else), then the stubs at B
     const N = [];
     I.forEach((r, k) => { for (const [x, y, sx, sy] of [[r.x0, r.y0, -1, -1], [r.x1, r.y0, 1, -1], [r.x0, r.y1, -1, 1], [r.x1, r.y1, 1, 1]]) if (!I.some((u, j) => j !== k && ROUTE.inside(x, y, u))) N.push({ x, y, sx, sy }); });
@@ -126,7 +127,8 @@ const WIRES = {
     // 1 · each wire's shortest way round, from the middle of whichever sides suit it (a wire whose end moved first)
     const moved = w => { const L = ROUTE.last.get(((w.x && w.x.id) || '') + '|'); return L && L.ka === ROUTE.rk(w.A) && L.kb === ROUTE.rk(w.B) ? 1 : 0; };
     list.slice().sort((u, v) => moved(u) - moved(v)).forEach(w => { const r = ROUTE.plan(w, R, null, t0); w.route = r && r !== 'late' ? r : null;
-      if (w.route) { w.sa = r.sa; w.sb = r.sb; } else { const [sa, sb] = WIRES.sides(w.A, w.B, R, [WIRES.fa(w), WIRES.fb(w)]); w.sa = sa; w.sb = sb; } });
+      if (w.route) { w.sa = r.sa; w.sb = r.sb; } else { const [sa, sb] = WIRES.sides(w.A, w.B, R, [WIRES.fa(w), WIRES.fb(w)]); w.sa = sa; w.sb = sb;
+        if (w.A.only && !w.A.only.includes(w.sa)) w.sa = w.B.x + w.B.w / 2 < w.A.x + w.A.w / 2 ? 'l' : 'r'; if (w.B.only && !w.B.only.includes(w.sb)) w.sb = w.A.x + w.A.w / 2 < w.B.x + w.B.w / 2 ? 'l' : 'r'; } });
     // 2 · the ends on one side spread along it, in the order their paths head off, so they don't cross at the component
     const ends = new Map(), key = (id, cell, side) => id + '|' + (cell || '') + '|' + side;
     const toward = (w, end) => { const P = w.route && w.route.pts; if (P && P.length > 3) return end === 'a' ? P[2] : P[P.length - 3]; const o = end === 'a' ? w.B : w.A; return { x: o.x + o.w / 2, y: o.y + o.h / 2 }; };
@@ -233,7 +235,7 @@ DocView.drawWires = function (temp) {
       over += `<g clip-path="url(#${cid})"><path class="w lift${dir ? '' : ' und'}${sel ? ' sel' : ''}" data-w="${x.id}" style="stroke:${c}" filter="url(#wlift-${this.uid})" d="${d}"/></g>`; }
     const lab = (REL[x.rel] || { label: x.rel }).label; if (lab === '') return;   // V3.955 — a bare arrow (the story's `next`) has no label
     const p = WIRES.labelAt(L, placed, R, String(lab || ''));
-    labels.push(h('button.wl.nopan' + (sel ? '.sel' : '') + (p.over ? '.lift' : ''), { 'data-w': x.id, style: { left: p.x + 'px', top: p.y + 'px', '--wc': c }, title: `${M.endName(x.from)}${x.fromCell ? ' (one image)' : ''} ${(REL[x.rel] || REL.related).verb} ${M.endName(x.to)}${x.toCell ? ' (one image)' : ''}`, on: { click: e => this.wireMenu(x, e) } }, lab)); });
+    labels.push(h('button.wl.nopan' + (sel ? '.sel' : '') + (p.over ? '.lift' : ''), { 'data-w': x.id, style: { left: p.x + 'px', top: p.y + 'px', '--wc': c }, title: `${M.endName(x.from)}${STEPLINK.partTitle(x.from, x.fromCell)} ${(REL[x.rel] || REL.related).verb} ${M.endName(x.to)}${STEPLINK.partTitle(x.to, x.toCell)}`, on: { click: e => this.wireMenu(x, e) } }, lab)); });
   over = over.replace('</defs>', clips.join('') + '</defs>');
   html += PROTO.obsWires(this);
   if (temp) html += `<path class="w tmp" d="${temp}"/>`;

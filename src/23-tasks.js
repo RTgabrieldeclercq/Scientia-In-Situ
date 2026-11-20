@@ -162,7 +162,7 @@ VIEWS.tasks = TasksView;
       TASK.adder(id), TASK.listView(list, { showProject: false }));
     const anchor = [...el.querySelectorAll('.sec-h')][0]; anchor ? anchor.before(sec) : el.append(sec); return el; };
   // reminders: a task's reminder opens / ticks / clears the task
-  const edit = REM.edit; REM.edit = function (pre = {}) { const r = pre.id && DB.get('reminders', pre.id); if (r && r.taskId && M.block(r.taskId)) { closePop(); return App.openBlock(r.taskId); } return edit.call(REM, pre); };
+  const edit = REM.edit; REM.edit = function (pre = {}) { const r = pre.id && DB.get('reminders', pre.id); if (r && r.taskId && M.block(r.taskId)) { closePop(); return App.openComponent(r.taskId); } return edit.call(REM, pre); };
   const done = REM.done; REM.done = function (r, at) { if (r && r.taskId && M.block(r.taskId)) return TASK.done(M.block(r.taskId)); return done.call(REM, r, at); };
   const open = REM.open; REM.open = function (now) { return open.call(REM, now).filter(x => !x.r.taskId || (M.block(x.r.taskId) && M.block(x.r.taskId).status === 'live' && TASK.isOpen(M.block(x.r.taskId)))); };
   // Activity: what was done

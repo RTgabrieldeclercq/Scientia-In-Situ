@@ -7,6 +7,8 @@
      paper to pick one of that note's components.
    • Every image in an image panel has its own link circle: that image alone
      is connected.
+   • V4.68 — and every step of a protocol (13zpb): a drop on a step connects that step, its own circle
+     starts a wire from it; the end is the wire's fromCell / toCell, 'st:<step id>'.
    • Pen: press and hold a highlight, drag it into another pane — it is
      embedded there (live). Dropped on a component, it is also connected.
      Dragging a component into another pane bridges it there (V3.981, 13zzu).
@@ -40,9 +42,11 @@ const FIGOF = b => b && b.fig ? b : (b && b.kind === 'ref' && !b.refItemId && M.
 const LINKS = {
   part: null,     // an end that is one image: { box, cell, other, otherCell, t }
   paneAt(x, y, skip) { for (const el of document.elementsFromPoint(x, y)) { if (skip && skip.contains(el)) continue; const host = el.closest('.canvas-host'); if (host && host._dv) return { pane: host._dv, el }; } return null; },
-  boxAt(x, y, skip) { for (const el of document.elementsFromPoint(x, y)) { if (skip && (skip === el || skip.contains(el))) continue; const b = el.closest('.box.cmp'); if (b) return { box: b, cell: el.closest('.fg-cell') }; if (el.closest('.canvas-host')) return null; } return null; },
+  boxAt(x, y, skip) { for (const el of document.elementsFromPoint(x, y)) { if (skip && (skip === el || skip.contains(el))) continue; const b = el.closest('.box.cmp'); if (b) return { box: b, cell: el.closest('.fg-cell'), step: el.closest('.pstep') }; if (el.closest('.canvas-host')) return null; } return null; },
   /** A region's title (or a folded region) under a screen point: its id (13v — a region connects like a component). */
   regionAt(x, y) { for (const el of document.elementsFromPoint(x, y)) { const t = el.closest('.rg-tab, .region.folded'); if (t) return t.closest('.region').dataset.rg; if (el.closest('.box.cmp, .canvas-host')) return null; } return null; },
+  /** What a drop landed on, as a wire's end part: an image's media id, or 'st:<step id>' (a step of a protocol; 13zpb), or null. */
+  partOf(over) { if (!over) return null; if (over.cell) return LINKS.cellMedia(over.box, over.cell); return typeof STEPLINK !== 'undefined' ? STEPLINK.dropToken(over) : null; },
   cellMedia(boxEl, cellEl) { if (!cellEl) return null; const b = FIGOF(M.block(boxEl.dataset.id)), i = +cellEl.dataset.i; const c = b && b.fig && (b.fig.cells || [])[i]; return c && c.media || null; },
   /** The ink component nearest a point (world), within reach; skip = ids to leave out. */
   nearestInk(pane, x, y, reach = 170, skip = []) { let best = null, bd = 1e9;
@@ -67,24 +71,24 @@ const LINKS = {
     const ownHost = P.el.closest('.canvas-host');
     const mv = ev => { const p = P.toWorld(ev.clientX, ev.clientY);
       const at = LINKS.paneAt(ev.clientX, ev.clientY), elsewhere = at && at.pane !== pane;
-      $$('.box.target').forEach(x => x.classList.remove('target')); $$('.canvas-host.droptarget').forEach(x => x.classList.remove('droptarget'));
+      $$('.box.target,.pstep.target').forEach(x => x.classList.remove('target')); $$('.canvas-host.droptarget').forEach(x => x.classList.remove('droptarget'));
       const over = LINKS.boxAt(ev.clientX, ev.clientY);
       if (elsewhere) { P.stopEdgePan(); at.el.closest('.canvas-host').classList.add('droptarget'); if (over) over.box.classList.add('target'); pane.drawWires(pane.geom(A(), { x: p.x - 1, y: p.y - 1, w: 2, h: 2 }).d); return; }
       const rg = !over && !fromCell && LINKS.regionAt(ev.clientX, ev.clientY), rr = rg && rg !== fromId && pane.rectOf(rg);
-      if (over && over.box.dataset.id !== fromId && ownHost.contains(over.box)) { over.box.classList.add('target'); const oc = LINKS.cellMedia(over.box, over.cell); pane.drawWires(pane.geom(A(), Object.assign(pane.partRect(over.box.dataset.id, oc), { id: over.box.dataset.id })).d); }
+      if (over && over.box.dataset.id !== fromId && ownHost.contains(over.box)) { over.box.classList.add('target'); const oc = LINKS.partOf(over); if (oc && over.step && !over.cell) over.step.classList.add('target'); pane.drawWires(pane.geom(A(), Object.assign(pane.partRect(over.box.dataset.id, oc), { id: over.box.dataset.id })).d); }
       else if (rr) pane.drawWires(pane.geom(A(), Object.assign(rr, { id: rg })).d);
       else pane.drawWires(pane.geom(A(), { x: p.x - 1, y: p.y - 1, w: 2, h: 2 }).d);
       P.edgePan(ev); };
     const up = ev => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); P.stopEdgePan(); document.body.classList.remove('wiring');
-      $$('.box.target').forEach(x => x.classList.remove('target')); $$('.canvas-host.droptarget').forEach(x => x.classList.remove('droptarget')); pane.drawWires();
+      $$('.box.target,.pstep.target').forEach(x => x.classList.remove('target')); $$('.canvas-host.droptarget').forEach(x => x.classList.remove('droptarget')); pane.drawWires();
       const over = LINKS.boxAt(ev.clientX, ev.clientY), at = LINKS.paneAt(ev.clientX, ev.clientY), other = at && at.pane !== pane ? at.pane : null;
       const part = fromCell ? { box: fromId, cell: fromCell } : null;
-      if (over && over.box.dataset.id !== fromId) { const to = over.box.dataset.id, oc = LINKS.cellMedia(over.box, over.cell);
+      if (over && over.box.dataset.id !== fromId) { const to = over.box.dataset.id, oc = LINKS.partOf(over);
         const pair = [M.block(fromId), M.block(to)].map(x => x && x.kind).sort().join('+');
         if (!other && !fromCell && pair === 'calc+eq') { const c = [M.block(fromId), M.block(to)].find(x => x.kind === 'calc'); EQ.widen(c); M.wire(fromId, to, 'related', false); CALC._focus = c.id; toast('Wired — the calculator now solves the equation'); return; }
         return LINKS.connect(pane, fromId, to, ev.clientX, ev.clientY + 12, (part || oc) ? Object.assign(part || {}, oc ? { other: to, otherCell: oc } : {}) : null); }
       if (other && other.docId && other.docId !== pane.docId) return LINKS.pickIn(fromId, other.docId, part); // crossed into another note: pick one of its components
-      if (fromCell) return toast('Drop it on a component to connect this image');
+      if (fromCell) return toast(String(fromCell).startsWith('st:') ? 'Drop it on a component to connect this step' : 'Drop it on a component to connect this image');
       // on a region's title: the region (a timer's wire tags it instead, 13za)
       const rg = LINKS.regionAt(ev.clientX, ev.clientY), fb = M.block(fromId);
       if (rg && rg !== fromId && !(fb && fb.kind === 'timer')) return LINKS.connect(pane, fromId, rg, ev.clientX, ev.clientY + 12);
@@ -102,6 +106,7 @@ const LINKS = {
   /* the link circle: the new drag (cross-pane, end circle) */
   DocView.wireDrag = function (fromId, e) { return LINKS.drag(this, fromId, null, e); };
   const ptr = DocView.pointer; DocView.pointer = function (e) {
+    const sp = e.target.closest && e.target.closest('.stport'); if (sp && e.button === 0 && !this.travel) { e.preventDefault(); e.stopPropagation(); return LINKS.drag(this, sp.closest('.box').dataset.id, 'st:' + sp.dataset.step, e); }   // V4.68: a step's own circle (13zpb)
     const fp = e.target.closest && e.target.closest('.fg-port'); if (fp && e.button === 0 && !this.travel) { e.preventDefault(); e.stopPropagation(); const box = fp.closest('.box'), cell = fp.closest('.fg-cell');
       if (cell && cell.draggable) { cell.draggable = false; addEventListener('pointerup', () => setTimeout(() => { cell.draggable = true; }, 0), { once: true }); }
       return LINKS.drag(this, box.dataset.id, fp.dataset.media, e); }

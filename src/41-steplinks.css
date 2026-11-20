@@ -1,0 +1,20 @@
+/* ==========================================================================
+   41 · Connections to the steps of a protocol (13zpb-steplinks.js, V4.68).
+   A step's own link circle sits on the box's left edge (a hover reveal waits
+   about a second; "always" in Settings keeps it showing), and a step under a
+   dragged wire is outlined.
+   ========================================================================== */
+.pstep .stport{position:absolute;left:-20px;top:11px;width:12px;height:12px;border-radius:50%;border:2px solid var(--rule-2);background:var(--paper);cursor:crosshair;z-index:2;opacity:0;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.28);transition:opacity .15s 0s,transform .15s,border-color .15s}
+.pstep:hover .stport,.pstep .stport.always,body.wiring .pstep .stport{opacity:1;pointer-events:auto}
+.pstep:hover .stport:not(.always){transition:opacity .15s .9s,transform .15s,border-color .15s}
+.pstep .stport:hover{border-color:var(--mag);background:var(--mag);transform:scale(1.25)}
+@media (hover:none){.pstep .stport{opacity:.7;pointer-events:auto}}
+@media (pointer:coarse){.pstep .stport{width:18px;height:18px;left:-24px;top:8px}}
+.pstep.target{background:var(--mag-soft);box-shadow:0 0 0 2px color-mix(in srgb,var(--mag) 45%,transparent);border-radius:6px}
+.sp-lk{display:flex;align-items:center;gap:4px} .sp-lk .sp-link{flex:1}
+.sp-x{border:0;background:none;color:var(--ink-3);cursor:pointer;font-size:15px;line-height:1;padding:0 4px;border-radius:4px} .sp-x:hover{color:var(--bad,#c0392b);background:var(--mag-soft)}
+body.f-off-stepwires .pstep .stport,body.f-off-wires .pstep .stport,body.viewer .pstep .stport{display:none}
+/* the Settings preview */
+.pv-stp{display:grid;gap:3px;margin-top:2px} .pv-stp-r{position:relative;display:flex;gap:6px;align-items:center;font-size:12px;height:20px;padding:0 3px;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .pv-stp-r.on{background:var(--mag-soft)}
+.pv-stp-n{font-family:var(--f-m);font-size:10px;color:var(--teal);width:12px}
+.pv-stp-port{position:absolute;left:-14px;top:5px;width:10px;height:10px;border-radius:50%;border:2px solid var(--mag);background:var(--paper)}

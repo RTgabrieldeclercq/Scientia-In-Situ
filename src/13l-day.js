@@ -134,7 +134,7 @@ const RESURF = {
     const it = RESURF.pick(); if (!it) return null; const age = Math.floor((Date.now() - +new Date(it.created)) / 864e5), d = M.doc(it.originDocId);
     const act = (label, fn, title) => h('button.btn.xs', { title, on: { click: e => { e.stopPropagation(); fn(); } } }, label);
     return h('div.resurf' + (compact ? '.compact' : ''), { style: { '--kc': `var(--k-${it.kind})` } }, h('div.row', h('span.lab', 'Resurfaced'), kchip(it.kind), h('span.tiny.muted', `${age} days ago · ${d ? d.title : ''}`)),
-      h('div.serif.rs-t', { on: { click: () => App.openBlock(it.originBlockId) } }, it.text),
+      h('div.serif.rs-t', { on: { click: () => App.openComponent(it.originBlockId) } }, it.text),
       h('div.row', { style: { gap: '4px' } }, act(it.kind === 'question' ? 'Still open' : 'Still holds', () => { toast('Noted — it will come back later'); RESURF.pick(undefined, it.id); changed(); }),
         act('Explore lane', () => { if (!M.flagFor('item', it.id)) M.toggleFlag('item', it.id); const f = M.flagFor('item', it.id); if (f) { f.reason = 'Explore — resurfaced ' + fmtDay(new Date()); DB.put('flags', f); } toast('Flagged for the review’s Explore lane'); }, 'Flag it for the weekly review'),
         it.kind === 'question' ? act('Answered', () => { M.closeItem(it); toast('Closed'); }) : act('Contest', () => M.setItem(it, { stance: 'contested' })),
@@ -155,7 +155,7 @@ const PAL = {
       ...(d ? INSERTS.filter(x => !x.when || x.when(d)).map(x => ({ g: 'Insert into this note', label: typeof x.label === 'function' ? x.label(d) : x.label, run: () => { const r = pane.paper.rect(), c = pane.paper.toWorld(r.left + r.width / 2, r.top + r.height / 2); x.run(d, { x: Math.round((c.x - 200) / 14) * 14, y: Math.round((c.y - 140) / 14) * 14 }, pane); } })) : []),
       d ? { g: 'This note', label: 'Calculator', run: () => CALC.open(pane) } : null, d ? { g: 'This note', label: 'Fit to screen', key: 'Ctrl+0', run: () => pane.paper.fit(pane.bbox()) } : null,
       d ? { g: 'This note', label: 'Export canvas (HTML)', run: () => Exporter.doc(d.id) } : null, d ? { g: 'This note', label: 'Flag this note for review', run: () => M.toggleFlag('doc', d.id) } : null,
-      { g: 'Tools', label: 'Search', key: 'Ctrl+K', run: () => Search.open() }, { g: 'Tools', label: 'Quick switcher', key: 'Ctrl+O', run: () => PAL.switcher() },
+      { g: 'Tools', label: 'Search', key: 'Ctrl+K', run: () => Search.open() }, SHORT.on() ? { g: 'Tools', label: 'Keys and gestures', key: '?', run: () => SHORT.open() } : null, { g: 'Tools', label: 'Quick switcher', key: 'Ctrl+O', run: () => PAL.switcher() },
       { g: 'Create', label: 'New deadline', run: () => REM.edit({ kind: 'deadline' }) }, { g: 'Create', label: 'New meeting', run: () => REM.edit({ kind: 'meeting' }) }, { g: 'Go to', label: 'Reminders', run: () => App.go('#/reminders') },
       { g: 'Tools', label: 'Recurring chores…', run: () => CHORES.manage() }, { g: 'Tools', label: 'Rescan data folders', run: () => DATA.rescanAll() },
       { g: 'Tools', label: (settings().labs || {}).canvas ? 'Turn off spatial canvases (lab)' : 'Turn on spatial canvases (lab)', run: () => CANVAS.toggleLab() },
