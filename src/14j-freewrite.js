@@ -46,6 +46,16 @@
      editor() / form(r, done)      Settings → Freewrite → Rules: every rule with its switch, patterns, what it makes and its
                                    example; add, change (the example read live, there and in the preview: pvRule), delete,
                                    restore the built-in ones.
+   V4.47 — Gabe: "for the freewrite, convert should be reversible. Convert can also be used to see a preview of how the note will
+   look."
+     plain()                       Undo convert (the Convert button, once converted): no colours, no preview — every choice made by
+                                   clicking stays in fw.over / fw.lover, so the next Convert brings it back. Ctrl+Enter only converts.
+     ghost(on) / ghostPaint()      beside the note, the note as it will look: the components Apply would make drawn in the note
+                                   itself, outlined and marked Preview, where Apply puts them (FREEW.room and the same layout), with
+                                   their links; the ones already in the note are themselves. Preview in the note puts the page beside.
+     takeBack(id)                  after Apply, Take back (the freewrite's card, its menu, its page): what it made leaves the note
+                                   (components it made, their links; components that existed before stay), the freewrite is a draft
+                                   again, open, its colours kept; asked first when some of them changed since.
    ========================================================================== */
 const FREEW = {
   st: null, au: null, dict: null, wait: null,
@@ -60,6 +70,8 @@ const FREEW = {
     full: 'M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15',
     wand: 'M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z',
     check: 'm4.5 12.75 6 6 9-13.5',
+    undo: 'M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3',
+    eye: 'M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178ZM15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z',
   },
   ic(k, px = 16) { return h('span.fw-ic', { html: `<svg viewBox="0 0 24 24" width="${px}" height="${px}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="${FREEW.P[k]}"/></svg>` }); },
   on: () => typeof FEAT === 'undefined' || FEAT.on('freewrite'),
@@ -312,12 +324,13 @@ const FREEW = {
     if (FREEW.st) { if (b0 && FREEW.st.id === b0.id) { FREEW.st.ta.focus(); return FREEW.st; } FREEW.close(true); }
     const pane = o.pane && o.pane.docId === d.id ? o.pane : (App.panes ? App.panes() : []).find(p => p.docId === d.id) || null;
     const fw = (b0 && b0.fw) || {};
-    const st = FREEW.st = { docId: d.id, id: b0 ? b0.id : null, pane, at: b0 ? null : FREEW.spot(pane, d, o.near), beside: false, shown: !!fw.shown, sel: null, saved: 0 };
+    const st = FREEW.st = { docId: d.id, id: b0 ? b0.id : null, pane, at: b0 ? null : FREEW.spot(pane, d, o.near), beside: false, shown: !!fw.shown, sel: null, saved: 0, ghost: true };
     const top = h('div.fw-top',
       h('span.fw-brand', { html: FREEW.ICON }, h('b', 'Freewrite'), h('span.fw-note', '· ' + snippet(d.title || 'Untitled', 48))),
       st.voice = h('div.fw-voice'),
       h('span.spacer'),
       st.cv = h('button.btn.sm.fw-convert', { type: 'button', title: 'Read the words with the freewrite rules: colours, and the note it will make (Ctrl+Enter)', on: { click: () => FREEW.show() } }, FREEW.ic('wand'), 'Convert'),
+      st.tb = h('button.btn.sm.fw-tb', { type: 'button', hidden: true, title: 'Take what Apply put in the note out of it again — the freewrite is a draft again (Ctrl+Z undoes this too)', on: { click: () => { if (FREEW.st && FREEW.st.id) FREEW.takeBack(FREEW.st.id); } } }, FREEW.ic('undo'), 'Take back'),   // V4.47
       st.ap = h('button.btn.sm.pri.fw-apply', { type: 'button', title: 'Put the components and links in the note; the freewrite folds there, kept', on: { click: () => FREEW.apply() } }, FREEW.ic('check'), 'Apply to the note'),
       st.bs = h('button.btn.sm.fw-bs', { type: 'button', on: { click: () => FREEW.beside() } }),
       h('button.btn.sm.fw-close', { type: 'button', title: 'Close — everything is saved in the note (Esc)', on: { click: () => FREEW.close() } }, FREEW.ic('x'), 'Close'));
@@ -334,7 +347,7 @@ const FREEW = {
     st.ta.addEventListener('input', () => { FREEW.chipOff(); FREEW.paint(); save(); });
     st.ta.addEventListener('click', e => FREEW.clickText(e));
     st.ta.addEventListener('pointerup', () => setTimeout(() => FREEW.selChip(), 0));   // V4.34: words selected with the pointer → asked what they are
-    st.ta.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); FREEW.show(); } });
+    st.ta.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); FREEW.show(true); } });   // V4.47: Ctrl+Enter only converts (the button goes back and forth)
     st.ta.addEventListener('scroll', () => { st.ta.scrollTop = 0; });
     st.key = e => { if (!FREEW.st || e.key !== 'Escape' || e.defaultPrevented) return; if ($('.pop') || $('.ovl') || $('.slash-menu')) return; if ($('.fw-chip')) { FREEW.chipOff(); return; } e.preventDefault(); FREEW.close(); };
     document.addEventListener('keydown', st.key);
@@ -369,6 +382,11 @@ const FREEW = {
     const st = FREEW.st; if (!st) return; const text = st.ta.value, conv = st.conv = FREEW.conv();
     st.back.replaceChildren(FREEW.spans(text, conv, st.sel), /\n$/.test(text) || !text ? '​' : '');
     st.el.classList.toggle('shown', !!conv);
+    const back = !!(st.shown && FREEW.opt('colour', 'convert') !== 'live');   // V4.47: Convert, then Undo convert
+    if (st.cv._b !== back) { st.cv._b = back; st.cv.replaceChildren(FREEW.ic(back ? 'undo' : 'wand'), back ? 'Undo convert' : 'Convert'); st.cv.classList.toggle('on', back);
+      st.cv.title = back ? 'Undo Convert — back to plain words: the colours and the preview go; what you chose is kept for the next Convert' : 'Read the words with the freewrite rules: colours, and the note it will make (Ctrl+Enter)'; }
+    if (st.tb) st.tb.hidden = FREEW.fw().state !== 'applied';
+    cancelAnimationFrame(st._gr); st._gr = requestAnimationFrame(() => { if (FREEW.st === st) FREEW.ghostPaint(); });
     requestAnimationFrame(() => { if (FREEW.st !== st) return; st.ta.style.height = Math.max(st.back.offsetHeight + 4, Math.round(innerHeight * .55)) + 'px'; });
     FREEW.paintSide(); FREEW.paintFoot();
   },
@@ -378,9 +396,11 @@ const FREEW = {
     const P = conv.parts.filter(p => !p.none), Ls = conv.links.filter(l => !l.none && !l.off);
     st.ap.disabled = !P.length;
     const w = Math.max(200, (st.side.clientWidth || 360) - 30);
-    st.side.replaceChildren(h('div.fw-sh', h('b', 'The note it will make'), h('span', plural(P.length, 'component') + ' · ' + plural(Ls.length, 'link'))),
+    const gon = st.beside && st.ghost !== false;   // V4.47: the preview in the note itself
+    st.side.replaceChildren(h('div.fw-sh', h('b', 'The note it will make'), h('span', plural(P.length, 'component') + ' · ' + plural(Ls.length, 'link')), h('span.spacer'),
+        h('button.btn.xs.fw-gbtn' + (gon ? '.on' : ''), { type: 'button', 'aria-pressed': String(gon), title: gon ? 'Hide the preview in the note' : 'See the note as it will look — its new components drawn in it, outlined, where Apply puts them (the page goes beside the note)', on: { click: () => FREEW.ghost(!gon) } }, FREEW.ic('eye', 14), gon ? 'Hide in the note' : 'Preview in the note')),
       FREEW.mini(conv, { width: w, sel: st.sel, click: (p, e) => FREEW.pick({ t: 'p', k: p.key }, e.currentTarget) }),
-      h('p.fw-hint', 'Click coloured words, or a box here, to change what it becomes — its kind, its link, or nothing. Apply puts it in the note under the freewrite.'));
+      h('p.fw-hint', 'Click coloured words, or a box here, to change what it becomes — its kind, its link, or nothing. ' + (gon ? 'The outlined boxes in the note show where Apply puts them.' : 'Apply puts it in the note under the freewrite.') + ' Undo convert takes the colours off; what you chose is kept.'));
   },
   paintFoot() {
     const st = FREEW.st; if (!st) return; const t = st.ta.value, n = (t.match(/\S+/g) || []).length, fw = FREEW.fw();
@@ -496,15 +516,55 @@ const FREEW = {
   /** The chosen part's box in the preview, brought into view and lit. */
   flash(key) { const st = FREEW.st; if (!st) return; const b = st.side.querySelector(`.fw-mb[data-k="${CSS.escape(key)}"]`); if (b) { b.scrollIntoView({ block: 'nearest' }); b.classList.add('lit'); setTimeout(() => b.classList.remove('lit'), 1200); } },
   /** Convert: the colours and the note it will make; from then on they follow every correction. */
-  show() { const st = FREEW.st; if (!st) return; if (!st.ta.value.trim()) return toast('Write or speak first — then Convert reads your sentences');
+  show(force) { const st = FREEW.st; if (!st) return;
+    if (st.shown && !force && FREEW.opt('colour', 'convert') !== 'live') return FREEW.plain();   // V4.47: Undo convert — plain words
+    if (!st.ta.value.trim()) return toast('Write or speak first — then Convert reads your sentences');
     st.shown = true; FREEW.setFw({ shown: true }); FREEW.paint();
     const c = st.conv, n = c ? c.parts.filter(p => !p.none).length : 0; toast(n ? plural(n, 'component') + ' and ' + plural(c.links.filter(l => !l.none && !l.off).length, 'link') + ' found — click coloured words to change them' : 'No component found yet — click words, or write “… supports …”, “One of the barriers is …”', 3600); },
+  /** V4.47: back to plain words — no colours, no preview; what you chose by clicking is kept for the next Convert. */
+  plain() { const st = FREEW.st; if (!st) return; st.shown = false; st.sel = null; FREEW.chipOff(); FREEW.selOff(); FREEW.ghostOff(); FREEW.setFw({ shown: false }); FREEW.paint(); toast('Convert undone — plain words again; what you chose is kept: Convert brings it back', 3000); },
+  /** V4.47: the note as it will look, in the note itself (the page goes beside it). */
+  ghost(on) { const st = FREEW.st; if (!st) return; st.ghost = !!on; st.gfit = !!on; if (on && !st.beside) FREEW.beside(true); if (!on) FREEW.ghostOff(); FREEW.paint(); },
+  ghostOff() { $$('.fw-ghosts').forEach(x => x.remove()); },
+  ghostPaint() {
+    const st = FREEW.st; FREEW.ghostOff(); if (!st || !st.beside || st.ghost === false || !st.conv) return;
+    const P = st.conv.parts.filter(p => !p.none), d = M.doc(st.docId), pane = App.panes().find(p => p.docId === st.docId), fb = st.id && M.block(st.id); if (!P.length || !d || !pane || !pane.paper || !fb) return;
+    const made = (fb.fw && fb.fw.made) || {}, live = id => { const x = id && M.block(id); return x && x.status === 'live' ? x : null; }, snap = v => Math.round(v / 14) * 14;
+    const L = FREEW.layout(st.conv), at0 = FREEW.room(pane, d, fb, L, new Set(Object.values(made))), R = {}, host = h('div.fw-ghosts', { 'aria-hidden': 'true' });
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, n = 0;
+    P.forEach(p => {
+      const own = live(p.block), real = live(made[p.key]) || (own && own.docId === d.id ? own : null);
+      if (real) { const r = pane.rectOf(real.id); if (r) R[p.key] = r; return; }   // already in the note: itself
+      const at = L.pos[p.key]; if (!at) return; const r = { x: snap(at0.x + at.x), y: snap(at0.y + at.y), w: at.w, h: at.h }, lk = FREEW.look(p); R[p.key] = r; n++;
+      host.append(h('div.fw-gb' + (lk.cls ? '.' + lk.cls : ''), { 'data-k': p.key, style: { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', minHeight: r.h + 'px', '--fc': lk.col } }, h('span.fw-gbt', lk.tag), h('span.fw-gbx', p.as === 'slot' ? '“' + p.text + '” — ＋ add the result' : p.text)));
+      x0 = Math.min(x0, r.x); y0 = Math.min(y0, r.y); x1 = Math.max(x1, r.x + r.w); y1 = Math.max(y1, r.y + r.h); });
+    let svg = ''; st.conv.links.filter(l => !l.none && !l.off && R[l.a] && R[l.b]).forEach(l => { const A = R[l.a], B = R[l.b], col = WIRECOL[l.rel] || '#8a8f98', lab = (REL[l.rel] || { label: l.rel }).label || l.rel;
+      let ax, ay, bx, by; if (B.y >= A.y + A.h - 1) { ax = A.x + A.w / 2; ay = A.y + A.h; bx = B.x + B.w / 2; by = B.y; } else if (A.y >= B.y + B.h - 1) { ax = A.x + A.w / 2; ay = A.y; bx = B.x + B.w / 2; by = B.y + B.h; } else { const lr = B.x > A.x; ax = lr ? A.x + A.w : A.x; ay = A.y + A.h / 2; bx = lr ? B.x : B.x + B.w; by = B.y + B.h / 2; }
+      const an = Math.atan2(by - ay, bx - ax), ah = dd => (bx - 11 * Math.cos(an + dd)).toFixed(1) + ',' + (by - 11 * Math.sin(an + dd)).toFixed(1);
+      svg += `<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}" stroke="${col}" stroke-width="2" stroke-dasharray="6 5"/>` + ((REL[l.rel] || {}).dir === false ? '' : `<polygon points="${bx},${by} ${ah(.45)} ${ah(-.45)}" fill="${col}"/>`) + `<text x="${((ax + bx) / 2 + 6).toFixed(1)}" y="${((ay + by) / 2 + 4).toFixed(1)}" fill="${col}" class="fw-gl">${esc(lab)}</text>`; });
+    host.prepend(h('div.fw-gsvg', { html: `<svg width="1" height="1" overflow="visible">${svg}</svg>` }));
+    if (!n && !svg) return; pane.paper.world.append(host);
+    if (st.gfit && n) { st.gfit = false; const fr = pane.rectOf(fb.id) || { x: fb.x || 0, y: fb.y || 0, w: fb.w || 448, h: 160 }; try { pane.paper.fit({ x0: Math.min(x0, fr.x), y0: Math.min(y0, fr.y), x1: Math.max(x1, fr.x + fr.w), y1: Math.max(y1, fr.y + fr.h) }); } catch (e) { } }
+  },
+  /** V4.47: Take back — what Apply made leaves the note; the freewrite is a draft again, open, its colours kept. */
+  takeBack(id) {
+    const fb = M.block(id); if (!fb || !fb.fw || fb.fw.state !== 'applied') return; const made = fb.fw.made || {}, applied = fb.fw.applied || '';
+    const mine = Object.values(made).map(x => M.block(x)).filter(x => x && x.status === 'live' && x.fwFrom === fb.id);
+    const go = () => { const cur = M.block(fb.id); if (!cur) return; const keep = {}; Object.entries(made).forEach(([k, v]) => { const x = M.block(v); if (x && x.status === 'live' && x.fwFrom !== fb.id) keep[k] = v; });   // what existed before (an association) stays
+      DB.beginGroup('freewrite'); cur.fw = Object.assign({}, cur.fw, { state: 'draft', made: keep, takenBack: isoLocal(new Date()) }); delete cur.fw.applied; cur.collapsed = false; cur.modified = isoLocal(new Date()); DB.put('blocks', cur);
+      if (mine.length) { if (EDIT.deleteBlocks(mine.map(x => x.id), { quiet: true }) === false) return; } else changed();
+      if (FREEW.st && FREEW.st.id === fb.id) FREEW.paint();
+      toast('Taken back: ' + plural(mine.length, 'component') + ' left the note — the freewrite is a draft again, its colours kept (Ctrl+Z brings them back)', 4200); };
+    const edited = mine.filter(x => applied && x.modified && x.modified > applied);
+    if (edited.length) return pickModal('Take back what the freewrite made?', plural(edited.length, 'component') + ' changed since it was applied — taking back removes those changes too. Ctrl+Z brings everything back.', [{ label: 'Take back', danger: true, run: go }, { label: 'Keep them', run: () => { } }]);
+    go();
+  },
   /* ---------------- beside the note ---------------- */
   beside(v) {
     const st = FREEW.st; if (!st) return; st.beside = v == null ? !st.beside : !!v; FREEW.chipOff();
     const side = FREEW.opt('side', 'right') === 'left' ? 'left' : 'right', bd = document.body;
     bd.classList.toggle('fw-beside', st.beside); bd.classList.toggle('fw-left', st.beside && side === 'left'); bd.classList.toggle('fw-right', st.beside && side === 'right');
-    st.el.classList.toggle('beside', st.beside); FREEW.paintBeside(); FREEW.place();
+    st.el.classList.toggle('beside', st.beside); FREEW.paintBeside(); FREEW.place(); if (!st.beside) FREEW.ghostOff();
     if (st.beside && st.docId && !(location.hash || '').includes(st.docId)) App.go('#/doc/' + st.docId);
     requestAnimationFrame(() => { try { App.panes().forEach(p => p.paper && p.paper.apply()); } catch (e) { } dispatchEvent(new Event('resize')); FREEW.paint(); });
     if (st.beside) changed();
@@ -589,7 +649,7 @@ const FREEW = {
 
   /* ---------------- closing and applying ---------------- */
   close(quiet) {
-    const st = FREEW.st; if (!st) return; FREEW.chipOff(); FREEW.listen(false); FREEW.stopPlay(); if (FREEW.mine()) REC.stop();
+    const st = FREEW.st; if (!st) return; FREEW.chipOff(); FREEW.ghostOff(); FREEW.listen(false); FREEW.stopPlay(); if (FREEW.mine()) REC.stop();
     FREEW.save(); clearInterval(FREEW._t); FREEW._t = null;
     document.removeEventListener('keydown', st.key); removeEventListener('resize', st.rs);
     const wasBeside = st.beside; st.el.remove(); FREEW.st = null;
@@ -601,7 +661,7 @@ const FREEW = {
   },
   /** Apply: the parts as components and wires under the freewrite, which folds. One Undo. */
   apply() {
-    const st = FREEW.st; if (!st) return; FREEW.save(); if (!st.shown) { st.shown = true; FREEW.setFw({ shown: true }); FREEW.paint(); }
+    const st = FREEW.st; if (!st) return; FREEW.save(); FREEW.ghostOff(); if (!st.shown) { st.shown = true; FREEW.setFw({ shown: true }); FREEW.paint(); }
     const conv = st.conv, P = conv ? conv.parts.filter(p => !p.none) : []; if (!P.length) return toast('No components yet — click words to choose what they become');
     const fb = FREEW.ensure(), d = M.doc(st.docId); if (!fb || !d) return;
     const fw = Object.assign({}, fb.fw || {}), made = Object.assign({}, fw.made || {}), L = FREEW.layout(conv);
@@ -638,7 +698,7 @@ const FREEW = {
     const cur = M.block(fb.id); cur.fw = Object.assign({}, cur.fw || {}, { state: 'applied', applied: now, made, shown: true }); if (FREEW.opt('fold', true) !== false) cur.collapsed = true; DB.put('blocks', cur);
     M.touchDoc(d); IX.rebuild(); changed(); FREEW.oneStep(at0, fb.id);
     const pane = st.pane; FREEW.close(true);
-    toast(fresh.length || nw ? 'In the note: ' + plural(fresh.length, 'component') + ' and ' + plural(nw, 'link') + ' — Ctrl+Z undoes it' : 'Nothing new to add — it is all in the note already', 4200);
+    toast(fresh.length || nw ? 'In the note: ' + plural(fresh.length, 'component') + ' and ' + plural(nw, 'link') + ' — Take back on the freewrite (or Ctrl+Z) takes them out' : 'Nothing new to add — it is all in the note already', 4200);
     setTimeout(() => { try { const pn = pane && App.panes().includes(pane) ? pane : App.panes().find(p => p.docId === d.id); if (!pn || !fresh.length) return; const bs = [cur, ...fresh.map(M.block)].filter(Boolean); pn.paper.fit(pn.bboxOf(bs)); } catch (e) { } }, 160);
     return fresh;
   },
@@ -702,7 +762,8 @@ const FREEW = {
     return h('div.fwc',
       h('div.fwc-bar.nopan', h('span.fwc-st' + (fw.state === 'applied' ? '.ok' : ''), fw.state === 'applied' ? 'Applied ' + fmtStamp(fw.applied) + (made ? ' · ' + plural(made, 'component') : '') : 'Draft'), h('span.fwc-n', plural(n, 'word')),
         has ? h('button.btn.xs.fwc-play', { type: 'button', title: 'Play the recording', on: { click: e => { e.stopPropagation(); REC.toggle(M.block(b.id)); } } }, FREEW.ic('play', 13), REC.mmss(r.dur || 0)) : null,
-        h('span.spacer'), ro ? null : h('button.btn.xs.fw-open', { type: 'button', title: 'Open the page again and go on with it', on: { click: e => { e.stopPropagation(); go(); } } }, 'Open')),
+        h('span.spacer'), ro || fw.state !== 'applied' || !made ? null : h('button.btn.xs.fw-tbk', { type: 'button', title: 'Take the ' + plural(made, 'component') + ' it made out of the note — it is a draft again (Ctrl+Z undoes this too)', on: { click: e => { e.stopPropagation(); FREEW.takeBack(b.id); } } }, 'Take back'),   // V4.47
+        ro ? null : h('button.btn.xs.fw-open', { type: 'button', title: 'Open the page again and go on with it', on: { click: e => { e.stopPropagation(); go(); } } }, 'Open')),
       tx);
   },
   /* ---------------- V4.34 — Settings → Freewrite → Rules: add, change, delete ---------------- */
@@ -800,10 +861,14 @@ const FREEW = {
       PV.cap((live ? 'Coloured as you write. ' : 'Coloured when you press Convert, then as you correct. ') + 'Two components and a supports link; a barrier' + (pm === 'run' ? ', and the sentence after it stays in the barrier (it goes on describing it)' : plainC ? '; the sentence after it a component of its own' : '; the sentence after it stays words') + '. Apply puts them in the note' + (fold ? ' and the freewrite folds.' : '; the freewrite stays open.') + ' ' + plural(FREEW.rules().filter(r => r.on !== false).length, 'rule') + ' read the words (' + FREEW.store().own.length + ' of yours); Edit one below to see it at work here.')];
   },
 };
-WIDGETS.freewrite = { label: 'freewrite', w: 448, body: (b, d, pane, ro) => FREEW.card(b, d, pane, ro), menu: b => [FREEW.on() ? { label: 'Open the freewrite', sub: 'The page again, to go on with it', run: () => FREEW.open(M.doc(b.docId), { block: b.id }) } : null].filter(Boolean) };
+WIDGETS.freewrite = { label: 'freewrite', w: 448, body: (b, d, pane, ro) => FREEW.card(b, d, pane, ro), menu: b => [b.fw && b.fw.state === 'applied' ? { label: 'Take back what it made', sub: 'Its components leave the note; it is a draft again', run: () => FREEW.takeBack(b.id) } : null, FREEW.on() ? { label: 'Open the freewrite', sub: 'The page again, to go on with it', run: () => FREEW.open(M.doc(b.docId), { block: b.id }) } : null].filter(Boolean) };
 {
   // the placeholders' buttons, on their cards
   const bx = DocView.box; DocView.box = function (b, d, p) { const el = bx.apply(this, arguments); try { if (el && b && b.fwslot && !this.travel) { const bar = FREEW.slotBar(b, this); if (bar) { const ch = $(':scope > .chips', el); ch ? ch.before(bar) : el.append(bar); } } } catch (e) { console.warn('[freewrite] slot', e); } return el; };
+  // V4.47: a freewrite folded after Apply keeps Take back in its header (its card, where the button is, is folded away)
+  const bx2 = DocView.box; DocView.box = function (b, d, p) { const el = bx2.apply(this, arguments); try { if (el && b && b.kind === 'freewrite' && b.collapsed && b.fw && b.fw.state === 'applied' && !this.travel) {
+    const n = Object.values(b.fw.made || {}).filter(id => { const x = M.block(id); return x && x.status === 'live' && x.fwFrom === b.id; }).length, bh = $(':scope > .bh', el), sp = bh && $(':scope > .spacer', bh);
+    if (n && sp && !$('.fw-tbk', bh)) sp.after(h('button.btn.xs.fw-tbk.nopan', { type: 'button', title: 'Take the ' + plural(n, 'component') + ' this freewrite made out of the note — it is a draft again (Ctrl+Z undoes this too)', on: { pointerdown: e => e.stopPropagation(), click: e => { e.stopPropagation(); FREEW.takeBack(b.id); } } }, 'Take back')); } } catch (e) { console.warn('[freewrite]', e); } return el; };
   // what ＋ on a placeholder Result inserts is wired to it
   const ab = M.addBlock; M.addBlock = function () { const b = ab.apply(this, arguments); try { FREEW.took(b); } catch (e) { } return b; };
   // a transcript for a freewrite: after what was written — unless the words were written as you spoke (then only its timings)
@@ -816,6 +881,8 @@ WIDGETS.freewrite = { label: 'freewrite', w: 448, body: (b, d, pane, ro) => FREE
   if (typeof CMD !== 'undefined' && CMD.add) CMD.add({ slash: 'freewrite', label: 'Freewrite — a blank page for typing and your voice; it becomes components', args: [], alias: ['free-write'], group: 'Note',
     sub: 'Over the whole app, or beside the note; Convert colours what your words become, Apply puts it in the note',
     run: (A, ctx) => { if (!FREEW.on()) throw new Error('Freewrite is off in Settings'); const d = CMD.need(ctx); FREEW.open(d, { pane: ctx.pane, near: ctx.block }); return 'Freewrite'; } });
+  // V4.47: the preview in the note is drawn again after the note is (a redraw of its boxes)
+  const rf = App.refresh; App.refresh = function () { const r = rf.apply(this, arguments); try { const st = FREEW.st; if (st && st.beside && st.conv && st.ghost !== false) requestAnimationFrame(() => { if (FREEW.st === st && !$('.fw-ghosts')) FREEW.ghostPaint(); }); } catch (e) { } return r; };
   // leaving for another note while the page is over the whole app: it goes with you no further — it is saved and closed
   window.addEventListener('hashchange', () => { const st = FREEW.st; if (st && !st.beside && !(location.hash || '').includes(st.docId)) FREEW.close(true); });
 }

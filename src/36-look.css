@@ -64,6 +64,8 @@ body:not(.f-off-look) #search kbd{border:0;border-radius:6px;background:var(--pa
 body:not(.f-off-look) :is(#newnote,#newexp){height:28px;border-radius:999px;transition:transform var(--lk-ds) var(--lk-spring),background var(--lk-dh) ease,filter var(--lk-dh) ease}
 body:not(.f-off-look) :is(#newnote,#newexp):active{transform:scale(.96)}
 body:not(.f-off-look) #tabs .tab{z-index:1;border-radius:999px;padding:5px 11px 6px}
+/* V4.46: the pill covers the whole tab (20d LOOK.tabPill); an empty count gives back its gap, so the name sits in the middle of it (it stays, so the header keeps its height) */
+body:not(.f-off-look) #tabs .tab > .tc:empty{margin-left:-4px}
 body:not(.f-off-look) #tabs .tink{z-index:0;top:1px;bottom:3px;height:auto;border-radius:999px;background:var(--lk-rail);box-shadow:var(--lk-sh1),inset 0 0 0 1px var(--lk-ring);transition:transform .45s var(--lk-soft),width .45s var(--lk-soft)}
 body.lk-still:not(.f-off-look) #tabs .tink{transition:none}
 /* a page you go to fades in and rises 6 px (only when you navigate: 20d sets #view.lk-nav for a moment) */

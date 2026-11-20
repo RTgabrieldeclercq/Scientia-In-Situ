@@ -122,3 +122,19 @@ body.f-off-freewrite .fwc .fw-open{display:none}
 .fw-rtest{display:grid;gap:8px} .fw-rnote{font-size:12px;color:var(--ink-3)}
 .fw-rbar{display:flex;gap:8px}
 @media (max-width:760px){ .fw-rr{grid-template-columns:auto minmax(0,1fr) auto} .fw-rr-k{display:none} .fw-rg,.fw-rl{grid-template-columns:minmax(0,1fr)} }
+/* V4.47 — Convert can be undone (Undo convert); the note as it will look, in the note itself; Take back */
+.fw-convert.on{background:color-mix(in srgb,var(--teal) 10%,var(--surface));border-color:color-mix(in srgb,var(--teal) 45%,var(--rule))}
+.fw-sh .spacer{flex:1}
+.fw-gbtn{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.fw-gbtn.on{background:color-mix(in srgb,var(--teal) 12%,var(--surface));border-color:color-mix(in srgb,var(--teal) 50%,var(--rule));color:var(--ink)}
+.fw-ghosts{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:4;animation:fw-gin .35s ease both}
+@keyframes fw-gin{from{opacity:0}to{opacity:1}}
+.fw-gsvg{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible}
+.fw-gsvg svg{overflow:visible;display:block}
+.fw-gl{font:600 12px var(--f-b)}
+.fw-gb{position:absolute;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;padding:12px 14px;border:1.5px dashed var(--fc,var(--ink-3));border-radius:12px;background:color-mix(in srgb,var(--fc,var(--ink-3)) 7%,var(--surface));color:var(--ink);opacity:.94}
+.fw-gb::before{content:'Preview';position:absolute;top:-9px;right:12px;padding:2px 7px;border-radius:999px;background:var(--fc,var(--ink-3));color:#fff;font:600 9px/1.4 var(--f-m);letter-spacing:.08em;text-transform:uppercase}
+.fw-gbt{align-self:flex-start;padding:1px 6px;border-radius:5px;background:color-mix(in srgb,var(--fc,var(--ink-3)) 16%,transparent);color:var(--ink-2);font:600 10px/1.5 var(--f-m);letter-spacing:.05em;text-transform:uppercase}
+.fw-gbx{font:400 14px/1.45 var(--f-s);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:7;overflow:hidden}
+.fw-tb[hidden]{display:none}
+@media (prefers-reduced-motion:reduce){.fw-ghosts{animation:none}}
