@@ -1,4 +1,4 @@
-// Fold the side panel (17g, V4.10) — the demonstration on its page in Settings. Record: node scientia/demokit/record.mjs sidefold
+// Fold the side panel (17g, V4.10; V4.40 the capsule and beside a note; V4.42 Look and motion's glide) — the demonstration on its page in Settings. Record: node scientia/demokit/record.mjs sidefold
 export default {
   by: '',
   use: 'Give the page the whole width while you read, and bring your highlights back with one click.',
@@ -41,17 +41,17 @@ export default {
       await R.until(`document.querySelectorAll('.embed-max .mx-side .rd-ann').length >= 3 && !!document.querySelector('.embed-max .pdf-slot canvas')`, 15000);
       await R.sleep(2000);
     }],
-    ['Fold the panel with ›: a thin strip with its count written down it', async (R, c) => {
+    ['Fold the panel with ›: it glides shut, and a small capsule of its highlight colours stays at the edge', async (R, c) => {
       await R.click('.embed-max .sf-top .sf-b');
-      await R.until(`document.body.classList.contains('sf-fold')`, 3000);
+      await R.until(`document.body.classList.contains('sf-fold') && !!document.querySelector('.embed-max .lk-rail .lk-dot, .embed-max .sf-col .sf-ic')`, 3000);
+      await R.move({ js: `document.querySelector('.embed-max .lk-rail') || document.querySelector('.embed-max .sf-col')` }); await R.sleep(2400);
+    }],
+    ['Click a colour on the capsule: the panel opens at that highlight', async (R, c) => {
+      await R.click({ js: `[...document.querySelectorAll('.embed-max .lk-rail .lk-rb')].find(b => /Green/.test(b.getAttribute('aria-label') || '')) || document.querySelector('.embed-max .sf-col')` });
+      await R.until(`!document.body.classList.contains('sf-fold')`, 3000);
       await R.sleep(2200);
     }],
-    ['Click the strip: the panel opens again', async (R, c) => {
-      await R.click('.embed-max .sf-col');
-      await R.until(`!document.body.classList.contains('sf-fold')`, 3000);
-      await R.sleep(1800);
-    }],
-    ['Fold it again, close the paper and open it in the Library’s reader: the panel is folded there too', async (R, c) => {
+    ['Fold it again, close the paper and open it in the Library’s reader: folded there too', async (R, c) => {
       await R.click('.embed-max .sf-top .sf-b');
       await R.until(`document.body.classList.contains('sf-fold')`, 3000);
       await R.sleep(900);
@@ -59,7 +59,14 @@ export default {
       await R.sleep(500);
       await R.go(`#/read/${c.lib}`);
       await R.until(`!!document.querySelector('.rd-main .sf-col') && document.querySelector('.rd-main .sf-col .sf-n') && document.querySelector('.rd-main .sf-col .sf-n').textContent.length > 0`, 12000);
-      await R.sleep(2600);
+      await R.sleep(2400);
+    }],
+    ['Back in the note, read the paper beside it: there too the panel waits folded at the edge (V4.40)', async (R, c) => {
+      await R.open(c.A);
+      await R.ev(`const b = M.block(${JSON.stringify(c.pdf)}); DocView.paper.centerOn(b.x + 308, b.y + 200, .9); return 1`); await R.sleep(600);
+      await R.click({ js: `document.querySelector('.box[data-id="${c.pdf}"] .rd-open')` });
+      await R.until(`!!document.querySelector('.rd-wrap .lk-rail .lk-dot, .rd-wrap .sf-col .sf-ic')`, 12000);
+      await R.move({ js: `document.querySelector('.rd-wrap .lk-rail') || document.querySelector('.rd-wrap .sf-col')` }); await R.sleep(2600);
     }],
   ],
 };
