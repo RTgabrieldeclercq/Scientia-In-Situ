@@ -1,10 +1,10 @@
-// Materials (13j, 13r) — the demonstration on its page in Settings. Record: node scientia/demokit/record.mjs materials
+// Materials (13j, 13r; V4.48 a section of the Atlas) — the demonstration on its page in Settings. Record: node scientia/demokit/record.mjs materials
 export default {
   by: '',
   use: 'Know what every gel batch, cell line and antibody lot is, and which notes used it.',
   view: [1280, 800],
-  dpr: 1,   // the Materials tab and the sheet are wide pages
-  // the test notes: a run note with no materials of its own yet; two older materials, used in earlier notes, so the Materials tab has more than one line
+  dpr: 1,   // the Atlas's Materials and the sheet are wide pages
+  // the test notes: a run note with no materials of its own yet; two older materials, used in earlier notes, so the Atlas's Materials has more than one line
   setup: async () => {
     const P = KIT.project('Traction on soft gels');
     const A = KIT.note(P, 'Run 3'), E = KIT.note(P, 'Fibronectin series'), F = KIT.note(P, 'Run 2');
@@ -18,8 +18,11 @@ export default {
   },
   before: async (R, c) => { await R.open(c.A); },
   steps: [
-    ['Materials tab → + New material: “PAA gel batch 15”, a gel batch made here. Fill in its stiffness', async (R, c) => {
-      await R.click('#tabs .tab[data-k="materials"]');
+    ['Atlas → Materials → + New material: “PAA gel batch 15”, a gel batch made here. Fill in its stiffness', async (R, c) => {
+      await R.click('#tabs .tab[data-k="atlas"]');   // V4.48: Materials is a section of the Atlas
+      await R.until(`!!document.querySelector('.ah-row .ah-tab[data-k="materials"]')`, 6000);
+      await R.sleep(500);
+      await R.click('.ah-row .ah-tab[data-k="materials"]');
       await R.until(`!!document.querySelector('.page .btn.pri')`, 4000);
       await R.sleep(250);
       await R.click({ sel: '.page .btn.pri', text: 'New material' });
@@ -65,8 +68,11 @@ export default {
       await R.key('Enter');
       await R.sleep(1100);
     }],
-    ['The Materials tab: every material by kind, with the notes that used it', async (R, c) => {
-      await R.click('#tabs .tab[data-k="materials"]');
+    ['The Atlas’s Materials: every material by kind, with the notes that used it', async (R, c) => {
+      await R.click('#tabs .tab[data-k="atlas"]');
+      await R.until(`!!document.querySelector('.ah-row .ah-tab[data-k="materials"]')`, 6000);
+      await R.sleep(400);
+      await R.click('.ah-row .ah-tab[data-k="materials"]');
       await R.until(`!!document.querySelector('.matt')`, 4000);
       await R.ev(`[...document.querySelectorAll('.matt tr')].find(r => r.textContent.includes('PAA gel batch 15')).scrollIntoView({ block: 'center' }); return 1`);
       await R.sleep(500);

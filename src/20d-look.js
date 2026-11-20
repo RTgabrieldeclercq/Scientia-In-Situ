@@ -49,7 +49,7 @@ const LOOK = {
     const b = document.body; if (!b) return; const m = LOOK.motion();
     b.classList.toggle('lk-calm', m === 'calm'); b.classList.toggle('lk-still', m === 'still');
     $$('.sf-col').forEach(LOOK.rail); $$('.rs-lib').forEach(LOOK.dressLib); $$('.rs-grip').forEach(LOOK.grip);
-    if (LOOK.on()) LOOK.tabPill(); else { try { App.renderTabs(); } catch (e) { } }   // V4.46: off, the underline under the name, as before
+    if (LOOK.on()) LOOK.tabPill(); else { const ink = $('#tabs .tink'); if (ink) { ink.style.top = ''; ink.style.height = ''; } try { App.renderTabs(); } catch (e) { } }   // V4.46: off, the underline under the name, as before (V4.51: the pill's top and height let go)
   },
   /* ---------- V4.46 (Gabe: "Add the gliding tab pill and make sure it covers the entire tab name everytime") ---------- */
   /** The pill under the tab you are on covers the whole tab — its padding, its name (bold when on), its count — and glides to the next one.
@@ -59,6 +59,7 @@ const LOOK = {
     if (!LOOK.on()) return; const nav = document.getElementById('tabs'); if (!nav) return; const on = nav.querySelector('.tab.on'), ink = nav.querySelector('.tink'); if (!ink) return;
     if (!on || on.hidden || !on.offsetWidth) { ink.style.opacity = 0; return; }
     ink.style.opacity = 1; ink.style.width = on.offsetWidth + 'px'; ink.style.transform = 'translateX(' + on.offsetLeft + 'px)';
+    ink.style.top = on.offsetTop + 'px'; ink.style.height = on.offsetHeight + 'px';   // V4.51 (Gabe: "The tab pill is not centered on the tabs"): the tab's own box, so the name sits in its middle both ways
     if (!LOOK._tabRO && typeof ResizeObserver !== 'undefined') { LOOK._tabRO = new ResizeObserver(() => requestAnimationFrame(LOOK.tabPill)); nav.querySelectorAll('.tab').forEach(t => LOOK._tabRO.observe(t)); LOOK._tabRO.observe(nav); }
   },
   /* ---------- the side panel's capsule ---------- */
