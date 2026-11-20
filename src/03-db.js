@@ -46,7 +46,7 @@ const DB = {
   where(store, f) { const o = []; for (const v of S[store].values()) if (f(v)) o.push(v); return o; },
 
   /** Last-written copies of authored records, so undo restores what was saved even when a record object was changed in place. */
-  _snap: new Map(), SNAP: new Set(['blocks', 'documents', 'wires', 'inklib', 'libsets', 'reminders', 'projects', 'themes', 'aims', 'items', 'terms', 'library', 'views', 'canvases', 'equations', 'chores', 'flags', 'templates']),
+  _snap: new Map(), SNAP: new Set(['blocks', 'documents', 'wires', 'inklib', 'libsets', 'reminders', 'projects', 'themes', 'aims', 'items', 'terms', 'library', 'views', 'canvases', 'equations', 'chores', 'flags', 'templates', 'events']),
   resnap() { this._snap = new Map(); for (const n of this.SNAP) if (S[n]) for (const [id, r] of S[n]) this._snap.set(n + '\u0001' + id, JSON.stringify(r)); },
   /** Start a new undo group — one user gesture = one group. */
   beginGroup(label) { this.group++; this._label = label || ''; },

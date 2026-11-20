@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "c0a818331ffa0f4cf47dbbaa6b1ab5764f977262",
-  "subject": "V4.56: Scientia — Freewrite: placeholders in the words, from a bar of its own or a slash: /result makes an empty Result bubble, /html in it says it will be an HTML file",
-  "date": "2026-11-19"
+  "commit": "8e89b1bf699ca6d7f002898126ae8fd25054b41a",
+  "subject": "V4.63: Scientia — the Terms page as cards, in the new look: each term a card with its uses, its last 12 weeks, its structures and when it was last used",
+  "date": "2026-11-20"
  },
- "cut": "0a9507cf09957bc70770fffcaba9cc89965baa80",
+ "cut": "6ecfc0ec6d16914514b7f6c2b3b7c43fe99302e2",
  "names": [
   "DESKLAB",
   "LABSYNC",

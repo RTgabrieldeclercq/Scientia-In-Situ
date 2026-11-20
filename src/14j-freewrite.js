@@ -105,6 +105,7 @@ const FREEW = {
   st: null, au: null, dict: null, wait: null,
   ICON: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg>',
   P: {
+    region: 'M4 7.5V6a2 2 0 0 1 2-2h1.5M16.5 4H18a2 2 0 0 1 2 2v1.5M20 16.5V18a2 2 0 0 1-2 2h-1.5M7.5 20H6a2 2 0 0 1-2-2v-1.5M8 10h8M8 14h5',
     mic: 'M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z',
     pause: 'M15.75 5.25v13.5m-7.5-13.5v13.5',
     play: 'M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z',
@@ -225,6 +226,9 @@ const FREEW = {
     }
     return out;
   },
+  /** V4.61 — the paragraphs: each line with words, known by the words of its first sentence. */
+  paras(text) { const out = []; let at = 0; String(text || '').split('\n').forEach(line => { const a0 = at; at += line.length + 1; let a = 0, b = line.length; while (a < b && /\s/.test(line[a])) a++; while (b > a && /\s/.test(line[b - 1])) b--; if (b <= a || !/[\p{L}\p{N}]/u.test(line)) return;
+    const s1 = FREEW.sentences(line.slice(a, b))[0], key = FREEW.key(s1 ? line.slice(a, b).slice(s1.from, s1.to) : line.slice(a, b)); if (key) out.push({ from: a0 + a, to: a0 + b, key }); }); return out; },
   /** The words that name a part, the same wherever they are written: no case, no leading article, no closing stop. */
   key: t => String(t || '').toLowerCase().replace(/[“”"’‘]/g, '').replace(/\s+/g, ' ').trim().replace(/^(the|a|an|this|that|these|those|our|my)\s+/, '').replace(/[\s.,;:!?]+$/, ''),
   STOP: new Set('about above after again against also among another because been before being below between both but could does doing down during each from further have having here into itself just more most much must only other over same should some such than that their them then there these they this those through under until very were what when where which while with would your evidence data shows show explains'.split(' ')),
@@ -272,7 +276,7 @@ const FREEW = {
     };
     // V4.37 — every sentence read, and whether it made one component and no link (what the sentences after it may go on describing)
     const recs = [], joins = [], mode = o.plain || 'run';
-    FREEW.sentences(text).forEach(s => { const n0 = parts.length, l0 = links.length, got = read(s.from, s.to, null, 0, null); recs.push({ s, got, single: !!got && links.length === l0 && parts.length - n0 <= 1 }); });
+    FREEW.sentences(text).forEach((s, i, A) => { const n0 = parts.length, l0 = links.length, got = read(s.from, s.to, null, 0, null); recs.push({ s, got, single: !!got && links.length === l0 && parts.length - n0 <= 1, para: i > 0 && /\n/.test(text.slice(A[i - 1].to, s.from)) }); });
     // V4.34 — your associations: this freewrite's (o.assoc) and your phrase rules (every freewrite). Each place the words are written
     // becomes their part where nothing claimed them; where a rule found exactly those words, they become what you said; out of a
     // whole sentence a word rule (or "every sentence a component") coloured, they are taken as their own; inside a part a two- or
@@ -280,27 +284,14 @@ const FREEW = {
     const wordIds = new Set(G.word.map(r => r.id));
     const force = (p, A) => { if (!A) return; if (A.block) { p.block = A.block; p.as = 'component'; } if (A.as) p.as = A.as; if ('kind' in A) p.kind = A.kind || null; if ('struct' in A) p.struct = A.struct || null; if (p.as === 'bridge' && !p.cands) p.cands = FREEW.cands(p.text, o.docId); };
     const PH = [...(o.assoc || []).filter(x => x && x.text).map(x => ({ pat: x.text, A: x, id: 'assoc' })), ...G.phrase.flatMap(r => (r.pats || []).map(pat => ({ pat, A: r.A || {}, id: r.id })))];
-    PH.forEach(ph => { const c = FREEW.compile(ph.pat, false); if (!c.re || c.slots.length) return; c.re.lastIndex = 0; let m, guard = 0;
-      while ((m = c.re.exec(text)) && guard++ < 500) {
-        if (!m[0].length) { c.re.lastIndex++; continue; } const a = m.index, b = a + m[0].length, k = FREEW.key(m[0]); let host = null, hs = null; const reach = [];
-        parts.forEach(p => p.spans.forEach(s => { if (a >= s.from && b <= s.to) { host = p; hs = s; } else if (a < s.to && b > s.from) reach.push([p, s]); }));
-        if (reach.length) {   // V4.53: the words reach over other components — they take those words, so nothing is said twice
-          reach.forEach(([p, s2]) => { if (s2.from >= a && s2.to <= b) p.spans = p.spans.filter(x => x !== s2); else { if (s2.from < a) s2.to = a; else s2.from = b; [s2.from, s2.to] = trim(s2.from, s2.to); if (s2.to <= s2.from) p.spans = p.spans.filter(x => x !== s2); else if (p.spans.length === 1) p.text = text.slice(s2.from, s2.to); }
-            if (!p.spans.length && parts.includes(p)) { parts.splice(parts.indexOf(p), 1); byKey.delete(p.key); } });
-          for (let i = links.length - 1; i >= 0; i--) { const l = links[i]; if (l.span && l.span[0] >= a && l.span[1] <= b) { lk.delete(l.key); links.splice(i, 1); } }
-          for (let i = cues.length - 1; i >= 0; i--) if (cues[i].from >= a && cues[i].to <= b) cues.splice(i, 1);
-          const p = part(a, b, {}, ph.id); if (p) { force(p, ph.A); p.assoc = true; } continue; }
-        if (links.some(l => l.span && a < l.span[1] && b > l.span[0]) || cues.some(q => a < q.to && b > q.from)) continue;
-        if (host && host.key === k) { force(host, ph.A); continue; }
-        if (host && host.rule && !wordIds.has(host.rule)) continue;
-        if (host) { host.spans = host.spans.filter(s => s !== hs); if (!host.spans.length) { parts.splice(parts.indexOf(host), 1); byKey.delete(host.key); } }
-        const p = part(a, b, {}, ph.id); if (p) { force(p, ph.A); p.assoc = true; } } });
+    // V4.61: the associations are carved out of what was read, after it is all read (see below)
     // V4.37 (Gabe: "a string of sentences not recognized are their own text component in between the links. For example, describing a
     // verdict in a sentence and you keep describing in more sentences with no trigger of other components, it remains in that verdict.
     // Manual editing can override that."): in order, a sentence no rule read (and none of your associations claimed) stays in the
     // component the sentence before it made, when that sentence made one and no link; otherwise it starts a text component of its own,
     // which the next unread sentences join. Its own words key a click's change (o.over): its own component, a kind, plain words.
     if (mode === 'run') { let host = null; recs.forEach(r => {
+      if (r.para) host = null;   // V4.61: a new paragraph starts a new component
       { const [a0, b0] = trim(r.s.from, r.s.to), cover = parts.find(p => p.assoc && p.spans.some(x => x.from <= a0 && x.to >= b0)); if (cover) { host = cover; return; } }   // V4.53: a sentence your component covers is in it
       if (r.got) { host = r.single && byKey.get(r.got.key) === r.got ? r.got : null; return; }
       const [a, b] = trim(r.s.from, r.s.to); if (b <= a) return;
@@ -314,31 +305,70 @@ const FREEW = {
       parts.push(q); byKey.set(key, q); });
     // what was changed by clicking: by the part's words, so a correction elsewhere keeps it
     const over = o.over || {}, lover = o.lover || {};
-    parts.forEach(p => { const v = over[p.key]; if (!v) return; if (v.none) p.none = true; else { if (v.as) p.as = v.as; if ('kind' in v) p.kind = v.kind || null; if ('struct' in v) p.struct = v.struct || null; if (v.as === 'bridge' && !p.cands) p.cands = FREEW.cands(p.text, o.docId);
+    const byOver = p => { const v = over[p.key]; if (!v) return; if (v.none) p.none = true; else { if (v.as) p.as = v.as; if ('kind' in v) p.kind = v.kind || null; if ('struct' in v) p.struct = v.struct || null; if (v.as === 'bridge' && !p.cands) p.cands = FREEW.cands(p.text, o.docId);
       if (v.title) p.title = v.title; if (Array.isArray(v.marks) && v.marks.length) p.marks = v.marks.slice(); }   // V4.53: its title, structures on words in it
-      if (v.as || 'kind' in v || 'struct' in v || v.none) p.changed = true; });
+      if (v.as || 'kind' in v || 'struct' in v || v.none) p.changed = true; };
+    parts.forEach(byOver);
     (o.links || []).forEach(u => { if (!u || !u.a || !u.b || u.a === u.b || !u.rel || lk.has(u.a + '>' + u.b) || lk.has(u.b + '>' + u.a)) return;   // V4.54: links you drew
       const l = { id: 'l' + links.length, key: u.a + '>' + u.b, a: u.a, b: u.b, rel: u.rel, back: false, span: null, own: true }; links.push(l); lk.set(l.key, l); });
-    links.forEach(l => { const v = lover[l.key]; if (v) { if (v.none) l.none = true; if (v.rel) l.rel = v.rel; if (v.flip) { const t = l.a; l.a = l.b; l.b = t; l.back = !l.back; } l.changed = true; }
-      const A = byKey.get(l.a), B = byKey.get(l.b); if (!A || !B || A.none || B.none) l.off = true; });
+    links.forEach(l => { const v = lover[l.key]; if (v) { if (v.none) l.none = true; if (v.rel) l.rel = v.rel; if (v.flip) { const t = l.a; l.a = l.b; l.b = t; l.back = !l.back; } l.changed = true; } });
     // V4.37 — the sentences that stay in the component before them: its words grow; each stretch keeps its own words (a click can take it out)
     joins.forEach(j => { const H = byKey.get(j.host); if (!H || H.none) return; H.text = H.text.replace(/\s+$/, '') + (/[.!?;:]$/.test(H.text.trim()) ? ' ' : '. ') + j.text; H.spans.push({ from: j.from, to: j.to, own: j.key }); H.joined = (H.joined || 0) + 1; });   // each sentence keeps its full stop
+    // V4.61 (Gabe: "highlighting a set of sentences or a portion of it, and selecting a new component assumes that the highlighted portion
+    // becomes a whole component, merging the components together, and separates it from the rest of the freewrite, as its own card. Each
+    // component is its own card."): your words become one whole component. Every component they reach gives them up and keeps the rest of
+    // its words (both sides of them, "…" where they were taken out); its sentences after them stay where they were. A rule of yours does
+    // the same, except inside a component a two- or one-part rule found, where its words stay part of it.
+    // its words in order: a stop where the words had one, " … " where words between were taken out, else a space
+    const textOf = q => { const S = q.spans.slice().sort((x, y) => x.from - y.from); let t = ''; S.forEach((sp, i) => { const w = text.slice(sp.from, sp.to); if (!i) { t = w; return; } const g = text.slice(S[i - 1].to, sp.from);
+      t = t.replace(/\s+$/, '') + (/[\p{L}\p{N}]/u.test(g) ? ' … ' : /[.!?;:]/.test(g) ? (/[.!?;:]$/.test(t.trim()) ? ' ' : '. ') : ' ') + w; }); return t; };
+    const carve = (a, b, A, id, rule) => {
+      [a, b] = trim(a, b); if (b <= a) return; const k = FREEW.key(text.slice(a, b)); if (!k) return;
+      const same = parts.find(q => !q.ph && (q.key === k || (q.spans.length === 1 && q.spans[0].from === a && q.spans[0].to === b))); if (same) { force(same, A); same.assoc = true; return; }
+      const hit = []; parts.forEach(q => q.spans.forEach(sp => { if (a < sp.to && b > sp.from) hit.push([q, sp]); }));
+      if (hit.some(([q]) => q.ph)) return;   // never across a placeholder
+      if (rule && hit.some(([q, sp]) => q.rule && !wordIds.has(q.rule) && a >= sp.from && b <= sp.to)) return;
+      hit.forEach(([q, sp]) => { const keep = [], side = (x, y, o2) => { [x, y] = trim(x, y); if (y > x) keep.push(Object.assign({}, sp, { from: x, to: y }, o2)); };
+        if (sp.from < a) side(sp.from, a, { cutR: true }); if (sp.to > b) side(b, sp.to, { cutL: true }); q.spans.splice(q.spans.indexOf(sp), 1, ...keep); });
+      [...new Set(hit.map(x => x[0]))].forEach(q => { if (!q.spans.length) { parts.splice(parts.indexOf(q), 1); byKey.delete(q.key); } else q.text = textOf(q); });
+      for (let i = links.length - 1; i >= 0; i--) { const l = links[i]; if (l.span && l.span[0] < b && l.span[1] > a) { lk.delete(l.key); links.splice(i, 1); } }
+      for (let i = cues.length - 1; i >= 0; i--) if (cues[i].from < b && cues[i].to > a) cues.splice(i, 1);
+      const q = part(a, b, {}, id); if (q) { force(q, A); q.assoc = true; byOver(q); }
+    };
+    PH.forEach(ph => { const c = FREEW.compile(ph.pat, false); if (!c.re || c.slots.length) return; c.re.lastIndex = 0; let m, guard = 0; const at = [];
+      while ((m = c.re.exec(text)) && guard++ < 500) { if (!m[0].length) { c.re.lastIndex++; continue; } at.push([m.index, m.index + m[0].length]); }
+      at.forEach(([a, b]) => carve(a, b, ph.A, ph.id, ph.id !== 'assoc')); });
     parts.forEach(p => { if (p.marks) { const T = p.text.toLowerCase(); p.marks = p.marks.filter(m => m && m.t && m.s && KIND[m.s] && T.includes(String(m.t).toLowerCase())); if (!p.marks.length) delete p.marks; } });
-    // V4.55 — each sentence its own component: the seams between two that made one plain component each; merged ones become one
-    const seams = [];
-    if (mode === 'component') { const M2 = (o.merges || []).filter(m => m && m.a && m.b), isM = (a, b) => M2.some(m => m.a === a && m.b === b);
-      const one = r => { const q = r.got; return r.single && q && byKey.get(q.key) === q && !q.none && q.as === 'component' && !q.block && !q.assoc && q.spans.length === 1 ? q : null; };
-      const join = (H, q) => { if (!H.mem) { H.mem = [{ key: H.key, text: H.text, kind: H.kind, struct: H.struct, title: H.title || null }]; H.marks = (H.marks || []).slice(); if (H.struct) H.marks.push({ t: H.text, s: H.struct }); H.struct = null; }
-        H.mem.push({ key: q.key, text: q.text, kind: q.kind, struct: q.struct, title: q.title || null }); if (q.struct) H.marks.push({ t: q.text, s: q.struct }); (q.marks || []).forEach(m => H.marks.push(m));
-        H.text = H.text.replace(/\s+$/, '') + (/[.!?;:]$/.test(H.text.trim()) ? ' ' : '. ') + q.text; H.spans.push({ from: q.spans[0].from, to: q.spans[0].to, mem: q.key });
-        parts.splice(parts.indexOf(q), 1); byKey.delete(q.key); links.forEach(l => { if (l.a === q.key) l.a = H.key; if (l.b === q.key) l.b = H.key; if (l.a === l.b) l.off = true; }); };
-      let prev = null, host = null;
-      recs.forEach(r => { const q = one(r); if (!q) { prev = host = null; return; }
-        if (prev) { const on = isM(prev.key, q.key); seams.push({ a: prev.key, b: q.key, from: prev.spans[0].to, to: q.spans[0].from, on }); if (on) { host = host || prev; join(host, q); } else host = null; }
-        prev = q; });
-      parts.forEach(H => { if (!H.mem) return; const ks = [...new Set(H.mem.map(m => m.kind).filter(Boolean))], ts = [...new Set(H.mem.map(m => m.title).filter(Boolean))];
-        H.kind = ks[0] || null; H.title = ts[0] || null; if (!H.marks.length) delete H.marks; const f = {}; if (ks.length > 1) f.kinds = ks; if (ts.length > 1) f.titles = ts; if (f.kinds || f.titles) H.flag = f; }); }
-    return { parts, links, cues, text: orig, joins, seams };
+    // V4.55 — a seam between two components, to merge them into one (each keeps its structure; two kinds or titles are flagged).
+    // V4.61 (Gabe: "The merging of sentences individually stands, but also applies to components one right after the other"): between any
+    // two components one right after the other — nothing but spaces and stops between them, in the same paragraph — in every mode.
+    const seams = [], M2 = (o.merges || []).filter(m => m && m.a && m.b), isM = (a, b) => M2.some(m => m.a === a && m.b === b);
+    const mergeable = q => q && !q.none && !q.ph && q.as === 'component' && !q.block;
+    { const S = []; parts.forEach(q => { if (mergeable(q)) q.spans.forEach(sp => S.push({ q, sp })); }); S.sort((x, y) => x.sp.from - y.sp.from); const had = new Set();
+      for (let i = 1; i < S.length; i++) { const A = S[i - 1], B = S[i]; if (A.q === B.q) continue; const gap = text.slice(A.sp.to, B.sp.from); if (/[\p{L}\p{N}]/u.test(gap) || /\n/.test(gap) || parts.some(q => q !== A.q && q !== B.q && !q.none && q.spans.some(x => x.from >= A.sp.to && x.to <= B.sp.from))) continue;
+        const key = A.q.key + '|' + B.q.key; if (had.has(key)) continue; had.add(key); seams.push({ a: A.q.key, b: B.q.key, from: A.sp.to, to: B.sp.from, on: isM(A.q.key, B.q.key) }); } }
+    const join = (H, q) => { if (!H.mem) { H.mem = [{ key: H.key, text: H.text, kind: H.kind, struct: H.struct, title: H.title || null }]; H.marks = (H.marks || []).slice(); if (H.struct) H.marks.push({ t: H.text, s: H.struct }); H.struct = null; }
+      H.mem.push({ key: q.key, text: q.text, kind: q.kind, struct: q.struct, title: q.title || null }); if (q.struct) H.marks.push({ t: q.text, s: q.struct }); (q.marks || []).forEach(m => H.marks.push(m));
+      q.spans.forEach(sp => H.spans.push(Object.assign({}, sp, { mem: q.key }))); H.spans.sort((x, y) => x.from - y.from); H.text = textOf(H); if (q.assoc) H.assoc = true;
+      parts.splice(parts.indexOf(q), 1); byKey.delete(q.key); links.forEach(l => { if (l.a === q.key) l.a = H.key; if (l.b === q.key) l.b = H.key; }); };
+    { const grp = new Map(), root = k => { while (grp.has(k) && grp.get(k) !== k) k = grp.get(k); return k; };   // the merged ones, in groups; each group's first (in the words) takes the others in
+      seams.filter(sm => sm.on).forEach(sm => { const ra = root(sm.a), rb = root(sm.b); grp.set(ra, ra); grp.set(rb, ra); });
+      const first = q => Math.min(...q.spans.map(x => x.from)), G = new Map();
+      parts.filter(q => grp.has(q.key)).forEach(q => { const r = root(q.key); if (!G.has(r)) G.set(r, []); G.get(r).push(q); });
+      G.forEach(L => { L.sort((x, y) => first(x) - first(y)); const H = L[0]; L.slice(1).forEach(q => join(H, q)); }); }
+    parts.forEach(H => { if (!H.mem) return; const ks = [...new Set(H.mem.map(m => m.kind).filter(Boolean))], ts = [...new Set(H.mem.map(m => m.title).filter(Boolean))];
+      H.kind = ks[0] || null; H.title = ts[0] || null; if (!H.marks.length) delete H.marks; const f = {}; if (ks.length > 1) f.kinds = ks; if (ts.length > 1) f.titles = ts; if (f.kinds || f.titles) H.flag = f; });
+    links.forEach(l => { const A = byKey.get(l.a), B = byKey.get(l.b); l.off = !A || !B || A.none || B.none || l.a === l.b; });
+    // V4.61 (Gabe: "You can draw regions over sentences with a button on the side of paragraphs to click to transform it into a region."):
+    // a region over a paragraph (by the words of its first sentence) or over words you chose; its components are those that start in it.
+    const regions = [];
+    (o.regions || []).forEach(g => { if (!g || !g.id) return; let rg = null;
+      if (g.para) { const P = FREEW.paras(orig).find(x => x.key === g.para); if (P) rg = [P.from, P.to]; }
+      else if (g.text) { const i = orig.toLowerCase().indexOf(String(g.text).toLowerCase()); if (i >= 0) rg = [i, i + String(g.text).length]; }
+      if (!rg) return; const keys = parts.filter(q => !q.none && q.spans.length && Math.min(...q.spans.map(x => x.from)) >= rg[0] && Math.min(...q.spans.map(x => x.from)) < rg[1]).sort((x, y) => Math.min(...x.spans.map(z => z.from)) - Math.min(...y.spans.map(z => z.from))).map(q => q.key);
+      regions.push({ id: g.id, name: g.name || 'Region', from: rg[0], to: rg[1], keys, para: !!g.para }); });
+    { const f = q => q.spans.length ? Math.min(...q.spans.map(x => x.from)) : 1e9; parts.sort((x, y) => f(x) - f(y)); }   // V4.61: in the order they are written, so the cards follow your words
+    return { parts, links, cues, text: orig, joins, seams, regions };
   },
   /** What a part looks like: its colour and, in words, what it became. */
   look(p) {
@@ -359,13 +389,14 @@ const FREEW = {
     const L = [];
     // V4.53: a part's title and its structures on words are drawn inside its stretch (one stretch, one outline, its label with the title)
     conv.parts.forEach(p => { if (p.none) return; const lk = FREEW.look(p), tag = lk.tag + (p.title ? ' · “' + snippet(p.title, 22) + '”' : ''), on = !!sel && sel.t === 'p' && sel.k === p.key;
+      const f0 = Math.min(...p.spans.map(x => x.from));   // V4.61: its label once, where it starts — one component, one label
       p.spans.forEach(s => {
         const kids = [], low = text.slice(s.from, s.to).toLowerCase(), add = (t, cls, extra) => { const i = t ? low.indexOf(String(t).toLowerCase()) : -1; if (i < 0) return; const f = s.from + i, e = f + String(t).length; if (kids.some(x => f < x.to && e > x.from)) return; kids.push(Object.assign({ from: f, to: e, cls }, extra)); };
         if (p.ph) { const t = p.ph, hEnd = t.from + 1 + t.head.length + (t.colon ? 1 : 0); kids.push({ from: t.from, to: Math.min(hEnd, t.to), cls: 'fw-phh' }, { from: t.to - 1, to: t.to, cls: 'fw-phh' }); }   // V4.56
         if (p.title) add(p.title, 'fw-tt', {});
         (p.marks || []).forEach(m => { const K = KIND[m.s]; if (K) add(m.t, 'fw-mk', { mc: ((settings().kinds || {})[m.s] || K).color, m: K.label }); });
         kids.sort((x, y) => x.from - y.from);
-        L.push({ from: s.from, to: s.to, cls: 'fw-s' + (lk.cls ? ' ' + lk.cls : '') + (s.mem ? ' fw-mem' : ''), k: p.key, fc: lk.col, t: s.mem ? '' : tag, on, kids, fl: !s.mem && p.flag ? FREEW.flagText(p) : '' }); }); });
+        L.push({ from: s.from, to: s.to, cls: 'fw-s' + (lk.cls ? ' ' + lk.cls : '') + (s.mem ? ' fw-mem' : ''), k: p.key, fc: lk.col, t: s.mem || s.from !== f0 ? '' : tag, on, kids, fl: !s.mem && s.from === f0 && p.flag ? FREEW.flagText(p) : '' }); }); });
     conv.links.forEach(l => { if (l.none || l.off || !l.span || l.span[1] <= l.span[0]) return; const R = REL[l.rel] || { label: l.rel }; L.push({ from: l.span[0], to: l.span[1], cls: 'fw-l', lk: l.key, fc: WIRECOL[l.rel] || '#8a8f98', t: (l.back ? '← ' : '→ ') + (R.label || l.rel), on: !!sel && sel.t === 'l' && sel.k === l.key }); });
     conv.cues.forEach(c => { const p = conv.parts.find(x => x.key === c.part); if (p && !p.none) L.push({ from: c.from, to: c.to, cls: 'fw-c', k: c.part }); });
     L.sort((a, b) => a.from - b.from || b.to - a.to); let at = 0;
@@ -385,12 +416,13 @@ const FREEW = {
   layout(conv) {
     const P = conv.parts.filter(p => !p.none), byKey = new Map(P.map(p => [p.key, p])); if (!P.length) return { pos: {}, w: 0, h: 0 };
     const E = conv.links.filter(l => !l.none && !l.off && byKey.has(l.a) && byKey.has(l.b));
+    const RG = (conv.regions || []).flatMap(r => r.keys.filter(k => byKey.has(k)).map((k, i, A) => i ? { a: A[i - 1], b: k, rel: 'related', rg: true } : null).filter(Boolean)), EG = E.concat(RG);   // V4.61
     const N = P.map((p, i) => Object.assign({ id: p.key, b: { created: String(i).padStart(5, '0') } }, FREEW.size(p))), node = new Map(N.map(n => [n.id, n]));
     const comp = new Map(); let k = 0;
-    N.forEach(n => { if (comp.has(n.id)) return; const q = [n.id]; comp.set(n.id, k); while (q.length) { const x = q.pop(); E.forEach(e => { const y = e.a === x ? e.b : e.b === x ? e.a : null; if (y && !comp.has(y)) { comp.set(y, k); q.push(y); } }); } k++; });
+    N.forEach(n => { if (comp.has(n.id)) return; const q = [n.id]; comp.set(n.id, k); while (q.length) { const x = q.pop(); EG.forEach(e => { const y = e.a === x ? e.b : e.b === x ? e.a : null; if (y && !comp.has(y)) { comp.set(y, k); q.push(y); } }); } k++; });
     const pieces = []; for (let g = 0; g < k; g++) { const G = N.filter(n => comp.get(n.id) === g);
       if (G.length === 1) { G[0].px = 0; G[0].py = 0; pieces.push({ nodes: G, w: G[0].w, h: G[0].h }); continue; }
-      const sz = LAYOUT.pack(G, by => E.filter(e => by[e.a] && by[e.b]).map(e => ({ from: e.a, to: e.b, rel: e.rel }))); pieces.push({ nodes: G, w: sz.w, h: sz.h }); }
+      const sz = LAYOUT.pack(G, by => EG.filter(e => by[e.a] && by[e.b]).map(e => ({ from: e.a, to: e.b, rel: e.rel }))); pieces.push({ nodes: G, w: sz.w, h: sz.h }); }
     const box = LAYOUT.square(pieces, 1.3), pos = {};
     pieces.forEach(pc => pc.nodes.forEach(n => { pos[n.id] = { x: pc.gx + n.px, y: pc.gy + n.py, w: n.w, h: n.h }; }));
     return { pos, w: box.w, h: box.h, E, node };
@@ -400,7 +432,7 @@ const FREEW = {
     const L = FREEW.layout(conv), P = conv.parts.filter(p => !p.none);
     if (!P.length) return h('div.fw-mini.empty', o.empty || 'No components yet — the rules find them in your sentences (“… supports …”, “One of the barriers is …”, “We found that …”). Click words to choose.');
     const W = Math.max(160, o.width || 320), s = Math.min(.5, W / Math.max(1, L.w)), q = v => Math.round(v * s);
-    const host = h('div.fw-mini', { style: { height: q(L.h) + 8 + 'px', width: Math.min(W, q(L.w) + 2) + 'px' } });
+    const host = h('div.fw-mini', { style: { height: q(L.h) + 8 + 'px', width: Math.min(W, q(L.w) + 2) + 'px', marginTop: (conv.regions || []).length ? '16px' : null } });
     let svg = ''; L.E.forEach(e => { const A = L.pos[e.a], B = L.pos[e.b]; if (!A || !B) return; const col = WIRECOL[e.rel] || '#8a8f98', R = REL[e.rel] || { label: e.rel };
       const ca = { x: A.x + A.w / 2, y: A.y + A.h / 2 }, cb = { x: B.x + B.w / 2, y: B.y + B.h / 2 }, under = Object.keys(L.pos).some(k => { if (k === e.a || k === e.b) return false; const Q = L.pos[k]; for (let t = .1; t < .95; t += .1) { const x = ca.x + (cb.x - ca.x) * t, y = ca.y + (cb.y - ca.y) * t; if (x > Q.x && x < Q.x + Q.w && y > Q.y && y < Q.y + Q.h) return true; } return false; });
       if (under) {   // V4.54: a line that would run under another box goes round it, on the right
@@ -412,6 +444,8 @@ const FREEW = {
       svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="1.6"/>` + ((REL[e.rel] || {}).dir === false ? '' : `<polygon points="${x2},${y2} ${ah(.45)} ${ah(-.45)}" fill="${col}"/>`) +
         `<text x="${((x1 + x2) / 2 + 4).toFixed(1)}" y="${((y1 + y2) / 2 + 3).toFixed(1)}" fill="${col}" class="fw-ml">${esc(R.label || e.rel)}</text>`; });
     host.append(h('div.fw-msvg', { html: `<svg width="${q(L.w) + 2}" height="${q(L.h) + 8}" aria-hidden="true">${svg}</svg>` }));
+    (conv.regions || []).forEach((R, i) => { const B = R.keys.map(k => L.pos[k]).filter(Boolean); if (!B.length) return; const x0 = Math.min(...B.map(b => b.x)), y0 = Math.min(...B.map(b => b.y)), x1 = Math.max(...B.map(b => b.x + b.w)), y1 = Math.max(...B.map(b => b.y + b.h));   // V4.61
+      host.append(h('div.fw-mrg', { 'data-rg': R.id, title: 'Region: ' + R.name, style: { left: q(x0) - 4 + 'px', top: q(y0) - 12 + 'px', width: q(x1 - x0) + 8 + 'px', height: q(y1 - y0) + 16 + 'px', '--rc': FREEW.RGC[i % FREEW.RGC.length] } }, h('span', R.name))); });
     P.forEach(p => { const at = L.pos[p.key]; if (!at) return; const lk = FREEW.look(p), ht = q(at.h), lines = Math.max(1, Math.floor((ht - 16 - (p.title ? 18 : 0)) / 11));   // V4.53: a title takes a line and a half
       host.append(h('button.fw-mb' + (lk.cls ? '.' + lk.cls : '') + (p.flag ? '.flag' : '') + (o.sel && o.sel.t === 'p' && o.sel.k === p.key ? '.on' : ''), { type: 'button', 'data-k': p.key, title: lk.tag + ' — ' + snippet(p.text, 120) + (o.click ? ' · click to change' : ''), style: { left: q(at.x) + 'px', top: q(at.y) + 'px', width: q(at.w) + 'px', height: ht + 'px', '--fc': lk.col }, on: o.click ? Object.assign({ click: e => o.click(p, e) }, o.grab ? { pointerdown: e => o.grab(e, p) } : {}) : {} },
         h('span.fw-mbt', p.flag ? [FREEW.ic('flag', 9), ' '] : null, lk.tag + (p.flag ? ' · ' + FREEW.flagText(p) : '')), p.title ? h('b.fw-mbh', p.title) : null, h('span.fw-mbx', { style: { '-webkit-line-clamp': String(lines) } }, p.as === 'slot' ? (p.text ? '“' + p.text + '” — ' : '') + '＋ add the result' + (p.format ? ' (' + ((FREEW.FMT.find(f => f.id === p.format) || {}).d || p.format) + ')' : '') : p.text || '(to write)'))); });
@@ -487,7 +521,7 @@ const FREEW = {
   /** The words read now (with what you changed by clicking), or null while there are no colours yet. */
   conv() {
     const st = FREEW.st; if (!st) return null; if (!st.shown && FREEW.opt('colour', 'convert') !== 'live') return null;
-    const fw = FREEW.fw(); return FREEW.convert(st.ta.value, { over: fw.over, lover: fw.lover, links: fw.links, merges: fw.merges, assoc: fw.assoc, plain: FREEW.opt('plain', 'run'), docId: st.docId });
+    const fw = FREEW.fw(); return FREEW.convert(st.ta.value, { over: fw.over, lover: fw.lover, links: fw.links, merges: fw.merges, assoc: fw.assoc, regions: fw.regions, plain: FREEW.opt('plain', 'run'), docId: st.docId });
   },
   paint() {
     const st = FREEW.st; if (!st) return; const text = st.ta.value, conv = st.conv = FREEW.conv();
@@ -572,7 +606,9 @@ const FREEW = {
         mini('.fw-ac', 'A component…', 'These words as a component of their own (or one that exists)', () => { FREEW.selOff(); FREEW.associate(words, a, b); })));
       return; }
     st.page.append(h('button.fw-chip.fw-assoc', { type: 'button', title: 'Say what these words are: a new component or one that exists, for this freewrite or every one', style: { left: Math.max(0, Math.round(r.x - 24)) + 'px', top: Math.round(r.y + 6) + 'px', '--fc': 'var(--teal)' },
-      on: { mousedown: e => e.preventDefault(), click: e => { e.stopPropagation(); FREEW.selOff(); FREEW.associate(words, a, b); } } }, FREEW.ic('wand', 14), h('b', 'Make these words a component…')));
+      on: { mousedown: e => e.preventDefault(), click: e => { e.stopPropagation(); FREEW.selOff(); FREEW.associate(words, a, b); } } }, FREEW.ic('wand', 14), h('b', 'Make these words a component…')),
+      h('button.fw-chip.fw-assoc.fw-rgc', { type: 'button', title: 'A region over these sentences: their components grouped in the note', style: { left: Math.max(0, Math.round(r.x - 24)) + 'px', top: Math.round(r.y + 40) + 'px', '--fc': 'var(--ink-3)' },
+        on: { mousedown: e => e.preventDefault(), click: e => { e.stopPropagation(); FREEW.selOff(); FREEW.wordsRegion(words); } } }, FREEW.ic('region', 14), h('b', 'A region')));
   },
   selOff() { $$('.fw-assoc, .fw-chips.fw-assoc').forEach(x => x.remove()); },
   /** Where an offset of the words is on the page (a hidden copy laid out like the words). */
@@ -663,10 +699,31 @@ const FREEW = {
       if (el.dataset.flag) b.classList.add('flagged');
       out.push(b); });
     (conv.seams || []).forEach(sm => { const r1 = FREEW.rectAt(sm.from), r2 = FREEW.rectAt(sm.to), same = Math.abs(r1.y - r2.y) < 4, x = same ? (r1.x + r2.x) / 2 : r1.x + 7;   // V4.55: between two sentences
-      out.push(h('button.fw-seam' + (sm.on ? '.on' : ''), { type: 'button', 'data-a': sm.a, 'data-b': sm.b, 'aria-label': sm.on ? 'Split these two sentences again' : 'Merge these two sentences into one component', title: sm.on ? 'One component — click to split these two sentences again' : 'Merge these two sentences into one component', style: { left: Math.round(x) + 'px', top: Math.round(r1.y) + 'px' },
+      out.push(h('button.fw-seam' + (sm.on ? '.on' : ''), { type: 'button', 'data-a': sm.a, 'data-b': sm.b, 'aria-label': sm.on ? 'Split these two again' : 'Merge these two components into one', title: sm.on ? 'One component — click to split them again' : 'Merge these two components into one (each keeps its structure)', style: { left: Math.round(x) + 'px', top: Math.round(r1.y) + 'px' },
         on: { mousedown: e => e.preventDefault(), click: e => { e.stopPropagation(); FREEW.merge(sm.a, sm.b); } } }, FREEW.ic(sm.on ? 'link' : 'plus', 11))); });
+    // V4.61 — regions: a button at the side of each paragraph makes it one (again: not); each region drawn over its sentences
+    const fwR = FREEW.fw().regions || [], bk = st.back.getBoundingClientRect(), lh = parseFloat(getComputedStyle(st.back).lineHeight) || 40, bx = bk.left - pr.left;
+    FREEW.paras(st.ta.value).forEach(P => { const on = fwR.some(g => g.para === P.key), r = FREEW.rectAt(P.from);
+      out.push(h('button.fw-pgb' + (on ? '.on' : ''), { type: 'button', 'data-p': P.key, title: on ? 'This paragraph is a region — click to make it plain again' : 'Make this paragraph a region: its components grouped in the note', 'aria-label': on ? 'Not a region' : 'This paragraph as a region', style: { left: Math.round(bx - 22) + 'px', top: Math.round(r.y - lh / 2) + 'px' },
+        on: { mousedown: e => e.preventDefault(), click: e => { e.stopPropagation(); FREEW.paraRegion(P); } } }, FREEW.ic('region', 12))); });
+    (conv.regions || []).forEach((R, i) => { const g = fwR.find(x => x.id === R.id); if (!g) return; const t = FREEW.rectAt(R.from).y - lh + 6, b2 = FREEW.rectAt(R.to).y + 4, col = FREEW.RGC[i % FREEW.RGC.length];
+      out.push(h('div.fw-reg', { 'data-rg': R.id, style: { left: Math.round(bx - 8) + 'px', top: Math.round(t) + 'px', width: Math.round(bk.width + 16) + 'px', height: Math.round(b2 - t) + 'px', '--rc': col } },
+        h('span.fw-rgn', h('button.fw-rgname', { type: 'button', title: 'Rename this region', on: { mousedown: e => e.preventDefault(), click: e => { e.stopPropagation(); FREEW.renameRegion(g); } } }, FREEW.ic('region', 10), g.name || 'Region', h('i', ' · ' + plural(R.keys.length, 'component'))),
+          h('button.fw-rgx', { type: 'button', 'aria-label': 'Not a region', title: 'Not a region', on: { mousedown: e => e.preventDefault(), click: e => { e.stopPropagation(); FREEW.dropRegion(g.id); } } }, '×')))); });
     st.tg.replaceChildren(...out);
   },
+  RGC: ['#2A9D8F', '#457B9D', '#9C6ADE', '#E76F51', '#6A994E', '#8D99AE'],
+  /** V4.61: a paragraph as a region (by the words of its first sentence), or plain again. */
+  paraRegion(P) { const L = (FREEW.fw().regions || []).slice(), i = L.findIndex(g => g.para === P.key);
+    if (i >= 0) { L.splice(i, 1); FREEW.setFw({ regions: L }); FREEW.paint(); return toast('Plain again — not a region'); }
+    const st = FREEW.st, words = st.ta.value.slice(P.from, P.to).split(/\s+/).slice(0, 4).join(' ').replace(/[.,;:!?]+$/, '');
+    L.push({ id: uid('fwr'), para: P.key, name: words + (st.ta.value.slice(P.from, P.to).split(/\s+/).length > 4 ? '…' : '') }); FREEW.setFw({ regions: L });
+    if (!st.shown) { st.shown = true; FREEW.setFw({ shown: true }); } FREEW.paint(); toast('A region: its components go in it in the note — click its name to rename it', 3000); },
+  /** V4.61: the words you chose as a region. */
+  wordsRegion(words) { const L = (FREEW.fw().regions || []).filter(g => !(g.text && FREEW.key(g.text) === FREEW.key(words))); L.push({ id: uid('fwr'), text: words, name: snippet(words, 28) }); FREEW.setFw({ regions: L });
+    const st = FREEW.st; if (st && !st.shown) { st.shown = true; FREEW.setFw({ shown: true }); } if (st && st.ta.selectionStart !== st.ta.selectionEnd) st.ta.setSelectionRange(st.ta.selectionEnd, st.ta.selectionEnd); FREEW.paint(); toast('A region over those sentences', 2200); },
+  dropRegion(id) { FREEW.setFw({ regions: (FREEW.fw().regions || []).filter(g => g.id !== id) }); FREEW.paint(); },
+  async renameRegion(g) { const v = await askText('Rename the region', 'Name', g.name || ''); if (!v) return; FREEW.setFw({ regions: (FREEW.fw().regions || []).map(x => x.id === g.id ? Object.assign({}, x, { name: v }) : x) }); FREEW.paint(); },
   /** V4.54: a label clicked — a clean popup, as on a PDF's highlight: its kind, its structure (a letter picks one), its title, its links. */
   quick(key, anchor) {
     const st = FREEW.st; if (!st || !st.conv || !st.conv.parts.some(x => x.key === key)) return; const r = anchor.getBoundingClientRect(); let el = null;
@@ -778,7 +835,7 @@ const FREEW = {
   merge(a, b) { const M0 = (FREEW.fw().merges || []).filter(m => m && m.a && m.b), had = M0.some(m => m.a === a && m.b === b);
     FREEW.setFw({ merges: had ? M0.filter(m => !(m.a === a && m.b === b)) : M0.concat([{ a, b }]) }); closePop(); FREEW.chipOff(); FREEW.paint();
     const H = !had && FREEW.st && FREEW.st.conv && FREEW.st.conv.parts.find(p => p.mem && p.mem.some(m => m.key === b));
-    toast(had ? 'Two components again' : H && H.flag ? 'Merged — its sentences had ' + FREEW.flagText(H) + ': choose one (click its label)' : 'Merged into one component — each sentence keeps its structure', 3200); },
+    toast(had ? 'Two components again' : H && H.flag ? 'Merged — its parts had ' + FREEW.flagText(H) + ': choose one (click its label)' : 'Merged into one component — each part keeps its structure', 3200); },
   split(p) { const ks = new Set((p.mem || []).map(m => m.key)); FREEW.setFw({ merges: (FREEW.fw().merges || []).filter(m => !(ks.has(m.a) && ks.has(m.b))) }); FREEW.paint(); toast('Each sentence its own component again', 2400); },
   /** V4.55: change what several parts are, at once (fw.over), and draw once. */
   overAll(keys, fn) { const ov = Object.assign({}, FREEW.fw().over || {}); keys.forEach(k => { const c = fn(Object.assign({}, ov[k] || {}), k); if (c && Object.keys(c).length) ov[k] = c; else delete ov[k]; }); FREEW.setFw({ over: ov }); FREEW.chipOff(); FREEW.paint(); },
@@ -839,7 +896,8 @@ const FREEW = {
     const fb = M.block(id); if (!fb || !fb.fw || fb.fw.state !== 'applied') return; const made = fb.fw.made || {}, applied = fb.fw.applied || '';
     const mine = Object.values(made).map(x => M.block(x)).filter(x => x && x.status === 'live' && x.fwFrom === fb.id);
     const go = () => { const cur = M.block(fb.id); if (!cur) return; const keep = {}; Object.entries(made).forEach(([k, v]) => { const x = M.block(v); if (x && x.status === 'live' && x.fwFrom !== fb.id) keep[k] = v; });   // what existed before (an association) stays
-      DB.beginGroup('freewrite'); cur.fw = Object.assign({}, cur.fw, { state: 'draft', made: keep, takenBack: isoLocal(new Date()) }); delete cur.fw.applied; cur.collapsed = false; cur.modified = isoLocal(new Date()); DB.put('blocks', cur);
+      DB.beginGroup('freewrite'); { const dd = M.doc(cur.docId), rg = Object.values((cur.fw || {}).madeRg || {}); if (dd && rg.length) { dd.regions = REGION.list(dd).filter(r => !rg.includes(r.id)); REGION.save(dd); } }   // V4.61
+      cur.fw = Object.assign({}, cur.fw, { state: 'draft', made: keep, madeRg: {}, takenBack: isoLocal(new Date()) }); delete cur.fw.applied; cur.collapsed = false; cur.modified = isoLocal(new Date()); DB.put('blocks', cur);
       if (mine.length) { if (EDIT.deleteBlocks(mine.map(x => x.id), { quiet: true }) === false) return; } else changed();
       if (FREEW.st && FREEW.st.id === fb.id) FREEW.paint();
       toast('Taken back: ' + plural(mine.length, 'component') + ' left the note — the freewrite is a draft again, its colours kept (Ctrl+Z brings them back)', 4200); };
@@ -985,10 +1043,14 @@ const FREEW = {
       DB.put('wires', { id: uid('w'), from: a, to: b, rel: l.rel, directed: (REL[l.rel] || {}).dir !== false, created: now }); nw++;
       if (l.rel === 'resolves') { const A = M.block(a), B = M.block(b), ia = A && A.fwItem && M.item(A.fwItem), ib = B && B.fwItem && M.item(B.fwItem); if (ia && ib && ia.kind === 'resolution' && ib.kind === 'barrier') { ia.resolves = ib.id; DB.put('items', ia); } }
     });
-    const cur = M.block(fb.id); cur.fw = Object.assign({}, cur.fw || {}, { state: 'applied', applied: now, made, shown: true }); if (FREEW.opt('fold', true) !== false) cur.collapsed = true; DB.put('blocks', cur);
+    // V4.61 — each region: its components grouped in the note (REGION), named as in the freewrite; made once
+    const madeRg = Object.assign({}, fw.madeRg || {}); let nr = 0;
+    (conv.regions || []).forEach(R => { const mem = [...new Set(R.keys.map(k => ids[k]).filter(Boolean))].filter(id => { const x = M.block(id); return x && x.docId === d.id && x.status === 'live'; }); if (!mem.length) return;
+      if (madeRg[R.id] && REGION.find(madeRg[R.id])) return; const r = REGION.create(d, mem), rr = REGION.list(d).find(x => x.id === r.id); if (rr) { rr.name = R.name || rr.name; REGION.save(d); } madeRg[R.id] = r.id; nr++; });
+    const cur = M.block(fb.id); cur.fw = Object.assign({}, cur.fw || {}, { state: 'applied', applied: now, made, madeRg, shown: true }); if (FREEW.opt('fold', true) !== false) cur.collapsed = true; DB.put('blocks', cur);
     M.touchDoc(d); IX.rebuild(); changed(); FREEW.oneStep(at0, fb.id);
     const pane = st.pane; FREEW.close(true);
-    toast(fresh.length || nw ? 'In the note: ' + plural(fresh.length, 'component') + ' and ' + plural(nw, 'link') + ' — Take back on the freewrite (or Ctrl+Z) takes them out' : 'Nothing new to add — it is all in the note already', 4200);
+    toast(fresh.length || nw ? 'In the note: ' + plural(fresh.length, 'component') + ' and ' + plural(nw, 'link') + (nr ? ', ' + plural(nr, 'region') : '') + ' — Take back on the freewrite (or Ctrl+Z) takes them out' : 'Nothing new to add — it is all in the note already', 4200);
     setTimeout(() => { try { const pn = pane && App.panes().includes(pane) ? pane : App.panes().find(p => p.docId === d.id); if (!pn || !fresh.length) return; const bs = [cur, ...fresh.map(M.block)].filter(Boolean); pn.paper.fit(pn.bboxOf(bs)); } catch (e) { } }, 160);
     return fresh;
   },
@@ -1049,7 +1111,7 @@ const FREEW = {
   /* ---------------- the freewrite's card in its note ---------------- */
   card(b, d, pane, ro) {
     const fw = b.fw || {}, text = (b.body && b.body.text) || '', n = (text.match(/\S+/g) || []).length, made = Object.values(fw.made || {}).filter(id => { const x = M.block(id); return x && x.status === 'live'; }).length;
-    const conv = fw.shown ? FREEW.convert(text, { over: fw.over, lover: fw.lover, links: fw.links, merges: fw.merges, assoc: fw.assoc, plain: FREEW.opt('plain', 'run'), docId: b.docId }) : null;
+    const conv = fw.shown ? FREEW.convert(text, { over: fw.over, lover: fw.lover, links: fw.links, merges: fw.merges, assoc: fw.assoc, regions: fw.regions, plain: FREEW.opt('plain', 'run'), docId: b.docId }) : null;
     const go = () => FREEW.open(M.doc(b.docId), { block: b.id, pane });
     const r = b.rec || {}, has = r.state && r.state !== 'new' && r.state !== 'recording';
     const tx = h('div.fwc-tx' + (text ? '' : '.empty'), { title: ro ? '' : 'Double-click to open it', on: { dblclick: e => { if (ro) return; e.stopPropagation(); go(); } } }, text ? FREEW.spans(text, conv) : 'Nothing written yet.');
