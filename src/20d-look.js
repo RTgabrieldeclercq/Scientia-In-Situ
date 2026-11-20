@@ -49,6 +49,17 @@ const LOOK = {
     const b = document.body; if (!b) return; const m = LOOK.motion();
     b.classList.toggle('lk-calm', m === 'calm'); b.classList.toggle('lk-still', m === 'still');
     $$('.sf-col').forEach(LOOK.rail); $$('.rs-lib').forEach(LOOK.dressLib); $$('.rs-grip').forEach(LOOK.grip);
+    if (LOOK.on()) LOOK.tabPill(); else { try { App.renderTabs(); } catch (e) { } }   // V4.46: off, the underline under the name, as before
+  },
+  /* ---------- V4.46 (Gabe: "Add the gliding tab pill and make sure it covers the entire tab name everytime") ---------- */
+  /** The pill under the tab you are on covers the whole tab — its padding, its name (bold when on), its count — and glides to the next one.
+      Placed after every draw of the tabs (11 renderTabs sized it to the name alone) and again whenever a tab changes size: a font
+      arriving, a count appearing, the window narrowing, the name turning bold. */
+  tabPill() {
+    if (!LOOK.on()) return; const nav = document.getElementById('tabs'); if (!nav) return; const on = nav.querySelector('.tab.on'), ink = nav.querySelector('.tink'); if (!ink) return;
+    if (!on || on.hidden || !on.offsetWidth) { ink.style.opacity = 0; return; }
+    ink.style.opacity = 1; ink.style.width = on.offsetWidth + 'px'; ink.style.transform = 'translateX(' + on.offsetLeft + 'px)';
+    if (!LOOK._tabRO && typeof ResizeObserver !== 'undefined') { LOOK._tabRO = new ResizeObserver(() => requestAnimationFrame(LOOK.tabPill)); nav.querySelectorAll('.tab').forEach(t => LOOK._tabRO.observe(t)); LOOK._tabRO.observe(nav); }
   },
   /* ---------- the side panel's capsule ---------- */
   /** A highlight colour's name: the reader's colours, then the kinds; else none. */
@@ -215,6 +226,9 @@ const LOOK = {
 {
   // Settings → Look and motion: Movement, and the switch, applied at once
   const ap = FEAT.apply; FEAT.apply = function () { const r = ap.apply(this, arguments); try { LOOK.paint(); } catch (e) { } return r; };
+  // V4.46: the tab pill, after 11's own placement (its frame callback runs first, this one after it in the same frame)
+  const rt = App.renderTabs; App.renderTabs = function () { const r = rt.apply(this, arguments); requestAnimationFrame(() => { try { LOOK.tabPill(); } catch (e) { } }); return r; };
+  try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { try { LOOK.tabPill(); } catch (e) { } }); } catch (e) { }
   // every side panel: its fold as a class on its host, and its capsule
   const ar = SIDEFOLD.aria; SIDEFOLD.aria = function (col) { const r = ar.apply(this, arguments); try { LOOK.rail(col); } catch (e) { console.warn('[look]', e); } return r; };
   const wr = SIDEFOLD.wrap; SIDEFOLD.wrap = function (side) {

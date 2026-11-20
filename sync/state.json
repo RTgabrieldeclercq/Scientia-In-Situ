@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "87deb5fcdd83e6d537eb3d45e34896c79ff12748",
-  "subject": "V4.45: Scientia — demonstrations: Look and motion (new), Fold the side panel (again)",
+  "commit": "2db355a571923b2e7f12788a140ed54c7bbbd129",
+  "subject": "V4.47: Scientia — Freewrite: Convert can be undone; Convert shows the note as it will look, in the note itself; Apply can be taken back",
   "date": "2026-11-19"
  },
- "cut": "b2534572c370c7aa686bef82cce26fb53c3cd657",
+ "cut": "a130746e80e5d7d0a6610d67bf89b66ff1336c3d",
  "names": [
   "DESKLAB",
   "LABSYNC",
