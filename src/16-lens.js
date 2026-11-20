@@ -142,6 +142,7 @@ const TermsView = {
           h('div.tl-list.scrolly', { on: { scroll: () => { S.scroll = $('.tl-list').scrollTop; TermsView.spy(); }, wheel: () => { S.jump = null; }, touchstart: () => { S.jump = null; } } }))),
       side, tog);
     TermsView._projs = projs; TermsView._host = host;
+    host.classList.add('tl-in'); setTimeout(() => host.classList.remove('tl-in'), 900);   // V4.63: the cards rise in once
     TermsView.sidePanel(side, rows, onlyLit);
     return host;
   },
@@ -167,10 +168,10 @@ const TermsView = {
   },
   row(r, i, maxU) {
     const S = TermsView.st, ks = TSTAT.KORDER.filter(k => r.ks[k] && KIND[k]);
-    return h('div.tl-row' + (i === S.act ? '.act' : ''), { role: 'link', tabindex: '0', 'data-i': i, 'data-term': r.t.id, 'aria-label': `${r.t.label}: ${plural(r.uses, 'use')} in ${plural(r.notes, 'note')}, last ${TSTAT.ago(r.ago)}`,
+    return h('div.tl-row' + (i === S.act ? '.act' : ''), { role: 'link', tabindex: '0', 'data-i': i, 'data-term': r.t.id, style: { '--i': Math.min(i, 30) }, 'aria-label': `${r.t.label}: ${plural(r.uses, 'use')} in ${plural(r.notes, 'note')}, last ${TSTAT.ago(r.ago)}`,
       on: { click: e => TermsView.open(r, e), keydown: e => { if (e.key === 'Enter') TermsView.open(r, e); }, mousemove: () => { if (S.act !== i) TermsView.act(i, false); } } },
       h('div.tl-t', h('span.term-demo', TermsView.mark(r.t.label)), h('span.tl-sub', r.proj + ' · ' + plural(r.notes, 'note') + (r.isNew ? ' · new this month' : '') + (r.t.importedFrom ? ' · imported' : ''))),
-      h('div.tl-u', h('b', r.uses), h('span.tl-bar', h('i', { style: { width: Math.max(3, r.uses / maxU * 100) + '%' } }))),
+      h('div.tl-u', h('b', r.uses), h('span.tl-ul', r.uses === 1 ? 'use' : 'uses'), h('span.tl-bar', h('i', { style: { width: Math.max(3, r.uses / maxU * 100) + '%' } }))),
       h('div.tl-w', TSTAT.spark(r, 92, 22), h('span.tl-d', { title: 'Uses in the last 4 weeks against the 4 before' }, r.d4 > 0 ? '▲ ' + r.d4 : r.d4 < 0 ? '▼ ' + -r.d4 : '–')),
       h('div.tl-s', h('div.tl-kds', ks.map(k => h('span.tl-kd', { style: { '--kc': `var(--k-${k})` }, title: r.ks[k] + ' × ' + KIND[k].label.toLowerCase() }, r.ks[k])), r.open ? h('span.tl-ob', { title: 'A barrier with no resolution yet' }, r.open + ' open') : null),
         r.arcs.length ? h('div.tl-arcs', r.arcs.slice(0, 2).map(TARC.line)) : null),
@@ -181,6 +182,13 @@ const TermsView = {
   act(i, scroll) { const S = TermsView.st, L = $('.tl-list'); if (!L) return; S.act = i; $$('.tl-row.act', L).forEach(x => x.classList.remove('act')); const r = $(`.tl-row[data-i="${i}"]`, L); if (!r) return; r.classList.add('act');
     if (scroll) { const t = r.offsetTop - 66, b = r.offsetTop + r.offsetHeight - L.clientHeight + 8; if (L.scrollTop > t) L.scrollTop = t; else if (L.scrollTop < b) L.scrollTop = b; } },
   nav(e) { const n = (TermsView._flat || []).length; if (!n) return;
+    if (!document.body.classList.contains('f-off-look') && /^Arrow(Up|Down|Left|Right)$/.test(e.key)) {   // V4.63: cards in a grid
+      e.preventDefault(); const S = TermsView.st, L = $('.tl-list'), R = $$('.tl-row', L), cur = R.find(x => +x.dataset.i === S.act); if (!cur) return TermsView.act(0, true);
+      if (e.key === 'ArrowRight') return TermsView.act(Math.min(n - 1, S.act + 1), true); if (e.key === 'ArrowLeft') return TermsView.act(Math.max(0, S.act - 1), true);
+      const c = cur.getBoundingClientRect(), down = e.key === 'ArrowDown', cand = R.filter(x => { const q = x.getBoundingClientRect(); return down ? q.top > c.top + 4 : q.top < c.top - 4; });
+      if (!cand.length) return; const rowTop = down ? Math.min(...cand.map(x => x.getBoundingClientRect().top)) : Math.max(...cand.map(x => x.getBoundingClientRect().top));
+      const line = cand.filter(x => Math.abs(x.getBoundingClientRect().top - rowTop) < 4).sort((a, b) => Math.abs(a.getBoundingClientRect().left - c.left) - Math.abs(b.getBoundingClientRect().left - c.left));
+      return TermsView.act(+line[0].dataset.i, true); }
     if (e.key === 'ArrowDown') { e.preventDefault(); TermsView.act(Math.min(n - 1, TermsView.st.act + 1), true); } else if (e.key === 'ArrowUp') { e.preventDefault(); TermsView.act(Math.max(0, TermsView.st.act - 1), true); } else if (e.key === 'Enter') { e.preventDefault(); TermsView.open(TermsView._flat[TermsView.st.act], e); } },
   spy() { const L = $('.tl-list'); if (!L) return; const y = L.scrollTop + 34, secs = $$('.tl-sec', L); let cur = secs.length ? secs[0].dataset.g : null; secs.forEach(s => { if (s.offsetTop <= y) cur = s.dataset.g; }); if (TermsView.st.jump) cur = TermsView.st.jump; $$('.tl-rail button').forEach(b => b.classList.toggle('on', b.dataset.g === cur)); },
   sidePanel(side, rows, onlyLit) {

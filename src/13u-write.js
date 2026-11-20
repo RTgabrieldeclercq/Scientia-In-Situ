@@ -93,12 +93,17 @@ const WRITE = {
   enter(el, b) {
     return WRITE.apply(el, b, (body, sel) => {
       const { a, z, line } = WRITE.lineAt(body.text, sel.from), m = WRITE.LINE.exec(line); if (!m) return null;
-      const ind = m[1], mk = m[2], rest = line.slice(m[0].length);
-      if (!rest.trim() && sel.from >= a + m[0].length) {
+      const ind = m[1], mk = m[2], rest = line.slice(m[0].length), t0 = a + m[0].length;
+      // V4.62 (Gabe: "going back into previous bullet points and adding a new one causes it to go into the previous one instead of maintaining
+      // the list architecture"): a caret in the indent or on the marker (a click left of an item) counts as at the start of the item's words —
+      // before, Enter there put the new marker inside the item ("• • two") under an empty line, and what you typed ran into it
+      if (sel.from < t0) sel = Object.assign({}, sel, { from: t0, to: Math.max(sel.to, t0), collapsed: sel.to <= t0 });
+      if (!rest.trim()) {
         if (ind.length) { const nInd = ind.slice(4), lvl = WRITE.level(nInd), k = WRITE.kindOf(mk), nm = WRITE.markerFor(k, lvl, 1); const nb = ED.splice(body, a, m[0].length, nInd + nm); return { body: nb, caret: a + nInd.length + nm.length }; }
         const nb = ED.splice(body, a, m[0].length, ''); return { body: nb, caret: a };
       }
       const k = WRITE.kindOf(mk), next = ind + WRITE.markerFor(k, WRITE.level(ind), k === 'num' ? 99 : 1); // renumber() sets the real count
+      if (sel.collapsed && sel.from === t0) { const nb = ED.splice(body, a, 0, next + '\n'); return { body: nb, caret: a + next.length }; }   // V4.62: at the start of its words, a new empty item above it, the caret in it
       let nb = body; if (!sel.collapsed) nb = ED.splice(nb, sel.from, sel.to - sel.from, '');
       nb = ED.splice(nb, sel.from, 0, '\n' + next); return { body: nb, caret: sel.from + 1 + next.length };
     });

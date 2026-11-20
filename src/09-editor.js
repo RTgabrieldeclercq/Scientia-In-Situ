@@ -47,7 +47,9 @@ const ED = {
       }
       put(a, node);
     }
-    frag.querySelectorAll('.li-tx').forEach(t => { if (!t.firstChild) t.append('\u200B'); }); // an empty item still takes the caret after its marker
+    // an empty item still takes the caret after its marker. V4.62: one with a line break after it too \u2014 a text node of only "\n" was
+    // replaced by the first letter typed into it (Chrome), so the new item's words ran into the next item ("\u2022 NEW\u2022 two")
+    frag.querySelectorAll('.li-tx').forEach(t => { if (!t.firstChild) t.append('\u200B'); else if (t.childNodes.length === 1 && t.firstChild.nodeType === 3 && t.firstChild.nodeValue === '\n') t.firstChild.nodeValue = '\u200B\n'; });
     if (text.endsWith('\n')) frag.append(h('br')); // a trailing line break needs something after it to show (and to take the caret)
     el.replaceChildren(frag);
   },
