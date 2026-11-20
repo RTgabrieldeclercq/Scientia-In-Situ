@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "cc765cc8f5eb6865cec4471e7fa7edb3dbcc6c7b",
-  "subject": "V4.52: Scientia — the Materials demonstration recorded again through the Atlas; the Atlas's row clear of the header",
+  "commit": "c0a818331ffa0f4cf47dbbaa6b1ab5764f977262",
+  "subject": "V4.56: Scientia — Freewrite: placeholders in the words, from a bar of its own or a slash: /result makes an empty Result bubble, /html in it says it will be an HTML file",
   "date": "2026-11-19"
  },
- "cut": "6ae66c2ead5695b68a150d85fdfedd8aad71848b",
+ "cut": "0a9507cf09957bc70770fffcaba9cc89965baa80",
  "names": [
   "DESKLAB",
   "LABSYNC",
