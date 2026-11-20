@@ -148,7 +148,7 @@ const ED = {
     el.addEventListener('mouseover', e => {
       const st = e.target.closest('.st'), tm = e.target.closest('.tm'), ct = e.target.closest('.ct'), ln = e.target.closest('.ln');
       if (ct) return hoverCard(ct, () => { const r = M.lib(ct.dataset.cite); return r ? LIB.hovercard(r) : null; });
-      if (tm) return hoverCard(tm, () => ED.termCard(tm.dataset.term));
+      if (tm) return hoverCard(tm, () => ED.termCard(tm.dataset.term, b), 950);   // V4.66: the card knows the note it is read in
       if (ln) return hoverCard(ln, () => ED.linkCard(b, ln.dataset.m));
       if (st) return hoverCard(st, () => ED.itemCard(st.dataset.item, b, st.dataset.m));
     });
