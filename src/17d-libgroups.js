@@ -114,7 +114,9 @@ const LGROUP = {
         smart ? h('span.lg-ic.lg-star', { 'aria-label': 'smart focus' }, '✶') : readBar(g), h('span.lg-n', g.name), h('span.lg-c', LGROUP.members(g).size),
         h('button.lg-m', { title: 'Focus', on: { click: e => { e.stopPropagation(); ctxMenu(e.clientX, e.clientY + 10, [{ head: g.name }, { label: 'Rename…', run: () => LGROUP.rename(g) },
           LGROUP.smartOn() ? { label: g.query ? 'Edit its search…' : 'Make it smart (a search)…', sub: g.query || 'Papers that match join by themselves', run: () => LGROUP.editQuery(g) } : null,
-          { label: 'Move to a shelf…', run: () => LGROUP.moveMenu(g, e) }, 'sep', { label: 'Delete focus…', danger: true, run: () => LGROUP.removeGroup(g) }].filter(Boolean)); } } }, '⋯')); };
+          { label: 'Move to a shelf…', run: () => LGROUP.moveMenu(g, e) },
+          LIB.risOn() ? { label: 'Export as .ris', sub: plural(LGROUP.members(g).size, 'paper'), run: () => LIB.exportRis([...LGROUP.members(g)].map(M.lib).filter(Boolean), (LGROUP.shelfOf(g) ? LGROUP.shelfOf(g).name + '-' : '') + g.name) } : null,
+          'sep', { label: 'Delete focus…', danger: true, run: () => LGROUP.removeGroup(g) }].filter(Boolean)); } } }, '⋯')); };
     const theme = t => { const gs = LGROUP.groups(t.id), op = LGROUP.open.has(t.id) || isSel('theme', t.id) || gs.some(g => isSel('group', g.id));
       return h('div.lg-theme', { style: LGROUP.sh(t) }, h('div.lg-row.lg-t' + (isSel('theme', t.id) ? '.on' : ''), { 'data-id': t.id, draggable: 'true', title: 'Show this shelf · drag to move it · drop a focus here to put it on this shelf',
         on: { click: () => pickIt('theme', t.id), dragstart: e => { e.dataTransfer.setData('text/x-sis-shelf', t.id); e.dataTransfer.effectAllowed = 'move'; },
@@ -124,7 +126,9 @@ const LGROUP = {
         h('span.lg-sw', { 'aria-hidden': 'true' }), h('span.lg-n', t.name), h('span.lg-c', LGROUP.papersOfTheme(t.id).size),
         h('button.lg-m', { title: 'Shelf', on: { click: e => { e.stopPropagation(); ctxMenu(e.clientX, e.clientY + 10, [{ head: t.name }, { label: '+ Focus on this shelf…', run: () => LGROUP.addGroup(t.id) },
           LGROUP.smartOn() ? { label: '+ Smart focus on this shelf…', sub: 'A saved search that fills itself', run: () => LGROUP.addSmart(t.id) } : null,
-          { label: 'Rename…', run: () => LGROUP.rename(t) }, { label: 'Colour…', run: () => LGROUP.colorMenu(t, e) }, 'sep', { label: 'Delete shelf…', danger: true, run: () => LGROUP.removeTheme(t) }].filter(Boolean)); } } }, '⋯')),
+          { label: 'Rename…', run: () => LGROUP.rename(t) }, { label: 'Colour…', run: () => LGROUP.colorMenu(t, e) },
+          LIB.risOn() ? { label: 'Export as .ris', sub: plural(LGROUP.papersOfTheme(t.id).size, 'paper'), run: () => LIB.exportRis([...LGROUP.papersOfTheme(t.id)].map(M.lib).filter(Boolean), t.name) } : null,
+          'sep', { label: 'Delete shelf…', danger: true, run: () => LGROUP.removeTheme(t) }].filter(Boolean)); } } }, '⋯')),
         op ? h('div.lg-kids', gs.map(grow), h('button.lg-add', { on: { click: () => LGROUP.addGroup(t.id) } }, '+ Focus')) : null); };
     const loose = LGROUP.groups(null);
     return h('aside.lg-side',

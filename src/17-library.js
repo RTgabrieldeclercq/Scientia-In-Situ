@@ -6,14 +6,46 @@ const LibraryView = {
     const status = h('div.tiny.mono.muted', { style: { minHeight: '18px', marginTop: '6px' } });
     const look = async () => {
       status.textContent = 'Looking up…';
-      try { const r = await LIB.resolveDoi(doi.value); if (r._cache) { status.textContent = 'Already in your library.'; return; } LIB.add(r); toast('Added · ' + LIB.shortRef(r)); }
+      try { const r = await LIB.resolveDoi(doi.value);
+        if (r._cache) {
+          if (LIB.risOn() && r.doi && !r.ris && !r.rm) { status.textContent = 'Already in your library — asking doi.org for its RIS record…'; const t = await LIB.attachRis(r); status.textContent = t ? 'Already in your library — its RIS record is now kept.' : 'Already in your library. (No RIS record came back.)'; toast(status.textContent); }
+          else status.textContent = 'Already in your library.';
+          return; }
+        LIB.add(r); status.textContent = ''; toast('Added · ' + LIB.shortRef(r) + (r.ris ? ' · RIS record kept' : '')); }
       catch (e) { status.innerHTML = ''; status.append(h('span', { style: { color: 'var(--bad)' } }, String(e.message || e)), /Failed to fetch|NetworkError|load failed/i.test(String(e)) ? ' — blocked (offline, file:// origin, or CORS). Paste BibTeX / RIS / CSL-JSON below instead; it works offline.' : ''); }
     };
     doi.addEventListener('keydown', e => { if (e.key === 'Enter') look(); });
     const paste = h('textarea.inp', { rows: 3, placeholder: '@article{…}  ·  TY  - JOUR …  ·  {"DOI": …}', style: { width: '100%', fontFamily: 'var(--f-m)', fontSize: '12px' } });
     return h('div.grid2', h('div.card.flat', h('h3.lab', { style: { marginTop: 0 } }, 'Add by DOI · one request, cached forever'), h('div.row', doi, h('button.btn.pri', { on: { click: look } }, 'Look up')), status),
-      h('div.card.flat', h('h3.lab', { style: { marginTop: 0 } }, 'Paste a citation · works offline'), paste, h('div.row', { style: { marginTop: '8px' } }, h('button.btn', { on: { click: () => { try { const r = LIB.parseAny(paste.value); LIB.add(r); paste.value = ''; toast('Added · ' + LIB.shortRef(r)); } catch (e) { toast(String(e.message || e)); } } } }, 'Parse & add'),
+      h('div.card.flat', h('h3.lab', { style: { marginTop: 0 } }, 'Paste a citation · works offline'), paste, h('div.row', { style: { marginTop: '8px' } }, h('button.btn', { on: { click: () => { try { if (LIB.risOn() && LIB.looksRis(paste.value)) { toast(LIB.risSummary(LIB.importRis(paste.value))); paste.value = ''; return; } const r = LIB.parseAny(paste.value); LIB.add(r); paste.value = ''; toast('Added · ' + LIB.shortRef(r)); } catch (e) { toast(String(e.message || e)); } } } }, 'Parse & add'),
+        LIB.risOn() ? h('label.btn', { title: 'A .ris file from Zotero, EndNote, Mendeley or a publisher: one record or many. New papers are added; a paper with the same DOI is filled in and keeps the record' }, 'Import .ris…', h('input', { type: 'file', accept: '.ris,.txt,text/plain,application/x-research-info-systems', multiple: true, style: { display: 'none' }, on: { change: e => { LibraryView.importFiles([...e.target.files]); e.target.value = ''; } } })) : null,
         h('button.btn.ghost', { on: { click: () => LibraryView.addDialog('') } }, 'Add a link…'))));
+  },
+  /* ---------- WIP doi-ris: .ris in and out ----------
+     Import: the Add panel's “Import .ris…” (or RIS pasted in its box) — one record or many; New papers are added, the
+     one with the same DOI is filled in and keeps the record. Export: a paper's sheet; the results header — Select
+     ticks papers, then “Export .ris · n selected” (with nothing ticked: everything listed, so a search or a shelf
+     that is open exports as it reads); a shelf's or a focus's ⋯ menu (17d). */
+  picking: false, picked: new Set(), _risBtn: null,
+  async importFiles(files) {
+    for (const f of files) { let t = ''; try { t = await f.text(); } catch (e) { toast(f.name + ': could not be read'); continue; } toast(LIB.risSummary(LIB.importRis(t), f.name), 4200); }
+  },
+  /** The papers an Export .ris would take now: the ticked ones, or all that are listed. */
+  risList() { return LibraryView.picking && LibraryView.picked.size ? [...LibraryView.picked].map(id => M.lib(id)).filter(Boolean) : (LibraryView._R || []).map(x => x.r).filter(Boolean); },
+  risLabel() { const n = LibraryView.picked.size; return 'Export .ris · ' + (LibraryView.picking && n ? n + ' selected' : plural((LibraryView._R || []).length, 'paper') + ' listed'); },
+  /** Select · All listed · Export .ris — in the results header. */
+  risBar(view) {
+    if (!LIB.risOn()) return null; const pick = LibraryView.picking && view === 'list', out = [];
+    if (view === 'list') out.push(h('button.btn.xs' + (pick ? '.on' : ''), { type: 'button', 'aria-pressed': String(pick), title: 'Tick papers to export as .ris', on: { click: () => { LibraryView.picking = !LibraryView.picking; if (!LibraryView.picking) LibraryView.picked.clear(); LibraryView.draw(); } } }, pick ? 'Done selecting' : 'Select'));
+    if (pick) out.push(h('button.btn.xs.ghost', { type: 'button', on: { click: () => { (LibraryView._R || []).forEach(x => x.r && LibraryView.picked.add(x.r.id)); LibraryView.draw(); } } }, 'Tick all listed'));
+    LibraryView._risBtn = h('button.btn.xs', { type: 'button', title: 'Save as a .ris file: the ticked papers, or all that are listed', on: { click: () => LIB.exportRis(LibraryView.risList(), pick && LibraryView.picked.size ? 'library-selection' : (LGROUP.selLabel() || 'library')) } }, LibraryView.risLabel());
+    out.push(LibraryView._risBtn); return out;
+  },
+  /** The tick on a card while selecting. */
+  pickBox(r) {
+    if (!LibraryView.picking || !LIB.risOn()) return null;
+    return h('input.lib-pick', { type: 'checkbox', checked: LibraryView.picked.has(r.id), title: 'Select for .ris export', 'aria-label': 'Select ' + (r.title || 'paper') + ' for .ris export',
+      on: { click: e => e.stopPropagation(), change: e => { e.target.checked ? LibraryView.picked.add(r.id) : LibraryView.picked.delete(r.id); if (LibraryView._risBtn) LibraryView._risBtn.textContent = LibraryView.risLabel(); } } });
   },
   /* ---------- V4.1: the page — search, facets, the tree, the shelf map or the list, the paper's sheet ----------
      Gabe: "an overhaul of the library page, where shelves and foci have a massive overhaul that feels better with
@@ -100,6 +132,7 @@ const LibraryView = {
     const total = DB.all('library').length, sel = !on && LGROUP.selLabel();
     const mh = $('.lib-mh', P); if (mh) mh.replaceChildren(h('h2', on ? (q ? 'Results' : 'All papers') : (sel || 'Entries')), h('span.k', on && q ? R.length + ' of ' + total : String(R.length)),
       !on && sel ? h('button.btn.xs.ghost', { on: { click: () => LGROUP.select(null) } }, 'Show all') : null, h('span.sp'),
+      ...(LibraryView.risBar(view) || []),
       LibraryView.mapOn() ? h('div.seg.lib-vseg', { role: 'group', 'aria-label': 'View' }, [['map', 'Shelves'], ['list', 'List']].map(([k, l]) => h('button' + (view === k ? '.on' : ''), { type: 'button', 'aria-pressed': String(view === k), on: { click: () => { LibraryView.view = k; LibraryView.draw(); } } }, l))) : null);
     const vh = $('.lib-view', P); if (!vh) return;
     if (view === 'map') vh.replaceChildren(LMAP.render(R, on ? q : !!(LibraryView.q.trim() || LGROUP.sel)));
@@ -163,7 +196,7 @@ const LibraryView = {
         h('div.au', LIB.apaAuthors(r.authors), r.container ? [' — ', h('i', LIB.journal(r.container))] : '', r.year ? ', ' + r.year : ''),
         why.length ? h('div.lib-why', why.slice(0, 3).map(w => h('div', h('b', w.f), h('span', LSEARCH.mark(w.s, w.v))))) : h('div.apa', LIB.apa(r)),
         f.cites.length ? h('div.row', { style: { marginTop: '6px' } }, h('span.tiny.mono.muted', 'cited in'), f.cites.slice(0, 4).map(d => h('a.btn.xs', { href: '#/doc/' + d.id }, d.title || 'Untitled')), f.cites.length > 4 ? h('span.tiny.muted', '+' + (f.cites.length - 4)) : null) : null),
-      ex.side ? h('div.lib-cside', stPill, ...ex.side, flagBtn) : h('div.lib-cside', stPill, h('span.pill', r.kind || 'paper'), ...(ex.extra || []),
+      ex.side ? h('div.lib-cside', LibraryView.pickBox(r), stPill, ...ex.side, flagBtn) : h('div.lib-cside', LibraryView.pickBox(r), stPill, h('span.pill', r.kind || 'paper'), ...(ex.extra || []),
         r.kind !== 'link' ? (r.pdf ? h('a.btn.xs.pri', { href: '#/read/' + r.id, title: plural(f.hl.length, 'highlight') }, '📄 Read' + (f.hl.length ? ' · ' + f.hl.length : '')) : h('button.btn.xs', { on: { click: () => READER.attach(r) } }, '+ PDF')) : null,
         flagBtn,
         r.kind !== 'link' ? h('button.btn.xs.ghost', { title: 'Use your own logo for this journal (stored locally, reused by every paper in it)', on: { click: () => LIB.setLogo(r) } }, LIB.logoFor(r) ? 'logo ✓' : 'logo…') : null));

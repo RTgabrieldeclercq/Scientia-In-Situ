@@ -42,9 +42,11 @@ const ADATA = {
   liveDoc: id => { const d = M.doc(id); return d && !d.deleted && !d.archived ? d : null; },
   comps: () => DB.where('blocks', b => b.status === 'live' && DTREE.shows(b) && DTREE.items(b).length > 0 && !!ADATA.liveDoc(b.docId)),
   copy: list => JSON.parse(JSON.stringify(list || [])),
+  /** A component's entries in the master tree (V4.87: an experiment's image panels, tables and datasets too, 14ff). */
+  items: b => DTREE.items(b),
   stats() {
     const C = ADATA.comps(), c = { dirs: 0, files: 0, bytes: 0, notes: new Set(), projects: new Set() };
-    C.forEach(b => { const x = DTREE.count(DTREE.items(b)); c.dirs += x.dirs; c.files += x.files; c.bytes += x.bytes; c.notes.add(b.docId); c.projects.add(ADATA.liveDoc(b.docId).projectId || '-'); });
+    C.forEach(b => { const x = DTREE.count(ADATA.items(b)); c.dirs += x.dirs; c.files += x.files; c.bytes += x.bytes; c.notes.add(b.docId); c.projects.add(ADATA.liveDoc(b.docId).projectId || '-'); });
     return { dirs: c.dirs, files: c.files, bytes: c.bytes, notes: c.notes.size, projects: c.projects.size, comps: C.length };
   },
   /** The master tree: { items, meta } — meta by path: { t: 'project' | 'note' | 'comp', id, doc, blk, src: [docIds] }. */
@@ -58,7 +60,7 @@ const ADATA = {
         if (!x._src.includes(docId)) x._src.push(docId);
         if (e.dir) { merge(x.k, e.k || [], docId); x.more = Math.max(x.more || 0, e.more || 0); }
       });
-      C.forEach(b => merge(items, ADATA.copy(DTREE.items(b)), b.docId));
+      C.forEach(b => merge(items, ADATA.copy(ADATA.items(b)), b.docId));
       DTREE.sortAll(items);
       const walk = (list, base) => list.forEach(e => { const p = base ? base + '/' + e.n : e.n; meta.set(p, { t: 'merged', src: e._src || [] }); if (e.dir) walk(e.k || [], p); });
       walk(items, '');
@@ -73,8 +75,8 @@ const ADATA = {
         const pnode = { n: pn, dir: 1, k: [] }; meta.set(pn, { t: 'project', id: pk });
         docs.forEach(d => { const bs = notes.get(d.id), nn = uniq(d.title || 'Untitled', nnames), npath = pn + '/' + nn, nnode = { n: nn, dir: 1, k: [] };
           meta.set(npath, { t: 'note', doc: d.id, blk: bs[0].id });
-          if (bs.length === 1) nnode.k = ADATA.copy(DTREE.items(bs[0]));
-          else { const cn = new Set(); bs.forEach(b => { const lab = uniq((b.label || '').trim() || snippet((b.body && b.body.text) || 'A component', 40), cn); meta.set(npath + '/' + lab, { t: 'comp', doc: d.id, blk: b.id }); nnode.k.push({ n: lab, dir: 1, k: ADATA.copy(DTREE.items(b)) }); }); }
+          if (bs.length === 1) nnode.k = ADATA.copy(ADATA.items(bs[0]));
+          else { const cn = new Set(); bs.forEach(b => { const lab = uniq((b.label || '').trim() || snippet((b.body && b.body.text) || 'A component', 40), cn); meta.set(npath + '/' + lab, { t: 'comp', doc: d.id, blk: b.id }); nnode.k.push({ n: lab, dir: 1, k: ADATA.copy(ADATA.items(b)) }); }); }
           pnode.k.push(nnode); });
         items.push(pnode);
       });
@@ -119,7 +121,7 @@ const ADATA = {
     const q = h('input.inp.ad-q', { type: 'search', placeholder: 'Search the files and folders…', value: st.q, 'aria-label': 'Search the master tree', on: { input: debounce(e => { st.q = e.target.value; ADATA.paint(); }, 160) } });
     const sum = S.comps ? [plural(S.dirs, 'folder'), plural(S.files, 'file'), S.bytes ? DATA.fmtSize(S.bytes) : null].filter(Boolean).join(' · ') + ' — in ' + plural(S.notes, 'note') + ' of ' + plural(S.projects, 'project') : 'Nothing logged yet';
     ADATA.host = h('div.ad-host');
-    const page = h('div.page.ad-page', h('div.eyebrow', 'Atlas'), h('h1.title', 'Data'),
+    const page = h('div.page.ad-page', h('div.eyebrow', COMP.on() ? 'Compendiums' : 'Atlas'), h('h1.title', 'Data'),
       h('p.stand', 'Every folder and file logged in your notes, in one master tree — by project and note, or merged into one. Open goes to the component it was logged on; nothing is copied or moved.'),
       h('div.ad-sum', sum), h('div.row.ad-bar', seg, q), ADATA.host);
     ADATA.host.append(ADATA.tree()); return page;   // drawn now (the page is not in the document yet); paint() redraws it later
@@ -128,7 +130,7 @@ const ADATA = {
   preview() {
     const row = (d, kids, cls) => h('div.pv-ad-r' + (cls ? '.' + cls : ''), { style: { '--d': d } }, ...kids);
     const lab = k => h('span.nk', { 'data-sk': k }, NOTEKIND.LABEL[k]);
-    return h('div.pv-ad', ATHUB.pv('data'),
+    return h('div.pv-ad', COMP.pv('data'),
       h('div.pv-ad-t', row(0, [h('i.pv-ad-dot'), h('b', 'Cell mechanics'), h('span', '2 notes')], 'p'),
         row(1, [lab('exp'), h('b', 'Run 3 · 30 kPa'), h('span', '2 folders · 41 files'), h('em', 'Open ↗')]),
         row(2, [h('span.pv-ad-f', '▸'), h('span', 'raw'), h('span', '36 files · 3.1 GB')]),
@@ -139,5 +141,5 @@ const ADATA = {
 {
   // the data tree draws the master tree: rows dressed after each draw (a fold draws it again)
   const el0 = DTREE.el; DTREE.el = function (b, o) { const r = el0.apply(this, arguments); try { if (o && o.decorate) o.decorate(r); } catch (e) { console.warn('[atlas data]', e); } return r; };
-  ATHUB.add({ key: 'data', label: 'Data', order: 20, icon: DTREE.svg('tree', 14), title: 'Every data tree in your notes, in one master tree', on: ADATA.on, count: () => { try { return ADATA.stats().notes; } catch (e) { return null; } }, render: () => ADATA.render() });
+  COMP.add({ key: 'data', label: 'Data', order: 20, desc: 'Every folder and file logged in your notes, in one master tree — by project and note, or merged.', peek: () => { try { const S = ADATA.stats(); return S.comps ? [plural(S.files, 'file') + ' in ' + plural(S.dirs, 'folder'), plural(S.notes, 'note') + ' of ' + plural(S.projects, 'project')] : []; } catch (e) { return []; } }, icon: DTREE.svg('tree', 14), title: 'Every data tree in your notes, in one master tree', on: ADATA.on, count: () => { try { return ADATA.stats().notes; } catch (e) { return null; } }, render: () => ADATA.render() });
 }

@@ -79,7 +79,9 @@ const LSHEET = {
       ...(ex.secs || []),
       h('div.ls-acts', ex.acts ? ex.acts : r.kind !== 'link' ? (r.pdf ? h('a.btn.sm.pri', { href: '#/read/' + r.id }, 'Read') : h('button.btn.sm', { on: { click: () => READER.attach(r) } }, '+ PDF')) : h('a.btn.sm', { href: r.url, target: '_blank', rel: 'noopener' }, 'Open the page'),
         h('button.btn.sm', { on: { click: async () => { try { await navigator.clipboard.writeText(LIB.apa(r)); toast('Reference copied (APA)'); } catch (e) { toast(LIB.apa(r)); } } } }, 'Copy reference'),
-        h('button.btn.sm' + (flag ? '.on' : ''), { title: 'Flag for the weekly review', on: { click: () => M.toggleFlag('library', r.id) } }, flag ? '⚑ Flagged' : '⚐ Flag')));
+        h('button.btn.sm' + (flag ? '.on' : ''), { title: 'Flag for the weekly review', on: { click: () => M.toggleFlag('library', r.id) } }, flag ? '⚑ Flagged' : '⚐ Flag'),
+        ...(LIB.risOn() ? [h('button.btn.sm', { title: r.ris ? 'The RIS record kept from the DOI lookup' : 'A RIS record made from this paper’s fields', on: { click: () => LIB.exportRis([r], (r.authors && r.authors[0] && r.authors[0].family) ? r.authors[0].family + '-' + (r.year || '') : r.title) } }, 'Export .ris' + (r.ris ? ' ✓' : '')),
+          r.doi && !r.ris && !r.rm ? h('button.btn.sm.ghost', { title: 'Ask doi.org for this paper’s RIS record and keep it (needs the network)', on: { click: async e => { const b = e.currentTarget; b.disabled = true; b.textContent = 'Asking…'; const t = await LIB.attachRis(r); if (!t) { b.disabled = false; b.textContent = 'Get RIS record'; toast('No RIS record came back — offline, or doi.org has none for this DOI'); } } } }, 'Get RIS record') : null] : [])));
     if (fresh) { const x = $('.ls-x', el); if (x) setTimeout(() => x.focus({ preventScroll: true }), 30); }
   },
 };

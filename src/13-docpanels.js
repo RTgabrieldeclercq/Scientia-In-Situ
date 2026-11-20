@@ -33,7 +33,7 @@ Object.assign(DocView, {
       { label: 'Log time…', sub: 'Time worked without the timer', run: () => this.logTime(d) },
       { label: 'Time entries…', sub: 'Move, change or delete recorded time', run: () => EDIT.timeDialog(d) },
       prof(d.type).type === 'protocol' ? { label: 'Run this protocol…', sub: 'New experiment with its steps bound here; starts the timer', run: () => App.newDoc({ type: 'experiment', projectId: d.projectId }) } : null,
-      { label: 'Tidy layout', sub: 'Re-flow the boxes in order', run: () => this.tidy() },
+      ...LAYOUT.menuRows(this, d),
       'sep', { head: 'Citations in this note' },
       ...['number', 'author', 'title'].map(m => ({ label: (ED.citeModeOf(d) === m ? '✓ ' : '') + (m === 'title' ? 'Title' : m === 'author' ? 'Style et al.' : 'Numbered [1]'), sub: d.citeOwn ? 'This note only' : null, run: () => { d.citeMode = m; d.citeOwn = true; DB.put('documents', d); changed(); } })),
       d.citeOwn ? { label: 'As in Settings', sub: 'Citations in this note follow Settings → Library', run: () => { delete d.citeOwn; DB.put('documents', d); changed(); } } : null, 'sep',   // V4.6
@@ -60,7 +60,7 @@ Object.assign(DocView, {
       { label: 'Insert…', sub: 'A well plate, a protocol, a box — everything that can go here', run: () => INSERT.menu(this, { x: e.clientX, y: e.clientY }, { x: Math.round(p.x / 14) * 14, y: Math.round(p.y / 14) * 14 }) },
       { label: 'New protocol here', sub: 'One block, steps linked; register it when it is ready', run: () => PROTO.create(d.id, Math.round(p.x / 14) * 14, Math.round(p.y / 14) * 14) },
       { label: 'Run a registered protocol here…', sub: 'Steps to check, time and observe', run: () => { const defs = DB.where('blocks', b => b.kind === 'protocol' && b.registered); if (!defs.length) return toast('No registered protocols yet'); PROTO.pickProtocol('Run which protocol here?', df => PROTO.newRun(df, d.id, Math.round(p.x / 14) * 14, Math.round(p.y / 14) * 14)); } }, 'sep',
-      { label: 'Fit', key: 'Ctrl+0', run: () => this.paper.fit(this.bbox()) }, { label: 'Tidy layout', run: () => this.tidy() }]);
+      { label: 'Fit', key: 'Ctrl+0', run: () => this.paper.fit(this.bbox()) }, ...LAYOUT.menuRows(this, d)]);
   },
   boxMenu(b, e) {
     if (!b) return; this.select(b.id);
@@ -131,8 +131,7 @@ Object.assign(DocView, {
   /** V3.981 — embedding became a bridge (13zzu). */
   embedElsewhere(b) { return BRIDGE.to(b); },
   moveDoc(d) {
-    const m = modal({ title: 'Move note to theme', actions: [{ label: 'Cancel' }], body: optionPicker({ placeholder: 'Theme…', items: q => DB.where('themes', t => t.projectId === d.projectId && t.status === 'active' && (!q || t.name.toLowerCase().includes(q))),
-      render: t => h('div', t.name), onPick: t => { m.close(); d.themeId = t.id; M.touchDoc(d); changed(); } }) });
+    MPANEL.pick({ title: 'Move note to theme', notes: false, places: MPANEL.projectRows({ projectId: d.projectId, sub: ['', 'a theme of this project'], here: d }) }).then(t => { if (!t || !t.themeId) return; d.themeId = t.themeId; M.touchDoc(d); changed(); });   // 13zzzd: the move panel
   },
   pullMenu(d, mode = 'barrier', at) {
     const sel = this.sel && M.block(this.sel), after = sel && sel.docId === d.id ? sel.id : d.blockIds[d.blockIds.length - 1];
@@ -221,7 +220,7 @@ const SplitView = {
   render(...args) {
     const { docs, focus } = SplitView.parse(args); if (docs.length < 2) { setTimeout(() => App.go('#/doc/' + (docs[0] || '')), 0); return h('div'); }
     DocView.side = false; PANES.slice(1).forEach(p => p.side = true);
-    if (focus) { const i = docs.indexOf((M.block(focus) || {}).docId); if (i >= 0 && !PANES[i].pendingFocus) PANES[i].pendingFocus = { reveal: focus }; }
+    if (focus) { const i = docs.indexOf((M.block(focus) || {}).docId); if (i >= 0 && !PANES[i].pendingFocus) PANES[i].pendingFocus = { reveal: focus, arrive: true }; }
     const n = docs.length, wrap = h('div.split.n' + n);
     const panes = docs.map((id, i) => { const el = h('div.pane.p' + i); el.append(PANES[i].render(id), PANES[i].paneHead(i)); return el; });
     const vsep = h('div.split-sep.v', { title: 'Drag to resize' }), hsep = n > 2 ? h('div.split-sep.h', { title: 'Drag to resize' }) : null;

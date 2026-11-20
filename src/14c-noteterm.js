@@ -157,10 +157,10 @@ const NTERM = {
     head.append(h('div.row', { style: { gap: '6px', marginTop: '8px', flexWrap: 'wrap' } }, acts));
     P.replaceChildren(head, h('div.at-edges', kids.map(x => row(x, x.kind === 'cmp' && x.n ? x.n + '×' : null, () => NTERM.focus(I.b, x.id)))));
   },
-  open(id) { const x = M.block(id); if (!x || x.status !== 'live') return toast('That component is no longer in the notebook'); $$('.nt-max').forEach(o => o._close && o._close()); App.openBlock(id); },
+  open(id) { const x = M.block(id); if (!x || x.status !== 'live') return toast('That component is no longer in the notebook'); $$('.nt-max').forEach(o => o._close && o._close()); App.openComponent(id); },
   pull(termId, id) {
     const t = M.block(termId), x = M.block(id); if (!t || !x || x.status !== 'live') return toast('That component is no longer in the notebook');
-    const y = DB.where('blocks', z => z.docId === t.docId && z.kind === 'ref' && z.refBlockId === id && z.status === 'live')[0]; if (y) { App.openBlock(y.id); return toast('Already pulled into this note'); }
+    const y = DB.where('blocks', z => z.docId === t.docId && z.kind === 'ref' && z.refBlockId === id && z.status === 'live')[0]; if (y) { App.openComponent(y.id); return toast('Already pulled into this note'); }
     M.addBlock(t.docId, t.id, { kind: 'ref', refItemId: null, refBlockId: id, x: Math.round(((t.x || 0) + (t.w || 616) + 56) / 14) * 14, y: t.y || 0, w: 392 }); changed(); toast('Pulled in beside the term');
   },
   /** Dive in: the same map on the whole window (Esc or Close comes back). */

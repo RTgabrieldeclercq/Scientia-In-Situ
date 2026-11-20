@@ -56,7 +56,7 @@ const STORY = {
     C.edges.forEach(([a, b]) => { const A = M.block(a), B = M.block(b); if (!STORY.is(A) || !STORY.is(B)) return; const p = at(A), q = at(B); svg.append(SV('line', { x1: p.x, y1: p.y, x2: q.x, y2: q.y, class: 'sp-l' })); });
     const top = beats.reduce((m, b) => STORY.cx(b) > STORY.cx(m) ? b : m, beats[0]), last = main[main.length - 1];
     beats.forEach(b => { const p = at(b), d = C.depth.get(b.id) + 1; const dot = SV('circle', { class: 'sp-d', cx: p.x, cy: p.y, r: 4.5 }, SV('title', {}, `Beat ${d} · ${M.blockName(b)} · complexity ${STORY.cx(b)}`));
-      dot.addEventListener('click', e => { e.stopPropagation(); pane.select(b.id); pane.reveal(b.id); }); svg.append(dot);
+      dot.addEventListener('click', e => { e.stopPropagation(); pane.select(b.id); pane.landOn(b.id); }); svg.append(dot);
       if (b === top || b === last) svg.append(SV('text', { x: p.x, y: p.y - 8, class: 'sp-v', 'text-anchor': 'middle' }, String(STORY.cx(b)))); });
     return svg;
   },

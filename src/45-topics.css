@@ -1,0 +1,25 @@
+/* ==========================================================================
+   45 · Region kinds — the Topic synthesis (V4.86, 14fe): the region's band and chip, the compendium's cards
+   ========================================================================== */
+.region.rk-topic{background-image:repeating-linear-gradient(0deg,color-mix(in srgb,var(--rg) 7%,transparent) 0 1px,transparent 1px 22px)}
+.region.rk-topic .rg-tab{box-shadow:inset 0 -2px 0 color-mix(in srgb,var(--rg) 55%,transparent)}
+.rk-chip{display:inline-flex;align-items:center;gap:4px;height:18px;margin-right:4px;padding:0 7px 0 5px;border-radius:999px;background:color-mix(in srgb,var(--rg,#2A9D8F) 20%,transparent);font:600 9.5px/1 var(--f-m);letter-spacing:.02em;white-space:nowrap}
+.rk-chip svg{width:11px;height:11px}
+body.f-off-topics .rk-chip{display:none}
+.tp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
+.tp-card{display:flex;flex-direction:column;gap:7px;min-width:0;padding:12px 14px 14px;border-radius:14px;background:var(--lk-card,var(--surface));box-shadow:var(--lk-sh1,0 1px 2px rgba(0,0,0,.06)),inset 0 0 0 1px var(--lk-ring,var(--rule)),inset 3px 0 0 var(--rg)}
+.tp-map{display:block;padding:6px;border-radius:9px;background:color-mix(in srgb,var(--rg) 7%,var(--surface-2))}
+.tp-map svg{display:block} .tp-map rect{fill:color-mix(in srgb,var(--rg) 30%,var(--lk-card,var(--surface)));stroke:color-mix(in srgb,var(--rg) 70%,transparent);stroke-width:1}
+.tp-h{display:flex;align-items:baseline;gap:8px} .tp-h b{flex:1;min-width:0;font:600 14.5px/1.25 var(--f-d)} .tp-n{font:500 11px var(--f-m);color:var(--ink-3)}
+.tp-w{font:500 11.5px/1.3 var(--f-d);color:var(--ink-3)}
+.tp-s{display:flex;flex-direction:column;gap:3px;margin:0;padding:0;list-style:none} .tp-s li{font:400 12.5px/1.4 var(--f-s,var(--f-d));color:var(--ink-2)}
+.tp-none{margin:0;font:italic 400 12px var(--f-d);color:var(--ink-3)}
+.tp-f{display:flex;align-items:center;gap:8px;margin-top:2px} .tp-br,.tp-at{font:500 11px var(--f-m);color:var(--ink-3)}
+.pv-tp{display:flex;flex-direction:column;gap:8px}
+.pv-tpr{position:relative;display:flex;flex-wrap:wrap;gap:5px;padding:24px 8px 8px;border-radius:9px;border:1.5px dashed color-mix(in srgb,#2A9D8F 60%,transparent);background:repeating-linear-gradient(0deg,color-mix(in srgb,#2A9D8F 8%,transparent) 0 1px,transparent 1px 12px)}
+.pv-tpt{position:absolute;left:6px;top:4px;display:flex;align-items:center;gap:5px} .pv-tpt b{font:600 10.5px var(--f-d)} .pv-tpt i{font:normal 600 8.5px var(--f-m);padding:2px 6px;border-radius:999px;background:color-mix(in srgb,#2A9D8F 22%,transparent)}
+.pv-tpb{width:54px;height:20px;border-radius:4px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--rule)} .pv-tpb.w{width:90px}
+.pv-tpc{display:flex;flex-direction:column;gap:2px;padding:7px 9px;border-radius:9px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--rule),inset 3px 0 0 #2A9D8F}
+.pv-tpc b{font:600 11px var(--f-d)} .pv-tpc > span{font:500 10px var(--f-d);color:var(--ink-3)}
+.pv-tpm{display:flex;gap:3px;padding:4px;border-radius:5px;background:color-mix(in srgb,#2A9D8F 8%,transparent)} .pv-tpm i{width:26px;height:12px;border-radius:2px;background:color-mix(in srgb,#2A9D8F 35%,transparent)} .pv-tpm i.w{width:44px}
+@media (max-width:600px){.tp-grid{grid-template-columns:1fr}}

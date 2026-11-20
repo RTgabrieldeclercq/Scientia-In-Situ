@@ -1,0 +1,17 @@
+/* ==========================================================================
+   42 · Protocols in the Portfolio (15h-pfprotocols.js, V4.69): one more group
+   in each section and one more header colour, in the Portfolio's own classes
+   (the look stays as V4.43 left it).
+   ========================================================================== */
+:root{--sec-proto:#8A3A1B}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){--sec-proto:#EE9A74} }
+:root[data-theme="dark"]{--sec-proto:#EE9A74}
+[data-sk="proto"],.pf-seg button[data-k="proto"]{--sec:var(--sec-proto)}
+.pf-groups > .pf-g[data-g="proto"]{grid-column:1 / -1}
+.pf-g[data-g="proto"]{display:flex;flex-wrap:wrap;align-items:center;column-gap:8px} .pf-g[data-g="proto"] > .pf-n,.pf-g[data-g="proto"] > .pf-none{flex:0 0 100%}
+.pf-g[data-g="proto"] > .pf-proto-add{margin-top:4px}
+.pf-n .pf-prun{flex:none;font-family:var(--f-m);font-size:10px;color:var(--sec-proto);border:1px solid color-mix(in srgb,var(--sec-proto) 40%,transparent);border-radius:999px;padding:1px 6px}
+/* the Settings preview */
+.pv-pfp{display:grid;gap:6px} .pv-pfp-n{display:flex;align-items:baseline;gap:8px;font-size:12px;padding:2px 10px} .pv-pfp-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
+.pv-pfp-n .pf-prun{font-family:var(--f-m);font-size:10px;color:var(--sec-proto);border:1px solid color-mix(in srgb,var(--sec-proto) 40%,transparent);border-radius:999px;padding:1px 6px} .pv-pfp-n i{font:normal 10px var(--f-m);color:var(--ink-3)}
+.pv-pfp-sn{font:600 12px var(--f-d);color:var(--ink-2);padding:0 2px}

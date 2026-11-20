@@ -256,7 +256,20 @@ const LOOK = {
   // #view's className, which wiped it when it was added before (so the rise never played); a redraw within the rise ends it
   let navT = 0, navNext = false;
   addEventListener('hashchange', () => { navNext = true; });
-  const rf = App.refresh; App.refresh = function () { const r = rf.apply(this, arguments);
+  // V4.68 (Gabe: "Navigating between notes with Alt + left or right arrows should settle the shadows of components as if they are hovered initially, fading
+  // out"): going back or forward through the notes you opened (HIST.go: Alt+Left, Alt+Right, the bar's arrows) marks the canvas it draws with .nav-settle for a
+  // moment: 36-look.css shows every component with its hover shadow together, then settles it and fades it out (--st-dur, Settings -> Back and forward).
+  // Nothing under Still or reduced motion. A note opened any other way is not marked.
+  const hg = HIST.go; let settleAt = 0;
+  HIST.go = function () { settleAt = Date.now(); const r = hg.apply(this, arguments); if (!r) settleAt = 0; return r; };
+  LOOK.settle = function () {
+    if (!settleAt || Date.now() - settleAt > 2500) { settleAt = 0; return; } settleAt = 0;
+    if (!LOOK.on() || !FEAT.on('navsettle') || LOOK.motion() === 'still' || RM()) return;
+    const sec = LOOK.settleSecs(); $$('#view .canvas-host').forEach(c => { c.style.setProperty('--st-dur', sec + 's'); c.classList.remove('nav-settle'); void c.offsetWidth; c.classList.add('nav-settle'); setTimeout(() => c.classList.remove('nav-settle'), sec * 1000 + 150); });
+  };
+  /** How long the shadows take to settle (Settings -> Back and forward: Quick, Gentle, Slow; Calm movement shortens it). */
+  LOOK.settleSecs = () => { let k = 'gentle'; try { k = FEAT.tune('navsettle', 'fade') || 'gentle'; } catch (e) { } return +((({ quick: .6, gentle: 1, slow: 1.6 })[k] || 1) * (LOOK.motion() === 'calm' ? .7 : 1)).toFixed(2); };
+  const rf = App.refresh; App.refresh = function () { const r = rf.apply(this, arguments); try { LOOK.settle(); } catch (e) { console.warn('[look]', e); }
     if (navNext) { navNext = false; const v = document.getElementById('view'); if (v) { v.classList.add('lk-nav'); clearTimeout(navT); navT = setTimeout(() => v.classList.remove('lk-nav'), 450); } }
     return r; };
   try { LOOK.paint(); } catch (e) { }

@@ -54,7 +54,7 @@ const TLOOK = {
     const near = others.slice().sort((a, b) => Math.abs(a.t - hereT) - Math.abs(b.t - hereT)).slice(0, 3);
     let sel = near[0] || notes[0] || null; const t0 = notes.length ? Math.min(notes[0].t, D.since || notes[0].t) : t1, tEnd = Math.max(t1, ...notes.map(g => g.t)), span = Math.max(864e5, tEnd - t0);
     const quote = h('div.tcd-q'), drawQ = () => { if (!sel) return quote.replaceChildren(h('span.tcd-none', 'Used only here so far.'));
-      quote.replaceChildren(h('button.tcd-qb', { type: 'button', title: 'Open it there', on: { click: () => { hideHover(); App.openBlock(sel.kw.blockId); } } },
+      quote.replaceChildren(h('button.tcd-qb', { type: 'button', title: 'Open it there', on: { click: () => { hideHover(); App.openComponent(sel.kw.blockId); } } },
         h('span.tcd-qh', h('i.tcd-k.k-' + sel.kind), h('b', sel.d.title || 'Untitled'), h('span.tcd-sp'), h('span.tcd-m', (sel.rel ? sel.rel + ' · ' : '') + fmtDay(sel.t) + ' · ' + sel.n + '×')),
         h('span.tcd-kw', sel.kw.pre, h('b', sel.kw.term || t.label), sel.kw.post))); $$('.tcd-dot', tl).forEach(x => x.classList.toggle('sel', sel && x.dataset.d === sel.d.id)); };
     // the timeline: every note that uses it, by its date, sized by how often; this note ringed
@@ -62,7 +62,7 @@ const TLOOK = {
       h('span.tcd-tlh', 'Its notes'), h('div.tcd-line'),
       notes.map(g => { const top = 8 + (g.t - t0) / span * 84, me = here && g.d.id === here.id;
         return h('button.tcd-dot.k-' + g.kind + (me ? '.here' : ''), { type: 'button', 'data-d': g.d.id, style: { top: top + '%', width: (7 + Math.min(4, g.n) * 2) + 'px', height: (7 + Math.min(4, g.n) * 2) + 'px' }, 'aria-label': (g.d.title || 'Untitled') + ', ' + fmtDay(g.t) + ', ' + plural(g.n, 'use'),
-          on: { pointerenter: () => { sel = g; drawQ(); }, focus: () => { sel = g; drawQ(); }, click: () => { hideHover(); App.openBlock(g.kw.blockId); } } }, h('span.tcd-dl', me ? 'this note' : fmtDay(g.t))); }),
+          on: { pointerenter: () => { sel = g; drawQ(); }, focus: () => { sel = g; drawQ(); }, click: () => { hideHover(); App.openComponent(g.kw.blockId); } } }, h('span.tcd-dl', me ? 'this note' : fmtDay(g.t))); }),
       null);
     // its 12 weeks, one soft line
     const mx = Math.max(1, ...D.wk), P = D.wk.map((w, i) => [Math.round(4 + i * 316 / 11), Math.round(34 - w / mx * 28)]);
@@ -74,7 +74,7 @@ const TLOOK = {
       h('div.tcd-spk', { html: svg }), h('div.tcd-ax', h('span', '12 weeks ago'), D.open ? h('span.tcd-open', plural(D.open, 'barrier') + ' open') : null, h('span', 'this week')),
       quote,
       near.length > 1 ? h('div.tcd-nh', 'Nearest notes') : null,
-      near.length > 1 ? h('div.tcd-near', near.map(g => h('button.tcd-row', { type: 'button', on: { pointerenter: () => { sel = g; drawQ(); }, click: () => { hideHover(); App.openBlock(g.kw.blockId); } } },
+      near.length > 1 ? h('div.tcd-near', near.map(g => h('button.tcd-row', { type: 'button', on: { pointerenter: () => { sel = g; drawQ(); }, click: () => { hideHover(); App.openComponent(g.kw.blockId); } } },
         h('span.tcd-rd', fmtDay(g.t)), h('b', g.d.title || 'Untitled'), h('span.tcd-rr.k-' + g.kind, g.rel)))) : null,
       h('div.tcd-f', h('button.tcd-act', { type: 'button', on: { click: lens } }, 'All ' + plural(D.nNotes, 'note') + ' →'), h('span.tcd-sp'), h('span.tcd-hint', 'Ctrl+click: its lens · Alt+click: options')));
     const root = h('div.tcd', tl, main); drawQ(); return root;

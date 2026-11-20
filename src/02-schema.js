@@ -7,7 +7,7 @@
    panels — is derived in memory by IX and can be thrown away.
    ========================================================================== */
 const DB_NAME = 'scientia-in-situ';
-const DB_VERSION = 12;
+const DB_VERSION = 13;
 
 const STORES = {
   settings:  { key: 'id',  doc: 'App settings singleton' },
@@ -38,7 +38,8 @@ const STORES = {
   libsets:   { key: 'id',  doc: 'Paper shelves and foci (V3.963; were library themes and groups): {kind: theme (a shelf) | group (a focus), name, themeId (its shelf), paperIds} — a paper can be in several foci' },
   mwsteps:   { key: 'id',  doc: 'My Week steps from RM, mirrored by the lab hub (read-only): what a component’s ✓ reports onto, offline too' },
   boards:    { key: 'id',  doc: 'Whiteboards in image panels (the lab’s board, 13zzd): the board’s documents (strokes, cards, recordings) by path; a large board continues in rows <id>~1, ~2…' },
-  events:    { key: 'id',  doc: 'Calendar events (V4.57, 23e): {title, day, start, end (minutes), allDay, kind meeting|experiment|other, tags, projectId, docId (its note; notes {day: docId} for a repeat), repeat none|daily|weekly, skip, until}' },
+  events:    { key: 'id',  doc: 'Calendar events (V4.57, 23e): {title, day, start, end (minutes), allDay, kind meeting|experiment|other, tags, projectId, docId (its note; notes {day: docId} for a repeat), repeat none|daily|weekly, skip, until}; V4.70: kind deliv is a deliverable — start = when it is due, deliv {what result|takeaway|verdict|synth, docId, eventId, state open|done|dropped, blockId, regionId}' },
+  scripts:   { key: 'id',  doc: 'Code (V4.88, 14fg): your analysis scripts — {title, desc, file (its name), code (the text), lang python, created, modified}; a component of the Code kind runs one (b.code = {script, inputs, out})' },
   journal:   { key: 'seq', auto: true, doc: 'Append-only change log with previous values (undo, time travel)' },
 };
 const AUTHORED = Object.keys(STORES);

@@ -95,6 +95,10 @@ body:not(.f-off-look) .toast{border-radius:999px;padding:10px 18px;animation:lk-
 /* ---------- components on a note: a warm card, a hairline ring, a soft shadow; the kind is a dot and a wash ---------- */
 body:not(.f-off-look) .box{border-radius:12px;border-color:var(--lk-ring);background:var(--lk-card);box-shadow:var(--lk-sh1);transition:border-color var(--lk-dh) ease,box-shadow .25s ease}
 body:not(.f-off-look) .box:hover{border-color:var(--lk-ring-2);box-shadow:var(--lk-lift)}
+/* V4.68: a note you came back or forward to (Alt+Left / Alt+Right): every component shows its hover shadow together, holds it a moment, then settles and fades (the one second is --st-dur) */
+@keyframes lk-settle{0%,28%{box-shadow:var(--lk-lift);border-color:var(--lk-ring-2)}100%{box-shadow:var(--lk-sh1);border-color:var(--lk-ring)}}
+body:not(.f-off-look):not(.f-off-navsettle):not(.lk-still) .nav-settle :is(.box:not(.sel),.pvb){animation:lk-settle var(--st-dur,1s) ease-out backwards}
+@media (prefers-reduced-motion:reduce){body .nav-settle :is(.box,.pvb){animation:none!important}}
 body:not(.f-off-look) .box.sel{border-color:var(--teal);box-shadow:0 0 0 1px var(--teal),var(--lk-lift)}
 body:not(.f-off-look) .box.cmp{border-left-width:1px;border-left-color:var(--lk-ring)}
 body:not(.f-off-look) .box.cmp.sel{border-left-color:var(--teal)}
@@ -305,3 +309,8 @@ body:not(.f-off-look) .tl-end{padding:14px 2px 4px}
 body:not(.f-off-look) .tl-host.tl-in .tl-row{animation:lk-rise var(--lk-ds) var(--lk-rise) both;animation-delay:calc(var(--i,0) * 14ms)}
 body:not(.f-off-look) .tl-tile{background:var(--lk-card);border:0;border-radius:12px;box-shadow:var(--lk-sh1),inset 0 0 0 1px var(--lk-ring)}
 body:not(.f-off-look) .tl-row .tl-sub{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.4}
+/* V4.89 — Shift+click zooms: its preview */
+.pv-sz{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.pv-szf{display:grid;place-items:center;width:180px;height:96px;border-radius:9px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--rule)}
+.pv-szf i{display:grid;place-items:center;min-width:30px;border-radius:5px;background:var(--lk-card,var(--surface-2));box-shadow:inset 0 0 0 1.5px var(--teal);font:normal 600 9px var(--f-d);overflow:hidden;white-space:nowrap}
+.pv-szk{font:600 10px var(--f-m);padding:2px 7px;border-radius:5px;box-shadow:inset 0 0 0 1px var(--rule);color:var(--ink-2)}

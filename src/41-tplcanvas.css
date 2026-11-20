@@ -1,0 +1,38 @@
+/* 41 · A template as a note canvas (V4.68) — see 20c-tplcanvas.js. Cards use the note's own tokens, so light and dark follow the app. */
+.modal.tc-modal{width:min(1120px,100%);max-height:92vh}
+.tc{display:flex;flex-direction:column;gap:10px;min-width:0}
+.tc-name{width:100%}
+.tc-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tc-stage{position:relative;height:min(58vh,560px);overflow:auto;border:1px solid var(--rule-2);border-radius:10px;background-color:var(--surface-2);background-image:radial-gradient(circle,var(--rule-2) 1px,transparent 1.2px);background-size:14px 14px;background-size:calc(14px * .7) calc(14px * .7)}
+.tc-sheet{position:relative}
+.tc-inner{position:absolute;left:0;top:0;transform-origin:0 0}
+.tc-card{position:absolute;box-sizing:border-box;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--rule-2);border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.12);overflow:hidden}
+.tc-card.drag{box-shadow:0 8px 22px rgba(0,0,0,.28);z-index:5;border-color:var(--teal)}
+.tc-card.head{left:0;top:0;width:420px;height:120px;opacity:.65;border-style:dashed;box-shadow:none}
+.tc-card.ph{border-style:dashed;border-color:color-mix(in srgb,var(--teal) 55%,var(--rule-2))}
+.tc-grip{display:flex;align-items:center;gap:8px;padding:6px 8px 6px 10px;border-bottom:1px solid var(--rule);background:var(--surface-2);cursor:grab;touch-action:none;flex:none;min-width:0}
+.tc-grip.fixed{cursor:default}
+.tc-card.drag .tc-grip{cursor:grabbing}
+.tc-n{font:600 10px var(--f-m,monospace);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);flex:none}
+.tc-lab{flex:1;min-width:0;border:0;border-bottom:1px dashed transparent;background:transparent;font:600 13px var(--f-b);color:var(--ink);padding:2px 2px;cursor:text}
+.tc-lab:hover,.tc-lab:focus{border-bottom-color:var(--rule-2);outline:none}
+.tc-lab-s{font-size:13px;color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tc-x{flex:none;width:22px;height:22px;border:0;border-radius:11px;background:transparent;color:var(--ink-3);font-size:16px;line-height:1;cursor:pointer}
+.tc-x:hover{background:var(--surface-3,var(--rule));color:var(--ink)}
+.tc-body{flex:1;min-height:0;resize:none;border:0;background:transparent;color:var(--ink);font:14px/1.45 var(--f-s,serif);padding:8px 12px}
+.tc-body:focus{outline:none;background:color-mix(in srgb,var(--teal) 6%,transparent)}
+.tc-hd{padding:8px 12px;font-size:12.5px;color:var(--ink-3);font-style:italic;overflow:hidden}
+.tc-ph{flex:1;display:flex;align-items:center;justify-content:center;gap:22px;padding:10px 16px;min-height:0}
+.tc-phr{display:flex;flex-direction:column;gap:6px;align-items:flex-start;font-size:13px}
+.tc-shape{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+.tc-mn{width:84px;text-align:center}
+.tc-mn.bad{border-color:var(--mag);color:var(--mag)}
+/* the small picture in Settings */
+.tc-mini{position:relative;overflow:hidden;border:1px solid var(--rule-2);border-radius:8px;background-color:var(--surface-2);background-image:radial-gradient(circle,var(--rule-2) 1px,transparent 1.2px);background-size:8px 8px}
+.tc-minin{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none}
+.tc-mini .tc-card .tc-hd{font-style:normal;color:var(--ink-2);white-space:pre-wrap}
+/* a placeholder panel in a note (13x-figure phBody) */
+.fgbox.fg-ph{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;width:100%;padding:14px;border:2px dashed color-mix(in srgb,var(--teal) 50%,var(--rule-2));border-radius:10px;background:color-mix(in srgb,var(--teal) 4%,transparent);cursor:pointer;text-align:center}
+.fgbox.fg-ph:hover,.fgbox.fg-ph:focus-visible,.fgbox.fg-ph.over{border-color:var(--teal);background:color-mix(in srgb,var(--teal) 9%,transparent);outline:none}
+.fgbox.fg-ph.ro{cursor:default}
+.fg-ph-t{font-size:13px;color:var(--ink)}

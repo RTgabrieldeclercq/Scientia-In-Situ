@@ -90,7 +90,15 @@ const M = {
     DB.put('documents', d);
     const tpl = templateId && DB.get('templates', templateId);
     const rows = tpl ? tpl.blocks : [{ label: '', body: '' }];
-    rows.forEach((r, i) => M._newBlock(d, { label: r.label, body: { text: r.body || '', marks: [] }, x: r.x != null ? r.x : null, y: r.y != null ? r.y : null }));
+    // V4.68: a row is { label, body, x, y, w? } as before; { ph: 'image' | 'board', fig: { rows, cols } } is a placeholder — an empty image panel (or whiteboard) that waits in the note
+    // for one click (13x-figure phBody), and a real panel from the first image on
+    rows.forEach((r, i) => {
+      const at = { x: r.x != null ? r.x : null, y: r.y != null ? r.y : null };
+      if (r.ph && typeof FIG !== 'undefined') {
+        const F = { rows: Math.max(1, +(r.fig || {}).rows || 1), cols: Math.max(1, +(r.fig || {}).cols || 2), letters: true, cells: [] }, b = M._newBlock(d, Object.assign({ kind: 'figure', label: r.label || (r.ph === 'board' ? 'Whiteboard' : 'Figure'), body: { text: '', marks: [] }, w: r.w || (r.ph === 'board' ? 420 : 560), fig: F, ph: r.ph === 'board' ? 'board' : 'image' }, at));
+        FIG.cells(b); DB.put('blocks', b);
+      } else M._newBlock(d, Object.assign({ label: r.label, body: { text: r.body || '', marks: [] } }, at, r.w ? { w: r.w } : {}));
+    });
     M.autoLayout(d); DB.put('documents', d); changed(); return d;
   },
   /** Run a protocol: a new experiment whose steps are BOUND to the protocol's steps (§4 — the join that pays off). */
@@ -256,8 +264,8 @@ const M = {
   clearFlag(type, id) { const f = M.flagFor(type, id); if (f) { f.status = 'resolved'; f.resolvedAt = isoLocal(new Date()); f.resolvedBy = { type: 'unflag' }; DB.put('flags', f); changed(); } },
   async toggleFlag(type, id) { if (M.flagFor(type, id)) { M.clearFlag(type, id); toast('Flag cleared'); } else { const r = await askText('Flag for the weekly review', 'Reason (optional)'); if (r !== null) { M.setFlag(type, id, r); toast('Flagged — it will come up at the next review'); } } },
   describeTarget(type, id) {
-    if (type === 'block') { const b = M.block(id); return b ? { title: M.blockName(b), sub: M.docPath(M.doc(b.docId)), go: () => App.openBlock(id) } : null; }
-    if (type === 'item') { const it = M.item(id); return it ? { title: `${KIND[it.kind].label}: ${snippet(it.text, 70)}`, sub: M.docPath(M.doc(it.originDocId)), kind: it.kind, go: () => App.openBlock(it.originBlockId) } : null; }
+    if (type === 'block') { const b = M.block(id); return b ? { title: M.blockName(b), sub: M.docPath(M.doc(b.docId)), go: () => App.openComponent(id) } : null; }
+    if (type === 'item') { const it = M.item(id); return it ? { title: `${KIND[it.kind].label}: ${snippet(it.text, 70)}`, sub: M.docPath(M.doc(it.originDocId)), kind: it.kind, go: () => App.openComponent(it.originBlockId) } : null; }
     if (type === 'doc') { const d = M.doc(id); return d ? { title: d.title, sub: M.docPath(d), go: () => App.go('#/doc/' + id) } : null; }
     if (type === 'library') { const l = M.lib(id); return l ? { title: l.title, sub: LIB.shortRef(l), go: () => App.go('#/library') } : null; }
     if (type === 'term') { const t = M.term(id); return t ? { title: t.label, sub: 'term', go: () => App.go('#/lens/' + id) } : null; }
@@ -267,10 +275,12 @@ const M = {
 
   /* ---------------- templates & profiles ---------------- */
   templatesFor(type) { return DB.all('templates').filter(t => t.type === type).sort((a, b) => (b.isStandard - a.isStandard) || a.name.localeCompare(b.name)); },
+  /** A template's components in a line: labels, a placeholder as what it waits for. */
+  templateSummary(t) { return (t.blocks || []).map(b => b.ph ? (b.label || (b.ph === 'board' ? 'whiteboard' : 'images')) + ' (waits)' : b.label || '·').join(' → '); },
   enabledTemplates(type) { return M.templatesFor(type).filter(t => t.enabled); },
   saveAsTemplate(doc, name) {
-    const live = M.liveBlocks(doc.id).filter(b => b.kind === 'component'), x0 = Math.min(...live.map(b => b.x || 0)), y0 = Math.min(...live.map(b => b.y || 0));
-    const t = { id: uid('tp'), type: doc.type, name, isStandard: false, enabled: true, blocks: live.map(b => ({ label: b.label, body: '', x: (b.x || 0) - x0, y: (b.y || 0) - y0 + 140 })) };
+    const keep = b => b.kind === 'component' || (b.kind === 'figure' && b.fig && typeof FEAT !== 'undefined' && FEAT.on('templates')), live = M.liveBlocks(doc.id).filter(keep), x0 = Math.min(...live.map(b => b.x || 0)), y0 = Math.min(...live.map(b => b.y || 0));
+    const t = { id: uid('tp'), type: doc.type, name, isStandard: false, enabled: true, blocks: live.map(b => Object.assign({ label: b.label, body: '', x: (b.x || 0) - x0, y: (b.y || 0) - y0 + 140 }, b.kind === 'figure' ? { ph: 'image', w: b.w || 560, fig: { rows: b.fig.rows, cols: b.fig.cols } } : {})) };   // V4.68: an image panel is kept as a placeholder of its shape
     DB.put('templates', t); changed(); return t;
   },
   saveProfile(p) { DB.put('profiles', p); loadProfiles(); ensureStandardTemplates(); changed(); },
