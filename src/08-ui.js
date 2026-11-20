@@ -136,10 +136,11 @@ function ctxMenu(x, y, rows) {
 }
 /** A one-line hover card that follows an element (structures, terms, links, citations). */
 let _hc = null, _hcT = null;
-function hoverCard(anchor, build) {
-  clearTimeout(_hcT); _hcT = setTimeout(() => { hideHover(); const c = build(); if (!c) return; _hc = h('div.hovercard', c); document.body.append(_hc);
+function hoverCard(anchor, build, wait = 260) {   // V4.66: a term's card waits about a second (`wait`); leaving before then cancels it
+  clearTimeout(_hcT); const cancel = () => clearTimeout(_hcT); anchor.addEventListener('mouseleave', cancel, { once: true });
+  _hcT = setTimeout(() => { anchor.removeEventListener('mouseleave', cancel); hideHover(); const c = build(); if (!c) return; _hc = h('div.hovercard', c); document.body.append(_hc);
     const b = anchor.getBoundingClientRect(), r = _hc.getBoundingClientRect(); _hc.style.left = clamp(b.left, 8, innerWidth - r.width - 8) + 'px'; _hc.style.top = (b.bottom + r.height + 10 > innerHeight ? b.top - r.height - 8 : b.bottom + 8) + 'px';
     anchor.addEventListener('mouseleave', () => { clearTimeout(_hcT); setTimeout(() => { if (_hc && !_hc.matches(':hover')) hideHover(); }, 120); }, { once: true });
-    _hc.addEventListener('mouseleave', hideHover); }, 260);
+    _hc.addEventListener('mouseleave', hideHover); }, wait);
 }
 function hideHover() { clearTimeout(_hcT); if (_hc) { _hc.remove(); _hc = null; } $$('.hovercard').forEach(x => x.remove()); }

@@ -1,0 +1,307 @@
+/* ==========================================================================
+   36 · Look and motion (20d-look.js) — the notebook in the edge-rail look
+   (Gabe: "B is the best. Rethink the UI and animations of the entire lab
+   notebook to match this style.") Loaded last, so it restyles what the
+   modules draw without changing them. Everything here is under
+   body:not(.f-off-look): Settings → Look and motion off gives back the look
+   from before, untouched.
+   • Surfaces: a warm card (--lk-card) for components and highlights, a rail
+     surface (--lk-rail) for what floats (menus, dialogs, rails, pills), a
+     hairline ring (--lk-ring) instead of borders, one soft shadow each.
+   • Motion: five curves (glide, spring, rise, pop, hover), their times as
+     variables so Movement (Full / Calm / Still) and reduced motion change
+     them in one place. Hover changes colour and shadow only.
+   • V4.43 (Gabe: "Don't change the Portfolio, it looks good as it is"): nothing
+     here reaches inside the Portfolio (.pf-root) — its list, rows, buttons,
+     banners, and the page coming in, are as before. The header around it
+     (tabs, search, buttons) and what floats over it (menus, dialogs, toasts)
+     are the app's, and keep the look.
+   ========================================================================== */
+:root{
+  --lk-card:#F8F5EF; --lk-rail:#FBF9F4; --lk-ring:#DED7C9; --lk-ring-2:#CFC7B7; --lk-hov:#EFEAE0; --lk-shelf:#CFC6B5;
+  --lk-sh1:0 1px 2px rgba(36,33,28,.08);
+  --lk-sh2:0 1px 2px rgba(36,33,28,.10),0 18px 34px -20px rgba(36,33,28,.60);
+  --lk-sh3:0 2px 6px rgba(36,33,28,.10),0 30px 60px -30px rgba(36,33,28,.70);
+  --lk-lift:0 1px 2px rgba(36,33,28,.08),0 14px 26px -18px rgba(36,33,28,.55);
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --lk-card:#26221E; --lk-rail:#2A2622; --lk-ring:#3A342D; --lk-ring-2:#4A433A; --lk-hov:#332E28; --lk-shelf:#4A433A;
+  --lk-sh1:0 1px 2px rgba(0,0,0,.40);
+  --lk-sh2:0 1px 2px rgba(0,0,0,.45),0 18px 34px -20px rgba(0,0,0,.85);
+  --lk-sh3:0 2px 6px rgba(0,0,0,.50),0 30px 60px -30px rgba(0,0,0,.90);
+  --lk-lift:0 1px 2px rgba(0,0,0,.45),0 14px 26px -18px rgba(0,0,0,.85);
+}}
+:root[data-theme="dark"]{
+  --lk-card:#26221E; --lk-rail:#2A2622; --lk-ring:#3A342D; --lk-ring-2:#4A433A; --lk-hov:#332E28; --lk-shelf:#4A433A;
+  --lk-sh1:0 1px 2px rgba(0,0,0,.40);
+  --lk-sh2:0 1px 2px rgba(0,0,0,.45),0 18px 34px -20px rgba(0,0,0,.85);
+  --lk-sh3:0 2px 6px rgba(0,0,0,.50),0 30px 60px -30px rgba(0,0,0,.90);
+  --lk-lift:0 1px 2px rgba(0,0,0,.45),0 14px 26px -18px rgba(0,0,0,.85);
+}
+/* the curves and their times (Movement: Full · Calm · Still; reduced motion) */
+body{--lk-glide:cubic-bezier(.65,0,.15,1);--lk-spring:cubic-bezier(.2,.9,.25,1.25);--lk-soft:cubic-bezier(.2,.9,.25,1.15);--lk-rise:cubic-bezier(.2,.9,.25,1);--lk-pop:cubic-bezier(.2,.9,.25,1.2);
+  --lk-dg:.55s;--lk-ds:.45s;--lk-dr:.34s;--lk-dp:.26s;--lk-dh:.18s;--lk-reveal:1s}
+body.lk-calm{--lk-spring:var(--lk-rise);--lk-soft:var(--lk-rise);--lk-pop:var(--lk-rise);--lk-dg:.33s;--lk-ds:.27s;--lk-dr:.2s;--lk-dp:.16s}
+body.lk-still{--lk-dg:0s;--lk-ds:0s;--lk-dr:0s;--lk-dp:0s}
+@media (prefers-reduced-motion:reduce){ body{--lk-dg:0s;--lk-ds:0s;--lk-dr:0s;--lk-dp:0s} }
+/* V4.44: a menu comes in short and without overshoot — its rows hardly move, so a quick click lands where it aims (the stage stays still under the pointer) */
+@keyframes lk-pop{from{opacity:0;transform:scale(.98) translateY(-2px)}to{opacity:1;transform:none}}
+@keyframes lk-sheet{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes lk-fade{from{opacity:0}to{opacity:1}}
+@keyframes lk-toast{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes lk-rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes lk-in-r{from{opacity:0;transform:translate(160%,-50%)}to{opacity:1;transform:translateY(-50%)}}
+@keyframes lk-in-l{from{opacity:0;transform:translate(-160%,-50%)}to{opacity:1;transform:translateY(-50%)}}
+@keyframes lk-spine{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+@keyframes lk-row{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
+
+/* ---------- the header: a pill for the tab you are on, gliding between tabs; round icon buttons; pill buttons ---------- */
+body:not(.f-off-look) #brand{width:26px;height:26px;border-radius:8px}
+body:not(.f-off-look) #hd .ib{border-radius:50%;min-width:28px;height:28px;transition:background var(--lk-dh) ease,color var(--lk-dh) ease}
+@media (max-width:760px){ body:not(.f-off-look) #hd .ib{min-width:24px;height:24px} }   /* V4.44: on a phone the header row keeps its old width (nothing sticks out at 400 px) */
+body:not(.f-off-look) #search{height:28px;border-radius:999px;border:0;background:var(--surface);box-shadow:inset 0 0 0 1px var(--rule)}
+body:not(.f-off-look) #search kbd{border:0;border-radius:6px;background:var(--paper)}
+body:not(.f-off-look) :is(#newnote,#newexp){height:28px;border-radius:999px;transition:transform var(--lk-ds) var(--lk-spring),background var(--lk-dh) ease,filter var(--lk-dh) ease}
+body:not(.f-off-look) :is(#newnote,#newexp):active{transform:scale(.96)}
+body:not(.f-off-look) #tabs .tab{z-index:1;border-radius:999px;padding:5px 11px 6px}
+/* V4.46: the pill covers the whole tab (20d LOOK.tabPill); an empty count gives back its gap, so the name sits in the middle of it (it stays, so the header keeps its height) */
+body:not(.f-off-look) #tabs .tab > .tc:empty{margin-left:-4px}
+body:not(.f-off-look) #tabs .tink{z-index:0;top:1px;bottom:auto;height:calc(100% - 4px);border-radius:999px;background:var(--lk-rail);box-shadow:var(--lk-sh1),inset 0 0 0 1px var(--lk-ring);transition:transform .45s var(--lk-soft),width .45s var(--lk-soft)}
+body.lk-still:not(.f-off-look) #tabs .tink{transition:none}
+/* a page you go to fades in and rises 6 px (only when you navigate: 20d sets #view.lk-nav for a moment) */
+body:not(.f-off-look) #view.lk-nav > :not(.pf-root){animation:lk-rise .28s var(--lk-rise) both}
+body.lk-still:not(.f-off-look) #view.lk-nav > *{animation:none}
+
+/* ---------- buttons and fields ---------- */
+body:not(.f-off-look) .btn:not(.pf-root *){border-radius:8px;transition:background var(--lk-dh) ease,border-color var(--lk-dh) ease,color var(--lk-dh) ease,transform var(--lk-dp) var(--lk-pop)}
+body:not(.f-off-look) .btn:not(.pf-root *):active{transform:scale(.97)}
+body:not(.f-off-look) .btn.sm:not(.pf-root *){border-radius:7px}
+body:not(.f-off-look) .btn.xs:not(.pf-root *){border-radius:6px}
+body:not(.f-off-look) .inp:not(.pf-root *){border-radius:9px}
+
+/* ---------- menus and popovers: the rail surface, popping from where they open ---------- */
+body:not(.f-off-look) .pop{border:0;border-radius:14px;background:var(--lk-rail);box-shadow:var(--lk-sh2),inset 0 0 0 1px var(--lk-ring);transform-origin:16px 0;animation:lk-pop calc(var(--lk-dp) * .6) var(--lk-rise) both}
+body:not(.f-off-look) .pop :is(.opt,.op){border-radius:9px;transition:background var(--lk-dh) ease}
+body:not(.f-off-look) .pop :is(.opt,.op):hover,body:not(.f-off-look) .pop .opt.on{background:var(--lk-hov)}
+body:not(.f-off-look) .pop .sep{background:var(--lk-ring);margin:5px 6px}
+/* dialogs and search: the page dims and blurs, the sheet rises */
+body:not(.f-off-look) .ovl{background:color-mix(in srgb,var(--ink) 20%,transparent);backdrop-filter:blur(2px);animation:lk-fade .25s ease both}
+body:not(.f-off-look) .modal{border:0;border-radius:18px;background:var(--lk-rail);box-shadow:var(--lk-sh3),inset 0 0 0 1px var(--lk-ring);animation:lk-sheet var(--lk-dr) var(--lk-rise) both}
+body:not(.f-off-look) .modal .mh{border-bottom-color:var(--lk-ring)}
+body:not(.f-off-look) .modal .mf{background:transparent;border-top-color:var(--lk-ring)}
+/* toasts: a dark pill that springs up */
+body:not(.f-off-look) .toast{border-radius:999px;padding:10px 18px;animation:lk-toast var(--lk-ds) var(--lk-spring) both}
+
+/* ---------- components on a note: a warm card, a hairline ring, a soft shadow; the kind is a dot and a wash ---------- */
+body:not(.f-off-look) .box{border-radius:12px;border-color:var(--lk-ring);background:var(--lk-card);box-shadow:var(--lk-sh1);transition:border-color var(--lk-dh) ease,box-shadow .25s ease}
+body:not(.f-off-look) .box:hover{border-color:var(--lk-ring-2);box-shadow:var(--lk-lift)}
+body:not(.f-off-look) .box.sel{border-color:var(--teal);box-shadow:0 0 0 1px var(--teal),var(--lk-lift)}
+body:not(.f-off-look) .box.cmp{border-left-width:1px;border-left-color:var(--lk-ring)}
+body:not(.f-off-look) .box.cmp.sel{border-left-color:var(--teal)}
+body:not(.f-off-look) .box.cmp > .bh{border-radius:11px 11px 0 0;background:color-mix(in srgb,var(--kc,var(--rule)) 9%,transparent)}
+body:not(.f-off-look) .box.cmp > .bh .num::before{content:'';display:inline-block;width:7px;height:7px;margin-right:5px;border-radius:50%;background:var(--kc,var(--ink-4));vertical-align:1px}
+
+/* the data tree: a warm inset card, its rows hanging on a thread */
+body:not(.f-off-look) .box .dt{border:0;border-radius:11px;background:color-mix(in srgb,var(--surface-2) 40%,transparent);box-shadow:inset 0 0 0 1px var(--lk-ring)}
+body:not(.f-off-look) .box .dt.over,body:not(.f-off-look) .box.dt-over .dt{box-shadow:0 0 0 2px var(--teal)}
+body:not(.f-off-look) .dt-rows{position:relative}
+body:not(.f-off-look) .dt-rows::before{content:'';position:absolute;left:12px;top:8px;bottom:10px;width:2px;border-radius:1px;background:var(--lk-ring);pointer-events:none}
+body:not(.f-off-look) .dt-r{position:relative;border-radius:8px}
+body:not(.f-off-look) .dt-r:hover{background:var(--lk-hov)}
+body:not(.f-off-look) .dt-tg{transition:transform .3s var(--lk-rise)}
+
+/* ---------- the Portfolio keeps its own look (V4.43); a project's page and its banner take the new one ---------- */
+body:not(.f-off-look) .tb-ban:not(.pf-root *){border-radius:14px}
+body:not(.f-off-look) .tb-ban[data-place="page"]:not(.pf-root *){border-radius:16px}
+
+/* ---------- Settings: the live preview on the rail surface ---------- */
+body:not(.f-off-look) .fp-pv{border-radius:14px}
+
+/* ---------- the reader: the reading set's box, the tab you read lifted ---------- */
+body:not(.f-off-look) .rs-set{border-radius:10px}
+body:not(.f-off-look) .rd-tabs .rd-tab.act{border-radius:7px;background:var(--lk-rail);box-shadow:var(--lk-sh1)}
+body:not(.f-off-look) .rd-bar.rd-bar2 .rd-grp{border-radius:8px}
+/* highlights: cards on the panel */
+body:not(.f-off-look) .rd-ann{border:0;border-radius:11px;background:var(--lk-card);box-shadow:var(--lk-sh1),inset 3px 0 0 var(--hc);transition:box-shadow .2s ease}
+body:not(.f-off-look) .rd-ann:hover{background:var(--lk-card);box-shadow:var(--lk-lift),inset 3px 0 0 var(--hc)}
+
+/* ---------- the side panel: docked, its width gliding; folded, a capsule of the highlight colours (20d's .lk-rail) ---------- */
+body:not(.f-off-look) .sf-host > .sf-col{transition:width var(--lk-dg) var(--lk-glide)}
+body:not(.f-off-look) .sf-host > .sf-col > *{transition:opacity .3s ease .12s,transform .5s var(--lk-rise)}
+/* folded: the column glides shut (it stays in the row, so the page widens with it) — over the capsule the side-fold draws by itself */
+body:not(.f-off-look) .sf-host.lk-fold > .sf-col{position:relative!important;top:auto!important;right:auto!important;bottom:auto!important;transform:none!important;width:0!important;height:auto!important;padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;animation:none!important;overflow:hidden!important;background:var(--surface)!important;cursor:default!important}
+body:not(.f-off-look) .sf-host.lk-fold > .sf-col > *{opacity:0;transform:translateX(24px);transition-delay:0s}
+body:not(.f-off-look) .sf-host.lk-fold > .sf-col > :is(.mx-side,.rd-side){display:block!important}
+/* …and its strip keeps its own look while it glides (the capsule's rules would strip it at once) */
+body:not(.f-off-look) .sf-host.lk-fold > .sf-col > .sf-top{height:30px!important;padding:0 4px 0 14px!important;gap:6px!important;border-bottom:1px solid var(--rule)!important}
+body:not(.f-off-look) .sf-host.lk-fold > .sf-col > .sf-top > .sf-tt{display:inline!important}
+body:not(.f-off-look) .sf-host.lk-fold > .sf-col > .sf-top > .sp{display:block!important}
+body:not(.f-off-look) .sf-host.lk-fold > .sf-col > .sf-top > .sf-b{display:inline-flex!important}
+body:not(.f-off-look) .sf-host.lk-fold > .sf-col > .sf-top > :is(.sf-ic,.sf-n){display:none!important}
+body:not(.f-off-look) .rd-ann.lk-lit{box-shadow:0 0 0 2px var(--teal),var(--lk-lift),inset 3px 0 0 var(--hc)}
+/* beside a note, open: docked too (the page gives it room), not lying over the paper */
+body:not(.f-off-look) .embed-max.rd-docked:not(.rp-ov) .sf-host:not(.lk-fold) > .sf-col{position:relative;top:auto;right:auto;bottom:auto;width:min(300px,44%);box-shadow:none;animation:none;border-left:1px solid var(--rule)}
+body:not(.f-off-look) .embed-max.rd-docked:not(.rp-ov) .sf-host > .sf-col > .mx-side{width:300px}
+.lk-rail{display:none}
+body:not(.f-off-look) .sf-host.lk-fold > .lk-rail{position:absolute;right:20px;top:50%;z-index:8;display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 6px;border-radius:26px;background:var(--lk-rail);box-shadow:var(--lk-sh2),inset 0 0 0 1px var(--lk-ring);transform:translateY(-50%);animation:lk-in-r var(--lk-ds) var(--lk-spring) both}
+body:not(.f-off-look) .rp-ov .lk-rail{display:none!important}
+.lk-rb{position:relative;width:36px;height:36px;border:0;border-radius:50%;background:transparent;color:var(--ink-2);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:background .2s ease,transform .25s var(--lk-pop)}
+.lk-rb:hover{background:var(--lk-hov);color:var(--ink)}
+.lk-rb:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
+.lk-rb svg{display:block}
+.lk-dot{width:16px;height:16px;border-radius:50%;box-shadow:inset 0 0 0 3px rgba(255,255,255,.55)}
+.lk-n{position:absolute;top:-2px;right:-2px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--ink);color:var(--paper);font:600 9.5px/16px var(--f-m);text-align:center}
+.lk-n:empty{display:none}
+.lk-sep{width:20px;height:1px;background:var(--lk-ring)}
+.lk-tip{position:absolute;right:46px;top:50%;white-space:nowrap;font:500 11.5px/1 var(--f-d);color:var(--paper);background:var(--ink);padding:6px 9px;border-radius:7px;opacity:0;pointer-events:none;transform:translate(4px,-50%);transition:opacity .2s ease,transform .25s ease}
+.lk-rb:hover > .lk-tip,.lk-rb:focus-visible > .lk-tip{opacity:1;transform:translate(0,-50%);transition-delay:var(--lk-reveal)}
+.lk-rail-l .lk-tip{right:auto;left:46px;transform:translate(-4px,-50%)}
+.lk-rail-l .lk-rb:hover > .lk-tip{transform:translate(0,-50%)}
+
+/* ---------- the mini library: its grip becomes a capsule of this project's shelves; the panel glides in; Book or List ---------- */
+body:not(.f-off-look) .embed-max .rs-grip.lk-grip{left:14px;top:50%;bottom:auto;width:auto;transform:translateY(-50%);flex-direction:column;align-items:center;gap:6px;padding:8px 6px;border-radius:26px;background:var(--lk-rail);box-shadow:var(--lk-sh2),inset 0 0 0 1px var(--lk-ring);cursor:pointer;transition:transform var(--lk-ds) var(--lk-spring),opacity .3s ease;animation:lk-in-l var(--lk-ds) var(--lk-spring) both}
+body:not(.f-off-look) .embed-max .rs-grip.lk-grip > i{display:none}
+.rs-grip > .lk-gi{display:none}
+body:not(.f-off-look) .embed-max .rs-grip.lk-grip > .lk-gi{display:flex;flex-direction:column;align-items:center;gap:6px}
+body:not(.f-off-look) .embed-max .mx-row:has(> .rs-lib.open) > .rs-grip.lk-grip{transform:translate(-160%,-50%);opacity:0;pointer-events:none;animation:none}
+body:not(.f-off-look) .rs-lib{width:min(330px,86vw);border-right-color:var(--rule);transition:transform var(--lk-dg) var(--lk-glide),visibility 0s linear var(--lk-dg)}
+body:not(.f-off-look) .rs-lib.open{transition:transform var(--lk-dg) var(--lk-glide)}
+body:not(.f-off-look) .rs-lib.drag{transition:none}
+body:not(.f-off-look) .rs-lib .rs-seg{border-radius:999px;padding:2px;background:color-mix(in srgb,var(--ink) 6%,transparent)}
+body:not(.f-off-look) .rs-lib .rs-seg button{border-radius:999px}
+body:not(.f-off-look) .rs-lib .rs-seg button.on{background:var(--ink);color:var(--paper);box-shadow:none}
+body:not(.f-off-look) .rs-lib .rs-paper{border-radius:10px}
+body:not(.f-off-look) .rs-lib .rs-paper:hover{background:var(--lk-rail);border-color:transparent}
+body:not(.f-off-look) .rs-lib.open .rs-paper{animation:lk-row .45s var(--lk-rise) both;animation-delay:var(--d,0ms)}
+.lk-tog{display:none}
+body:not(.f-off-look) .rs-lh > .lk-tog{display:inline-flex;flex:none;border-radius:9px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--rule)}
+.lk-tog button{border:0;background:transparent;width:30px;height:26px;color:var(--ink-3);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:background .2s ease,color .2s ease}
+.lk-tog button.on{background:var(--ink);color:var(--paper)}
+.lk-tog button:focus-visible{outline:2px solid var(--teal);outline-offset:-2px}
+/* Book: each focus is a shelf of spines */
+body:not(.f-off-look) .rs-lib.lk-book .rs-shelf .rs-focus{display:flex;flex-wrap:wrap;align-items:flex-end;gap:5px;padding:0 8px;margin:4px 0 12px;border-bottom:6px solid var(--lk-shelf);border-radius:0 0 3px 3px;box-shadow:0 8px 10px -8px rgba(36,33,28,.4)}
+body:not(.f-off-look) .rs-lib.lk-book .rs-shelf .rs-focus > .rs-fh{flex:1 0 100%;padding:2px 0 4px}
+body:not(.f-off-look) .rs-lib.lk-book .rs-shelf .rs-paper{--sp:var(--sc,var(--teal));position:relative;display:flex;align-items:center;justify-content:center;width:30px;min-width:30px;height:var(--h,140px);padding:4px 0;border:0;border-radius:4px 4px 2px 2px;background:var(--sp);color:#fff;transform-origin:bottom center;
+  box-shadow:inset -3px 0 0 rgba(0,0,0,.10),inset 2px 0 0 rgba(255,255,255,.25);transition:transform .35s var(--lk-spring),box-shadow .3s ease}
+body:not(.f-off-look) .rs-lib.lk-book .rs-shelf .rs-paper:nth-child(4n+3){--sp:color-mix(in srgb,var(--sc,var(--teal)) 80%,#000)}
+body:not(.f-off-look) .rs-lib.lk-book .rs-shelf .rs-paper:nth-child(4n+4){--sp:color-mix(in srgb,var(--sc,var(--teal)) 78%,#fff)}
+body:not(.f-off-look) .rs-lib.lk-book .rs-shelf .rs-paper:nth-child(4n+5){--sp:color-mix(in srgb,var(--sc,var(--teal)) 88%,#000)}
+body:not(.f-off-look) .rs-lib.lk-book .rs-shelf .rs-paper:hover{background:var(--sp);transform:translateY(-8px) rotate(-2deg);box-shadow:inset -3px 0 0 rgba(0,0,0,.10),0 10px 14px -8px rgba(36,33,28,.6)}
+body:not(.f-off-look) .rs-lib.lk-book .rs-shelf .rs-paper.act{outline:2px solid var(--ink);outline-offset:2px;background:var(--sp)}
+body:not(.f-off-look) .rs-lib.lk-book .rs-shelf .rs-paper > :is(.rd-tk,.rs-pt){display:none}
+body:not(.f-off-look) .rs-lib.lk-book .rs-shelf .rs-paper > .rs-pr{writing-mode:vertical-rl;transform:rotate(180deg);font:600 10.5px/1.1 var(--f-b);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-height:92%;text-shadow:0 1px 1px rgba(0,0,0,.25)}
+body:not(.f-off-look) .rs-lib.lk-book .rs-shelf .rs-paper.in > .rs-pr::after{display:none}
+body:not(.f-off-look) .rs-lib.lk-book.open .rs-shelf .rs-paper{animation:lk-spine .5s var(--lk-soft) both;animation-delay:var(--d,0ms)}
+
+/* ---------- popups: a rounded sheet floating a little above the note ---------- */
+body:not(.f-off-look) .rp-pop{border-radius:12px;background:var(--lk-rail);box-shadow:var(--lk-sh3),inset 0 0 0 1px var(--lk-ring)}
+body:not(.f-off-look) .rp-body{border-color:var(--lk-ring)}
+
+/* ---------- Freewrite: its bar's buttons in pill groups ---------- */
+body:not(.f-off-look) .fw-top .btn{border-radius:9px}
+/* V4.44: the page itself is in place at once (it covers the app from the first frame); its bar, words and preview rise into it */
+@keyframes lk-up{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+body:not(.f-off-look) .fw:not(.beside) > :is(.fw-top,.fw-main,.fw-foot){animation:lk-up var(--lk-dr) var(--lk-rise) both}
+body:not(.f-off-look) .fw:not(.beside) > .fw-main{animation-delay:40ms}
+body:not(.f-off-look) .fw:not(.beside) > .fw-foot{animation-delay:80ms}
+body.lk-still:not(.f-off-look) .fw > :is(.fw-top,.fw-main,.fw-foot){animation:none}
+
+/* ---------- the pills: round capsules of the rail surface; a wheel's buttons spring out; the docked row is a capsule ---------- */
+body:not(.f-off-look) .lab-pill-btn{border:0;background:var(--lk-rail);box-shadow:var(--lk-sh2),inset 0 0 0 1px var(--lk-ring);transition:transform var(--lk-ds) var(--lk-spring),background var(--lk-dh) ease}
+body:not(.f-off-look) .lab-pill-insert:not(.open):not(.docked) .lab-pill-btn{background:var(--ink);box-shadow:0 14px 26px -14px rgba(36,33,28,.8)}
+body:not(.f-off-look) .lab-dock-rail{border:0;background:var(--lk-rail);box-shadow:var(--lk-sh2),inset 0 0 0 1px var(--lk-ring)}
+
+/* ---------- V4.44 — the rest of the boards ---------- */
+/* highlights by page on a thread (20d's LOOK.thread: a .lk-pn marker before each page's first highlight; .lk-thr on their list) */
+.lk-pn{display:none}
+body:not(.f-off-look) .lk-thr{position:relative;padding-left:18px}
+body:not(.f-off-look) .lk-thr::before{content:'';position:absolute;left:17px;top:14px;bottom:10px;width:2px;border-radius:1px;background:var(--lk-ring);pointer-events:none}
+body:not(.f-off-look) .lk-pn{display:block;position:relative;margin:14px 10px 2px;font:500 10.5px/1.2 var(--f-m);letter-spacing:.03em;color:var(--ink-3)}
+body:not(.f-off-look) .lk-pn::before{content:'';position:absolute;left:-16px;top:0;width:12px;height:12px;border-radius:50%;background:var(--surface);box-shadow:inset 0 0 0 2px var(--ink-4)}
+body:not(.f-off-look) .lk-thr > .lk-pn:first-child{margin-top:8px}
+/* the beside ↔ full screen glide: while it runs, the reader's column is over the header and the pills */
+body:not(.f-off-look) .rd-wrap:has(.embed-max.lk-gliding){z-index:1200}
+body:not(.f-off-look) .embed-max.lk-gliding{box-shadow:var(--lk-sh3)}
+/* popups flying: no handles or buttons on the way */
+body:not(.f-off-look) .rp-pop.lk-flying :is(.rp-x,.rp-ui,.rp-mv,.rp-rz,.rp-rim){opacity:0!important;pointer-events:none!important}
+/* the pills' wheels (CSS only — lab-pills is never edited): rail-surface buttons that spring out one after another, and fold back quickly */
+body:not(.f-off-look) .lab-pill .lab-fan-item:not(.sel):not(.lab-sub){border-color:transparent;background:var(--lk-rail)}
+body:not(.f-off-look) .lab-pill .lab-fan-item:not(.sel){box-shadow:var(--lk-sh2),inset 0 0 0 1px var(--lk-ring)}
+body:not(.f-off-look) .lab-pill .lab-fan-item:not(.sel):not(.lab-sub):hover{background:var(--lk-hov)}
+body:not(.f-off-look) .lab-pill:not(.docked) .lab-fan-item{transition:transform calc(var(--lk-dp) * .7) ease-in,opacity calc(var(--lk-dp) * .6) ease-in,background var(--lk-dh) ease}
+body:not(.f-off-look) .lab-pill.fanned:not(.docked):not(.lbl-open) .lab-fan-item{transition:transform var(--lk-ds) var(--lk-spring) min(calc(var(--d,0ms) * 3),320ms),opacity calc(var(--lk-ds) * .45) ease min(calc(var(--d,0ms) * 3),320ms),background var(--lk-dh) ease}
+body:not(.f-off-look) .lab-pill-btn:active{transform:scale(.94)}
+/* Freewrite's Convert: the boxes of the note it will make come in one after another, their links after them */
+@keyframes lk-pip{from{opacity:0;transform:translateY(10px) scale(.9)}to{opacity:1;transform:none}}
+body:not(.f-off-look) .fw-side.lk-conv .fw-mb{animation:lk-pip var(--lk-ds) var(--lk-soft) both;animation-delay:calc(var(--lk-i,0) * 70ms)}
+body:not(.f-off-look) .fw-side.lk-conv .fw-msvg{animation:lk-fade var(--lk-dr) ease both;animation-delay:calc(var(--lk-n,0) * 70ms)}
+/* the data tree: a folder opened, its files drop in one after another */
+@keyframes lk-drop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+body:not(.f-off-look) .dt-r.lk-drop{animation:lk-drop var(--lk-dr) var(--lk-rise) both;animation-delay:calc(var(--lk-di,0) * 45ms)}
+/* Settings: the sections as a docked panel, the one you are on lifted on the rail surface */
+body:not(.f-off-look) .st-side{padding:8px;border-radius:16px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--rule)}
+body:not(.f-off-look) .st-side button{border-radius:10px;padding:8px 10px;transition:background var(--lk-dh) ease,color var(--lk-dh) ease,box-shadow var(--lk-dh) ease}
+body:not(.f-off-look) .st-side button:hover{background:var(--lk-rail)}
+body:not(.f-off-look) .st-side button[aria-current="true"]{background:var(--lk-rail);box-shadow:var(--lk-sh1),inset 0 0 0 1px var(--lk-ring)}
+body:not(.f-off-look) .st-sgh{padding:12px 10px 6px}
+body:not(.f-off-look) .st-search{border-color:transparent;box-shadow:inset 0 0 0 1px var(--rule)}
+body:not(.f-off-look) .fp-head .ft-gl{border-radius:13px;background:var(--lk-rail);box-shadow:inset 0 0 0 1px var(--lk-ring)}
+
+/* ---------- Still and reduced motion: nothing slides or springs ---------- */
+body.lk-still:not(.f-off-look) :is(.pop,.modal,.toast,.ovl,.lk-rail,.rs-grip.lk-grip,.rs-lib .rs-paper,.fw > :is(.fw-top,.fw-main,.fw-foot),.fw-mb,.fw-msvg,.dt-r){animation:none!important}
+@media (prefers-reduced-motion:reduce){
+  body:not(.f-off-look) :is(.pop,.modal,.toast,.lk-rail,.rs-grip.lk-grip,.rs-lib .rs-paper,#view.lk-nav > :not(.pf-root),.fw > :is(.fw-top,.fw-main,.fw-foot),.fw-side.lk-conv .fw-mb,.dt-r.lk-drop){animation:lk-fade .12s ease both!important}
+  body:not(.f-off-look) :is(.sf-col,.rs-lib,#tabs .tink,.rs-lib .rs-paper,.lab-pill .lab-fan-item){transition:none!important}
+}
+
+/* ---------- the live preview (Settings → Look and motion) ---------- */
+.pv-lk{display:grid;gap:10px}
+.pv-lk-win{position:relative;display:flex;height:170px;border-radius:10px;overflow:hidden;background:color-mix(in srgb,var(--ink) 6%,var(--paper));box-shadow:inset 0 0 0 1px var(--rule)}
+.pv-lk-page{flex:1;min-width:0;display:flex;justify-content:center;padding:12px 10px 0}
+.pv-lk-pg{width:100%;max-width:150px;background:color-mix(in srgb,#fff 70%,var(--surface));border-radius:3px 3px 0 0;padding:12px;display:grid;gap:6px;align-content:start}
+.pv-lk-pg i{display:block;height:5px;border-radius:3px;background:var(--surface-3)} .pv-lk-pg i.h{height:8px;width:70%} .pv-lk-pg i.y{background:linear-gradient(90deg,#F6D55C 0 60%,var(--surface-3) 60%)}
+.pv-lk-side{position:relative;flex:none;width:120px;overflow:hidden;background:var(--surface);border-left:1px solid var(--rule);transition:width .55s cubic-bezier(.65,0,.15,1)}
+.pv-lk-side.f{width:0}
+.pv-lk.calm .pv-lk-side{transition-duration:.33s;transition-timing-function:ease-out}
+.pv-lk.still .pv-lk-side,.pv-lk.off .pv-lk-side{transition:none}
+.pv-lk-si{position:absolute;top:0;right:0;bottom:0;width:120px;padding:8px 7px;display:grid;gap:5px;align-content:start}
+.pv-lk-si b{height:24px;border-radius:7px;background:var(--lk-card);box-shadow:var(--lk-sh1),inset 3px 0 0 var(--hc)}
+.pv-lk-rail{position:absolute;right:8px;top:50%;display:flex;flex-direction:column;gap:4px;padding:5px 4px;border-radius:16px;background:var(--lk-rail);box-shadow:var(--lk-sh2),inset 0 0 0 1px var(--lk-ring);transform:translateY(-50%);animation:lk-in-r .45s cubic-bezier(.2,.9,.25,1.25) both}
+.pv-lk.calm .pv-lk-rail{animation-duration:.27s;animation-timing-function:ease-out}
+.pv-lk.still .pv-lk-rail{animation:none}
+.pv-lk-rail button{width:22px;height:22px;border:0;border-radius:50%;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.pv-lk-rail button i{width:10px;height:10px;border-radius:50%}
+.pv-lk-strip{position:absolute;right:0;top:0;bottom:0;width:20px;background:var(--surface);border-left:1px solid var(--rule);cursor:pointer}
+.pv-lk-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pv-lk-shelf{display:flex;align-items:flex-end;gap:4px;height:74px;padding:0 6px;border-bottom:5px solid var(--lk-shelf);border-radius:0 0 3px 3px}
+.pv-lk-shelf span{width:16px;border-radius:3px 3px 1px 1px;background:var(--teal)}
+.pv-lk-list{display:grid;gap:4px;min-width:150px}
+.pv-lk-list span{display:block;height:16px;border-radius:6px;background:var(--surface-2)}
+/* V4.51: the pill is the tab's own box (20d sets its top and height too), so the name is in its middle both ways */
+
+/* V4.63 — Terms as cards (Gabe: "Change terms to look like a new UI in the cards based on the newly added theme."): each term a card on the
+   warm surface with its ring and soft shadow, in a grid under its group's name; its name, where it is and how many notes; its uses with a
+   bar; its last 12 weeks; its structures and open barriers; when it was last used at its corner. The table's column names go (Sort is in
+   the bar above). Look off: the table as it was. */
+.tl-ul{display:none}
+body:not(.f-off-look) .tl-list{padding:0 16px 18px}
+body:not(.f-off-look) .tl-cols{display:none}
+body:not(.f-off-look) .tl-sec{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin:0 0 4px}
+body:not(.f-off-look) .tl-g{grid-column:1/-1;top:0;margin:0 -16px;padding:14px 18px 6px;border-bottom:0;background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(6px);font:650 13px var(--f-d)}
+body:not(.f-off-look) .tl-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"t l" "u u" "w w" "s s";gap:9px 10px;align-items:start;min-height:0;padding:13px 14px 14px;border:0;border-radius:12px;background:var(--lk-card);box-shadow:var(--lk-sh1),inset 0 0 0 1px var(--lk-ring);transition:box-shadow var(--lk-dh) ease,transform var(--lk-dh) ease}
+body:not(.f-off-look) .tl-row:hover{background:var(--lk-card);box-shadow:var(--lk-lift),inset 0 0 0 1px var(--lk-ring-2);transform:translateY(-1px)}
+body:not(.f-off-look) .tl-row.act{background:var(--lk-card);box-shadow:var(--lk-lift),inset 0 0 0 1.5px var(--teal)}
+body:not(.f-off-look) .tl-row:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+body:not(.f-off-look) .tl-t{grid-area:t;gap:3px} body:not(.f-off-look) .tl-t .term-demo{font-size:16.5px;line-height:1.25}
+body:not(.f-off-look) .tl-l{grid-area:l;padding-top:3px}
+body:not(.f-off-look) .tl-u{grid-area:u;grid-template-columns:auto auto minmax(0,1fr);gap:6px}
+body:not(.f-off-look) .tl-u b{font:650 15px var(--f-d);text-align:left}
+body:not(.f-off-look) .tl-ul{display:inline;font:11px var(--f-m);color:var(--ink-3)}
+body:not(.f-off-look) .tl-bar{height:5px;margin-left:4px}
+body:not(.f-off-look) .tl-w{grid-area:w;justify-content:space-between;padding:6px 8px;border-radius:9px;background:color-mix(in srgb,var(--ink) 3%,transparent)}
+body:not(.f-off-look) .tl-s{grid-area:s;gap:5px}
+body:not(.f-off-look) .tl-s:empty,body:not(.f-off-look) .tl-kds:empty{display:none}
+body:not(.f-off-look) .tl-end{padding:14px 2px 4px}
+body:not(.f-off-look) .tl-host.tl-in .tl-row{animation:lk-rise var(--lk-ds) var(--lk-rise) both;animation-delay:calc(var(--i,0) * 14ms)}
+body:not(.f-off-look) .tl-tile{background:var(--lk-card);border:0;border-radius:12px;box-shadow:var(--lk-sh1),inset 0 0 0 1px var(--lk-ring)}
+body:not(.f-off-look) .tl-row .tl-sub{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.4}

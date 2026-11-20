@@ -7,14 +7,14 @@
    panels — is derived in memory by IX and can be thrown away.
    ========================================================================== */
 const DB_NAME = 'scientia-in-situ';
-const DB_VERSION = 11;
+const DB_VERSION = 12;
 
 const STORES = {
   settings:  { key: 'id',  doc: 'App settings singleton' },
   profiles:  { key: 'type', doc: 'Note types as data (§4) — a new type is a row' },
   projects:  { key: 'id',  doc: 'Funded, publishable wholes' },
   themes:    { key: 'id',  doc: 'Lines of attack inside a project (with lineage)', idx: ['projectId'] },
-  aims:      { key: 'id',  doc: 'Objectives on a theme; weighted milestones; versioned', idx: ['themeId'] },
+  aims:      { key: 'id',  doc: 'Milestones on a theme (V4.18; once aims): large goals measured by their deliverables — a Synthesis note or a set of components; versioned', idx: ['themeId'] },
   documents: { key: 'id',  doc: 'Notes: one session of work', idx: ['projectId', 'themeId', 'type'] },
   blocks:    { key: 'id',  doc: 'Components — the universal atom', idx: ['docId'] },
   items:     { key: 'id',  doc: 'Structures: claim, barrier, resolution… (claims & evidence are project records)', idx: ['kind', 'originDocId'] },
@@ -38,6 +38,7 @@ const STORES = {
   libsets:   { key: 'id',  doc: 'Paper shelves and foci (V3.963; were library themes and groups): {kind: theme (a shelf) | group (a focus), name, themeId (its shelf), paperIds} — a paper can be in several foci' },
   mwsteps:   { key: 'id',  doc: 'My Week steps from RM, mirrored by the lab hub (read-only): what a component’s ✓ reports onto, offline too' },
   boards:    { key: 'id',  doc: 'Whiteboards in image panels (the lab’s board, 13zzd): the board’s documents (strokes, cards, recordings) by path; a large board continues in rows <id>~1, ~2…' },
+  events:    { key: 'id',  doc: 'Calendar events (V4.57, 23e): {title, day, start, end (minutes), allDay, kind meeting|experiment|other, tags, projectId, docId (its note; notes {day: docId} for a repeat), repeat none|daily|weekly, skip, until}' },
   journal:   { key: 'seq', auto: true, doc: 'Append-only change log with previous values (undo, time travel)' },
 };
 const AUTHORED = Object.keys(STORES);
@@ -102,10 +103,13 @@ const userProfiles = () => PROFILES.filter(p => !p.system);
 /** One standard template per type (toggleable in Settings). */
 const STANDARD_TEMPLATES = {
   protocol:   [['Purpose', 'What this protocol establishes and when to use it.'], ['Materials', ''], ['Prepare', ''], ['Run', ''], ['Clean-up', '']],
-  experiment: [['Aim of this run', ''], ['Setup', ''], ['Run', ''], ['Observe', ''], ['Outcome', '']],
-  analysis:   [['Input data', ''], ['Method', ''], ['Pass 1', ''], ['Result', '']],
-  planning:   [['Context', ''], ['Option A', ''], ['Option B', ''], ['Decision', '']],
-  reflection: [['Summary', ''], ['What to change next time', '']],   // V3.967: the Synthesis gathers the experiment's claims, evidence, results… on its own (13zzr)
+  // V4.15 (Gabe: "The preset text components for each experiment note type should be stripped and go back to the universal text
+  // component any general note would have"): an experiment's stages start as a general note does; the old presets are kept as
+  // templates you can switch on (CHAIN.OLD_PRESETS, Settings → Templates)
+  experiment: [['', '']],
+  analysis:   [['', '']],
+  planning:   [['', '']],
+  reflection: [['', '']],   // V3.967: the Synthesis gathers the experiment's claims, evidence, results… on its own (13zzr)
   meeting:    [['Attendees', ''], ['First topic', ''], ['Second topic', ''], ['Actions', '']],
   seminar:    [['Speaker & topic', ''], ['Key point', ''], ['Relevance to my work', '']],
   literature: [['Citation', ''], ['Main claim', ''], ['Methods worth stealing', ''], ['Doubts', '']],
@@ -126,6 +130,8 @@ const DEFAULT_SETTINGS = {
   maxTimers: 2,
   idleMinutes: 15,
   citeMode: 'title',
+  citeStyle: 'number',   // V4.6: how citations show in every note that has not chosen its own: number ([1], superscript) | author (Style et al.) | title
+  citeYear: false,       // V4.6: author citations add the year (Style et al., 2014)
   theme: 'auto',
   autoReplace: { arrows: true, science: true, scripts: true, typo: true }, // typing replacements in components (13u)
   lockAfterDay: false,          // off: everything stays editable; on: recorded structures lock when the day turns

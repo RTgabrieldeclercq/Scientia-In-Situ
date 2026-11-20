@@ -1,0 +1,51 @@
+/* 33 · The References Map (V4.22, 17h REFMAP): the marks on a PDF's citations (they never take the pointer), the card,
+   the flash on the entry gone to, ‹ Back, the section in the Highlights panel, the preview */
+.rfm-layer{position:absolute;pointer-events:none;z-index:3}
+.rfm-c{position:absolute;border-bottom:1.5px dotted color-mix(in srgb,var(--teal) 60%,transparent);opacity:.5;transition:background-color .15s,opacity .15s,box-shadow .15s}
+.rfm-c.hot{opacity:1;background:color-mix(in srgb,var(--teal) 16%,transparent);border-radius:2px}
+.rfm-c.lit{opacity:1;background:color-mix(in srgb,var(--teal) 26%,transparent);border-radius:2px;box-shadow:0 0 0 2px color-mix(in srgb,var(--teal) 32%,transparent)}
+.rfm-hot,.rfm-hot canvas,.rfm-hot .textLayer,.rfm-hot .textLayer span{cursor:pointer !important}
+.rfm-flash{position:absolute;border-radius:3px;background:color-mix(in srgb,var(--teal) 20%,transparent);box-shadow:0 0 0 2px var(--teal);animation:rfmFlash 2.6s ease-out forwards}
+@keyframes rfmFlash{0%{opacity:0}12%{opacity:1}72%{opacity:1}100%{opacity:0}}
+.rfm-card{position:fixed;z-index:1400;width:330px;max-width:calc(100vw - 16px);box-sizing:border-box;background:var(--surface);color:var(--ink);border:1px solid var(--rule-2);border-radius:10px;
+  box-shadow:0 12px 32px -10px rgba(0,0,0,.32);padding:10px 12px 9px;font-size:12.5px;line-height:1.4;animation:rfmIn .14s ease-out}
+@keyframes rfmIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+.rfm-ch{display:flex;align-items:center;gap:8px;font:600 10.5px/1.2 var(--f-m);letter-spacing:.04em;color:var(--ink-3);text-transform:uppercase}
+.rfm-cn{min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;border-radius:10px;display:grid;place-items:center;background:var(--teal);color:#fff;letter-spacing:0}
+.rfm-cc{font-weight:500;text-transform:none;letter-spacing:0}
+.rfm-ct{font-size:14px;line-height:1.35;margin:7px 0 3px;color:var(--ink)} .rfm-ct.raw{font-size:12.5px;color:var(--ink-2)}
+.rfm-cj{font-style:italic;color:var(--ink-2)}
+.rfm-cf{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap} .rfm-cf a{color:var(--teal);text-decoration:none} .rfm-cf a:hover{text-decoration:underline} .rfm-lib{font-weight:600}
+.rfm-back{position:fixed;z-index:1300;padding:7px 12px;border-radius:999px;border:1px solid var(--rule-2);background:var(--surface);color:var(--ink);font:600 12px/1 inherit;cursor:pointer;
+  box-shadow:0 6px 18px -6px rgba(0,0,0,.3);animation:rfmIn .16s ease-out} .rfm-back:hover{border-color:var(--teal);color:var(--teal)}
+.rfm-sec{border-top:1px solid var(--rule);margin-top:10px}
+.rfm-sh{display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;padding:10px 12px 4px;background:none;border:0;color:var(--ink);font:inherit;cursor:pointer;text-align:left}
+.rfm-sh b{font-size:12.5px} .rfm-n{margin-left:auto;font:10.5px var(--f-m);color:var(--ink-3);white-space:nowrap}
+.rfm-chev{flex:none;width:7px;height:7px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);transition:transform .2s;margin:0 3px 3px 1px}
+.rfm-sec.shut .rfm-chev{transform:rotate(-45deg);margin-bottom:0}
+.rfm-how{padding:0 12px 6px 30px;font-size:11px;color:var(--ink-3)}
+.rfm-sec.shut .rfm-how,.rfm-sec.shut .rfm-list{display:none}
+.rfm-list{padding:0 6px 10px}
+.rfm-row{display:grid;grid-template-columns:22px minmax(0,1fr) auto auto;gap:6px;align-items:baseline;padding:5px 6px;border-radius:6px;cursor:pointer;font-size:12px;line-height:1.35}
+.rfm-row:hover,.rfm-row:focus-visible{background:color-mix(in srgb,var(--teal) 9%,transparent);outline:none}
+.rfm-row.none{opacity:.62}
+.rfm-num{font:600 10.5px var(--f-m);color:var(--teal);text-align:right}
+.rfm-t{color:var(--ink-2);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical} .rfm-t b{color:var(--ink);font-weight:600}
+.rfm-inlib{color:var(--teal);font-size:9px}
+.rfm-x{font:10.5px var(--f-m);color:var(--ink-3);background:none;border:1px solid var(--rule);border-radius:9px;padding:0 6px;cursor:pointer;line-height:16px}
+.rfm-x:hover{border-color:var(--teal);color:var(--teal)} .rfm-x.zero{border-color:transparent;cursor:default}
+.rfm-empty{padding:6px 12px;color:var(--ink-3);font-size:12px}
+body.f-off-refmap .rfm-sec,body.f-off-refmap .rfm-layer,body.f-off-refmap .rfm-card,body.f-off-refmap .rfm-back{display:none}
+@media (prefers-reduced-motion:reduce){.rfm-flash{animation:none}.rfm-card,.rfm-back{animation:none}.rfm-chev,.rfm-c{transition:none}}
+/* the preview: a page with its citations, the card of one, the map beside it */
+.pv-rfm{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:10px;align-items:start;position:relative}
+.pv-rfm .pv-rfm-pg{position:relative;background:#fff;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.15);padding:12px 12px 14px;color:#333;font:11px/1.6 Georgia,serif}
+.pv-rfm .pv-rfm-pg .cite{color:inherit;border-bottom:1.5px dotted var(--teal);cursor:pointer;padding:0 1px;border-radius:2px}
+.pv-rfm .pv-rfm-pg .cite.on{background:color-mix(in srgb,var(--teal) 22%,transparent)}
+.pv-rfm .pv-rfm-pg sup.cite{font-size:8px}
+.pv-rfm .pv-rfm-card{position:absolute;left:30px;right:12px;top:70px;background:var(--surface);color:var(--ink);border:1px solid var(--rule-2);border-radius:8px;box-shadow:0 8px 20px -8px rgba(0,0,0,.3);padding:7px 9px;font:11px/1.35 inherit}
+.pv-rfm .pv-rfm-card b{display:block;font-size:12px;margin:2px 0}
+.pv-rfm .pv-rfm-side{border-left:1px solid var(--rule);padding-left:8px;font-size:10.5px;color:var(--ink-2)}
+.pv-rfm .pv-rfm-side h6{margin:0 0 4px;font:600 10.5px inherit;color:var(--ink)}
+.pv-rfm .pv-rfm-side div{display:flex;gap:5px;padding:2px 0} .pv-rfm .pv-rfm-side div i{font-style:normal;color:var(--teal);font-family:var(--f-m)} .pv-rfm .pv-rfm-side div span{margin-left:auto;color:var(--ink-3);font-family:var(--f-m)}
+.pv-rfm.off .pv-rfm-pg .cite{border-bottom-color:transparent;cursor:default}

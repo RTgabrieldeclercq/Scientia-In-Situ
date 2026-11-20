@@ -16,7 +16,7 @@ const ED = {
   /* ---------------- render ---------------- */
   render(el, b, docOverride) {
     const body = b.body, text = body.text, marks = (body.marks || []).filter(m => m.to > m.from).concat(el && el.dataset && b.id && el.dataset.own === b.id && typeof BRIDGE !== 'undefined' ? BRIDGE.marks(b) : []);   // V3.981: bridged words, in the component's own box
-    const d = docOverride || M.doc(b.docId), mode = (d && d.citeMode) || 'title', citeNums = ED.citeNumbers(d);
+    const d = docOverride || M.doc(b.docId), mode = ED.citeModeOf(d), citeNums = ED.citeNumbers(d);
     const cuts = new Set([0, text.length]); marks.forEach(m => { cuts.add(m.from); cuts.add(m.to); });
     // list lines (13u) get a hanging indent: [marker][text that wraps under itself], so cut at line starts and marker ends
     const rows = []; { let p = 0; for (const ln of text.split('\n')) { const m = typeof WRITE !== 'undefined' && WRITE.LINE.exec(ln); if (m) { rows.push({ a: p, mk: p + m[0].length, z: p + ln.length + 1 }); cuts.add(p); cuts.add(p + m[0].length); cuts.add(Math.min(text.length, p + ln.length + 1)); } p += ln.length + 1; } }
@@ -33,8 +33,8 @@ const ED = {
       const math = cov.find(m => m.type === 'math');
       if (math) { for (const ch of seg) { if (ch !== OBJ) { put(a, ch); continue; } put(a, MATH.atom(math)); } continue; }
       const cite = cov.find(m => m.type === 'cite');
-      if (cite) { for (const ch of seg) { if (ch !== OBJ) { put(a, ch); continue; } const r = M.lib(cite.ref);
-        put(a, h('span.ct' + (mode === 'number' ? '.num' : mode === 'author' ? '.au' : ''), { contenteditable: 'false', 'data-obj': '', 'data-cite': cite.ref, 'data-m': cite.id }, LIB.citeText(r, mode, citeNums.get(cite.ref)))); } continue; }
+      if (cite) { for (const ch of seg) { if (ch !== OBJ) { put(a, ch); continue; } const r = M.lib(cite.ref), cm = cite.style === 'author' ? 'author' : mode;   // V4.6: /author-cite — this one by its author, whatever the note shows
+        put(a, h('span.ct' + (cm === 'number' ? '.num' : cm === 'author' ? '.au' : ''), { contenteditable: 'false', 'data-obj': '', 'data-cite': cite.ref, 'data-m': cite.id }, LIB.citeText(r, cm, citeNums.get(cite.ref)))); } continue; }
       let node = document.createTextNode(seg);
       for (const m of cov.filter(m => m.type === 'fmt')) node = h('span.f' + m.s, { 'data-m': m.id }, node);
       for (const m of cov.filter(m => m.type === 'link')) { const tg = IX.linkTarget(m); node = h('span.ln' + (tg ? '' : '.open') + (m.to === z ? '.end' : ''), { 'data-m': m.id, 'data-link': m.ref || '', 'data-title': m.title || '' }, node); }
@@ -47,15 +47,21 @@ const ED = {
       }
       put(a, node);
     }
-    frag.querySelectorAll('.li-tx').forEach(t => { if (!t.firstChild) t.append('\u200B'); }); // an empty item still takes the caret after its marker
+    // an empty item still takes the caret after its marker. V4.62: one with a line break after it too \u2014 a text node of only "\n" was
+    // replaced by the first letter typed into it (Chrome), so the new item's words ran into the next item ("\u2022 NEW\u2022 two")
+    frag.querySelectorAll('.li-tx').forEach(t => { if (!t.firstChild) t.append('\u200B'); else if (t.childNodes.length === 1 && t.firstChild.nodeType === 3 && t.firstChild.nodeValue === '\n') t.firstChild.nodeValue = '\u200B\n'; });
     if (text.endsWith('\n')) frag.append(h('br')); // a trailing line break needs something after it to show (and to take the caret)
     el.replaceChildren(frag);
   },
   citeNumbers(d) {
     const map = new Map(); if (!d) return map;
-    for (const b of M.docBlocks(d.id)) for (const m of (b.body.marks || []).filter(x => x.type === 'cite').sort((x, y) => x.from - y.from)) if (!map.has(m.ref)) map.set(m.ref, map.size + 1);
+    for (const b of M.docBlocks(d.id)) for (const m of (b.body.marks || []).filter(x => x.type === 'cite' && x.style !== 'author').sort((x, y) => x.from - y.from)) if (!map.has(m.ref)) map.set(m.ref, map.size + 1);   // V4.6: an /author-cite takes no number
     return map;
   },
+  /** V4.6 — how this note's citations show: its own choice (the note's menu), else Settings (Numbered by default). */
+  citeModeOf(d) { const own = d && d.citeOwn && d.citeMode; return own || settings().citeStyle || 'number'; },
+  /** V4.6 — papers cited only by author in this note (no number): listed after the numbered references. */
+  citeAuthorOnly(d) { const nums = ED.citeNumbers(d), out = new Set(); if (!d) return []; for (const b of M.docBlocks(d.id)) for (const m of (b.body.marks || [])) if (m.type === 'cite' && m.style === 'author' && !nums.has(m.ref)) out.add(m.ref); return [...out]; },
 
   /* ---------------- read back ---------------- */
   read(el, prev) {
@@ -142,7 +148,7 @@ const ED = {
     el.addEventListener('mouseover', e => {
       const st = e.target.closest('.st'), tm = e.target.closest('.tm'), ct = e.target.closest('.ct'), ln = e.target.closest('.ln');
       if (ct) return hoverCard(ct, () => { const r = M.lib(ct.dataset.cite); return r ? LIB.hovercard(r) : null; });
-      if (tm) return hoverCard(tm, () => ED.termCard(tm.dataset.term));
+      if (tm) return hoverCard(tm, () => ED.termCard(tm.dataset.term, b), 950);   // V4.66: the card knows the note it is read in
       if (ln) return hoverCard(ln, () => ED.linkCard(b, ln.dataset.m));
       if (st) return hoverCard(st, () => ED.itemCard(st.dataset.item, b, st.dataset.m));
     });
@@ -367,21 +373,22 @@ const ED = {
     if (!e || e.inputType !== 'insertText' || !/e$/i.test(e.data || '') || el.contentEditable !== 'true') return false;
     const s = getSelection(); if (!s.rangeCount || !s.isCollapsed) return false;
     const node = s.anchorNode; if (!node || node.nodeType !== 3 || !el.contains(node) || (node.parentElement && node.parentElement.closest('.mx,.ct'))) return false;
-    if (!/(^|[\s(\[{—–])\/cite$/i.test(node.nodeValue.slice(0, s.anchorOffset).replace(/​/g, ''))) return false;
+    const before = node.nodeValue.slice(0, s.anchorOffset).replace(/​/g, ''), au = /(^|[\s(\[{—–])\/author-cite$/i.test(before);   // V4.6: /author-cite — this one by its author
+    if (!au && !/(^|[\s(\[{—–])\/cite$/i.test(before)) return false;
     const sel = ED.selection(el); if (!sel) return false;
-    ED.citePicker(el, b, sel, '/cite'); return true;
+    ED.citePicker(el, b, sel, au ? '/author-cite' : '/cite', au ? 'author' : null); return true;
   },
-  /** `typed`: the text just before the caret that the citation replaces (/cite). */
-  citePicker(el, b, sel, typed) {
+  /** `typed`: the text just before the caret that the citation replaces (/cite, /author-cite). `style`: 'author' — this citation by its author whatever the note shows (V4.6). */
+  citePicker(el, b, sel, typed, style) {
     const r = sel ? sel.rect : el.getBoundingClientRect(), at = (sel ? sel.to : ED.read(el, []).text.length) - (typed ? typed.length : 0);
     if (sel && !sel.collapsed) { const txt = ED.read(el, []).text.slice(sel.from, sel.to); return LibraryView.addDialog(txt); }
-    popover(r.left, r.bottom + 8, [h('h5', 'Insert citation'), optionPicker({ placeholder: 'Author, year, journal or title…', items: q => LIB.search(q),
+    popover(r.left, r.bottom + 8, [h('h5', style === 'author' ? 'Cite by author (this one)' : 'Insert citation'), optionPicker({ placeholder: 'Author, year, journal or title…', items: q => LIB.search(q),
       render: x => h('div.row', { style: { flexWrap: 'nowrap', alignItems: 'flex-start' } }, LIB.sigil(x, 30), h('div', h('span.serif', { style: { fontStyle: 'italic' } }, snippet(x.title, 80)), h('span.s', LIB.shortRef(x) + (x.container ? ' · ' + LIB.journal(x.container) : '')))),
       onPick: x => { closePop(); let a = at, del = 0;
         // the typed /cite goes, wherever it is now (the text may have changed while the picker was open)
         if (typed) { const t = ED.read(el, []).text.toLowerCase(); if (t.slice(a, a + typed.length) === typed) del = typed.length; else { const i = t.lastIndexOf(typed); if (i >= 0) { a = i; del = typed.length; } } }
-        ED.commit(el, b, body => { const n = ED.splice(body, a, del, OBJ); n.marks.push({ id: uid('m'), type: 'cite', from: a, to: a + 1, ref: x.id }); return n; }, a + 1); },
-      emptyText: 'Library is empty — add papers in Library' }), h('div.tiny.muted', { style: { marginTop: '6px' } }, 'Or type /cite as you write. Select text first and press Ctrl+I to add it to the library instead.')]);
+        ED.commit(el, b, body => { const n = ED.splice(body, a, del, OBJ); n.marks.push(Object.assign({ id: uid('m'), type: 'cite', from: a, to: a + 1, ref: x.id }, style === 'author' ? { style: 'author' } : {})); return n; }, a + 1); },
+      emptyText: 'Library is empty — add papers in Library' }), h('div.tiny.muted', { style: { marginTop: '6px' } }, 'Or type /cite as you write (/author-cite for one by its author). Select text first and press Ctrl+I to add it to the library instead.')]);
   },
 };
 const keyLabel = s => s.split('+').map(p => p === 'ctrl' ? 'Ctrl' : p === 'alt' ? 'Alt' : p === 'shift' ? 'Shift' : p === 'enter' ? 'Enter' : p.toUpperCase()).join('+');

@@ -1,0 +1,219 @@
+/* ==========================================================================
+   34 · Freewrite (V4.33 — 14j-freewrite.js): the page over the whole app (or
+   beside the note), the coloured words, the note it will make, the card in
+   the note, the placeholders' bars and Settings' preview.
+   The page is nearly white in a light theme (Gabe: "a blank white page") and
+   the components' own dark surface in a dark theme, so it never flashes white
+   at night. A coloured stretch says in words what it became (its tag above
+   it), never by colour alone.
+   ========================================================================== */
+:root{--fw-page:color-mix(in srgb,var(--surface) 30%,#fff);--fw-pad-x:28px;--fw-pad-t:46px}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){--fw-page:var(--surface)} }
+:root[data-theme="dark"]{--fw-page:var(--surface)}
+/* the page */
+.fw{position:fixed;inset:0;z-index:1200;display:flex;flex-direction:column;background:var(--fw-page);color:var(--ink);animation:fwin .18s ease-out}
+@keyframes fwin{from{opacity:0}to{opacity:1}}
+body.fw-open .pop,body.fw-open .ovl,body.fw-open .modal-bg,body.fw-open .slash-menu{z-index:1300}
+body.fw-open .hovercard{z-index:1310} body.fw-open #toasts{z-index:1400}
+.fw-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 14px;border-bottom:1px solid var(--rule);background:color-mix(in srgb,var(--fw-page) 88%,var(--paper))}
+.fw-brand{display:inline-flex;align-items:center;gap:6px;color:var(--ink);font:600 13px var(--f-d);min-width:0}
+.fw-brand svg{flex:none} .fw-note{font-weight:400;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:32ch}
+.fw-ic{display:inline-flex;line-height:0} .fw .btn .fw-ic{margin-right:1px}
+.fw-voice{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-left:6px;min-width:0}
+.fw-live{display:inline-flex;align-items:center;gap:6px;font-size:12px}
+.fw-time{font-size:12px;color:var(--ink-2);min-width:4ch}
+.fw-level{width:120px;height:22px;color:var(--ink-3)}
+.fw-vs{font-size:11.5px;color:var(--ink-3)} .fw-how{max-width:34ch;line-height:1.3}
+.fw .btn.fw-rec{border-color:color-mix(in srgb,#d83a2a 45%,var(--rule-2))}
+.fw .btn[disabled]{opacity:.45;cursor:default}
+.fw-main{flex:1;min-height:0;display:flex}
+.fw-paper{flex:1;min-width:0;overflow:auto;overflow-x:hidden;overscroll-behavior:contain}
+.fw-page{position:relative;max-width:780px;margin:0 auto;padding:var(--fw-pad-t) var(--fw-pad-x) 140px;box-sizing:border-box}
+/* the words over their copy: the copy carries the colours, so both lay out exactly alike */
+.fw-back,.fw-ta{font:400 19px/2.25 var(--f-b);letter-spacing:0;word-spacing:0;white-space:pre-wrap;overflow-wrap:break-word;word-break:normal;tab-size:4;margin:0;padding:0;border:0;box-sizing:border-box}
+.fw-back{position:absolute;left:var(--fw-pad-x);right:var(--fw-pad-x);top:var(--fw-pad-t);color:transparent;pointer-events:none;user-select:none}
+.fw-ta{position:relative;display:block;width:100%;background:transparent;resize:none;overflow:hidden;outline:none;color:var(--ink);caret-color:var(--ink);min-height:55vh}
+.fw-ta::placeholder{color:var(--ink-4);font-style:italic}
+/* a coloured stretch: what it became, in words above it */
+.fw-s,.fw-l{position:relative;border-radius:3px;-webkit-box-decoration-break:clone;box-decoration-break:clone;--fct:color-mix(in srgb,var(--fc) 82%,var(--ink))}
+.fw-s{background:color-mix(in srgb,var(--fc) 18%,transparent);box-shadow:inset 0 -2px 0 var(--fc)}
+.fw-s.slot{background:color-mix(in srgb,var(--fc) 10%,transparent);box-shadow:none;outline:1.5px dashed var(--fc);outline-offset:1px}
+.fw-s.have{box-shadow:inset 0 -2px 0 var(--fc),inset 0 0 0 1px color-mix(in srgb,var(--fc) 45%,transparent)}
+.fw-s.on{background:color-mix(in srgb,var(--fc) 34%,transparent);outline:2px solid var(--fc);outline-offset:1px}
+.fw-l{border-bottom:2px dotted var(--fc)} .fw-l.on{background:color-mix(in srgb,var(--fc) 22%,transparent)}
+.fw-c{border-bottom:1px dotted var(--ink-4)}
+.fw-s::before,.fw-l::before{content:attr(data-t);position:absolute;left:0;bottom:calc(100% - 1px);font:600 9px/1.25 var(--f-m);letter-spacing:.05em;text-transform:uppercase;color:var(--fct);white-space:nowrap;pointer-events:none}
+.fw-l::before{bottom:auto;top:calc(100% + 1px)}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .fw-s,:root:not([data-theme="light"]) .fw-l{--fct:color-mix(in srgb,var(--fc) 58%,#fff)} }
+:root[data-theme="dark"] .fw-s,:root[data-theme="dark"] .fw-l{--fct:color-mix(in srgb,var(--fc) 58%,#fff)}
+.fw-chip{position:absolute;z-index:3;display:inline-flex;align-items:center;gap:8px;padding:3px 8px;border-radius:6px;border:1px solid var(--fc);background:var(--surface);color:var(--ink-2);font:12px var(--f-d);box-shadow:var(--shadow);cursor:pointer;white-space:nowrap}
+.fw-chip b{color:var(--ink);font-weight:600} .fw-chip:hover{background:var(--surface-2)}
+.fw-hear{min-height:0;padding:0 18px;font:italic 14px var(--f-b);color:var(--ink-3);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fw-hear.on{padding:6px 18px}
+.fw-foot{display:flex;align-items:center;flex-wrap:wrap;gap:4px 14px;padding:6px 14px;border-top:1px solid var(--rule);font-size:11.5px;color:var(--ink-3)}
+/* the note it will make */
+.fw-side{display:none;width:min(420px,38%);flex:none;overflow:auto;overflow-x:hidden;border-left:1px solid var(--rule);padding:14px 14px 24px;background:color-mix(in srgb,var(--paper) 45%,var(--fw-page));box-sizing:border-box}
+.fw.shown .fw-side{display:block}
+.fw-sh{display:flex;align-items:baseline;gap:10px;margin-bottom:10px} .fw-sh b{font:600 13px var(--f-d)} .fw-sh span{font-size:11.5px;color:var(--ink-3)}
+.fw-hint{font-size:11.5px;color:var(--ink-3);line-height:1.45;margin:12px 0 0}
+.fw-mini{position:relative;max-width:100%}
+.fw-mini.empty{font-size:12px;color:var(--ink-3);line-height:1.5;padding:10px;border:1px dashed var(--rule-2);border-radius:8px}
+.fw-msvg{position:absolute;left:0;top:0;pointer-events:none} .fw-msvg svg{overflow:visible}
+.fw-ml{font:600 9px var(--f-m);paint-order:stroke;stroke:var(--surface);stroke-width:3px}
+.fw-mb{position:absolute;display:flex;flex-direction:column;gap:1px;padding:3px 5px;box-sizing:border-box;text-align:left;border:1px solid var(--rule-2);border-left:3px solid var(--fc);border-radius:5px;background:var(--surface);color:var(--ink);cursor:pointer;overflow:hidden;font:9.5px/1.15 var(--f-b);transition:box-shadow .15s}
+.fw-mb.slot{border-style:dashed;border-left-style:solid} .fw-mb.have{background:color-mix(in srgb,var(--fc) 8%,var(--surface))}
+.fw-mb:hover,.fw-mb.on,.fw-mb.lit{box-shadow:0 0 0 2px var(--fc)}
+.fw-mbt{font:600 8px/1.15 var(--f-m);letter-spacing:.05em;text-transform:uppercase;color:color-mix(in srgb,var(--fc) 80%,var(--ink));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fw-mbx{display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
+/* beside the note: the window in two, the header across both */
+.fw.beside{left:50%;right:0;bottom:0;border-left:1px solid var(--rule);box-shadow:-6px 0 22px -14px rgba(0,0,0,.35);animation:none}
+body.fw-left .fw.beside{left:0;right:50%;border-left:0;border-right:1px solid var(--rule)}
+body.fw-beside #app{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+body.fw-beside #hd{grid-column:1/-1}
+body.fw-beside.fw-right #view{grid-column:1;grid-row:2} body.fw-beside.fw-left #view{grid-column:2;grid-row:2}
+body.fw-beside .rd-wrap{display:none}
+.fw.beside .fw-main,.fw .fw-main.narrow{flex-direction:column}
+.fw.beside .fw-side{width:auto;max-height:44%;border-left:0;border-top:1px solid var(--rule)}
+.fw.beside{--fw-pad-x:22px;--fw-pad-t:40px}
+@media (max-width:760px){
+  .fw{--fw-pad-x:16px;--fw-pad-t:38px}
+  .fw-main{flex-direction:column} .fw-side{width:auto;max-height:42%;border-left:0;border-top:1px solid var(--rule)}
+  .fw-top{gap:6px;padding:6px 10px} .fw-note,.fw-how,.fw-bs,.fw-tip{display:none} .fw-back,.fw-ta{font-size:17px}
+}
+/* the freewrite's card in its note */
+.fwc{display:grid;gap:6px;padding:2px 14px 10px 13px}
+.fwc-bar{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--ink-3)}
+.fwc-st{font:600 10px var(--f-m);letter-spacing:.05em;text-transform:uppercase;padding:1px 6px;border-radius:4px;border:1px solid var(--rule-2);color:var(--ink-2)}
+.fwc-st.ok{border-color:color-mix(in srgb,var(--teal) 55%,transparent);color:var(--teal)}
+.fwc-tx{font:400 14.5px/2.15 var(--f-b);white-space:pre-wrap;overflow-wrap:break-word;max-height:340px;overflow:auto;padding-top:6px;cursor:text}
+.fwc-tx.empty{color:var(--ink-4);font-style:italic;line-height:1.5}
+body.f-off-freewrite .fwc .fw-open{display:none}
+/* the placeholders: a Result waiting for what you add, a bridge waiting for a note */
+.fw-slotbar{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:6px 0 2px;padding:6px 8px;border:1px dashed var(--rule-2);border-radius:6px;font-size:12px;color:var(--ink-3)}
+.fw-slotbar .fw-cand{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fw-bl .li{display:flex;gap:10px;align-items:flex-start} .fw-bl .li input{margin-top:4px}
+/* Settings' preview */
+.fw-pv{display:grid;gap:10px;padding:10px 12px;border:1px solid var(--rule);border-radius:8px;background:var(--fw-page)}
+.fw-pvbar{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ink-3)} .fw-pvbar b{color:var(--ink);font:600 12px var(--f-d)}
+.fw-pvic{display:inline-flex;line-height:0} .fw-pvic svg{width:15px;height:15px}
+.fw-pvt{font:400 14px/2.3 var(--f-b);white-space:pre-wrap}
+/* V4.34 — the selection's button, the question, the rules in Settings */
+.fw-chip.fw-assoc{border-color:var(--teal);color:var(--teal)} .fw-chip.fw-assoc b{color:var(--teal)}
+.fw-adlg{display:grid;gap:12px} .fw-aw{margin:0;font-size:16px}
+.fw-opts{display:grid;gap:6px} .fw-og{display:flex;flex-wrap:wrap;gap:5px}
+.fw-oh{font:600 10px var(--f-m);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin-top:4px}
+.fw-opt{height:26px;padding:0 10px;border-radius:13px;border:1px solid var(--rule-2);background:var(--surface);color:var(--ink-2);font:12px var(--f-d);cursor:pointer}
+.fw-opt:hover{background:var(--surface-2)} .fw-opt.on{background:var(--teal);border-color:var(--teal);color:var(--surface)}
+.fw-chosen{font-size:12.5px;color:var(--ink-2);margin-top:6px}
+.fw-akeep{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-3)}
+.fw-rules{display:grid;gap:6px}
+.fw-rh{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-3)}
+.fw-rr{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto;gap:4px 10px;align-items:start;padding:8px 10px;border:1px solid var(--rule);border-radius:7px;background:var(--surface)}
+.fw-rr.off{opacity:.55} .fw-rr.open{border-color:var(--teal)} .fw-rr input{margin-top:3px}
+.fw-rr-t{display:grid;gap:2px;min-width:0} .fw-rr-t b{font:600 13px var(--f-d)}
+.fw-rr-m{font-size:12px;color:var(--ink-2)} .fw-rr-p{font:11px var(--f-m);color:var(--ink-3);overflow-wrap:anywhere} .fw-rr-e{font:italic 12.5px var(--f-b);color:var(--ink-3)}
+.fw-rr-k{font:600 9.5px var(--f-m);letter-spacing:.05em;text-transform:uppercase;color:var(--ink-4);margin-top:3px;white-space:nowrap}
+.fw-rf{display:grid;gap:8px;padding:12px;border:1px dashed var(--teal);border-radius:8px;background:var(--fw-page)}
+.fw-rg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px} .fw-rp,.fw-rpx,.fw-rl{grid-column:1/-1}
+.fw-rl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px} .fw-rg [hidden]{display:none}
+.fw-rpats{font:12.5px var(--f-m);resize:vertical}
+.fw-rmsg{font-size:12px;color:var(--bad)} .fw-rmsg:empty{display:none}
+.fw-rth{font:600 10px var(--f-m);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.fw-rtest{display:grid;gap:8px} .fw-rnote{font-size:12px;color:var(--ink-3)}
+.fw-rbar{display:flex;gap:8px}
+@media (max-width:760px){ .fw-rr{grid-template-columns:auto minmax(0,1fr) auto} .fw-rr-k{display:none} .fw-rg,.fw-rl{grid-template-columns:minmax(0,1fr)} }
+/* V4.47 — Convert can be undone (Undo convert); the note as it will look, in the note itself; Take back */
+.fw-convert.on{background:color-mix(in srgb,var(--teal) 10%,var(--surface));border-color:color-mix(in srgb,var(--teal) 45%,var(--rule))}
+.fw-sh .spacer{flex:1}
+.fw-gbtn{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.fw-gbtn.on{background:color-mix(in srgb,var(--teal) 12%,var(--surface));border-color:color-mix(in srgb,var(--teal) 50%,var(--rule));color:var(--ink)}
+.fw-ghosts{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:4;animation:fw-gin .35s ease both}
+@keyframes fw-gin{from{opacity:0}to{opacity:1}}
+.fw-gsvg{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible}
+.fw-gsvg svg{overflow:visible;display:block}
+.fw-gl{font:600 12px var(--f-d)}
+.fw-gb{position:absolute;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;padding:12px 14px;border:1.5px dashed var(--fc,var(--ink-3));border-radius:12px;background:color-mix(in srgb,var(--fc,var(--ink-3)) 7%,var(--surface));color:var(--ink);opacity:.94}
+.fw-gb::before{content:'Preview';position:absolute;top:-9px;right:12px;padding:2px 7px;border-radius:999px;background:var(--fc,var(--ink-3));color:#fff;font:600 9px/1.4 var(--f-m);letter-spacing:.08em;text-transform:uppercase}
+.fw-gbt{align-self:flex-start;padding:1px 6px;border-radius:5px;background:color-mix(in srgb,var(--fc,var(--ink-3)) 16%,transparent);color:var(--ink-2);font:600 10px/1.5 var(--f-m);letter-spacing:.05em;text-transform:uppercase}
+.fw-gbx{font:400 14px/1.45 var(--f-b);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:7;overflow:hidden}
+.fw-tb[hidden]{display:none}
+@media (prefers-reduced-motion:reduce){.fw-ghosts{animation:none}}
+/* V4.53 — a component's title and structures on its words: their own stretches inside it; the chips of a click and of a selection inside one component */
+.fw-s .fw-tt{box-shadow:inset 0 -4px 0 var(--fc)}
+.fw-s .fw-mk{position:relative;background:color-mix(in srgb,var(--mc) 22%,transparent);box-shadow:inset 0 -2px 0 var(--mc)}
+.fw-s .fw-mk::after{content:attr(data-m);position:absolute;left:0;top:calc(100% + 1px);font:600 8.5px/1.2 var(--f-m);letter-spacing:.05em;text-transform:uppercase;color:color-mix(in srgb,var(--mc) 80%,var(--ink));white-space:nowrap;pointer-events:none}
+.fw-chips{position:absolute;z-index:3;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.fw-chips .fw-chip{position:static}
+.fw-chip2{padding:3px 9px;font-weight:600;color:var(--ink)}
+.fw-cw{font:italic 12px var(--f-b);color:var(--ink-3);padding:0 2px}
+.fw-mbh{display:block;font:600 11px/1.25 var(--f-d);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* V4.54: the labels are buttons — a click: kind and structure; a drag onto another component: a link */
+.fw-page.fw-tg .fw-back .fw-s::before,.fw-page.fw-tg .fw-back .fw-l::before{visibility:hidden}
+.fw-tags{position:absolute;left:0;top:0;width:0;height:0;z-index:2}
+.fw-tag{position:absolute;transform:translate(-3px,calc(-100% + 1px));display:inline-flex;align-items:center;gap:4px;margin:0;padding:0 3px;border:0;border-radius:4px;background:transparent;font:600 9px/1.25 var(--f-m);letter-spacing:.05em;text-transform:uppercase;color:var(--fct);white-space:nowrap;cursor:pointer;touch-action:none;--fct:color-mix(in srgb,var(--fc) 82%,var(--ink));transition:background .12s,box-shadow .12s}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .fw-tag{--fct:color-mix(in srgb,var(--fc) 58%,#fff)} }
+:root[data-theme="dark"] .fw-tag{--fct:color-mix(in srgb,var(--fc) 58%,#fff)}
+.fw-tag:hover,.fw-tag.on,.fw-tag.fw-tgt{background:color-mix(in srgb,var(--fc) 16%,var(--surface));box-shadow:0 0 0 1px color-mix(in srgb,var(--fc) 45%,transparent)}
+.fw-tag:focus-visible{outline:2px solid var(--fc);outline-offset:1px}
+.fw-tag .fw-tln{font-style:normal;font-weight:500;opacity:.85}
+.fw-back .fw-s.fw-tgt{outline:2px solid var(--fc);outline-offset:1px}
+.fw-mb.fw-tgt{box-shadow:0 0 0 2px var(--fc)}
+body.fw-linking,body.fw-linking *{cursor:alias!important}
+.fw-wire{position:fixed;inset:0;z-index:1250;pointer-events:none;color:var(--ink-3)}
+.fw-wire.ok{color:var(--teal)}
+.fw-wire line{stroke:currentColor;stroke-width:2;stroke-dasharray:5 4} .fw-wire circle{fill:currentColor}
+.pop.fw-qk{width:min(380px,calc(100vw - 16px));padding:4px 0 6px}
+.fw-qk h5{display:flex;align-items:baseline;gap:8px;margin:4px 10px 6px;font:500 13px/1.3 var(--f-d);color:var(--ink);min-width:0}
+.fw-qk h5 .serif{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.fw-qt{flex:none;font:600 9px/1.25 var(--f-m);letter-spacing:.05em;text-transform:uppercase;color:color-mix(in srgb,var(--fc) 82%,var(--ink))}
+.fw-qh{margin:6px 10px 4px;font:600 9.5px/1.2 var(--f-m);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.fw-qk .rd-kinds{padding:0 10px 2px;max-width:none}
+.fw-qline{display:flex;align-items:center;gap:8px;margin:6px 10px 0;font:13px var(--f-d)} .fw-qline .fw-qh{margin:0}
+.fw-qlinks{display:flex;flex-direction:column;gap:2px;padding:0 6px}
+.fw-qlink{display:flex;align-items:baseline;gap:8px;padding:3px 6px;border:0;border-radius:6px;background:transparent;text-align:left;cursor:pointer;font:12px var(--f-d);color:var(--ink-2);min-width:0}
+.fw-qlink b{flex:none;color:var(--fc);font-weight:600} .fw-qlink .serif{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fw-qlink:hover{background:var(--hover,color-mix(in srgb,var(--ink) 6%,transparent))}
+.fw-qfoot{display:flex;align-items:center;gap:8px;margin:8px 10px 0;padding-top:6px;border-top:1px solid var(--rule);font:11px var(--f-d);color:var(--ink-3)}
+.fw-qk h5,.fw-qk h5 .serif{text-transform:none;letter-spacing:0} .fw-qk h5 .serif{font:italic 400 13px/1.3 var(--f-b);color:var(--ink-2)}
+.fw-sh{flex-wrap:wrap;row-gap:4px} .fw-sh>b,.fw-sh>span{white-space:nowrap}
+/* V4.55: merging two sentences; what a merged component has to correct */
+.fw-seam{position:absolute;transform:translate(-50%,3px);display:inline-grid;place-items:center;width:16px;height:16px;padding:0;border:1px solid var(--rule-2);border-radius:50%;background:var(--surface);color:var(--ink-3);cursor:pointer;opacity:.55;transition:opacity .12s,color .12s,border-color .12s,transform .12s}
+.fw-seam .fw-ic{display:inline-flex}
+.fw-seam:hover,.fw-seam:focus-visible{opacity:1;color:var(--ink);border-color:var(--ink-3);transform:translate(-50%,3px) scale(1.12)}
+.fw-seam.on{opacity:.9;color:var(--teal);border-color:color-mix(in srgb,var(--teal) 55%,transparent)}
+.fw-tag.flagged{box-shadow:0 0 0 1px color-mix(in srgb,var(--warn,#b7791f) 70%,transparent)}
+.fw-tag .fw-flag{display:inline-flex;align-items:center;gap:3px;font-style:normal;color:var(--warn,#b7791f)}
+.fw-mb.flag{border-color:var(--warn,#b7791f);border-left-color:var(--fc)} .fw-mb.flag .fw-mbt{color:var(--warn,#b7791f)}
+.fw-flagline{display:flex;align-items:flex-start;gap:6px;margin:0 0 10px;padding:6px 8px;border:1px solid color-mix(in srgb,var(--warn,#b7791f) 45%,transparent);border-radius:8px;background:color-mix(in srgb,var(--warn,#b7791f) 8%,transparent);font:12px/1.4 var(--f-d);color:var(--ink-2)}
+.fw-flagline .fw-ic{color:var(--warn,#b7791f);flex:none;margin-top:1px}
+.fw-qflag{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 10px 2px;padding:5px 8px;border-radius:7px;background:color-mix(in srgb,var(--warn,#b7791f) 10%,transparent);font:12px/1.35 var(--f-d);color:var(--ink-2)}
+.fw-qflag>.fw-ic{color:var(--warn,#b7791f)}
+.kpick.fw-qx{border-style:dashed;border-color:var(--kc)}
+.fw-qparts{display:flex;flex-direction:column;gap:3px;padding:0 10px}
+.fw-qpart{display:flex;align-items:center;gap:8px;font:12px var(--f-d);min-width:0} .fw-qpart .serif{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;color:var(--ink-2)}
+.fw-qn{flex:none;width:16px;height:16px;border-radius:50%;display:inline-grid;place-items:center;font:600 9.5px var(--f-m);color:var(--ink-3);border:1px solid var(--rule-2)}
+.fw-qflag>span{flex:1 1 200px;min-width:0} .fw-qflag>.fw-ic{flex:none;align-self:flex-start;margin-top:2px} .fw-tag .fw-flag{margin-left:2px}
+.fw-s.fw-mem>.fw-mk:first-child::after{left:14px}
+/* V4.56: placeholders in the words; the bar; the slash menu */
+.fw-s .fw-phh{background:color-mix(in srgb,var(--fc) 22%,transparent);border-radius:2px}
+.fw-bar{position:sticky;top:0;z-index:4;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px;padding:8px 16px 6px;background:color-mix(in srgb,var(--fw-page) 92%,transparent);backdrop-filter:blur(6px)}
+.fw-barb{font:12px var(--f-d)} .fw-barh{margin-left:8px;font:11.5px var(--f-d);color:var(--ink-3)}
+.fw-slash{min-width:300px} .fw-slash .sm-row b{min-width:84px}
+.fw-pvtools{display:flex;align-items:center;gap:4px;margin:0 0 6px;font:11px var(--f-d);color:var(--ink-3)} .fw-pvtool{padding:1px 7px;border:1px solid var(--rule-2);border-radius:6px;color:var(--ink-2)}
+.fw-slotbar .fw-addany{margin-left:2px}
+@media (max-width:720px){ .fw-barh{display:none} }
+
+/* V4.61 — regions: a button at the side of each paragraph; a region drawn over its sentences, its name at its corner; in the preview, round its boxes */
+.fw-pgb{position:absolute;display:inline-grid;place-items:center;width:18px;height:18px;padding:0;border:0;border-radius:5px;background:transparent;color:var(--ink-4);transform:translateY(-50%);cursor:pointer;opacity:.6;transition:opacity .15s,color .15s,background .15s}
+.fw-page:hover .fw-pgb{opacity:1}
+.fw-pgb:hover{background:var(--surface-2);color:var(--ink)}
+.fw-pgb.on{color:var(--teal);opacity:1}
+.fw-reg{position:absolute;border:1.5px dashed color-mix(in srgb,var(--rc) 70%,transparent);border-radius:12px;background:color-mix(in srgb,var(--rc) 6%,transparent);pointer-events:none;z-index:-1}
+.fw-rgn{position:absolute;right:8px;top:0;transform:translateY(-50%);display:inline-flex;align-items:center;gap:2px;padding:0 2px 0 0;border-radius:999px;background:var(--fw-page,var(--surface));box-shadow:0 0 0 1px color-mix(in srgb,var(--rc) 50%,transparent);pointer-events:auto}
+.fw-rgname{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 4px 0 8px;border:0;border-radius:999px;background:transparent;color:color-mix(in srgb,var(--rc) 75%,var(--ink));font:600 10.5px/1 var(--f-d);cursor:pointer}
+.fw-rgname i{font-style:normal;font-weight:500;color:var(--ink-3)}
+.fw-rgx{width:18px;height:18px;padding:0;border:0;border-radius:999px;background:transparent;color:var(--ink-3);cursor:pointer}
+.fw-rgx:hover,.fw-rgname:hover{color:var(--ink)}
+.fw-chip.fw-rgc{--fc:var(--ink-3)}
+.fw-mrg{position:absolute;border:1.5px dashed color-mix(in srgb,var(--rc) 70%,transparent);border-radius:9px;background:color-mix(in srgb,var(--rc) 5%,transparent);pointer-events:none}
+.fw-mrg span{position:absolute;left:6px;top:-1px;transform:translateY(-50%);padding:0 5px;border-radius:999px;background:var(--fw-page,var(--surface));color:color-mix(in srgb,var(--rc) 75%,var(--ink));font:600 8.5px/1.4 var(--f-d);white-space:nowrap;max-width:90%;overflow:hidden;text-overflow:ellipsis}

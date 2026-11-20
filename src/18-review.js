@@ -86,7 +86,7 @@ const ReviewView = {
           : h('div.list', h('div.empty', 'No structured terms this week')),
           Object.keys(themeKinds).length ? [h('div.lab', 'Structures by theme'), h('div.list', h('table.t.compact', h('thead', h('tr', h('th', 'Theme'), kindsBy.map(k => h('th', { title: KIND[k].label }, h('i.kdot', { style: { background: `var(--k-${k})` } }))))),
             h('tbody', Object.entries(themeKinds).map(([tid, ks]) => h('tr', h('td', (M.theme(tid) || { name: 'project-wide' }).name), kindsBy.map(k => h('td', ks[k] || ''))))))) ] : null,
-          aimsMet.length ? [h('div.lab', 'Aim milestones met'), h('div.list', aimsMet.map(({ a, m }) => h('div.li', h('span.t', m.label, h('span.s', a.statement)), h('span.pill.teal', 'w ' + m.weight.toFixed(2)))))] : null)));
+          aimsMet.length ? [h('div.lab', 'Deliverables met'), h('div.list', aimsMet.map(({ a, m }) => h('div.li', h('span.t', m.label, h('span.s', a.statement)), h('span.pill.teal', 'w ' + m.weight.toFixed(2)))))] : null)));
 
     /* ---- 3 · rate ---- */
     const hist = weeks.slice().reverse().filter(x => +x.start <= +w.start).slice(-8);
@@ -99,7 +99,7 @@ const ReviewView = {
     const step3 = ReviewView.step(3, 'Rate the week', 'Impact out of ten — after seeing what moved, before the friction list. Time is context, never a multiplier.', rv.impact != null,
       h('div.card.flat', h('div.row', { style: { flexWrap: 'nowrap', gap: '20px' } }, val, h('div', { style: { flex: 1 } }, slider, ret, late ? h('div.tiny', { style: { color: 'var(--warn)' } }, 'rated late (' + fmtDay(rv.ratedAt) + ') — less reliable than a same-weekend rating') : null),
         h('div', h('div.tiny.mono.muted', 'last 8'), h('div.spark', hist.map(x => { const r = x.id === w.id ? rv : x.rv; return r && r.impact != null ? h('i' + (x.id === w.id ? '.cur' : ''), { title: `${fmtDay(x.start)}: ${r.impact}`, style: { height: (r.impact * 10) + '%' } }) : h('i.gap', { title: fmtDay(x.start) + ': unrated — a gap, never a zero' }); })))),
-        h('div.tiny.muted', { style: { marginTop: '8px' } }, 'Shown as impact (+aim boost) side by side, never summed or clamped. Unrated weeks stay gaps. No averages, streaks or targets.')));
+        h('div.tiny.muted', { style: { marginTop: '8px' } }, 'Shown as impact (+milestone boost) side by side, never summed or clamped. Unrated weeks stay gaps. No averages, streaks or targets.')));
 
     /* ---- 4 · friction ---- */
     const step4 = ReviewView.step(4, 'Friction', 'What blocked. Open barriers pull blocks into Unblock; three identical deviations mean the protocol is wrong, not the runs. Hours are read alongside barriers.', true,
@@ -201,7 +201,7 @@ const ReviewView = {
     scored.forEach(s => { alloc[s.x.t.id] = { blocks: s.x.br ? 0 : Math.max(1, Math.round(avail * s.score / tot)), lane: s.lane }; });
     if (ageingQ.length && !scored.some(s => s.lane === 'explore')) { const e = themes.find(x => !x.H.aims.length && !alloc[x.t.id]); if (e) alloc[e.t.id] = { blocks: 1, lane: 'explore' }; }
     alloc._slack = { blocks: slack, lane: 'slack' };
-    ReviewView._why = { cont: 'themes with aims and fresh evidence', unblock: `${openB.length} open barriers pull here`, explore: ageingQ.length ? `${ageingQ.length} ageing questions` : 'exploratory themes (no aim)' };
+    ReviewView._why = { cont: 'themes with milestones and fresh evidence', unblock: `${openB.length} open barriers pull here`, explore: ageingQ.length ? `${ageingQ.length} ageing questions` : 'exploratory themes (no milestone)' };
     return alloc;
   },
   /** §6 circuit breaker: blocks three weeks running with no recorded outcome → no fourth week until re-shaped. */

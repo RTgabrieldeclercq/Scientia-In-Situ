@@ -96,13 +96,13 @@ function seedDemo() {
     ['do2', 'Doses', '09:50', '0.5, 2 and 10 ng/mL; three wells each, read at 30 min.'],
     ['do3', 'Readout', '15:10', '{q#bead:Does bead size bias the ELISA floor estimate?}'],
   ]);
-  doc('d_plan8k', 'planning', P1.id, 't_tfm', '8 kPa series — Planning', -18, [
+  doc('d_plan8k', 'planning', P1.id, 't_tfm', '8 kPa series', -18, [
     ['pl1', 'Context', '14:00', 'The 30 kPa runs look stiff-dominated; we need the soft end of the curve on [[PAA gel]].'],
     ['pl2', 'Option A', '14:10', 'Run the standard monolayer TFM protocol at 8 kPa, three gels.'],
     ['pl3', 'Option B', '14:20', 'Go straight to 4 kPa and skip 8 kPa — faster, but the gels tear more easily.'],
     ['pl4', 'Decision', '14:35', 'Option A: 8 kPa first, strained seeding, image at 10 s intervals.'],
   ]);
-  doc('d_8k', 'experiment', P1.id, 't_tfm', '8 kPa series — run ' + fmtDay(T(-16)), -16, [
+  doc('d_8k', 'experiment', P1.id, 't_tfm', '8 kPa series', -16, [
     ['e1', 'Setup', '09:12', 'Gel batch 14, 8 kPa [[PAA gel]]. Seeded per protocol (strained, 40k/cm²).'],
     ['e2', 'EGF stimulation', '09:40', 'Added [[EGF]] at 10 ng/mL at frame 0. {o:Cells began ruffling within 5 minutes}.'],
     ['e3', 'Image', '10:22', '{b#edge:Excess [[EGF]] collapsed the monolayer’s leading edge within 40 frames} — [[edge collapse]] in every field. {v:Imaged at 15 s intervals instead of 10 s}.'],

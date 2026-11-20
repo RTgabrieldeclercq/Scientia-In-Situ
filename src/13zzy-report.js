@@ -1,0 +1,68 @@
+/* ==========================================================================
+   13zzy · Reports (V4.4). Gabe: "HTMLs and PDFs can be labelled as a report
+   as a new component kind just for those. Any snipped figure out of it is
+   instantly labelled as a result."
+   - Report: a kind of component only a PDF or a saved web page can be
+     (double-click the label left of its name, as on a component; V4.11: that
+     tag shows in the slim header, and ⋯ → What kind is this… too). A kind may
+     now say which components it is for (`on`, default text components);
+     Result is for image panels too.
+   - A figure snipped from a report (the scissors on a PDF, the snip on a web
+     page) is a Result the moment it lands (Settings → Reports).
+   - An image panel that is a Result counts as one where results are counted
+     (the Portfolio, a Synthesis), as a Result component does.
+   ========================================================================== */
+const REPORT = {
+  KINDS_ON: ['pdf', 'html'],
+  on: () => typeof FEAT === 'undefined' || FEAT.on('reports'),
+  snips: () => typeof FEAT === 'undefined' || FEAT.tune('reports', 'snips') !== 'plain',
+  /** What a component can be: the kinds whose `on` holds its kind (text components when a kind says nothing). */
+  fits(K, b) { if (!K || !b) return false; if (K.id === 'report' && !REPORT.on()) return false; return (K.on || ['component']).includes(b.kind); },
+  /** Is this block a report? */
+  is: b => !!b && b.ckind === 'report' && REPORT.KINDS_ON.includes(b.kind),
+  /** A figure snipped from a report becomes a Result (unless it already has a kind, or Settings says otherwise). */
+  mark(b) {
+    if (!b || b.kind !== 'figure' || !b.clip || !REPORT.on() || !REPORT.snips()) return false;
+    const cur = M.block(b.id), src = cur && cur.clip && M.block(cur.clip.src); if (!cur || cur.ckind || !REPORT.is(src)) return false;
+    cur.ckind = 'result'; cur.modified = isoLocal(new Date()); DB.put('blocks', cur); b.ckind = 'result'; changed(); return true;
+  },
+};
+{
+  // the kind itself, and Result for image panels (what a report gives)
+  CKINDS.CLASSES.report = 'a Report';
+  const R = CKINDS.BASE.find(k => k.id === 'result');
+  if (R) { R.on = ['component', 'figure']; const p = R.links.find(l => l.rel === 'produces' && l.in); if (p && !p.with.includes('report')) p.with.push('report'); }
+  if (!CKINDS.BASE.some(k => k.id === 'report')) CKINDS.BASE.push({ id: 'report', label: 'Report', color: '#46607A', on: REPORT.KINDS_ON.slice(), links: [
+    { rel: 'produces', with: ['result'] },
+    { rel: 'supports', with: ['hypothesis', 'claim'] } ] });
+  // "what kind is this?" offers only the kinds this component can be
+  const pick = CKINDS.pick; CKINDS.pick = function (b) {
+    const all = CKINDS.all; CKINDS.all = function () { return all.call(CKINDS).filter(k => REPORT.fits(k, b)); };
+    try { return pick.apply(this, arguments); } finally { CKINDS.all = all; } };
+  // the label left of the name on a PDF, a web page or an image panel: its kind, in its colour, and double-click to choose it
+  const bx = DocView.box; DocView.box = function (b, d, p) {
+    const el = bx.apply(this, arguments); if (!el || !b || !['pdf', 'html', 'figure'].includes(b.kind)) return el;
+    if (b.kind !== 'figure' && !REPORT.on()) return el;
+    const num = $(':scope > .bh > .num', el); if (!num) return el; const K = CKINDS.of(b), ok = K && REPORT.fits(K, b);
+    if (ok) { num.textContent = K.label; el.classList.add('kinded', 'kinded-w'); el.style.setProperty('--ck', K.color); el.dataset.ck = K.id; }
+    num.title = (ok ? K.label + ' — ' + CKINDS.ways(K, 3) + ' · ' : '') + 'Double-click: what kind of ' + (b.kind === 'figure' ? 'image panel' : b.kind === 'pdf' ? 'PDF' : 'page') + ' this is';
+    num.style.cursor = 'pointer';
+    // V4.11: the slim header (13zg, a toolbar in the title row) hides the tag — this one stays: on a PDF or a page always, on an image panel once it has a kind
+    num.classList.add('ck-tag');
+    num.addEventListener('dblclick', e => { e.preventDefault(); e.stopPropagation(); if (this.travel) return; CKINDS.pick(M.block(b.id) || b, e.clientX, e.clientY + 8); });
+    return el; };
+  // V4.11: the card's ⋯ menu offers the same choice ("What kind is this…"), beside its own entries
+  const bm = DocView.boxMenu; DocView.boxMenu = function (b) {
+    if (!b || this.travel || b.status !== 'live' || !['pdf', 'html', 'figure'].includes(b.kind) || (b.kind !== 'figure' && !REPORT.on())) return bm.apply(this, arguments);
+    const K = CKINDS.of(b), ok = K && REPORT.fits(K, b), what = b.kind === 'figure' ? 'image panel' : b.kind === 'pdf' ? 'PDF' : 'page';
+    const it = { label: 'What kind is this ' + what + '…', sub: ok ? K.label + ' now — change it or make it plain' : b.kind === 'figure' ? 'Result, or another kind' : 'Report: a figure snipped out of it becomes a Result', run: ev => CKINDS.pick(M.block(b.id) || b, ev.clientX, ev.clientY + 8) };
+    const cm = window.ctxMenu; window.ctxMenu = function (x, y, rows) { window.ctxMenu = cm; const i = rows.indexOf('sep'); const out = rows.slice(); out.splice(i >= 0 ? i : out.length, 0, it); return cm.call(this, x, y, out); };
+    try { return bm.apply(this, arguments); } finally { window.ctxMenu = cm; } };
+  // a snip from a report lands as a Result (both the PDF scissors and the web-page snip end in CLIP.fresh)
+  const fresh = CLIP.fresh; CLIP.fresh = function (b) { try { REPORT.mark(b); } catch (e) { console.warn('[report]', e); } return fresh.apply(this, arguments); };
+  // an image panel that is a Result counts as one (the Portfolio's evidence, a Synthesis's results)
+  const counted = CKINDS.counted; CKINDS.counted = function (docIds) {
+    const out = counted.apply(this, arguments), ids = docIds instanceof Set ? docIds : new Set(docIds);
+    ids.forEach(id => M.docBlocks(id).forEach(b => { if (b && b.status === 'live' && b.kind === 'figure' && b.ckind === 'result' && !out.evidence.includes(b)) out.evidence.push(b); }));
+    return out; };
+}

@@ -16,7 +16,7 @@ Object.assign(DocView, {
       h('button.dk', { title: 'Stop and record', on: { click: () => TIMER.stop(sess) } }, '■')]
       : h('button.dk.pri', { title: 'Start this note’s timer (two may run at once)', on: { click: () => TIMER.start(d.id) } }, '▶ Timer');
     this.dock.replaceChildren(h('button.dk.ins', { title: 'Insert a well plate, a protocol, a box… (what can go in this note)', on: { click: e => INSERT.menu(this, e.currentTarget) } }, '+ Insert'), h('span.dk-sep'), h('button.dk', { title: 'Log time without the timer', on: { click: () => this.logTime(d) } }, '+ Time'), h('span.dk-sep'),
-      h('div.seg.sm', { title: 'Citation display for this note' }, ['title', 'author', 'number'].map(m => h('button' + (d.citeMode === m ? '.on' : ''), { on: { click: () => { d.citeMode = m; DB.put('documents', d); changed(); } } }, m === 'title' ? 'Title' : m === 'author' ? 'Author–year' : '[1]'))),
+      h('div.seg.sm', { title: 'Citation display for this note (Settings sets it for every note that has not chosen)' }, ['title', 'author', 'number'].map(m => h('button' + (ED.citeModeOf(d) === m ? '.on' : ''), { on: { click: () => { d.citeMode = m; d.citeOwn = true; DB.put('documents', d); changed(); } } }, m === 'title' ? 'Title' : m === 'author' ? 'Author–year' : '[1]'))),
       h('span.dk-sep'),
       h('button.dk', { title: 'Pull an unresolved barrier, a structure or a component from another note', on: { click: () => this.pullMenu(d) } }, '⤓ Pull in'),
       h('button.dk' + (flag ? '.on' : ''), { title: 'Flag this note for the weekly review', on: { click: () => M.toggleFlag('doc', d.id) } }, flag ? '⚑' : '⚐'),
@@ -35,7 +35,8 @@ Object.assign(DocView, {
       prof(d.type).type === 'protocol' ? { label: 'Run this protocol…', sub: 'New experiment with its steps bound here; starts the timer', run: () => App.newDoc({ type: 'experiment', projectId: d.projectId }) } : null,
       { label: 'Tidy layout', sub: 'Re-flow the boxes in order', run: () => this.tidy() },
       'sep', { head: 'Citations in this note' },
-      ...['title', 'author', 'number'].map(m => ({ label: ((d.citeMode || 'title') === m ? '✓ ' : '') +(m === 'title' ? 'Title' : m === 'author' ? 'Author–year' : '[1]'), run: () => { d.citeMode = m; DB.put('documents', d); changed(); } })), 'sep',
+      ...['number', 'author', 'title'].map(m => ({ label: (ED.citeModeOf(d) === m ? '✓ ' : '') + (m === 'title' ? 'Title' : m === 'author' ? 'Style et al.' : 'Numbered [1]'), sub: d.citeOwn ? 'This note only' : null, run: () => { d.citeMode = m; d.citeOwn = true; DB.put('documents', d); changed(); } })),
+      d.citeOwn ? { label: 'As in Settings', sub: 'Citations in this note follow Settings → Library', run: () => { delete d.citeOwn; DB.put('documents', d); changed(); } } : null, 'sep',   // V4.6
       { label: 'View as it stood on…', sub: 'Time travel through the journal', run: () => this.travelDialog(d) },
       { label: 'Export canvas (HTML)…', sub: 'One file: the live canvas with its PDFs, pages and recordings, read-only', run: () => Exporter.doc(d.id) },
       { label: 'Save structure as template…', run: async () => { const n = await askText('Save as template', 'Template name', d.title + ' template'); if (n) { M.saveAsTemplate(d, n); toast('Template saved — tick it in Settings to use it'); } } },

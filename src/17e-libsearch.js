@@ -31,7 +31,7 @@
 const LIBSTATE = {
   LABEL: { unread: 'Not opened', reading: 'Reading', read: 'Read' },
   of(r, f) { if (!r) return 'unread'; if (r.readState) return r.readState; const F = f || (LSEARCH._ix && LSEARCH._ix.get(r.id)); return F && F.hl.length ? 'reading' : 'unread'; },
-  set(r, s) { if (!r || r.readState === s) return; DB.beginGroup('library'); DB.put('library', Object.assign({}, r, { readState: s, readAt: isoLocal(new Date()) })); changed(); },
+  set(r, s) { if (!r || r.readState === s) return; DB.beginGroup('library'); DB.put('library', Object.assign({}, r, { readState: s, readAt: isoLocal(new Date()) })); if (typeof LSEARCH !== 'undefined') LSEARCH.bust(); /* V4.23: the search's index kept the paper as it was (its signature counts records, and none was added), so is:read / is:unread and the Reading facet missed a state just set */ changed(); },
   /** The reader opened this paper's PDF. */
   opened(id) { try { if (!FEAT.on('libread') || !FEAT.tune('libread', 'auto')) return; const r = M.lib(id); if (r && r.pdf && !r.readState) LIBSTATE.set(r, 'reading'); } catch (e) { } },
 };
@@ -73,7 +73,9 @@ const LSEARCH = {
   _redraw: debounce(() => { try { if (typeof LibraryView !== 'undefined' && LibraryView.el && LibraryView.el.isConnected) LibraryView.draw(); if (typeof LSHEET !== 'undefined' && LSHEET.id) LSHEET.redraw(); } catch (e) { } }, 250),
   from(fn, r, ctx) { const out = []; LSEARCH.sources.forEach(src => { if (typeof src[fn] !== 'function') return; try { const v = src[fn](r, ctx); if (v && v.length) out.push(...v); } catch (e) { console.warn('[libsearch] source', fn, e); } }); return out; },
   bust() { LSEARCH._ix = null; LSEARCH._smart = new Map(); },
-  sig: () => ['library', 'libsets', 'blocks', 'documents', 'items', 'flags'].map(s => DB.all(s).length).join(':') + ':' + (IX.citations ? IX.citations.size : 0),
+  sig: () => ['library', 'libsets', 'blocks', 'documents', 'items', 'flags'].map(s => DB.all(s).length).join(':') + ':' + (IX.citations ? IX.citations.size : 0)
+    + ':' + LSEARCH.setSig(),   // V4.4: and Settings — a source added to the search may read a feature's switch or setting
+  setSig() { try { const st = settings(); return JSON.stringify([st.feat || null, st.tune || null, typeof FEAT !== 'undefined' && FEAT.own() ? _ls.get('feat', null) : 0]); } catch (e) { return ''; } },
   index() {
     const s = LSEARCH.sig(); if (LSEARCH._ix && LSEARCH._sig === s) return LSEARCH._ix;
     const push = (m, k, v) => { if (!m.has(k)) m.set(k, []); m.get(k).push(v); };

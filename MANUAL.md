@@ -76,13 +76,11 @@ This manual covers everything the notebook can do, from first launch to the pen 
 |---|---|
 | **Today** | The day's timeline, the Capture box, what's coming up, chores, what needs investigating and a resurfaced claim or question. |
 | **Tasks** | Every open task: Overdue / Today / Upcoming / No date, plus Done lately. |
-| **Portfolio** | Your projects in a list, most relevant first, with the notes outside any project; the open one beside the list, its themes and notes. Each project has its own page, with its tasks. |
+| **Portfolio** | Your projects in a list, most relevant first, with the notes outside any project; the open one beside the list, its themes and notes. Each project has its own page, with its tasks. A project's or theme's activity (its heat strip, "active 2d ago", its score) opens its activity at the right. |
 | **Review** | The weekly review (it opens on the weekend). |
-| **Activity** | Heatmap, theme small multiples, weekly numbers, the Done list. |
 | **Terms** | Every term, with its forms and lens. |
 | **Atlas** | The notebook as one map: notes, components, structures, terms, people and papers, and how they link. Search lives here. |
 | **Library** | Papers and links. Open a paper's PDF in the reader. |
-| **Data** | Raw-data folders and datasets. |
 | **Materials** | Cell lines, antibodies, gels, reagents… |
 | **Canvas** | Only shown when the spatial-canvas lab is on. |
 | **Settings** | All settings (§23). |
@@ -132,8 +130,7 @@ Every note is an infinite sheet of graph paper.
 A note has a **header box** (title, type, profile fields, tags, ✎ for note details), its **components**, and a **synthesis box**. The synthesis box is your summary; it saves as you type.
 
 - **⋯ beside the note's title** (top of the window) is the note's menu: note details, **Log time…**, time entries, tidy layout, **citations** (Title · Author–year · [1]), time travel, export, delete…
-- **The bar at the bottom** of a note: **+ Insert** (§10), **+ Time** (log time without the timer), the citation style (Title · Author–year · [1]), **⤓ Pull in** (an open barrier, a structure or a component from another note), ⚐ flag the note for the weekly review, ⤢ fit, ⛶ focus mode.
-- **Top right:** **Split** (another note beside this one), **Timer** (▾: a head start), **✎ Pen** (the ink bar, §17), **Calculator**, **Equation**.
+- **The pills:** ＋ **Quick cast** at the bottom (where a bar used to be — Pull in…, Flag and the inserts you chose), ⊕ zoom, ✦ tools, ✎ pan · pen · highlighter · lasso. Drag a pill anywhere. Left open 3 s, a pill unfolds into a row or column and stays; against the left or right edge it stands as a column, against the top or bottom it lies as a row. Your layout is kept with your notebook: the same in every note, every session, every computer. A note held upright (a tablet turned, or the app turned by Rotate) has places of its own: the pills glide there when it turns and back to yours when it turns again (Settings → Pills → Portrait and landscape can keep one layout for both). **Settings → Pills** shows an empty note with your pills on it, in Landscape or Portrait: drag one to its place there, and every note on every device has it. A note's bridge circles are drawn over the pills; an open wheel comes over them.
 
 ### Components
 - **Select:** click. Then click again, or press Enter, to type.
@@ -153,7 +150,7 @@ A note has a **header box** (title, type, profile fields, tags, ✎ for note det
 - **Gravity.** What a component or a region pushed out of its way — unfolding, or growing as you type — comes back by exactly as much when it folds or shrinks again (emptied, its earlier versions closed), and what that pushed comes with it. Settings → Features → Writing in components turns it off.
 - **An unfolding region moves the other regions aside, whole** — what lies right of its middle to the right, left of it to the left — instead of pushing their components about; folding it brings them back. Settings → Features → Regions.
 - **The Portfolio is two panes.** On the left, your projects in a list, **most relevant first** (the most activity in the last four weeks; **Recent** and **A–Z** at the top of the list change the order), and the notes outside any project (**General**). Each row has the project's activity for four weeks and its dots. Click one (or ↑ ↓ in the list) and it opens on the right; the Portfolio opens it again next time.
-- **The open project** shows its themes, each with its question, its state (aims, exploratory or stalled), its activity, and its **Experiments** beside its other **Notes**; then the **Project-wide** notes; then its **Lit reviews** (every literature note of the project and the reviews linked to it, never under a theme). Its name opens the project's page. **+ Note**, **+ Theme** and **⇅** (the order of its notes) sit under the title.
+- **The open project** shows its themes, each with its question, its state (aims, exploratory or stalled), its activity, and its **Experiments** beside its other **Notes**; then the **Project-wide** notes; then its **Lit reviews** (every literature note of the project and the reviews linked to it, never under a theme), with **+ Lit review**, which starts a new review linked to the project. There is no Lit reviews tab: the Portfolio is where reviews are, and a review linked to no project is listed with the notes outside any project. Its name opens the project's page. **+ Note**, **+ Theme** and **⇅** (the order of its notes) sit under the title.
   - **The switch** (All · Experiments · Notes · Lit reviews, each with its count) shows only that kind; with two themes or more, **chips** narrow it to one theme.
   - **An experiment is one row**: its name, its stages (Planning, Run, Analysis, Synthesis; a stage opens its note), its dots and its dates. **▸** unfolds it into its notes, and it stays unfolded on this computer until you fold it.
   - **Notes in the order of their date**, the day a note is about, newest first. **⇅** changes it: oldest first, recent changes, most active, or title.
@@ -543,6 +540,9 @@ Open it with **+ Insert** on the bar at the bottom of the note, or right-click t
 - **Maximised** (⤢ / ⛶), a PDF or HTML page works like a paper in the reader:
   - a side panel lists its highlights, with notes and search;
   - the pen highlights whole words.
+- **The References Map:** in a PDF you read (maximised, beside the note, or in the Library's reader), rest the pointer on a citation for a second and a card shows the paper it points to (author, year, title, journal, DOI, whether it is in your Library). Click the citation to go to that reference at the end of the paper; **‹ Back to where you were** (or Esc) returns you.
+  - The side panel's **References Map** lists every reference, numbered as in the paper, with how often it is cited: hover a row to light its citations, click it to go to the reference, **×n** to its first citation.
+  - It uses the PDF's own links when it has them. In older papers without links it finds the citations in the text (superscript numbers, [12], (12), Smith et al. 2014); the journal says which style to expect. Settings → References Map: the delay, links only, or off.
 - **Writing on an HTML page:** in pen mode (Pen or Highlighter in the ink bar) the pen writes on the page itself — on the paper, maximised and beside the note; the eraser (or the pen's back) takes strokes away. The ink stays with the page, pinned to what it was written on. In Move the pen selects text for quotes, as before.
   - While the pen writes, a finger scrolls the page. A palm resting on it does nothing.
 - **Reading an HTML page beside the note:** the book on the page's card (next to ⛶), or **◧ Beside** on the maximised page, puts the page in half the window and the note in the other half, as for a PDF.
@@ -689,18 +689,21 @@ Open it with **+ Insert** on the bar at the bottom of the note, or right-click t
 
 ## 15. Data, materials and provenance
 
-### Data (raw data by reference)
-Your raw files stay where they are.
-- **Add a folder:** **+ Add a data folder** points the app at a folder, such as the microscope's export folder. **Register files…** lists what's inside; tick what you want.
-- **What each dataset records:**
-  - its path, size and date;
-  - its instrument, guessed from the extension (ND2, CZI, LIF…);
-  - a fingerprint of its first and last 4 MB.
-- **Checking files:**
-  - **Rescan** checks for changes.
-  - **Verify fingerprints** re-reads every file's ends.
-  - Moved files are found again; changed files are flagged until you accept them.
-  - After a restart, click Rescan once per folder to give the browser read access again.
+### Data: a tree in the component that used it
+The data an experiment used is logged in its component, as a tree of folders and files. Your raw files stay where they are: nothing is copied.
+- **Log it:**
+  - ⋯ → **Log data…** → **Add a folder…** or **Add files…**;
+  - type **/data** in the component (from the navigation bar with no component chosen, /data makes a component labelled "Data");
+  - or drop files and folders from Explorer or Finder: on a component's tree, or on any component with **Alt** held. A folder dropped anywhere on a component goes into its tree; a folder dropped on the paper makes a "Data" component there. Files alone dropped on the paper are placed as before (images, PDFs, pages).
+- **The tree:** folders and files, indented, with sizes and dates; each folder shows how many files it holds and their size.
+  - Click a folder to fold or unfold it. A folder you log shows its first level, and the folders inside it start folded (Settings → Data tree: or only its name).
+  - A folder with more than 12 entries shows 12 and **+ n more**.
+  - Rest on a row for its full path. **×** takes it out of the tree (Ctrl+Z brings it back).
+- **What it records:** names, places, sizes and modified dates, up to 1,500 entries and six folders deep. It is part of the note, so it syncs.
+- **Checking again:**
+  - On a computer whose browser can keep the folder (Chrome, Edge), **⟳ Rescan** reads it again and marks what is **new**, **changed** or **gone**. **Accept** makes the tree the folder as it is now. After a restart the browser asks once for read access.
+  - On other devices (an iPad, Safari) the tree is as it was logged, and says so.
+- **The Data tab is gone (V4.28).** The datasets bound to a component (⋯ → Data, materials & code…, or a dataset's "produced by" step) came into that component's tree, on the computer that registered them. The old page, with its folders, rescans and fingerprints, still opens with **/datasets**.
 
 ### Materials
 **+ New material** asks for a name, a kind and whether it was made here or bought. It opens as a compact **material sheet**:
@@ -837,7 +840,7 @@ The review opens on the weekend for the past week (Sat→Fri) and stays open unt
 
 - Completing the review writes a **review note**; its synthesis is next week's plan.
 - A **cycle review** comes up every ~6 weeks.
-- **Activity** shows a heatmap, small multiples per theme, weekly numbers and the **Done** list.
+- **Activity** is no longer a tab (V4.19). In the **Portfolio**, click a project's or theme's heat strip, its "active 2d ago" / "stalled" or its score: a panel at the right says why it is active or stalled and how that is counted, and shows eight weeks of activity, the time recorded, its notes still in their two weeks and what moved (each line goes to the note); a project's panel lists its themes. ✕ or Esc closes it. Today's **Activity →** (or `#/activity`) opens the whole notebook's there: ten weeks, every theme on one scale and the weekly numbers. The theme page's eight weeks open it too.
 
 ---
 
@@ -909,15 +912,19 @@ Settings has a sidebar: **Features** first, then **Look & feel**, **Keys & comma
 
 - **Presets:** **Simple** (write and mark structures; bridges, timers, reminders, the Library, equations), **Standard** (the app without the parts most people never use) and **Everything**. A notebook made before this version is on Everything; **Start empty** begins on Standard. Change one switch and it reads "Standard + 1 change", with *back to Standard*.
 - **Off hides a feature's tools and decorations** — its button, chips, tab, its rows in + Insert and / — never what you made with it: that stays in your notes, the search and the export. Switch it on and it is all back.
-- **A tile per feature**, by group: Canvas & notes, Pen & touch, Structures, Bridges, Time & reminders, Reading & sources, Widgets, Tabs & overview. **Select a tile:** it opens across the board with its whole description and all its settings. *Always on* marks what is the notebook itself (writing, structures, bridges, the pen's shortcuts); a feature that needs another says so.
-- **The live preview** beside the board shows the feature in view — it changes as you scroll and stays beside you — or the one you opened, drawn as it is set now, following each setting as you change it. On a narrow screen it is inside the opened tile.
+- **A tile per feature**, by group: Canvas & notes, Pen & touch, Structures, Bridges, Time & reminders, Reading & sources, Widgets, Tabs & overview. **Click a tile:** it opens the feature's own page (below). *Always on* marks what is the notebook itself (writing, structures, bridges, the pen's shortcuts); a feature that needs another says so.
+- **The live preview** beside the board shows the feature in view — it changes as you scroll and stays beside you — drawn as it is set now. On a narrow screen it is on the feature's page.
+- **A page per feature.** A tile opens it: the feature's whole description, which presets have it and what it needs or goes with; **What it is for**, in the words of whoever asked for the feature, with a **recording** of it being used in a test note; its **settings**; and its **live preview** beside them, following each setting as you change it. *‹ Features* goes back to the board at the tile you came from; the two names at the top right step to the feature before and the next.
+  - **The recording** shows a still until you press **Play** — nothing plays by itself. The steps are listed under it with their times: click one and it plays from there, and the step being shown is written under the picture. The pointer, clicks and keys pressed are drawn into it. It has no sound.
+  - A tile says **▶ demonstration** when its feature has one. A page without one says so and keeps the live preview.
+  - **Feature demonstrations** (Tabs & overview) holds their settings: the speed they play at, the step written under the recording, and whether one starts again at its end. Off: the pages keep everything but the recordings.
 - **This device keeps its own switches** (under the presets): a phone on Simple while the notebook is on Everything. Lock the wording and Spatial canvases stay the notebook's, and presets leave them as they are.
 - **The editing bar's starting size:** fixed, or following the zoom between two sizes (smaller zoomed out, larger zoomed in). It places itself where you are in the note, so its position isn't a setting.
 - **The bridge bar:** how many most-used bridges it shows (0–5; at 0 only the crossing you are on) and how long they are counted (1, 2 or 4 weeks, or never reset).
 
 | Section | What it holds |
 |---|---|
-| **Features** | Presets, a switch and the settings of every feature, the live preview |
+| **Features** | Presets, a switch and a page for every feature: what it is for, its recording, its settings and live preview |
 | **Look & feel** | Theme |
 | **Keys & commands** | Where the keys are, Ctrl+W and Focus mode, your own commands and macros |
 | **Templates & note types** | Templates per note type; note types as data (fields, next stage) |

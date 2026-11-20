@@ -1,0 +1,46 @@
+/* 31 · experiments and their synthesis (V4.15–V4.16) */
+/* V4.15: + Experiment — the series to continue, and what it means */
+.cs-new .cs-serf[hidden]{display:none}
+.cs-hint{margin-top:6px;min-height:0}
+.cs-hint:empty{display:none}
+/* the preview (Settings → Experiment series) */
+.pv-xs{background:var(--surface);border:1px solid var(--rule);border-radius:9px;padding:8px 10px 10px;display:grid;gap:7px;max-width:340px}
+.pv-xs-h{font:600 12px var(--f-d);color:var(--ink)}
+.pv-xs-f{display:grid;gap:3px} .pv-xs-f > span{font:9px var(--f-m);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.pv-xs-sel,.pv-xs-in{border:1px solid var(--rule-2);border-radius:6px;padding:5px 8px;font-size:12.5px;background:var(--surface);color:var(--ink);display:flex;align-items:center;gap:6px}
+.pv-xs-sel i{margin-left:auto;font-style:normal;color:var(--ink-3)}
+.pv-xs-notes{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.pv-xs-n{display:flex;align-items:center;gap:6px;border:1px solid var(--rule);border-radius:7px;padding:5px 8px;background:var(--surface);font-size:12px;min-width:0}
+.pv-xs-n b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv-xs-st{font:9px var(--f-m);letter-spacing:.08em;text-transform:uppercase;color:var(--teal);flex:none}
+/* V4.16: a note's synthesis inside its first block — it moves with it */
+.box.head .hsynth{margin:10px 0 -10px;border-top:2px solid var(--ink);background:var(--surface);border-radius:0 0 7px 7px}
+.box.head .hsynth > .bh{padding:5px 12px 0}
+.box.head .hsynth .synth-in{padding:4px 12px 10px}
+.box.head .hsynth .refs{padding:0 12px 10px;font-family:var(--f-b);font-size:12.5px;color:var(--ink-2)}
+.box.head .hsynth .refs ol{padding-left:20px;margin:4px 0} .box.head .hsynth .refs ul.refs-au{padding-left:20px;margin:2px 0;list-style:'– '}
+body.f-off-synthesis .box.head .hsynth:has(> .synth-in:placeholder-shown):not(:has(.refs)):not(:focus-within){display:none}
+/* the series' Synthesis: which runs it covers; each run's strip leads to it */
+.synth-of .sy-runs{font:12.5px/1.45 var(--f-s,serif);color:var(--ink-2)} .synth-of .sy-runs a{color:var(--teal);text-decoration:none;font-weight:600} .synth-of .sy-runs a:hover{text-decoration:underline}
+/* the Portfolio: Syntheses above Notes, and what each note adds up to under its row */
+.pf-gcol{display:flex;flex-direction:column;gap:4px;min-width:0}
+.pf-n.has-leg{flex-wrap:wrap;row-gap:1px}
+.pf-n .pf-leg{flex:1 0 100%;order:9;min-width:0;padding:0 0 1px 2px;font:italic 12px/1.4 var(--f-s,serif);color:var(--ink-3);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.pf-legtog{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--rule-2);background:transparent;border-radius:999px;padding:5px 11px;font:500 12px/1.2 var(--f-d);color:var(--ink-2);cursor:pointer}
+.pf-legtog .pf-legd{width:22px;height:12px;border-radius:999px;background:var(--rule-2);position:relative;flex:none;transition:background .18s}
+.pf-legtog .pf-legd::after{content:"";position:absolute;top:2px;left:2px;width:8px;height:8px;border-radius:50%;background:var(--surface);transition:transform .18s}
+.pf-legtog[aria-pressed="true"]{color:var(--ink);border-color:var(--ink-3)} .pf-legtog[aria-pressed="true"] .pf-legd{background:var(--teal)} .pf-legtog[aria-pressed="true"] .pf-legd::after{transform:translateX(10px)}
+@media (prefers-reduced-motion:reduce){ .pf-legtog .pf-legd,.pf-legtog .pf-legd::after{transition:none} }
+/* the preview (Settings → Synthesis notes) */
+.pv-sn{display:grid;gap:8px;max-width:360px}
+.pv-sn-head{background:color-mix(in srgb,var(--surface) 70%,var(--paper));border:1px solid var(--rule);border-radius:7px;overflow:hidden}
+.pv-sn-f{padding:2px 10px 8px;font-size:12px;color:var(--ink-2)}
+.pv-sn-syn,.pv-sn-float{border-top:2px solid var(--ink);background:var(--surface);padding:6px 10px 8px;font:12.5px/1.4 var(--f-b);color:var(--ink)}
+.pv-sn-float{border:1px solid var(--rule);border-top:2px solid var(--ink);border-radius:7px;justify-self:end;width:62%}
+.pv-sn-pf{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 14px;background:var(--surface);border:1px solid var(--rule);border-radius:9px;padding:8px 10px}
+.pv-sn-col{display:flex;flex-direction:column;gap:3px;min-width:0}
+.pv-sn-gl{font:9px var(--f-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin-top:4px}
+.pv-sn-n{font-size:12px;color:var(--ink);padding:3px 4px;border-radius:5px;min-width:0}
+.pv-sn-n .pv-sn-leg{font:italic 11px/1.35 var(--f-s,serif);color:var(--ink-3)}
+/* the switch has a fifth choice (Syntheses): in a narrow window it scrolls inside the row (max-width) rather than widening the pane */
+.pf-det .pf-ctl{min-width:0;max-width:100%}

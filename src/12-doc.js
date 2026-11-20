@@ -111,7 +111,8 @@ const DocView = {
     ta.addEventListener('input', () => { ta.style.height = 'auto'; ta.style.height = Math.max(60, ta.scrollHeight) + 'px'; });
     const nums = ED.citeNumbers(d);
     return h('div.box.synth', { 'data-id': '_synth', style: { left: L.x + 'px', top: L.y + 'px' } }, h('div.bh', h('span.num', 'Synthesis'), h('span.spacer'), h('span.tiny.muted', 'what this note adds up to')), ta,
-      d.citeMode === 'number' && nums.size ? h('div.refs', h('div.lab', 'References'), h('ol', [...nums.keys()].map(id => h('li', LIB.apa(M.lib(id) || { title: 'missing' }))))) : null);
+      ED.citeModeOf(d) === 'number' && nums.size ? h('div.refs', h('div.lab', 'References'), h('ol', [...nums.keys()].map(id => h('li', LIB.apa(M.lib(id) || { title: 'missing' })))),
+        ED.citeAuthorOnly(d).length ? h('ul.refs-au', ED.citeAuthorOnly(d).map(id => h('li', LIB.apa(M.lib(id) || { title: 'missing' })))) : null) : null);   // V4.6: papers cited only by author, unnumbered
   },
 
   /** V3.980 — a component that is slow to draw again: a page (an iframe), a PDF, an image panel with a whiteboard, or a copy of one. */

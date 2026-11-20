@@ -91,8 +91,8 @@ const RDX = {
   strip(p, b) {
     if (!p || !p.ov || !RDOCK.ftOn('citedin') || RDOCK.tn('citedin', 'strip', true) === false) return; const lib = RDX.libOf(b); if (!lib) return;
     const rows = RDX.citedIn(lib, b.id); if (!rows.length) return; const by = new Map(); rows.forEach(r => { if (!by.has(r.b.docId)) by.set(r.b.docId, []); by.get(r.b.docId).push(r); });
-    const el = h('div.rcx-strip', h('span.rcx-sk', 'Cited in'), [...by].map(([docId, rs]) => h('button.rcx-chip', { type: 'button', title: rs.map(r => M.blockName(r.b)).join(' · ') + '\nClick: go there — the reader stays · Alt+click: beside',
-      on: { click: e => { e.stopPropagation(); if (rs.length === 1) return App.jump(rs[0].b.id, e); const rr = e.currentTarget.getBoundingClientRect(); popover(rr.left, rr.bottom + 6, [h('h5', (M.doc(docId) || {}).title || 'Note'), h('div.rcx-list', rs.map(r => h('button.rcx-row', { type: 'button', on: { click: ev => { closePop(); App.jump(r.b.id, ev); } } }, h('span.rcx-k' + (r.t !== 'cite' ? '.emb' : ''), RDX.KL[r.t]), h('b', M.blockName(r.b)), r.t === 'cite' ? h('span.rcx-w', RDX.words(r.b, lib)) : null)))], { cls: 'pop rcx-pop' }); } } },
+    const el = h('div.rcx-strip', h('span.rcx-sk', { title: rows.length + (rows.length === 1 ? ' place' : ' places') + ' in your notes' }, 'Cited in · ' + rows.length), [...by].map(([docId, rs]) => h('button.rcx-chip', { type: 'button', title: rs.map(r => M.blockName(r.b)).join(' · ') + '\nClick: go there — the reader stays · Alt+click: beside',
+      on: { click: e => { e.stopPropagation(); if (typeof RSET !== 'undefined' && RSET.carry) RSET.carry(b.id, docId); if (rs.length === 1) return App.jump(rs[0].b.id, e); const rr = e.currentTarget.getBoundingClientRect(); popover(rr.left, rr.bottom + 6, [h('h5', (M.doc(docId) || {}).title || 'Note'), h('div.rcx-list', rs.map(r => h('button.rcx-row', { type: 'button', on: { click: ev => { closePop(); if (typeof RSET !== 'undefined' && RSET.carry) RSET.carry(b.id, docId); App.jump(r.b.id, ev); } } }, h('span.rcx-k' + (r.t !== 'cite' ? '.emb' : ''), RDX.KL[r.t]), h('b', M.blockName(r.b)), r.t === 'cite' ? h('span.rcx-w', RDX.words(r.b, lib)) : null)))], { cls: 'pop rcx-pop' }); } } },
       (M.doc(docId) || {}).title || 'Untitled', rs.length > 1 ? h('span', rs.length) : null)));
     const bar = $(':scope > .em-bar', p.ov); if (bar) bar.after(el);
   },
@@ -160,9 +160,7 @@ const RDX = {
   // a tab of a paper of the Library: its short reference (or its title, as Settings says)
   const lb = RDOCK.label; RDOCK.label = function (b) { const l = b && RDX.libOf(b); if (l && l.kind !== 'link' && (l.authors || []).length) return RDOCK.tn('rtabs', 'names', 'ref') === 'title' ? snippet(l.title || lb(b), 60) : LIB.shortRef(l); return lb(b); };
   RDOCK.picker = RDX.picker;
-  // Cited in · N on each pane's bar, and the line of notes under it
-  RDOCK.extras.push((p, b) => { if (!RDOCK.ftOn('citedin')) return null; const lib = RDX.libOf(b), n = lib ? RDX.citedIn(lib, b.id).length : 0;
-    return h('button.btn.xs.rcx-btn' + (n ? '.on' : ''), { title: lib ? 'The notes that cite this ' + (b.kind === 'html' ? 'page' : 'paper') + ' — click one to go there' : 'Not linked to the Library yet: link it to find its citations', on: { click: e => { e.stopPropagation(); RDX.menu(M.block(b.id), e.currentTarget); } } }, n ? 'Cited in · ' + n : 'Cited in'); });
+  // the line of notes under each pane's bar (V4.40, Gabe: "Don't show the cited in button anymore, as it already has its own small tab": its count is on that line)
   const bd = RDOCK.build; RDOCK.build = function (i, b) { const p = bd.apply(this, arguments); try { RDX.strip(p, b); } catch (e) { console.warn('[cited in]', e); } return p; };
   // the quote: its band at the top, instead of "❝ from …"
   const bx = DocView.box; DocView.box = function (b, d) { const el = bx.apply(this, arguments);

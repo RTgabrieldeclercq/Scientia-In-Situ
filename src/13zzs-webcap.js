@@ -135,7 +135,7 @@ const WEBCAP = {
     if (!main) return { ok: false, error: 'there is no page in that file — save the page in Chrome or Edge as “Webpage, Single File”' };
     const byLoc = new Map(), byCid = new Map(); parts.forEach(P => { if (P.loc && !byLoc.has(P.loc)) byLoc.set(P.loc, P); if (P.cid) byCid.set(P.cid, P); });
     const url = H['snapshot-content-location'] || main.loc || '';
-    const R = { missing: 0, icon: null, find(u, base) { u = String(u || '').trim(); if (!u) return null; if (/^cid:/i.test(u)) return byCid.get(u.slice(4)) || null; let a; try { a = new URL(u, base || url || undefined).href; } catch { return byLoc.get(u) || null; } return byLoc.get(a) || byLoc.get(a.replace(/#.*$/, '')) || byLoc.get(u) || null; } };
+    const R = { missing: 0, icon: null, find(u, base) { u = String(u || '').trim(); if (!u) return null; if (/^cid:/i.test(u)) return byCid.get(u.slice(4)) || byLoc.get(u) || null; /* V4.23: Chrome saves a page's own <style> as a part located at cid:css-…@mhtml.blink (a Content-Location, not a Content-ID); it was counted missing and the page came unstyled */ let a; try { a = new URL(u, base || url || undefined).href; } catch { return byLoc.get(u) || null; } return byLoc.get(a) || byLoc.get(a.replace(/#.*$/, '')) || byLoc.get(u) || null; } };
     const dt = new Date(H.date || ''), at = isoLocal(isNaN(dt) ? new Date(file && file.lastModified || Date.now()) : dt);
     const out = WEBCAP.mpage(main, R, url, at), subj = WEBCAP.words(H.subject || '');
     return { ok: true, html: out.html, title: (out.title || subj || (file && file.name || '').replace(/\.mht(ml)?$/i, '')).slice(0, 300), url, at, missing: R.missing, icon: R.icon };

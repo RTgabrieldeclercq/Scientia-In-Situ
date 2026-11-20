@@ -37,6 +37,14 @@
 .box .stampbtn{border:0;background:transparent;font-family:var(--f-m);font-size:10px;color:var(--ink-3);cursor:pointer;padding:2px 4px;border-radius:3px;white-space:nowrap}
 .box .stampbtn:hover{background:var(--surface-2);color:var(--ink)}
 .box .bmore{opacity:0;transition:opacity .12s} .box:hover .bmore,.box.sel .bmore{opacity:1}
+/* V4.13: the header row never pushes ⋯ out of the box. A narrow component, or a kind's longer tag (HYPOTHESIS, MECHANISM), used to
+   overflow: the name kept 90 px and the time stamp its whole width. Now the name, the tag, the stamp and any chip give way (an
+   ellipsis), the buttons keep their size, and ⋯ stays at the right edge. The slim widget header (13zg) wraps instead, as before. */
+.box:not(.slim) > .bh > :is(button,.ib,.cfold,.step,.flag,.bmore,.live):not(.stampbtn){flex:none}
+.box:not(.slim) > .bh > .blab{min-width:28px;flex:1 1 60px;text-overflow:ellipsis}
+.box:not(.slim) > .bh > :is(.num,.stampbtn,.br-tag,.pill,span:not(.spacer)){flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.box:not(.slim) > .bh > button.stampbtn{flex-shrink:4}   /* the time stamp gives way first, then the name (to 28 px), the kind's tag last */
+.box:not(.slim) > .bh > span.num{flex-shrink:.01;text-overflow:clip}   /* the tag gives way last, and clipped: an ellipsis would show for the fraction of a pixel it shrinks when it still fits. (element + class: as specific as the shared rule above, whose :is() counts span:not(.spacer)) */
 .box .flag{color:var(--mag);font-size:12px}
 .box .stepinfo{font-family:var(--f-m);font-size:10px;color:var(--teal);white-space:nowrap}
 .box .step{width:17px;height:17px;border:1.5px solid var(--ink-3);border-radius:4px;background:var(--surface);cursor:pointer;display:grid;place-items:center;font-size:11px;color:var(--surface);flex:none;padding:0}
@@ -88,6 +96,7 @@ body.wiring .box .port{border-color:var(--mag)} body.wiring .box.cmp{cursor:cros
 .synth-in{display:block;width:100%;border:0;background:transparent;resize:none;font-family:var(--f-b);font-size:14.5px;line-height:1.55;padding:4px 14px 12px;outline:0;color:var(--ink);overflow:hidden}
 .box.synth .refs{padding:0 14px 10px;font-family:var(--f-b);font-size:12.5px;color:var(--ink-2)}
 .box.synth .refs ol{padding-left:20px;margin:4px 0}
+.box.synth .refs ul.refs-au{padding-left:20px;margin:2px 0;list-style:'– '}   /* V4.6: papers cited only by author, unnumbered */
 
 /* ---------- wires on the paper ---------- */
 svg.wires{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none}

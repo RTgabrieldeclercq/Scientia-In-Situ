@@ -7,7 +7,10 @@
    wrapped around the feature's own code here, or CSS under body.f-off-<id>
    (24-kinds.css), so the modules themselves stay as they were.
    A new feature is not finished until it is here, with a preview that
-   follows its settings (Gabe, 14 Nov 2026; FEAT.audit()).
+   follows its settings (Gabe, 14 Nov 2026; FEAT.audit()) — and, since V4.12,
+   until its page has a demonstration: what it is for in Gabe's words and a
+   recording of it used in a test note (20b-demos.js, demokit/record.mjs;
+   FEAT.undemoed() lists the ones still without).
    ========================================================================== */
 /* ---------- PV: the pieces previews are drawn with (24-kinds.css .fpv) ---------- */
 const PV = {
@@ -69,6 +72,18 @@ const PV = {
     preview: () => [PV.box({ num: 'Block', label: 'Notes', body: ['The edge held at 2 ng/mL ', h('span.pv-caret', '/cl') ] }),
       h('div.pv-menu', [['/claim', 'mark the sentence as a claim'], ['/cite', 'a citation from the Library'], ['/clear-format', 'plain text again']].map(([a, b], i) => h('div' + (i ? '' : '.on'), h('b', a), h('span', b))))] });
 
+  // V4.33 (14j): Freewrite — a blank page over the app for typing and the voice; the words become components, kinds and links
+  D({ id: 'freewrite', group: 'canvas', label: 'Freewrite', isNew: true, presets: { simple: true }, desc: 'Freewrite in the Quick cast (and /freewrite, and ⋯ on a note) opens a blank page over the whole app for the note you are in. Type, or press Speak: record, pause and play back at any time, the words appearing as you speak where the browser can (otherwise written when the recording stops), and correct them by typing. Convert reads the sentences with the freewrite rules — “X supports Y” makes two components and a supports link, “Y is supported by X” the other way, a sentence with “barrier” a barrier, “… which results in …” a Result waiting for what you add, “Evidence from … explains …” a bridge waiting for a note whose title shares its words — colours each in words saying what it became, and draws the note it will make beside them. Click coloured words (or a box) to change its kind, its link, or make it plain words. Apply puts it in the note under the freewrite, which folds there, kept. Convert can be undone (V4.47): Undo convert takes the colours off, and what you chose is kept for the next Convert. Beside the note, Convert also shows the note as it will look — the new components drawn in the note itself, outlined and marked Preview, where Apply will put them (Preview in the note / Hide in the note). After Apply, Take back on the freewrite’s card, its menu or its page takes what it made out of the note again. Beside the note puts the page in half the window, the note live in the other half. Select words with the pointer to say what they are — a new component, or one that exists (from another note it is bridged in) — just for this freewrite, or for every freewrite (a rule). Words selected over several components become one component, and they leave the components and links they were in, so nothing is said twice (V4.53). Click a word in a component, or select words inside one, to make them its title (the component’s label in the note) or a structure on those words inside it (a Barrier, a Result…); changing its kind keeps both. A component’s label is a button (V4.54): a click shows its kind and its structure as chips, as on a PDF’s highlight (a letter picks a structure), with its title, its links and More; drag a label, or a box in the preview, onto another component to link them. With “Each its own component”, the ＋ between two sentences merges them (V4.55); since V4.61 a ＋ sits between any two components one right after the other, in every mode. Words you select become one whole component, its own card: the components they reach keep the rest of their words, so nothing is said twice (V4.61). A new paragraph starts a new component. A button at the side of each paragraph makes it a region, drawn over its sentences (selected words can be one too: A region); Apply groups its components in the note as a region with that name, and Take back takes it out again. Placeholders (V4.56): type / — /result makes an empty Result to add in the words (⟦Result: ⟧), and /html in it says it will be an HTML file (its ＋ Add then opens that); /barrier, /hypothesis… make one of those to write; the bar above the page does the same. Each is a component: click its label, or drag it onto another to link them. The rules, built in and yours, are below: add, change or delete them. Off: no button, no /freewrite; the freewrites stay in their notes.',
+    tune: [T('colour', 'The words are coloured', 'seg', { isNew: true, def: 'convert', opts: [['convert', 'When you press Convert'], ['live', 'As you write']], d: 'Once converted they follow every correction' }),
+      T('plain', 'Sentences no rule reads', 'seg', { isNew: true, def: 'run', opts: [['run', 'Stay in the component before'], ['component', 'Each its own component'], ['words', 'Stay words']], d: 'V4.37 — by default they go on with the component the sentence before made (a Verdict you keep describing), or form one text component of their own between the links; a click on one can take it out. Each its own component (V4.55): a small ＋ between two sentences merges them into one component; each keeps its structure, and two kinds or two titles are flagged for you to choose one before Apply' }),
+      T('bar', 'A bar of placeholders above the page', 'switch', { isNew: true, def: true, d: 'V4.56 — Placeholder ▾ · Structure ▾ · Format ▾. Off: no bar; / still works (/result makes a Result to add, /html in it says it will be an HTML file)' }),
+      T('voice', 'Words appear as you speak', 'switch', { isNew: true, def: true, d: 'With the browser’s speech recognition (Chrome, Edge, Safari). Off, or where there is none: written when the recording stops — by the computer on the desktop, by Transcribe on the website' }),
+      T('side', 'Beside the note, the page goes', 'seg', { isNew: true, def: 'right', opts: [['right', 'On the right'], ['left', 'On the left']] }),
+      T('fold', 'After Apply, the freewrite folds', 'switch', { isNew: true, def: true, d: 'Kept in the note either way; its ▸ opens it' }),
+      // V4.34: the rules — built in and yours — added, changed and deleted here; kept in the notebook's settings (settings().fwRules)
+      T('rules', 'Rules', 'node', { isNew: true, d: 'What words become: each rule’s patterns ([A] and [B] are the parts), what each part becomes, the link, and an example read live. Words you associate “for every freewrite” are here too. They follow you on every device.', render: () => FREEW.editor() })],
+    preview: () => FREEW.pv() });
+
   D({ id: 'wires', group: 'canvas', label: 'Connections', desc: 'Lines between components, each relation in its own colour, routed the shortest way round what is in between, with chips for connections to other notes and suggestions from recent notes.',
     tune: [T('infer', 'Suggest connections from the last', 'range', Object.assign({ min: 7, max: 90, unit: ' days' }, B('inferWindowDays', () => changed())))],
     preview: () => [PV.abs(150, PV.at(0, 0, '46%', run3({ stamp: null, body: 'The edge collapsed.' })), PV.at('54%', 70, '46%', PV.box({ num: 'Block', label: 'Gels', body: 'Batch 14 is stiffer.' })),
@@ -94,6 +109,32 @@ const PV = {
       h('div.pv-strip', h('span', 'Claim ', h('u', 'C')), h('span', 'Result ', h('u', 'R')), h('span', 'Term ', h('u', 'W')), h('span.on', 'Flag for synthesis ', h('u', 'F'))),
       h('div.pv-synthnote', h('b', 'Synthesis — 30 kPa series'), h('div.pvb.pv-bridge', h('div.refbody', h('div.origin.or-passage', h('div.or-top', h('span.or-k', '⇄ Passage from'), h('a.or-note', 'Run 3'), h('span.or-cmp', 'Edge'))), h('div.serif', { style: { fontSize: '13px', paddingBottom: '6px' } }, 'held at 2 ng/mL')))),
       PV.cap('Words: Ctrl+Enter → F. A whole component: right-click, or select and /synthesize.')] });
+
+  // V4.15 (13c): + Experiment asks the name and can continue a series; one name for every note of an experiment
+  D({ id: 'expseries', group: 'canvas', label: 'Experiment series', isNew: true, presets: { simple: true },
+    desc: '+ Experiment asks the experiment’s name, and can continue a series of its theme: pick “30 kPa series Run 2” and it is named “30 kPa series Run 3”. Every note of an experiment carries its name alone — the stage is its chip and the strip, not part of the title — and renaming one renames them all. A series’ runs share one Synthesis. Off: no series to continue (the name is still asked); series already made stay.',
+    preview: () => { const on = FEAT.on('expseries');
+      return [h('div.pv-xs', h('div.pv-xs-h', 'New experiment'),
+        on ? h('div.pv-xs-f', h('span', 'Continue a series'), h('div.pv-xs-sel', '30 kPa series Run 2 · 2 runs', h('i', '▾'))) : null,
+        h('div.pv-xs-f', h('span', 'Name'), h('div.pv-xs-in', on ? '30 kPa series Run 3' : '30 kPa series'))),
+        h('div.pv-xs-notes', ['Planning', 'Run', 'Analysis'].map(s => h('div.pv-xs-n', h('span.pv-xs-st', s), h('b', on ? '30 kPa series Run 3' : '30 kPa series')))),
+        PV.cap(on ? 'Picking a series names the next run; its three notes all carry the name, each stage as its chip.' : 'Off: the name is asked, with no series to continue; each note still carries the name alone.')]; } });
+
+  // V4.16 (15e): one Synthesis per series; Syntheses in the Portfolio; a note's synthesis in its first block and under its row
+  D({ id: 'synthnotes', group: 'canvas', label: 'Synthesis notes', isNew: true, presets: { simple: true },
+    desc: 'A series’ runs share one Synthesis note: Next from Run 3’s Analysis opens the one the series has and adds Run 3 to what it gathers. Synthesis notes have their own place in the Portfolio — Syntheses, above Notes in each theme, and a choice in its switch. A note’s “what this note adds up to” sits in its first block and moves with it, and its words show under the note’s row in the Portfolio. Off: each run makes its own Synthesis, a Synthesis stays in its experiment’s row, and the box floats on its own.',
+    tune: [T('legend', 'Under each note in the Portfolio, what it adds up to', 'switch', { isNew: true, def: true, d: 'The Portfolio has the same switch beside its own — Syntheses under notes', changed: () => { try { if (App.route && App.route.name === 'portfolio') App.refresh(); } catch (e) { } } })],
+    preview: () => { const on = FEAT.on('synthnotes'), leg = on && FEAT.tune('synthnotes', 'legend') !== false;
+      const note = (t, l) => h('div.pv-sn-n', h('div', t), leg && l ? h('div.pv-sn-leg', l) : null);
+      return [h('div.pv-sn',
+        h('div.pv-sn-head', h('div.pvb-h', h('span.pvb-n', 'Run'), h('span.sp'), h('span.pvb-st', 'Mon 16 Nov')), h('div.pv-sn-f', 'Title · 30 kPa series Run 3'),
+          on ? h('div.pv-sn-syn', h('b', 'Synthesis'), ' — the edge held at 2 ng/mL, not at 10') : null),
+        on ? null : h('div.pv-sn-float', h('b', 'Synthesis'), ' — on its own, beside the note'),
+        h('div.pv-sn-pf',
+          h('div.pv-sn-col', h('div.pv-sn-gl', 'Experiments'), h('div.pv-sn-n', '▸ 30 kPa series Run 3' + (on ? '' : ' · Synthesis'))),
+          h('div.pv-sn-col', on ? [h('div.pv-sn-gl', 'Syntheses'), note('30 kPa series — Runs 2 and 3', 'Stiffer gels hold the edge longer')] : null,
+            h('div.pv-sn-gl', 'Notes'), note('Bench log', 'Fibronectin helped at 2 ng/mL')))),
+        PV.cap(!on ? 'Off: each run its own Synthesis, kept in its experiment; the box floats beside the note.' : leg ? 'Runs 2 and 3 share one Synthesis, listed under Syntheses; each note’s synthesis shows under it.' : 'Runs 2 and 3 share one Synthesis; the lines under the notes are off.')]; } });
 
   D({ id: 'stamps', group: 'canvas', label: 'Times on components', desc: 'When each component happened, in its header, with its place in the timer. Off: shown only when you point at the component.',
     preview: () => [run3({ stamp: on('stamps') ? '13 Nov 2026 20:11 · +12:04' : null }), on('stamps') ? null : PV.cap('Point at a component to see its time.')] });
@@ -125,6 +166,33 @@ const PV = {
   D({ id: 'edgepan', group: 'pen', label: 'Edge pan in full screen', desc: 'In Move, in full screen, resting the pointer at the screen’s very edge pans the note that way, faster the further you push.',
     preview: () => [h('div.pv-edge', h('span.l', '‹‹'), run3({ stamp: null, body: 'The edge collapsed.' }), h('span.r', '››'))] });
 
+  /* V4.20 — the lab's pills in every build (lab-mode.js §11; vendor/lab-pills.js + 99z-pills.js where the lab layer isn't) */
+  D({ id: 'pills', group: 'pen', label: 'Pills', isNew: true, presets: { simple: true }, desc: 'Four round buttons on every note that you drag anywhere: ✎ the hand (zoom, move, pen, highlighter, lasso, and a cog for the pen’s colours and widths), ＋ the Quick cast (Pull in, Flag and Label, then what you add most — it takes the bottom bar’s place), ✦ tools (timer, head start, calculator, equation, split, full screen) and ⊕ zoom (in, 100 %, out, fit). A wheel left open rolls into a row; drop a pill against an edge and its row turns into a column. The layout is yours, the same in every note and on every computer. Off: no pills — the bottom bar and the row of buttons at the top right come back. Place them on the empty note here: the layout is kept in the notebook, so every device has it; a note held upright keeps its own places, and they glide back when it turns again.',
+    changed: v => { try { PILLS.changed(v); } catch (e) { } },
+    // V4.35 — a note held upright keeps its own places (lab-mode §11 labPills.portrait), or shares one layout (labPills.one)
+    tune: [T('one', 'Portrait and landscape', 'seg', { isNew: true, def: 'own', opts: [['own', 'Each keeps its own places'], ['same', 'The same places']],
+      d: 'A note taller than it is wide — a tablet turned, or the app turned by Rotate — has pills of its own, and turning back finds yours as they were',
+      get: () => (typeof PILLCANVAS !== 'undefined' && PILLCANVAS.one()) ? 'same' : 'own', set: v => { try { PILLCANVAS.setOne(v === 'same'); } catch (e) { } } })],
+    preview: () => {
+      if (FEAT.on('pills') && typeof PILLCANVAS !== 'undefined') return [PILLCANVAS.el()];   // V4.35 — an empty note to place them on, kept in the notebook (every device)
+      const on = FEAT.on('pills'), pill = (g, cls, extra) => h('span.pv-pill' + (cls ? '.' + cls : ''), g, extra || null);
+      const note = h('div.pv-pills' + (on ? '' : '.off'), run3({ stamp: null, body: 'Seed at 40k/cm² on the 30 kPa gels.' }),
+        on ? [pill('⊕', 'tl', h('i', '100%')), pill('✦', 'tr'), pill('＋', 'bc'), pill('✎', 'br')]
+          : [h('span.pv-ctools', ['◫', '◷', '∑', '∫'].map(g => h('b', g))), h('span.pv-dockbar', ['＋ Insert', '⇣ Pull in', '⚐'].map(g => h('b', g)))]);
+      return [note, PV.cap(on ? 'Drag a pill anywhere; a wheel left open rolls into a row, and the ＋ Quick cast stands where the bottom bar was.' : 'Off: the bottom bar and the buttons at the top right, as before.')];
+    } });
+
+  /* V4.21 — Rotate: the whole app a quarter turn clockwise at a time (13zzz ROTATE; ⊕'s Rotate in lab-mode §11 and the cut) */
+  D({ id: 'rotate', group: 'pen', label: 'Rotate the app', isNew: true, presets: { simple: true }, desc: 'Rotate in the ⊕ zoom pill (and /rotate) turns the whole app 90° clockwise; each tap turns it 90° more, and the fourth puts it upright again — for a tablet or a screen held the other way. Kept on this device. The pen, the canvas, menus and selections all follow the turn. Esc three times, /rotate reset or Upright here puts it back. Off: upright, and no Rotate.',
+    changed: () => ROTATE.sync(),
+    tune: [T('turn', 'On this device, the app is', 'seg', { isNew: true, def: '0', opts: [['0', 'Upright'], ['90', '90°'], ['180', '180°'], ['270', '270°']], d: 'Clockwise, as Rotate turns it',
+      get: () => String(ROTATE.stored()), set: v => ROTATE.set(+v, true) })],
+    preview: () => {
+      const v = FEAT.on('rotate') ? ROTATE.stored() : 0;
+      return [h('div.pv-rot', h('div.pv-rot-scr', h('span.pv-rot-dir', v ? v + '° ↻' : 'upright'), h('div.pv-rot-app', { style: { transform: 'rotate(' + v + 'deg)' } }, h('i'), h('b')))),
+        PV.cap(v ? ROTATE.name(v) + ' — the app’s top is at the screen’s ' + ({ 90: 'right', 180: 'bottom', 270: 'left' }[v]) + '. Rotate turns it 90° more; Esc three times puts it upright.' : 'Upright. Rotate in the ⊕ zoom pill (or /rotate) turns the whole app 90° clockwise.')];
+    } });
+
   /* =============================== Structures =============================== */
   D({ id: 'structures', group: 'structures', core: true, label: 'Structures', desc: 'Selected words given a meaning: claim, barrier, question and the rest, each in its colour and style, with a status where it has one. Your own kinds of component are here too.',
     tune: [T('key', 'Key', 'seg', Object.assign({ opts: [['ctrl+enter', 'Ctrl+Enter'], ['alt+enter', 'Alt+Enter'], ['ctrl+shift+enter', 'Ctrl+Shift+Enter']] }, B('structKey'))),
@@ -134,16 +202,92 @@ const PV = {
     preview: () => [h('div.pv-kinds', KINDS.slice(0, 8).map(k => h('div', h('kbd', k.key.toUpperCase()), PV.st(k.id, k.label.toLowerCase() + ' — ' + ({ claim: 'collapsed at 10 ng/mL', barrier: 'gels tear above 40 kPa', question: 'is batch 14 too stiff?', evidence: '3 of 3 fields', result: 'traction 1.2 kPa' }[k.id] || 'as marked'))))),
       PV.cap('Select words, press ' + keyLabel(settings().structKey) + ', then the letter.')] });
 
-  D({ id: 'terms', group: 'structures', label: 'Terms', tab: 'terms', desc: 'Words you mark as terms of the project, outlined in bold and found by themselves in every note that uses them, with the Terms tab — every term with its uses, its last twelve weeks, its structures and open barriers, to find, sort and jump through — and each term’s bubbles. Off: no outline, no scanning, no Terms tab; the terms stay.',
+  // V4.4 (13zzy): a PDF or a saved web page can be a Report; what is snipped out of one lands as a Result
+  D({ id: 'reports', group: 'structures', label: 'Reports', isNew: true, desc: 'A PDF or a saved web page can be a Report — a kind only those can be (double-click the tag left of its name, or ⋯ → What kind is this…). A figure snipped out of a report is a Result the moment it lands, and an image panel that is a Result counts as one, like a Result component. Off: no Report is offered and snips stay plain; what you labelled keeps its kind.',
+    tune: [T('snips', 'A figure snipped from a report', 'seg', { isNew: true, def: 'result', opts: [['result', 'Becomes a Result'], ['plain', 'Stays plain']], d: 'The scissors on a PDF, the snip on a web page' })],
+    preview: () => {
+      const res = FEAT.tune('reports', 'snips') !== 'plain', kc = (id, fb) => { const K = typeof CKINDS !== 'undefined' && CKINDS.get(id); return (K && K.color) || fb; };
+      const hd = (label, c) => ({ style: { borderTop: '2px solid ' + c }, num: label });
+      return [h('div.pv-rep', { style: { display: 'flex', gap: '10px', alignItems: 'flex-start', flexWrap: 'wrap' } },
+        PV.box(Object.assign(hd('Report', kc('report', '#46607A')), { label: 'Traction maps · Style 2014.pdf', body: h('div', { style: { height: '46px', borderRadius: '4px', background: 'linear-gradient(135deg, color-mix(in srgb, var(--ink) 8%, transparent), transparent)' } }), cls: 'pv-rep-r' })),
+        h('span', { style: { alignSelf: 'center', color: 'var(--ink-3)' } }, '✂ →'),
+        PV.box(Object.assign(hd(res ? 'Result' : 'Image panel', res ? kc('result', '#1E5E8C') : 'var(--rule-2)'), { label: 'Figure 2', body: h('div', { style: { height: '46px', width: '120px', borderRadius: '4px', background: 'radial-gradient(circle at 35% 40%, #f5a524, #5b2a86 70%)' } }) }))),
+        PV.cap(res ? 'Snipped out of a report: a Result, and counted as one.' : 'Snipped out of a report: a plain image panel.')];
+    } });
+
+  // V4.14 (13zzyb), renamed in V4.24: the Challenge kind — a barrier in the literature, cited by its paper(s), never counted as a barrier towards your project
+  D({ id: 'challenges', group: 'structures', label: 'Challenges', isNew: true, desc: 'A component can be a Challenge: a barrier in the literature, with room for improvement or a solution (double-click the label left of its title). It must be cited by the paper(s) that show it — until then its header says “cite a paper”. A Challenge is never counted as a barrier towards your project, and neither is a barrier you mark inside one. Off: Challenge is not offered and the reminder goes; what you labelled keeps its kind.',
+    tune: [T('cite', 'What counts as its citation', 'seg', { isNew: true, def: 'any', opts: [['any', 'A cite, a quote or a wire'], ['text', 'A cite in its text']], d: 'A cite of a Library paper in its text; or also a quote from a PDF and a wire to a paper', changed: () => { try { App.refresh(); } catch (e) { } } })],
+    changed: () => { try { App.refresh(); } catch (e) { } },
+    preview: () => {
+      const on = FEAT.on('challenges'), any = FEAT.tune('challenges', 'cite') !== 'text', c = typeof CHALLENGE !== 'undefined' ? CHALLENGE.COLOR : '#7D7A16';
+      const chip = () => { const s = h('span.cg-cite'); s.innerHTML = typeof CHALLENGE !== 'undefined' ? CHALLENGE.ICON : ''; s.append('cite a paper'); return s; };
+      return [h('div.pv-cg', { style: { display: 'grid', gap: '8px' } },
+        PV.box({ num: on ? 'Challenge' : 'Block', label: 'Traction maps blur at the cell edge', style: on ? { '--kc': c } : {}, head: [], body: ['Displacement fields lose resolution within 2 µm of the edge ', h('span.pv-cite', '(Style 2014)'), '.'] }),
+        PV.box({ num: on ? 'Challenge' : 'Block', label: 'No standard for gel stiffness checks', style: on ? { '--kc': c, borderLeftStyle: 'dashed' } : {}, head: on ? [chip()] : [], body: any ? 'Labs measure their gels in different ways (no citation yet).' : 'A quote from a PDF, without a cite in its text.' }),
+        h('div.pv-cgn', h('span', 'Open barriers in the project: 0'), h('span', '·'), h('span', on ? 'Challenges are the literature’s, not yours' : 'Challenge is not offered'))),
+        PV.cap(!on ? 'Off: Challenge is not offered; a Challenge you made keeps its kind.' : any ? 'Cited by a cite, a quote from a PDF or a wire to a paper. The second one needs its paper.' : 'Only a cite written in its own text counts.')];
+    } });
+
+  // V4.5 (14g): any component can also be a reference — /reference finds it from any note; the Atlas lists them (and the Reports)
+  D({ id: 'references', group: 'structures', label: 'References', isNew: true, desc: 'Any component can also be a reference, beside whatever kind it is: a bookmark on its card. /reference opens a gallery of them over the note — search, filters, a preview — and Enter puts one in the note, live, pointing back to where it lives. The Atlas gains a References tab (gallery or list) and, with Reports on, a Reports tab. Off: no bookmark, no gallery, no tabs; what you marked stays marked.',
+    tune: [T('enter', 'Enter in the gallery', 'seg', { isNew: true, def: 'insert', opts: [['insert', 'Puts it in the note'], ['open', 'Opens where it lives']], d: 'Alt+Enter does the other' }),
+      T('scope', 'The gallery shows first', 'seg', { isNew: true, def: 'project', opts: [['project', 'The note’s project'], ['all', 'Everything, newest first']] }),
+      T('type', 'The gallery opens on', 'seg', { isNew: true, def: 'all', opts: [['all', 'All'], ['text', 'Text'], ['figure', 'Figures'], ['table', 'Tables'], ['equation', 'Equations']] }),
+      T('show', 'The Atlas’s References tab shows', 'seg', { isNew: true, def: 'cards', opts: [['cards', 'A gallery'], ['list', 'A list']] })],
+    preview: () => {
+      const ins = FEAT.tune('references', 'enter') !== 'open', list = FEAT.tune('references', 'show') === 'list', ty = FEAT.tune('references', 'type') || 'all';
+      const rib = h('span', { style: { position: 'absolute', top: '-1px', right: '10px', width: '10px', height: '14px', background: 'var(--ink)', clipPath: 'polygon(0 0,100% 0,100% 100%,50% 76%,0 100%)' } });
+      const card = (k, label, body, typ) => h('div', { style: { position: 'relative', background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: '8px', padding: '7px 9px', display: 'grid', gap: '4px', opacity: ty === 'all' || ty === typ ? '1' : '.35' } },
+        h('span', { style: { font: '600 8.5px var(--f-m)', letterSpacing: '.08em', textTransform: 'uppercase', color: k ? `var(--k-${k}, var(--ink-3))` : 'var(--ink-3)' } }, k ? k : 'reference'), h('b', { style: { fontSize: '11.5px' } }, label), body, rib);
+      return [h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px', font: '12px var(--f-m)', color: 'var(--ink-3)', marginBottom: '6px' } }, h('kbd', '/reference'), h('span', '⌕ gel'), h('span', { style: { marginLeft: 'auto' } }, list ? 'Atlas: a list' : 'Atlas: a gallery')),
+        h('div.pv-refs', card('result', 'Gel stiffness', h('span', { style: { font: '600 15px var(--f-d)' } }, '30.4 kPa'), 'text'),
+          card('method', 'Polyacrylamide, 30 kPa', h('span', { style: { font: '10px var(--f-m)', color: 'var(--ink-3)' } }, 'acrylamide 150 µL · bis 100 µL'), 'table'),
+          card(null, 'Hertz model', h('i', { style: { font: 'italic 13px var(--f-b)' } }, 'F = 4/3 · E/(1−ν²) · √R δ³ᐟ²'), 'equation')),
+        PV.cap(ins ? 'Enter puts the reference in the note, live; Alt+Enter opens where it lives.' : 'Enter opens where it lives; Alt+Enter puts it in the note.')];
+    } });
+
+  // V4.7 (14h): floats — a component waiting for a note; /float brings the dome of them
+  D({ id: 'floats', group: 'structures', label: 'Floats', isNew: true, desc: 'A component that waits for a note not made yet: right-click → Make it a float (or select several with Ctrl and /float). It keeps its kind and shows a cloud. /float in a note, with nothing selected, raises a clear glass dome along the whole bottom of the canvas — the top of a great sphere — with the floats drifting in it; drag one out onto the note and it lands as a bridge from where it was written, no longer a float. Off: no cloud, no dome, no /float; placed floats stay where they are.',
+    tune: [T('spin', 'The dome', 'seg', { isNew: true, def: 'slow', opts: [['slow', 'Turns slowly'], ['still', 'Still']], d: 'It always holds still while the pointer is in it' }),
+      T('by', 'Floats coloured by', 'seg', { isNew: true, def: 'kind', opts: [['kind', 'Kind'], ['origin', 'Where they came from'], ['age', 'Age']] }),
+      T('old', 'A float has waited too long after', 'seg', { isNew: true, def: '14', opts: [['7', '1 week'], ['14', '2 weeks'], ['30', '1 month']], d: 'It sits lower in the dome, paler, with its age' }),
+      T('rest', 'Rest on a float before it opens', 'seg', { isNew: true, def: '1000', opts: [['600', '0.6 s'], ['1000', '1 s'], ['1600', '1.6 s']], d: 'A click opens it at once' }),
+      T('place', 'A float you drag out lands', 'seg', { isNew: true, def: 'drop', opts: [['drop', 'Where you drop it'], ['centre', 'At the view’s centre']] })],
+    preview: () => {
+      const by = FEAT.tune('floats', 'by') || 'kind', still = (FEAT.tune('floats', 'spin') || 'slow') === 'still';
+      const cols = by === 'origin' ? ['hsl(20 55% 58%)', 'hsl(200 55% 58%)', 'hsl(120 45% 50%)', 'hsl(280 50% 62%)', 'hsl(40 60% 55%)', 'hsl(330 50% 60%)']
+        : by === 'age' ? ['var(--float)', 'var(--float)', 'color-mix(in srgb, var(--ink-4) 30%, var(--float))', 'color-mix(in srgb, var(--ink-4) 55%, var(--float))', 'var(--float)', 'color-mix(in srgb, var(--ink-4) 75%, var(--float))']
+        : ['#B5761B', '#1E5E8C', '#6B4FA3', '#9E2A62', 'var(--float)', '#2F6FB0'];
+      const B = [[.16, .82, 18, 1], [.3, .56, 22], [.5, .42, 26], [.66, .58, 22], [.84, .8, 18, 1], [.42, .8, 16]];   // inside the wide cap
+      return [h('div.pv-fl' + (still ? '.still' : ''), h('span.pv-flcard', FLOATS.cloud(), 'afloat'), h('div.pv-flsk'),
+        h('div.pv-fld', B.map(([x, y, d, o], i) => h('i' + (o ? '.old' : ''), { style: { left: (x * 100) + '%', top: (y * 100) + '%', '--d': d + 'px', '--kc': cols[i] } })))),
+        PV.cap('Floats in the dome, coloured by ' + (by === 'origin' ? 'where they came from' : by === 'age' ? 'age' : 'kind') + '; the oldest lowest. Drag one onto the note.')];
+    } });
+  // V4.9 (14i): a label in hand — /label: the cursor is the label, a click labels a component
+  D({ id: 'labels', group: 'structures', label: 'Labels', isNew: true, desc: 'Float and Reference by clicking, with /label: the cursor becomes the label — the sky-lavender cloud or the golden tag — and a click on a component labels it, then the cursor is yours again; hold Ctrl to label several. Esc, Done or a click on the empty canvas puts it down. Off: no /label; the floats and references you made stay.',
+    tune: [T('keep', 'Ctrl keeps the label in hand', 'switch', { isNew: true, def: true, d: 'Ctrl+click labels a component and keeps the label for the next; off, every click puts it down' }),
+      T('size', 'The cursor', 'seg', { isNew: true, def: '32', opts: [['24', 'Small'], ['32', 'Large']], d: 'The label as the cursor over the canvas' })],
+    preview: () => {
+      const K = typeof LABELS !== 'undefined' ? [{ id: 'float' }, { id: 'reference' }] : [], big = (FEAT.tune('labels', 'size') || '32') === '32', keep = FEAT.tune('labels', 'keep') !== false;
+      const ic = id => { const i = h('i'); i.innerHTML = LABELS.svg(id); return i; }, tag = h('i.on'); tag.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z"/><path d="M6 6h.008v.008H6V6Z"/></svg>';
+      const cur = h('span.cur', { style: { width: (big ? 26 : 19) + 'px', height: (big ? 26 : 19) + 'px' } }); cur.innerHTML = LABELS.svg('float', big ? 26 : 19);
+      return [h('div.pv-lbl', h('div.pv-lbl-row', tag, ...K.map(k => ic(k.id))), h('div.pv-lbl-card', 'Try a stiffer gel next run', cur)),
+        PV.cap('Label → Float: the cursor is the cloud; a click makes the component a float' + (keep ? ' (Ctrl keeps the cloud for the next).' : '.'))];
+    } });
+
+  D({ id: 'terms', group: 'structures', label: 'Terms', tab: 'terms', desc: 'Words you mark as terms of the project, found by themselves in every note that uses them. In a note a term reads the way you choose (V4.66): A · Quiet underline (the default: ordinary text with a dotted teal line), B · Soft tag (a faint teal tint), or C · Ghost until you look (plain words, a faint line while you are over their component) — all readable, selected too. Rest on one about a second: its card — its uses, notes and this month in a row, its 12 weeks, the nearest notes with their sentences, and down its left side a timeline of every note that uses it (point at a dot to read its sentence, click to open it). The Terms tab — every term with its uses, its last twelve weeks, its structures and open barriers, to find, sort and jump through — and each term’s bubbles. Off: no look, no card, no scanning, no Terms tab; the terms stay.',
     tune: [T('key', 'Mark a term', 'seg', Object.assign({ opts: [['alt+w', 'Alt+W'], ['alt+shift+w', 'Alt+Shift+W']], d: 'Ctrl+W in Focus mode' }, B('termKey'))),
+      T('look', 'Terms in your notes', 'seg', { isNew: true, def: 'a', opts: [['a', 'A · Quiet underline'], ['b', 'B · Soft tag'], ['c', 'C · Ghost until you look']], d: 'How a term reads in a note and in its bubbles; the card on resting a second is the same for all three', changed: () => { try { TLOOK.apply(); } catch (e) { } } }),
       T('lit', 'Mentions in lit reviews', 'seg', { isNew: true, def: 'out', opts: [['out', 'Left out'], ['counted', 'Counted']], d: 'Left out of the Terms tab and the term’s page; a term used only in lit reviews isn’t listed' }),
       T('sort', 'The Terms tab opens sorted', 'seg', { isNew: true, def: 'used', opts: [['used', 'Most used'], ['rising', 'Rising'], ['recent', 'Recent'], ['az', 'A–Z']], d: 'The switch over the list changes it there; each sort cuts the list into groups the rail jumps to' })],
     preview: () => { const lit = tune('terms', 'lit') === 'counted', so = tune('terms', 'sort') || 'used';
       const L = [{ n: 'traction force', u: lit ? 12 : 9, d: 3, a: 1 }, { n: '30 kPa gel', u: 4, d: 0, a: 5 }, { n: 'bead drift', u: 6, d: 4, a: 0 }].concat(lit ? [{ n: 'traction stress', u: 2, d: 0, a: 20 }] : []);
       L.sort(so === 'rising' ? (x, y) => y.d - x.d : so === 'recent' ? (x, y) => x.a - y.a : so === 'az' ? (x, y) => x.n.localeCompare(y.n) : (x, y) => y.u - x.u);
-      return [PV.box({ num: 'Block', label: 'Gels', body: ['Every ', on('terms') ? h('span.term-demo', 'traction force') : 'traction force', ' map on the ', on('terms') ? h('span.term-demo', '30 kPa gel') : '30 kPa gel', ' drifted.'] }),
+      const lk = tune('terms', 'look') || 'a';
+      return [h('div.pv-tlook.ed', 'Every ', on('terms') ? h('span.tm', 'traction force') : 'traction force', ' map on the ', on('terms') ? h('span.tm', '30 kPa gel') : '30 kPa gel', ' drifted at the edge.'),
         h('div.pv-tlist', L.map(x => h('div', h('span.term-demo', x.n), h('span.n', x.u), h('span.n', so === 'rising' ? (x.d ? '▲ ' + x.d : '–') : so === 'recent' ? (x.a ? x.a + ' d' : 'today') : '')))),
-        PV.cap('Mark one with ' + keyLabel(settings().termKey) + '; it is found in every other note too. The Terms tab opens ' + ({ used: 'with the most used first', rising: 'with the rising ones first', recent: 'with the most recent first', az: 'from A to Z' })[so] + '. ' + (lit ? 'Lit reviews are counted there.' : 'Lit reviews are left out of it.'))]; } });
+        PV.cap(({ a: 'A · Quiet underline: ordinary text with a dotted teal line under it.', b: 'B · Soft tag: a faint teal tint behind it.', c: 'C · Ghost until you look: plain words; a faint line while the pointer is over their component.' })[lk] + ' Rest on one a second for its card. Mark one with ' + keyLabel(settings().termKey) + '; it is found in every other note too. The Terms tab opens ' + ({ used: 'with the most used first', rising: 'with the rising ones first', recent: 'with the most recent first', az: 'from A to Z' })[so] + '. ' + (lit ? 'Lit reviews are counted there.' : 'Lit reviews are left out of it.'))]; } });
 
   D({ id: 'bubbles', group: 'structures', label: 'Term bubbles', needs: 'terms', presets: { simple: true }, desc: 'A term opens as glass bubbles: each component that uses it, with every neighbour around it, a portal into its note. Pointing closes a ring and ports in (a click does it at once); a small bubble on the note brings you back. They float a little. Off: the same neighbourhoods in plain round trays that stay still; a click opens the note.',
     tune: [T('order', 'Bubbles arranged', 'seg', { isNew: true, def: 'note', opts: [['note', 'By note'], ['time', 'By time'], ['size', 'Busiest first']], d: 'How a term opens; the switch over its bubbles changes it there' }),
@@ -216,11 +360,29 @@ const PV = {
   D({ id: 'reminders', group: 'time', label: 'Reminders', presets: { simple: true }, inserts: ['reminder'], desc: 'Deadlines, meetings and plain reminders under the bell in the header, on Today and in the day note, with alerts.',
     preview: () => [h('div.pv-rem', h('div.pv-remh', 'Coming up'), [['Today 15:00', 'Lab meeting', 'meeting'], ['Mon', 'Order fibronectin', 'reminder'], ['Fri', 'Abstract due', 'deadline']].map(([a, b, c]) => h('div', h('span.mono', a), h('b', b), h('span', c))))] });
 
-  D({ id: 'review', group: 'time', label: 'Weekly review', tab: 'review', desc: 'The weekly bet: what needs addressing, decide, what moved, rate, friction, signal, and next week. It opens on the weekend after the week ends and writes a review note.',
-    tune: [T('start', 'The week runs from', 'seg', Object.assign({ opts: [[6, 'Saturday'], [0, 'Sunday'], [1, 'Monday']] }, { get: () => settings().weekStartDow, set: v => { saveSettings({ weekStartDow: +v }); changed(); } })),
-      T('preview', 'Preview the unfinished week', 'switch', { get: () => !!settings().reviewPreview, set: v => { saveSettings({ reviewPreview: v }); changed(); } })],
-    preview: () => [h('div.pv-steps', ['What needs addressing', 'Decide', 'What moved', 'Rate', 'Friction', 'Signal', 'Next week’s bet'].map((x, i) => h('div' + (i === 1 ? '.on' : ''), h('span', String(i + 1)), x))),
-      PV.cap('Week: ' + ({ 6: 'Saturday → Friday', 0: 'Sunday → Saturday', 1: 'Monday → Sunday' }[settings().weekStartDow] || '') + '.')] });
+  // V4.8 (18b-monthly.js): the monthly review replaces the weekly bet — a report of the month's deliverables per note, an inbox for what belongs to no note, next month's plan
+  D({ id: 'review', group: 'time', label: 'Monthly review', tab: 'review', desc: 'Each month’s report: what it added up to, its numbers against the month before, and per note its takeaways and results (then barriers resolved, questions answered, Reports and References). Unassigned lists every component of your daily notes that belongs to no note of the Portfolio, to file with a key. Ticking what is still open writes next month’s plan into the review note.',
+    tune: [T('opens', 'A month’s review opens', 'seg', { isNew: true, def: 'after', opts: [['after', 'The day after it ends'], ['weekend', 'On its last weekend']] }),
+      T('deliver', 'The report lists', 'seg', { isNew: true, def: 'all', opts: [['core', 'Takeaways and results'], ['more', '+ barriers resolved, questions answered'], ['all', '+ Reports and References']] }),
+      T('inbox', 'Unassigned takes in', 'seg', { isNew: true, def: 'quick', opts: [['daily', 'Daily notes'], ['quick', 'Daily and quick notes']] }),
+      T('keys', 'Inbox keys (j k x f m l n d u)', 'switch', { isNew: true, def: true }),
+      T('compare', 'Compare with the month before', 'switch', { isNew: true, def: true }),
+      T('preview', 'Preview the running month', 'switch', { get: () => !!settings().reviewPreview, set: v => { saveSettings({ reviewPreview: v }); changed(); } })],
+    preview: () => typeof MONTHLY !== 'undefined' ? MONTHLY.preview() : [PV.cap('The monthly review.')] });
+  /* V4.18 — a theme's aims are milestones, measured by their deliverables (15g, 32-milestones.css) */
+  D({ id: 'milestones', group: 'time', label: 'Milestones', isNew: true, presets: { simple: true }, desc: 'A theme’s large, overarching goals (what were its aims), each measured by its deliverables: a Synthesis note, or a set of results, takeaways, verdicts… picked from your notes. Its completeness is the share delivered; + Milestone on the theme’s page, Re-scope… for a new version. Off: the milestones leave the theme and project pages and the Portfolio; nothing written is lost.',
+    tune: [T('synth', 'A Synthesis note delivers its deliverable once', 'seg', { isNew: true, def: 'written', opts: [['written', 'Its synthesis is written'], ['linked', 'It is linked']], d: 'Its synthesis: the “what this note adds up to” of the Synthesis note' })],
+    preview: () => {
+      const linkedOnly = (tune('milestones', 'synth') || 'written') === 'linked', flag = h('span.mi-flag'); flag.innerHTML = MILE.FLAG;
+      const row = (met, label, sub, w) => h('div.msrow.mi-row' + (met ? '.met' : ''), h('span.mi-tick' + (met ? '.on' : ''), met ? '✓' : ''), h('div.mi-main', h('div.mi-l', label), h('div.mi-sub', ...sub)), h('span.pill.mi-w', w));
+      const rows = [[true, '8 kPa series, synthesised', [h('span.mi-k', 'Synthesis note'), h('span', '↳ 8 kPa series — Synthesis'), h('span.mi-st.ok', 'its synthesis is written')], '34%'],
+        [linkedOnly, '30 kPa series, synthesised', [h('span.mi-k', 'Synthesis note'), h('span', '↳ 30 kPa series — Synthesis'), h('span.mi-st', linkedOnly ? 'linked' : 'write its synthesis to deliver it')], '33%'],
+        [false, 'Results across the stiffness range', [h('span.mi-k', 'Results · Verdicts'), h('span.mi-cnt', '2 of 3')], '33%']];
+      const pct = linkedOnly ? 67 : 34, done = rows.filter(r => r[0]).length;
+      return [h('div.pv-mi', h('div.row.mi-h', flag, h('b', { style: { flex: 1 } }, 'Map traction force against stiffness, 8–30 kPa'), h('span.mono.tiny.mi-pct', pct + '%')), h('div.bar', { style: { margin: '6px 0 8px' } }, h('i', { style: { width: pct + '%' } })),
+        h('div.mi-dlh', h('span', 'Deliverables'), h('span.mi-dln', done + ' of 3 delivered')), rows.map(r => row(...r))),
+        PV.cap(linkedOnly ? 'A Synthesis note counts as soon as it is linked.' : 'A Synthesis note counts once its synthesis is written; a set once as many as it asks for are picked.')];
+    } });
 
   D({ id: 'chores', group: 'time', label: 'Recurring chores', presets: { standard: false }, desc: 'Lab chores that repeat — the water bath, the CO₂ tank — due ones shown in the day note.',
     tune: [T('list', 'Chores', 'button', { button: 'Recurring chores…', run: () => CHORES.manage() })],
@@ -228,9 +390,14 @@ const PV = {
 
   /* =============================== Reading & sources =============================== */
   D({ id: 'library', group: 'reading', label: 'Library', tab: 'library', presets: { simple: true }, desc: 'Papers and their PDFs, the reader with highlights and notes, and citations in your text. Off: the Library tab leaves; citations and papers stay.',
-    tune: [T('cite', 'Citations show', 'seg', Object.assign({ opts: [['title', 'Title'], ['author', 'Author–year'], ['number', 'Numbered']] }, B('citeMode')))],
-    preview: () => { const m = settings().citeMode, c = m === 'author' ? '(Style et al., 2014)' : m === 'number' ? '[3]' : 'Traction force microscopy in physics and biology';
-      return [PV.box({ num: 'Block', label: 'Background', body: ['Cells pull on soft gels as they move ', h('span.pv-cite', c), '.'] })]; } });
+    // V4.6: every note that has not chosen its own shows its citations this way (/cite); /author-cite makes one citation "Style et al." whatever the note shows
+    tune: [T('cite', 'Citations show', 'seg', Object.assign({ isNew: true, opts: [['number', 'Numbered [1]'], ['author', 'Style et al.'], ['title', 'Title']], d: 'In every note that has not chosen its own (its ⋯ menu); numbered from [1] in the order they first appear, with the references listed under the note' }, B('citeStyle'))),
+      T('year', 'Citations by author add the year', 'switch', Object.assign({ isNew: true, d: 'Style et al., 2014 — without it: Style et al.' }, B('citeYear')))],
+    preview: () => { const m = settings().citeStyle || 'number', yr = !!settings().citeYear, au = 'Style et al.' + (yr ? ', 2014' : ''), au2 = 'Plotnikov et al.' + (yr ? ', 2012' : '');
+      const cite = (t, sup) => h('span.pv-cite', sup ? { style: { fontSize: '.72em', verticalAlign: 'super', fontFamily: 'var(--f-m)', color: 'var(--teal)' } } : {}, t);
+      const c1 = m === 'author' ? cite(au) : m === 'number' ? cite('[1]', true) : cite('Traction force microscopy in physics and biology'), c2 = m === 'author' ? cite(au) : m === 'number' ? cite('[2]', true) : cite('Force fluctuations within focal adhesions');
+      return [PV.box({ num: 'Block', label: 'Background', body: ['Cells pull on soft gels as they move', c1, '; adhesions fluctuate', c2, ', as ', cite(au2), ' showed.'] }),
+        PV.cap(m === 'number' ? '/cite numbers from [1]; /author-cite names the author, just for that one.' : m === 'author' ? '/cite names the first author, no brackets.' : '/cite shows the paper’s title.')]; } });
 
   /* V4.1 — the Library overhaul (17e search, 17d shelves and foci, 17f shelf map and sheet) */
   D({ id: 'libsearch', group: 'reading', needs: 'library', label: 'Library search', isNew: true, presets: { simple: true },
@@ -277,8 +444,14 @@ const PV = {
   D({ id: 'eqcap', group: 'reading', needs: 'library', label: 'Equation capture', desc: '∑ Capture equation in the Library’s reader: draw a box round an equation on the page, check it, name it — registered with its paper and page.',
     preview: () => [h('div.pv-page', h('div.pv-pl'), h('div.pv-pl.s'), h('div.pv-eqbox', 'E = 3G(1 + ν)'), h('div.pv-pl'), h('div.pv-pl.s')), PV.cap('∑ Capture equation, then a box round it.')] });
 
-  D({ id: 'litrev', group: 'reading', label: 'Lit reviews', tab: 'litreviews', desc: 'Literature reviews: a tab of their own, and each project’s Lit reviews column.',
-    preview: () => [h('table.pv-tbl', h('tr', h('th', 'Paper'), h('th', 'Method'), h('th', 'Finding')), h('tr', h('td', 'Style 2014'), h('td', 'TFM'), h('td', 'review')), h('tr', h('td', 'Plotnikov 2014'), h('td', 'FRET'), h('td', 'focal adhesions')))] });
+  // V4.27: no tab of their own — each project's Lit reviews section in the Portfolio, with + Lit review there
+  D({ id: 'litrev', group: 'reading', label: 'Lit reviews', desc: 'Literature reviews: a canvas for one question in the literature — its papers, the quotes that matter and your notes on them — linked to every project it serves. They live in the Portfolio: each project’s Lit reviews section lists the reviews linked to it, and + Lit review there starts one, linked to that project; a review linked to no project is listed with the notes outside any project. There is no Lit reviews tab (its page still opens from a link or search). Off: + Lit review and the empty sections go; the reviews you made stay where they are.',
+    changed: () => { try { App.refresh(); } catch (e) { } },
+    preview: () => { const on = FEAT.on('litrev'), box = typeof PFICON !== 'undefined' && PFICON.boxed(), ico = typeof PFICON !== 'undefined' && PFICON.on() ? PFICON.el('lit', 13) : null;
+      return [h('div.pv-lrv', h('div.pv-tabs', h('span.on', 'Portfolio'), h('span', 'Review'), h('span', 'Terms'), h('span', 'Library')),
+        h('div.pv-lrv-sec', h('div.pv-lrv-sh', h('div' + (box ? '.pf-box' : ''), { 'data-sk': 'lit' }, ico, h('span', 'Lit reviews'), h('span.pvc', on ? '2' : '2')), on ? h('span.pv-lrv-add', '+ Lit review') : null),
+          h('div.pv-lrv-n', h('span.pv-lrv-t', 'Does the edge peak hold at low ligand?'), h('span.pvc', '2 papers · 3 quotes')), h('div.pv-lrv-n', h('span.pv-lrv-t', 'Gel stiffness checks across labs'), h('span.pvc', '4 papers · 1 quote')))),
+        PV.cap(on ? 'No tab: a project’s lit reviews are in its Portfolio section, and + Lit review starts one linked to it.' : 'Off: no + Lit review; the reviews you made stay listed.')]; } });
 
   D({ id: 'webcap', group: 'reading', label: 'Web capture', inserts: ['website'], desc: 'A web page kept as it was the moment it was saved, in a note: + Insert → Website…, or a page saved from the browser. Off: it leaves + Insert; pages already captured stay.',
     preview: () => [h('div.pvb', h('div.pvb-h', h('span.pvb-n', 'Website'), h('b', 'Traction force microscopy — Wikipedia'), h('span.sp'), h('span.pvb-st', 'kept 13 Nov')), h('div.pv-page', { style: { margin: '0 10px 10px' } }, h('div.pv-pl'), h('div.pv-pl.s'), h('div.pv-pl'), h('div.pv-pl.s')))] });
@@ -328,12 +501,111 @@ const PV = {
         h('div.pvb.pv-q', { style: { borderLeft: '4px solid ' + col } }, h('div.pvb-h', h('span.pvb-n', 'Quote'), h('span.sp'), h('span.pvb-st', 'p. 4')), band('❝ Quoted from'), h('div.pvb-tx', '❝ Cells pull hardest at the leading edge, where adhesions mature.')),
         h('div.pvb.pv-bridge', h('div.pvb-h', h('span.pvb-n', 'Bridge'), h('span.sp')), h('div.refbody', h('div.origin.or-bridge', h('div.or-top', h('span.or-k', '⇄ Bridged from'), h('a.or-note', 'Reading: Style 2014'), h('span.or-cmp', 'Quote'))), band('❝ Quoted from', 'in Reading: Style 2014'), h('div.serif', { style: { fontSize: '13px', fontStyle: 'italic' } }, 'Cells pull hardest at the leading edge, where adhesions mature.')))),
         PV.cap('A quote, and the same quote bridged to another note: the bridge’s band, then the citation’s. Click it: ' + (beside ? 'the paper opens beside the note, at the quote.' : 'its card scrolls to the quote.'))]; } });
+  /* V4.10 — the reader's side panel folds (17g, 30-sidefold.css) */
+  const sfPaint = () => { try { SIDEFOLD.paint(SIDEFOLD.start()); } catch (e) { } };
+  D({ id: 'sidefold', group: 'reading', label: 'Fold the side panel', isNew: true, presets: { simple: true }, desc: 'The panel of highlights and notes beside a maximised PDF, HTML page or saved website, and in the Library’s reader, folds away with ›: a small round button stays at the right edge, the count on its badge; click it to open the panel again. Beside a note it folds too (V4.40), with a fold of its own that starts folded, and lies over the paper when open. Off: the panel stays open in full screen and the Library, as before (beside a note it still folds).',
+    changed: sfPaint,
+    tune: [T('start', 'When a file opens, the panel is', 'seg', { isNew: true, def: 'last', opts: [['last', 'As you left it'], ['open', 'Open'], ['folded', 'Folded']], d: 'As you left it: kept on this device, the same for every reader', changed: sfPaint })],
+    preview: () => {
+      const wrap = h('div'), start = tune('sidefold', 'start') || 'last';
+      const chev = () => { const b = h('button.pv-sf-b', { type: 'button', tabindex: '-1' }); b.innerHTML = SIDEFOLD.CHEV; return b; };
+      const draw = () => { const f = document.body.classList.contains('sf-fold'), toggle = e => { e.stopPropagation(); SIDEFOLD.set(!f); draw(); };
+        const ann = c => h('div.pv-sf-ann', { style: { '--hc': c } }, h('i'), h('i.s'));
+        const side = f ? h('div.pv-sf-cap', { title: 'Highlights and notes · 3 highlights · 1 note — click to open', on: { click: toggle }, html: SIDEFOLD.PEN })
+          : h('div.pv-sf-side', h('div.pv-sf-top', h('span', 'Highlights and notes'), h('span.sp'), Object.assign(chev(), { title: 'Fold the panel to the side', onclick: toggle })), ann('#F6D55C'), ann('#90BE6D'), ann('#7FB3E8'));
+        wrap.replaceChildren(h('div.pv-sf' + (f ? '.f' : ''), rdPage(), side),
+          PV.cap((f ? 'Folded: the page has the room; click the round button at the edge to open the panel. ' : 'Open: › folds the panel to a strip at the side. ') + (start === 'open' ? 'A file you open starts with it open.' : start === 'folded' ? 'A file you open starts with it folded.' : 'A file you open finds it as you left it.') + ' Try it here.')); };
+      draw(); return [wrap];
+    } });
+  // V4.22 (17h): the References Map — a PDF's citations, hovered, show their paper; clicked, go to it; listed in the Highlights panel
+  const rfmRefresh = () => { try { REFMAP.refresh(); } catch (e) { } };
+  D({ id: 'refmap', group: 'reading', label: 'References Map', isNew: true, presets: { simple: true }, changed: rfmRefresh,
+    desc: 'In a PDF you read — maximised, beside a note, or in the Library’s reader — a citation in the text shows its paper when you rest the pointer on it, and a click takes you to that reference at the end of the paper (‹ Back returns you). The Highlights panel gains the References Map: every reference, numbered as in the paper, with how often it is cited. It uses the PDF’s own links when it has them; without links (older papers) it finds the citations in the text — numbered superscripts, [12], (12), Smith et al. 2014 — the journal saying which style to expect. Off: no map, no card, a click on a citation does nothing.',
+    tune: [T('delay', 'The card shows after resting on a citation for', 'seg', { isNew: true, def: '1000', opts: [['600', '0.6 s'], ['1000', '1 s'], ['1500', '1.5 s']], d: 'Moving away before then shows nothing', changed: rfmRefresh }),
+      T('find', 'Citations come from', 'seg', { isNew: true, def: 'both', opts: [['both', 'Its links, then the text'], ['links', 'The PDF’s links only']], d: 'The text: numbered superscripts, [12], (12), author and year — for papers without links', changed: rfmRefresh })],
+    preview: () => {
+      const wrap = h('div'), on = FEAT.on('refmap'), links = tune('refmap', 'find') === 'links', d = (+tune('refmap', 'delay') || 1000) / 1000;
+      let shown = false;
+      const draw = () => {
+        const cite = (t, sup) => h(sup ? 'sup.cite' : 'span.cite', { class: shown && on ? 'on' : '', on: { click: e => { e.stopPropagation(); if (!on) return; shown = !shown; draw(); } } }, t);
+        const pg = h('div.pv-rfm-pg', 'Cells pull hardest at the leading edge', cite('1,2', true), ' and relax behind it, as traction maps show', cite('3', true), '.',
+          shown && on ? h('div.pv-rfm-card', h('span.mono.tiny.muted', '1 · Style et al. · 2014'), h('b', 'Traction force microscopy in physics and biology'), h('span.tiny', h('i', 'Soft Matter'), ' · In your Library')) : null);
+        const side = h('div.pv-rfm-side', h('h6', 'References Map'), h('div', h('i', '1'), 'Style 2014', h('span', '×2')), h('div', h('i', '2'), 'Plotnikov 2012', h('span', '×1')), h('div', h('i', '3'), 'Legant 2010', h('span', '×1')));
+        wrap.replaceChildren(h('div.pv-rfm' + (on ? '' : '.off'), pg, on ? side : null),
+          PV.cap(!on ? 'Off: no map, no card; a click on a citation does nothing.' : (shown ? 'The card of reference 1 — it shows after resting ' + d + ' s on a citation; a click in the paper goes to the reference. ' : 'Click a citation here to see its card (in a paper, rest the pointer ' + d + ' s). ') + (links ? 'Citations come from the PDF’s links only.' : 'From the PDF’s links, or found in the text for older papers.')));
+      };
+      draw(); return [wrap];
+    } });
+  /* V4.29 — reading sets by project and the Reader button (17i, 34-readsets.css) */
+  D({ id: 'rsets', group: 'reading', needs: 'rtabs', label: 'Reading sets by project', isNew: true,
+    desc: 'The reader’s tabs are kept by project. A paper goes in the set of the project you are in when it appears there (cited, embedded, quoted or bridged); otherwise in its own project — the project of the note it is a card in, else the project its Library shelf is assigned to (V4.41), or else the project where it appears most (the reader’s own literature notes don’t count, and a paper read from the Library follows its own project, not the default one). A paper of two projects is a tab in both. The project you are in shows its set — its tabs together in a band of the project’s colour, like a region — and every other project’s set is folded into one chip with its name and count: click one to open it at the tab you read last there (the open one folds). A click on the open set’s name folds it too, the paper read staying; its chip opens it again. Clicking a tab takes the note to its paper only inside that project. Only × on a tab closes it: ✕ on the row, leaving the note or closing the reader keeps every set. Off: one row of tabs, as before.',
+    changed: () => { try { RDOCK.save(); RDOCK.S = RDOCK.load(); if (RDOCK.wrap) { if (RDOCK.S_.tabs.length) RDOCK.remount(); else RDOCK.close(true); } } catch (e) { } },
+    tune: [T('follow', 'Going to a note of another project opens its set', 'switch', { isNew: true, def: true, d: 'A project with no set yet: the reader steps aside until you come back or press the Reader button. Off: the set stays as you chose it until you click another chip.' }),
+      T('tint', 'Each project in its own quiet colour', 'switch', { isNew: true, def: true, d: 'The band round the open set and the chips. Off: grey', changed: rdRedraw }),
+      T('max', 'The tab row stays in the maximised view', 'switch', { isNew: true, def: true, d: 'A pane in full screen and a maximised card keep the set’s tabs across the top; a tab clicked there is read full screen', changed: () => { try { RLIB.paint(); RLIB.paintCards(); } catch (e) { } } })],
+    preview: () => {
+      const wrap = h('div', { style: { minWidth: '0' } }), tint = tune('rsets', 'tint') !== false, follow = tune('rsets', 'follow') !== false; let open = 0;
+      const sets = [['Cell mechanics', 205, [['PDF', 'Style 2014'], ['Page', 'Traction force microscopy — Wikipedia']]], ['Detection', 25, [['PDF', 'Plotnikov 2014'], ['PDF', 'Engler 2006'], ['Page', 'Bead tracking']]], ['No project', null, [['PDF', 'Harris 1980']]]]; let fold = false;
+      const draw = () => {
+        const row = sets.map(([n, hu, tabs], i) => { const st = hu == null ? {} : { '--rs-h': String(hu) };
+          return i === open && !fold ? h('div.rs-set.rs-open' + (hu == null ? '.rs-none' : ''), { style: st }, h('span.rs-nm', { title: 'Fold it', on: { click: e => { e.stopPropagation(); fold = true; draw(); } } }, n), tabs.map(([k, t], j) => h('span.pv-rd-tab' + (j === 0 ? '.act' : ''), h('i', k), t, h('b', '×'))))
+            : h('button.rs-chip' + (hu == null ? '.rs-none' : '') + (i === open ? '.rs-cur' : ''), { type: 'button', style: st, title: i === open ? 'Open its tabs again' : 'Open this set', on: { click: e => { e.stopPropagation(); if (i !== open) open = i; fold = false; draw(); } } }, h('span.rs-nm', n), h('span.rs-n', String(tabs.length))); });
+        wrap.replaceChildren(h('div.pv-rset' + (tint ? '' : '.rs-plain'), h('div.pv-rset-row', row), rdPage()),
+          PV.cap('In a note of ' + sets[open][0] + ': its set is ' + (fold ? 'folded too (its chip filled) — click it to see its tabs again' : 'open (click its name to fold it)') + ', the others are folded into chips — click one to open it here. ' + (follow ? 'Going to a note of another project opens its set.' : 'The set stays as you chose it until you click another chip.') + ' Only × closes a tab.')); };
+      draw(); return [wrap];
+    } });
+  D({ id: 'rbtn', group: 'reading', needs: 'rtabs', label: 'Reader button', isNew: true, presets: { simple: true },
+    desc: 'The book at the top right of every page opens the Reader. In a note: the reading set of the note’s project, at the tab you read last — none yet: the papers and pages of that project’s notes to pick from. Anywhere else: the last thing you read — of the project selected in the Portfolio (or whose page you are on), else of any project — beside the note it was opened from. Clicked while the reader is open, it closes it; the tabs stay.',
+    tune: [T('away', 'Outside a note, it opens the last paper', 'seg', { isNew: true, def: 'note', opts: [['note', 'Beside its note'], ['full', 'Full screen']], d: 'Its note: the one it was opened from. Full screen: there too, and Esc comes back beside it' })],
+    preview: () => { const full = tune('rbtn', 'away') === 'full', bk = h('span.pv-rbtn', { title: 'Reader', html: RDOCK.BOOK });
+      return [h('div.pv-hd', h('b', 'Scientia'), h('span.sp'), h('span', '⌕ Search'), h('span', '+ Note'), bk),
+        h('div.pv-rbtn-out', h('b', 'In a note'), h('span', 'Its project’s reading set, at the tab read last'), h('b', 'Elsewhere'), h('span', 'The last paper read — of the project selected — ' + (full ? 'full screen, in the note it was opened from' : 'beside the note it was opened from'))),
+        PV.cap('The book is the last button at the top right. Clicked again, the reader closes and keeps its tabs.')]; } });
+  /* V4.30 — the mini library in the maximised reader; shelves assigned to projects (17j, 35-minilib.css) */
+  D({ id: 'rlib', group: 'reading', needs: 'rtabs', label: 'Mini library', isNew: true,
+    desc: 'In the maximised reader — a pane in full screen, or a maximised card — a thin grip on the left edge: drag it to the right (with the mouse, a finger or the pen) or click it, and the mini library slides out: the tabs open in this reading set, then the shelves assigned to this project, each with its foci and their papers that have a PDF or a page here, and All shelves for the rest. Click a paper: it opens as a tab of this set, read in the maximised view (a paper not in a note yet opens on its literature note, as + does). It closes when you drag it back, press Esc or click outside. A shelf is assigned to projects with the project button beside it in the Library’s tree, or below. Off: no grip, no project buttons; what was assigned stays.',
+    changed: () => { try { RLIB.close(); App.refresh(); } catch (e) { } },
+    tune: [T('start', 'It opens on', 'seg', { isNew: true, def: 'project', opts: [['project', 'This project’s shelves'], ['all', 'All shelves, this project’s first']] }),
+      T('after', 'After a paper is picked, it', 'seg', { isNew: true, def: 'close', opts: [['close', 'Closes'], ['stay', 'Stays open']], d: 'Closed, the page has the whole width again' }),
+      T('shelves', 'Shelves and their projects', 'node', { isNew: true, d: 'In a project, the mini library shows its shelves first', render: () => RLIB.settingsNode() })],
+    preview: () => { const all = tune('rlib', 'start') === 'all', stay = tune('rlib', 'after') === 'stay';
+      const pp = (k, t, a) => h('div.pv-rl-p' + (a ? '.act' : ''), h('i', k), h('b', t));
+      return [h('div.pv-rl', h('div.pv-rl-tabs', h('div.rs-set.rs-open', { style: { '--rs-h': '205' } }, h('span.rs-nm', 'Cell mechanics'), h('span.pv-rd-tab.act', h('i', 'PDF'), 'Style 2014', h('b', '×')))),
+        h('div.pv-rl-body', h('div.pv-rl-page', rdPage()), h('div.pv-rl-panel', h('div.pv-rl-h', h('b', 'Library'), h('span', 'Cell mechanics')), h('div.pv-rl-seg', h('span' + (all ? '' : '.on'), 'This project'), h('span' + (all ? '.on' : ''), 'All shelves')),
+          h('div.pv-rl-sh', { style: { '--sh': '205' } }, h('span.lg-sw'), 'Traction methods'), h('div.pv-rl-f', 'FTTC & regularization'), pp('PDF', 'Style 2014', true), pp('PDF', 'Plotnikov 2012'),
+          all ? [h('div.pv-rl-sh', { style: { '--sh': '45' } }, h('span.lg-sw'), 'Confocal optics'), pp('PDF', 'Pawley 2006')] : h('div.pv-rl-more', 'All shelves (1 more)')), h('span.pv-rl-grip'))),
+        PV.cap('Drag the grip on the left edge of the maximised reader, or click it. ' + (all ? 'It opens on every shelf, this project’s first. ' : 'It opens on this project’s shelves; All shelves shows the rest. ') + (stay ? 'A paper picked is read and the panel stays open.' : 'A paper picked is read and the panel closes.'))]; } });
+  /* V4.42+ — the edge-rail look and its motion (20d-look.js, 36-look.css; Gabe: "B is the best. Rethink the UI and animations of the entire lab notebook to match this style.") */
+  const lkPaint = () => { try { LOOK.paint(); } catch (e) { } };
+  D({ id: 'look', group: 'canvas', label: 'Look and motion', isNew: true, presets: { simple: true, standard: true }, changed: lkPaint,
+    desc: 'The notebook in the edge-rail look: rounded cards and menus on a warm surface, a pill for the tab you are on that glides between tabs and covers the whole tab, its name and its count (V4.46), dialogs that rise and toasts that spring up. The side panel of every reader is docked and glides open and shut; folded, it becomes a small floating capsule of its highlight colours with their counts (beside a note too), and a click on a colour opens the panel at it. The mini library’s grip becomes a capsule of the project’s shelves, and its papers show as spines on a shelf or as a list (this device remembers which). Highlights are grouped by page on a thread. The reader glides between beside the note and the whole window; a popup rises out of its pane and shrinks back into its tab when it closes; the pills’ wheels spring out one button after another; Freewrite’s Convert brings the note it will make in one box after another, and a folder of the data tree drops its files in. Terms show as cards (V4.63): each term a card with its uses, its last 12 weeks, its structures and when it was last used, in a grid under its group; ← → ↑ ↓ move between them. Movement sets how much things move: Full, Calm, or Still; a computer set to reduce motion gets fades only. The Portfolio keeps its own look (V4.43). Off: the look from before, with nothing added.',
+    tune: [T('motion', 'Movement', 'seg', { isNew: true, def: 'full', opts: [['full', 'Full'], ['calm', 'Calm'], ['still', 'Still']], d: 'Full: panels glide and capsules spring. Calm: quicker, no spring. Still: nothing moves.', changed: lkPaint }),
+      T('lib', 'The mini library shows papers as', 'node', { isNew: true, d: 'Kept on this device; the two buttons at the top of the mini library switch it too', render: () => { const mode = LOOK.libMode(), b = (v, l) => h('button.btn.sm' + (mode === v ? '.on' : ''), { type: 'button', 'aria-pressed': String(mode === v), on: { click: e => { e.stopPropagation(); LOOK.setLib(v); try { SettingsView.repaint(); } catch (er) { } } } }, l); return h('div.row', b('book', 'Spines on a shelf'), b('list', 'A list')); } })],
+    preview: () => LOOK.preview() });
   /* =============================== Widgets =============================== */
   const W = (id, label, desc, rows, pv, o = {}) => D(Object.assign({ id, group: 'widgets', label, desc: desc + ' Off: it leaves + Insert and the / commands; those already in your notes stay.', inserts: rows, preview: pv }, o));
   W('equations', 'Equations', '∑ Equation in a note, or in the text, and the registered equations shared by every note.', ['equation', 'equation-reg'],
     () => [h('div.pvb.pv-eq', h('div.pvb-h', h('span.pvb-n', 'Equation'), h('b', 'Young’s modulus')), h('div.pv-eqx', 'E = 3G(1 + ν)'))], { presets: { simple: true } });
-  W('data', 'Data & plots', 'Plots, datasets by reference (they stay where they were made) and their bindings, and the Data tab.', ['plot'],
-    () => [h('div.pvb', h('div.pvb-h', h('span.pvb-n', 'Plot'), h('b', 'Traction · Pa')), PV.svg(300, 70, '<polyline points="10,62 50,55 90,57 130,40 170,33 210,20 250,13 290,8" fill="none" stroke="var(--teal)" stroke-width="2" vector-effect="non-scaling-stroke"/>'))], { tab: 'data' });
+  W('data', 'Data & plots', 'Plots, and binding a component to datasets, materials and a code version (⋯ → Data, materials & code…, the provenance chain). The Data tab is gone (V4.28): the data a step used is logged in its component’s data tree; the datasets registered before still open with /datasets.', ['plot'],
+    () => [h('div.pvb', h('div.pvb-h', h('span.pvb-n', 'Plot'), h('b', 'Traction · Pa')), PV.svg(300, 70, '<polyline points="10,62 50,55 90,57 130,40 170,33 210,20 250,13 290,8" fill="none" stroke="var(--teal)" stroke-width="2" vector-effect="non-scaling-stroke"/>'))]);
+  // V4.28 (13zzyc): the data tree — the folders and files a step used, logged in its component (it replaces the Data tab)
+  const dtRefresh = () => { try { App.refresh(); } catch (e) { } };
+  D({ id: 'datatree', group: 'widgets', label: 'Data tree', isNew: true, presets: { simple: true }, changed: dtRefresh,
+    desc: 'The data an experiment used, logged in its component as a directory: ⋯ → Log data… (a folder, or files), /data in the text (or a new “Data” component), or drop files and folders from your computer on the component — on its tree, with Alt held, or a folder anywhere on it (a folder dropped on the paper makes a “Data” component there). The tree lists names, places, sizes and dates; nothing is copied and the files stay where they are. A click folds or unfolds a folder; × takes an entry out. Where the browser can keep the folder (Chrome or Edge on a computer), ⟳ Rescan reads it again and marks what is new, changed or gone until you accept it; elsewhere the tree is as it was logged. It replaces the Data tab: the datasets bound to a component there came into its tree, and the old page opens with /datasets. Off: no trees and no ways in; what was logged stays in the record.',
+    tune: [T('open', 'A folder you log shows', 'seg', { isNew: true, def: 'top', opts: [['top', 'Its first level'], ['none', 'Only its name']], d: 'The folders inside it always start folded; a click unfolds one', changed: dtRefresh })],
+    preview: () => {
+      const on = FEAT.on('datatree'), top = tune('datatree', 'open') !== 'none', day = 86400000, t0 = Date.now();
+      Object.keys(DTREE.st.open).forEach(k => { if (k.startsWith('_pvdt|')) delete DTREE.st.open[k]; });
+      const f = (n, mb, d) => ({ n, s: Math.round(mb * 1048576), m: t0 - d * day });
+      const fake = { id: '_pvdt', kind: 'component', dtree: { items: [
+        { id: 'pv1', n: 'Run 3 · TFM export', dir: 1, at: isoLocal(new Date(t0 - day)), via: 'folder', k: [
+          { n: 'beads', dir: 1, k: [f('field01_beads.nd2', 1880, 1), f('field02_beads.nd2', 1910, 1), f('field03_beads.nd2', 1870, 1)] },
+          { n: 'cells', dir: 1, k: [f('field01_cells.nd2', 940, 1), f('field02_cells.nd2', 955, 1)] },
+          f('traction-run3.csv', .02, 1)] },
+        Object.assign(f('plate-map.xlsx', .03, 2), { id: 'pv2', at: isoLocal(new Date(t0 - day)), via: 'files' })] } };
+      return [PV.box({ num: 'Block', label: 'Imaging, 30 kPa', body: 'Three fields per gel; beads 0.2 µm, 40× water.', extra: on ? [DTREE.el(fake, { pv: true })] : [] }),
+        PV.cap(on ? 'Click a folder here to fold or unfold it. ' + (top ? 'A folder you log shows its first level; the folders inside it start folded.' : 'A folder you log shows only its name until you click it.') + ' Nothing is copied: the tree lists names, sizes and dates.' : 'Off: no data tree in any component, and no Log data… or /data; what was logged stays in the record and shows again when it is on.')];
+    } });
   W('plates', 'Plates & wells', 'Well-plate maps: colours, images in wells, notes on wells, carried from plan to run.', ['plate', 'plate-carry'],
     () => [h('div.pv-plate', Array.from({ length: 24 }, (_, i) => h('i', { style: { background: i % 7 === 0 ? 'var(--teal)' : i % 5 === 0 ? 'var(--mag)' : '' } })))]);
   W('calc', 'Calculators', 'A calculator box with its own history, and the Calculator on a note’s tools.', ['calc'],
@@ -351,7 +623,30 @@ const PV = {
 
   /* =============================== Tabs & overview =============================== */
   const TabF = (id, tab, label, desc, pv, o = {}) => D(Object.assign({ id, group: 'tabs', tab, label, desc: desc + ' Off: the tab leaves the row; its page still opens from links and search.', preview: () => [PV.tabs(tab), ...pv()] }, o));
+  // V4.57 (23e): the Calendar tab, right before Tasks — the Day planner Gabe chose on the design canvas
+  TabF('calendar', 'calendar', 'Calendar', 'The Calendar tab, right before Tasks (V4.57): your week as the day planner — each day one column that scrolls, the hour sized so a set number of hours fill the height, the day names and the all-day row frozen above. A click on a free spot opens a small window at that time (title, day, start and end, 30 min · 1 h · 2 h, its kind, project or tag, a note); drag a card to move it, its bottom edge to change its length; rest on one a second to change it in place; a click opens its note, or makes one (a meeting note, an experiment at its first stage, a quick note). Colour by Project · Kind · Tag · Note type · Load; a click on a value in the legend singles out its cards. Reminders and dated tasks show there too. Month (V4.58): a tile per day; a click on a day opens it on the right as its planner column (the grid narrows); with Colour by Load each day shows its planned hours and a bar, and each event its length. Agenda: the next two weeks as a list. Links (V4.59): rest on an event, Link → then…, click the one that comes after; the link is drawn above the cards like a note’s arrow, lighter where it passes over another card. Pushing an event back (Barrier +30 min · +1 h · +2 h · +1 day, a drag later, +15) moves what depends on it as much; Custom… sets each one’s own amount. Agent runs (V4.60): a layer you switch on (G) — each run a thin line beside its day from its planned start to its planned end, its title along it, electrons flowing down it while it runs (dotted when planned, faint when done); resting on one shows what ran alongside your work (2×) and what it did; a click opens its output. Focus (V4.64): plan focus hours (Plan focus, then a click), and start one (Focus, F, or a click on a gold block). Said before it starts and here: the notebook goes full screen; your activity counts double (2×) while in focus; leaving full screen asks first, with a warning; then you have 5 minutes to come back with no penalty, after which the session ends and its activity no longer counts double. Your work is always kept. Event types (V4.65): ＋ Type in an event adds your own, with its colour (Manage types… renames or removes them). Drag down an empty stretch for an event of exactly that length, in 15-minute steps. Link a note: a click shows your recent notes and a search, or Pick in the Portfolio… (a click on a note there links it and brings you back). Barrier → Custom…: click where it moves to.',
+    () => CAL.preview(), { isNew: true, presets: { simple: true, standard: true },
+      tune: [T('span', 'Hours that fill the height', 'seg', { isNew: true, def: '12', opts: [['10', '10 h'], ['12', '12 h'], ['16', '16 h']], d: 'The rest of the day is a scroll away', changed: () => { try { CAL.paint(); } catch (e) { } } }),
+        T('week', 'A week starts on', 'seg', { isNew: true, def: 'mon', opts: [['mon', 'Monday'], ['sun', 'Sunday']], changed: () => { try { CAL.paint(); } catch (e) { } } }),
+        T('electrons', 'Electrons flow down a running agent run', 'switch', { isNew: true, def: true, d: 'Off: a running one glows, still', changed: () => { try { CAL.paint(); } catch (e) { } } }),
+        T('focus', 'Focus sessions (full screen, activity counted double)', 'switch', { isNew: true, def: true, d: 'Off: no Focus or Plan focus buttons; focus blocks stay on the calendar as events', changed: () => { try { CAL.paint(); } catch (e) { } } }),
+        T('focusLen', 'Focus now, for', 'seg', { isNew: true, def: '50', opts: [['25', '25 min'], ['50', '50 min'], ['90', '90 min']], d: 'With no focus block now, what Focus offers first' }),
+        T('slots', 'Free time between events drawn dashed', 'switch', { isNew: true, def: true, d: 'A click on it adds an event there; off, a click on an empty stretch still does', changed: () => { try { CAL.paint(); } catch (e) { } } })] });
   TabF('tasks', 'tasks', 'Tasks', 'The Tasks tab: everything to do, from every note.', () => [h('div.pv-list', [['Order fibronectin', 'Seeding notes'], ['Re-image field 3', 'Run 3']].map(([a, b]) => h('div', h('input', { type: 'checkbox', tabindex: '-1' }), h('b', a), h('span', b))))], { presets: { simple: true } });
+  /* V4.17 — the Portfolio's section icons and every theme's banner (15f, 31-banners.css) */
+  D({ id: 'pficons', group: 'tabs', label: 'Section headers', isNew: true, presets: { simple: true }, desc: 'Each kind of section in the Portfolio has its symbol — a flask for Experiments, a stack for Syntheses, a page of notes for Notes, an open book for Lit reviews — and its header (symbol, word and count) is a rounded box in that kind’s colour, the same in every project, so you see at a glance which is which: blue Experiments, plum Syntheses, ochre Notes, green Lit reviews. The switch above them carries the same symbols and colours. Off: the words alone.',
+    tune: [T('box', 'Colour-coded boxes', 'seg', { isNew: true, def: 'on', opts: [['on', 'On'], ['off', 'Off — the symbols alone']], d: 'Each header in a rounded box of its kind’s colour', changed: () => { try { App.refresh(); } catch (e) { } } })],
+    changed: () => { try { App.refresh(); } catch (e) { } },
+    preview: () => { const on = FEAT.on('pficons'), box = on && FEAT.tune('pficons', 'box') !== 'off', ico = k => on ? PFICON.el(k, 13) : null;
+      return [h('div.pv-pfi', h('div.pv-pfi-seg', [['exp', 'Experiments', 3], ['syn', 'Syntheses', 1], ['notes', 'Notes', 5], ['lit', 'Lit reviews', 2]].map(([k, l, n], i) => h('span' + (i ? '' : '.on'), { 'data-sk': k }, ico(k), l, h('i', String(n))))),
+        h('div.pv-pfi-g', [['exp', 'Experiments', 3], ['syn', 'Syntheses', 1], ['notes', 'Notes', 5], ['lit', 'Lit reviews', 2]].map(([k, l, n]) => h('div' + (box ? '.pf-box' : ''), { 'data-sk': k }, ico(k), h('span', l), h('span.pvc', String(n)))))),
+        PV.cap(!on ? 'Off: the sections by their words alone.' : box ? 'Each kind of section in its own colour, the same in every project: its header a rounded box, its symbol on the switch.' : 'The symbols, without the coloured boxes.')]; } });
+  D({ id: 'tbanner', group: 'tabs', label: 'Theme banners', isNew: true, presets: { simple: true }, desc: 'Every theme has a banner, 1600 × 200 px (8 : 1), with the theme’s name inside it at the left: at the top of its section in the Portfolio and of its page, where the name is the page’s title. Click it to choose an image — ask Claude for one at that size; another size is cropped to fit — or to remove it. A theme without an image gets a quiet banner drawn from its name, in the app’s colours. Off: no banners; the images stay with their themes.',
+    tune: [T('where', 'Show the banner', 'seg', { isNew: true, def: 'both', opts: [['both', 'Portfolio and page'], ['portfolio', 'In the Portfolio'], ['page', 'On the theme’s page']] })],
+    preview: () => { const w = tune('tbanner', 'where') || 'both', ban = (key, name, cls) => { const b = h('div.tb-ban.drawn.pv-tb-ban' + (cls ? '.' + cls : '')); b.innerHTML = BANNER.drawn(key); b.append(h('span.tb-name', name)); return b; };
+      const pf = h('div.pv-tb', h('div.pv-tb-k', 'Portfolio'), ban('pv|Traction vs stiffness', 'Traction vs stiffness'), h('div.pv-tb-sh', h('span.pvc', '2 milestones'), h('span.pvc', 'steady')), ban('pv|Detection floor', 'Detection floor'), h('div.pv-tb-sh', h('span.pvc', 'exploratory')));
+      const pg = h('div.pv-tb', h('div.pv-tb-k', 'Theme page'), h('div.pv-tb-k', 'Gels · theme'), ban('pv|Traction vs stiffness', 'Traction vs stiffness', 'pg'));
+      return [w === 'page' ? pg : w === 'portfolio' ? pf : h('div.pv-tb2', pf, pg), PV.cap('1600 × 200 px, the theme’s name inside at the left. Click a banner to choose an image (ask Claude for one at this size) or remove it; without one, each theme gets a banner drawn from its name.')]; } });
   TabF('atlas', 'atlas', 'Atlas', 'The Atlas: the notebook in a room in 3D with three axes, each sorting by one thing you pick — time (oldest at the origin, newer outward), kind, project, note, note type, term, people, status or connections. Drag turns it, Shift+drag moves it. Each dot is a glass bead that opens into the term page’s bubble only when you rest the pointer on it a moment, tap it or pin it; a click visits it in its note, and a small bubble there brings you back. Bridges and connections are threads with an arrow and a light running from where they start; resting on one shows both its ends. The axes tighten as you go further: days close up, months far off.', () => [ATLAS3.preview()],
     { tune: [T('ctrlk', 'Ctrl+K opens the Atlas', 'switch', { d: 'Off: Ctrl+K opens the list, as before', get: () => ATLAS.on(), set: v => saveSettings({ labs: Object.assign({}, settings().labs, { atlas: v }) }) }),
       T('start', 'It starts on', 'select', { isNew: true, def: 'last', opts: [['last', 'The axes I used last'], ['story', 'Story over time'], ['loops', 'Open loops'], ['who', 'Who did what'], ['terms', 'Terms across notes'], ['busy', 'Most connected'], ['mine', 'These three ↓']], d: 'The first visit is Story over time: time × kind × project' }),
@@ -368,10 +663,41 @@ const PV = {
       T('ticks', 'The axes tighten as you go further', 'switch', { isNew: true, def: true, d: 'Days close up, then weeks, months, quarters and years as you scroll away; long names shorten. Off: the ticks stay as the span gives them' }),
       T('room', 'Floor and walls', 'switch', { isNew: true, def: true, d: 'The two far walls with their grid, and the lines across to them from the dot you point at. Off: only the floor' }),
       T('labels', 'Labels beside the dots', 'seg', { isNew: true, def: 'few', opts: [['none', 'None'], ['few', 'A few'], ['many', 'Many']], d: 'Never over another label or an open bubble' })] });
-  TabF('activity', 'activity', 'Activity', 'The Activity tab: the heatmap of your days, themes and weekly numbers.', () => [h('div.pv-heat', Array.from({ length: 42 }, (_, i) => h('i', { style: { background: `var(--hm-${[0, 1, 2, 3, 0, 4, 2][i % 7]})` } })))]);
-  TabF('materials', 'materials', 'Materials', 'The Materials tab: gel batches, cell lines, antibody lots and the notes that used them.', () => [h('div.pv-list', [['PAA gel batch 15', '8 kPa · bench 3'], ['MDCK p12', 'LN2 box 2']].map(([a, b]) => h('div', h('b', a), h('span', b))))]);
+  // V4.19: the Activity tab left the row (Gabe: "Remove Activity tab → Make the Activity interactable in Portfolio for each Project or Theme"); its parts open from the Portfolio (19b)
+  D({ id: 'pfactivity', group: 'tabs', label: 'Portfolio activity', isNew: true, desc: 'A project’s or a theme’s activity in the Portfolio — its heat strip, “active 2d ago” or “stalled”, its score — opens its activity in a panel at the right: why it is active or stalled and how that is counted, eight weeks of activity, the time recorded, its notes still in their two weeks, what moved (each line goes to the note) and, for a project, its themes. #/activity (Today’s “Activity →”) opens the whole notebook’s there: the old Activity tab. Off: the strips are plain again and #/activity is the old page.',
+    tune: [T('rows', 'The strips in the list open it too', 'switch', { isNew: true, def: true, d: 'A row’s small strip picks the project and opens its activity. Off: only the open project’s header and its themes do' })],
+    preview: () => {
+      const wrap = h('div'), lv = [0, 1, 0, 2, 3, 1, 0, 0, 2, 4, 3, 1, 2, 0, 1, 3, 4, 2, 1, 0, 0, 2, 3, 1, 4, 2, 0, 1, 3, 2, 1, 0, 2, 4, 3, 2, 1, 0, 0, 1, 2, 3];
+      let open = false;
+      const draw = () => { const live = on('pfactivity'), hot = el => { if (!live) return el; el.classList.add('pfa-hot'); el.title = 'Click: its activity'; el.addEventListener('click', e => { e.stopPropagation(); open = !open; draw(); }); return el; };
+        const strip = hot(h('div.pv-pfa-strip', lv.map(l => h('i', { style: l ? { background: 'var(--hm-' + l + ')' } : null }))));
+        wrap.replaceChildren(h('div.pv-pfa', h('div.pv-pfa-h', h('b', 'Traction force'), h('div.pv-pfa-line', hot(h('span', 'activity 34 · 4 wk')), hot(h('span', 'active 2d ago')))), strip,
+          live && open ? h('div.pv-pfa-panel', h('div.r', h('b', '34'), h('span', 'activity · 4 wk'), h('span.pfa-st.sm.ok', 'active 2d ago')),
+            h('div.r', h('span', 'What moved'), 'Takeaway — the edge collapsed at 10 ng/mL', h('span', '+10')), h('div.r', h('span', 'Notes in their two weeks'), '30 kPa series Run 3')) : null),
+          PV.cap(live ? (open ? 'Its activity: why it is active, what moved, its notes and themes — ✕ or Esc closes it.' : 'Click the strip, the score or “active 2d ago” to open its activity.') : 'Off: the strips are plain, as before; #/activity is the old page.'));
+      };
+      draw(); return [wrap];
+    } });
+  // V4.48 (Gabe: "Merge Materials into Atlas"): Materials is a section of the Atlas (14fb), no longer a tab of its own
+  D({ id: 'materials', group: 'tabs', label: 'Materials (in the Atlas)', desc: 'Materials is a section of the Atlas (V4.48): gel batches, cell lines, antibody lots and the notes that used them, beside the Map and the Data. #/materials, a material’s page and “All materials” still lead there; a material’s page lights the Atlas tab. Off: the section leaves the Atlas; its page still opens from links and search.', preview: () => [ATHUB.pv('materials'), h('div.pv-list', [['PAA gel batch 15', '8 kPa · bench 3'], ['MDCK p12', 'LN2 box 2']].map(([a, b]) => h('div', h('b', a), h('span', b))))] });
+  // V4.49 (Gabe: "create data tab in Atlas, which organizes all trees recorded there for a master tree"): the Atlas's Data (14fc)
+  D({ id: 'atlasdata', group: 'tabs', label: 'Data (in the Atlas)', isNew: true, presets: { simple: true, standard: true }, desc: 'A Data section in the Atlas (V4.49): every data tree logged in your notes (⋯ → Log data… on a component) in one master tree. By project: each project, its notes with data — each with its kind’s label in its colour, and Open, which goes to the component in its note — then their folders and files. One merged tree: the folders of every note merged by name, level by level, each marked with the notes it is in. A line at the top adds it up (folders, files, size, notes, projects); Search keeps what matches and opens the folders above it. Nothing is copied or changed. Off: the section leaves the Atlas.', preview: () => [ADATA.preview()] });
+  // V4.50 (Gabe: "on the right of Settings, add Hot Notes …"): Hot notes (20e)
+  D({ id: 'hotnotes', group: 'tabs', label: 'Hot notes', isNew: true, presets: { simple: true, standard: true }, desc: 'Hot notes, at the right of the tab row after Settings (V4.50): the notes you starred, one click away. A click on its star button opens the list under it — your hot notes, the most visited first, each with its kind at its left in its colour (Experiment, Note, Lit review, Synthesis) and the banner of its theme or project lightly underneath. Hover one: its golden star shows; a click on it takes the note out. Below them, Most visited: the notes you open most on this device, an empty star to add each (with no visit yet: the notes edited last); + finds any note to star. Your hot notes follow you to every device; what you visit stays on this one. Off: no button.',
+    tune: [T('suggest', 'Most visited notes suggested', 'seg', { isNew: true, def: '5', opts: [['3', '3'], ['5', '5'], ['8', '8']], d: 'Under your hot notes; with none yet, the list starts with them', changed: () => { try { HOT.paint(); } catch (e) { } } })],
+    preview: () => HOT.preview() });
   TabF('canvas', 'canvas', 'Spatial canvases (lab)', 'Canvases where components, structures, papers and datasets are arranged freely; drawn lines become real connections; export as JSON Canvas. An experiment: presets leave it as it is.', () => [PV.cap('A Canvas tab in the row.')],
     { keep: true, nb: true, get: () => CANVAS.on(), set: v => { if (CANVAS.on() !== !!v) CANVAS.toggleLab(); } });   // a lab experiment: presets leave it as it is
+  // V4.12 (20-settings.js featurePage, 20b-demos.js): a feature's page shows a recording of it being used in a test note, and what it is for in the words of whoever asked for it
+  D({ id: 'demos', group: 'tabs', label: 'Feature demonstrations', isNew: true, presets: { simple: true }, desc: 'Each feature has a page of its own in Settings (click its tile): what it is, what it is for in the words of whoever asked for it, a recording of it being used in a test note with its steps under it, its live preview and its settings. A recording plays only when you press Play; a step plays it from there. Off: the pages keep everything but the recordings.',
+    tune: [T('speed', 'Recordings play at', 'seg', { isNew: true, def: '1', opts: [['0.75', '¾ speed'], ['1', 'Normal speed'], ['1.5', '1.5×']] }),
+      T('captions', 'The step being shown, under the recording', 'switch', { isNew: true, def: true, d: 'Off: only the list of steps' }),
+      T('loop', 'At the end, a recording', 'seg', { isNew: true, def: 'stop', opts: [['stop', 'Stops'], ['loop', 'Starts again']] })],
+    preview: () => { const sp = String(tune('demos', 'speed') || '1'), cap = tune('demos', 'captions') !== false, loop = tune('demos', 'loop') === 'loop', d = FEAT.demo('floats'), n = FEAT.list.length - FEAT.undemoed().length;
+      const st = [['0:01', 'Right-click → Make it a float'], ['0:13', '/float raises the dome'], ['0:27', 'Drag one out onto the note']];
+      return [h('div.pv-demo', h('div.pv-demo-f', d && d.poster && on('demos') ? h('i', { style: { backgroundImage: 'url(' + d.poster + (d.v ? '?v=' + d.v : '') + ')' } }) : null, on('demos') ? h('span.pl', '▶') : null, on('demos') && sp !== '1' ? h('span.sp', (sp === '0.75' ? '¾' : sp) + '×') : null),
+          on('demos') && cap ? h('div.pv-demo-cap', st[1][1]) : null, h('ol', st.map(([t, x], i) => h('li' + (i === 1 && on('demos') ? '.on' : ''), h('span', on('demos') ? t : (i + 1) + '.'), x)))),
+        PV.cap(on('demos') ? 'Play starts it' + (sp === '1' ? '' : ' at ' + (sp === '0.75' ? '¾ speed' : sp + '×')) + '; a step plays from there. ' + (cap ? 'The step being shown is written under it. ' : '') + (loop ? 'It starts again at the end. ' : '') + plural(n, 'feature') + ' of ' + FEAT.list.length + ' ' + (n === 1 ? 'has' : 'have') + ' a recording so far.' : 'Off: a page keeps what the feature is for and its steps, without the recording.')]; } });
   D({ id: 'pfdots', group: 'tabs', label: 'Portfolio dots', desc: 'The count dots beside notes and projects in the Portfolio — open barriers, reminders, Needs investigation (breathing).',
     preview: () => [h('div.pv-pf', h('b', '30 kPa series'), h('span.pfdots', h('span.pfdot', { style: { '--c': 'var(--k-barrier, #c92a2a)' } }, '1'), h('span.pfdot.inv', { style: { '--c': 'var(--k-investigate)' } }, '2'), h('span.pfdot', { style: { '--c': 'var(--warn)' } }, '3')))] });
   D({ id: 'syncdot', group: 'tabs', label: 'Sync dot', presets: { simple: true }, desc: 'The dot in the header: green in step, amber while it works, grey when offline, red with one plain sentence when it failed. Off: it shows only when something is wrong.',

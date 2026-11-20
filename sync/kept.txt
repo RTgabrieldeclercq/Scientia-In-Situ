@@ -1,18 +1,73 @@
 # Lines that look like the lab's and stay (sync/lab_sync.py): path<TAB>line. Remove a row to be asked again.
 README.md	**Left out** (they belong to the lab's site, RM): the lab layer (`lab-mode.js`: RM's library, inventory, tasks and My Week, the Portfolio's assigned work, the canvas pills and Quick cast, the one recorder, sharing), the lab cloud and pairing this computer with it (`labsync.py`, `scientia_cloud.py`, Settings → The lab), the installer and updater the lab site hands out (`install/`, `service.py`, `open_local.py`), the ✓ that reports a component to My Week, Export for the lab website, the sync dot for the lab, presence and locks, and the @-list of lab members. A notebook that was synced with the lab opens here as it is: its records stay, and what only the lab could do simply doesn't happen.
 board/store.js	so the website's boards on the same address (mcgheelab.com) keep theirs */
+demokit/eqcap.mjs	await K(R, '.lab-pill-tools .lab-pill-btn');
+demokit/hw.mjs	await R.click({ sel: `.lab-pill-hand .lab-fan-item[title^="${name}"]` }); await R.sleep(500);
+demokit/hw.mjs	if (!await R.ev(`const p = document.querySelector('.lab-pill-hand'); return !!p && p.classList.contains('open')`)) { await R.click('.lab-pill-hand .lab-pill-btn'); await R.sleep(600); }
+demokit/ink.mjs	await R.click({ sel: `.lab-pill-hand .lab-fan-item[title^="${name}"]` }); await R.sleep(500);
+demokit/ink.mjs	if (!await R.ev(`const p = document.querySelector('.lab-pill-hand'); return !!p && p.classList.contains('open')`)) { await R.click('.lab-pill-hand .lab-pill-btn'); await R.sleep(600); }
+demokit/pen.mjs	await R.click({ sel: `.lab-pill-hand .lab-fan-item[title^="${name}"]` }); await R.sleep(500);
+demokit/pen.mjs	if (!await R.ev(`const p = document.querySelector('.lab-pill-hand'); return !!p && p.classList.contains('open')`)) { await R.click('.lab-pill-hand .lab-pill-btn'); await R.sleep(600); }
+demokit/record.mjs	const done = async () => { try { slot && rmSync(slot, { recursive: true, force: true }); } catch { } try { py && py.kill(); } catch { } if (nbDir) { await sleep(600); await rm(nbDir, { recursive: true, force: true }).catch(() => { }); } try { ws && ws.close(); } catch { } try { chrome.kill(); } catch { } server.close(); await sleep(400); await rm(profile, { recursive: true, force: true }).catch(() => { }); if (!flag('keep')) await rm(frames, { recursive: true, force: true }).catch(() => { }); process.exit(code); };
+demokit/record.mjs	for (const f of readdirSync(slotDir)) { try { if (Date.now() - statSync(path.join(slotDir, f)).mtimeMs > 8 * 60000) rmSync(path.join(slotDir, f), { recursive: true, force: true }); } catch { } }   // a take that died
+demokit/record.mjs	import { existsSync, readFileSync, writeFileSync, statSync, mkdirSync, rmSync, readdirSync } from 'node:fs';
+demokit/split.mjs	await R.click({ js: `(document.querySelector('.split > .pane.p0 .lab-pill-tools .lab-pill-btn') || document.querySelector('.lab-pill-tools .lab-pill-btn'))` });
+demokit/split.mjs	await R.click({ sel: '.lab-pill-tools .lab-fan-item[aria-label^="Split"]' }, F);
+demokit/split.mjs	await R.until(`!!document.querySelector('.lab-pill-tools .lab-fan-item[aria-label^="Split"]')`, 3000);
+demokit/split.mjs	const pane = '.lab-pills .lab-pill-tools';
+demokit/synthflag.mjs	await R.click('.lab-pill-view .lab-pill-btn');   // ⊕ → Fit everything
+demokit/timers.mjs	await R.click('.lab-pill-tools .lab-pill-btn');
+demokit/timers.mjs	await R.click('.lab-pill-tools .lab-pill-btn');   // fold the wheel away again
+demokit/timers.mjs	await R.click({ js: `[...document.querySelectorAll('.lab-pill-tools .lab-fan-item')].find(e => /Start this note/.test(e.title))` });
+demokit/timers.mjs	await R.click({ js: `[...document.querySelectorAll('.lab-pill-tools .lab-fan-item')].find(e => /head start/.test(e.title))` });
+demokit/timers.mjs	await R.until(`!!document.querySelector('.lab-pill-tools .lab-fan-item')`, 3000);
+demokit/timers.mjs	if (!await R.ev(`return !!document.querySelector('.lab-pill-tools .lab-fan-item')`)) await R.click('.lab-pill-tools .lab-pill-btn');
 src/02-schema.js	mwsteps:   { key: 'id',  doc: 'My Week steps from RM, mirrored by the lab hub (read-only): what a component’s ✓ reports onto, offline too' },
 src/09-editor.js	for (const m of cov.filter(m => m.type === 'person')) node = h('span.mn', { 'data-m': m.id, 'data-uid': m.uid || '', title: (m.name || '') + (m.uid ? ' · a lab member' : '') }, node);   // V3.947: @Name (13zzg)
 src/11b-commands.js	ALIAS: { rmpaper: 'paper', rmprotocol: 'protocol', rmaction: 'action', rmcollection: 'collection', 'material-new': 'newmaterial', 'equation-reg': 'registered', 'table-empty': 'emptytable', 'canvas-add': 'canvas', 'pull-barrier': 'barrier', 'pull-item': 'structure', 'pull-comp': 'component' },
 src/11b-commands.js	ALIAS: { rmpaper: 'paper', rmprotocol: 'protocol', rmaction: 'action', rmcollection: 'labcollection', 'material-new': 'newmaterial', 'equation-reg': 'registered', 'table-empty': 'emptytable', 'canvas-add': 'canvas', 'pull-barrier': 'barrier', 'pull-item': 'structure', 'pull-comp': 'component' },
+src/13c-chain.js	// the lab's build (V3.885, rm/scientia/lab-mode.js) makes + Experiment a note at once; Gabe now wants it to ask the name and offer a series —
 src/13zza-clip.js	Found by the lab site's detectors (rm/js/page-layout.js figures and tables
 src/13zzd-board.js	empty cell): the Lab Notebook's own board (pen, highlighter, cards,
 src/13zzd-board.js	engine keeps in Firestore on the lab site) are kept in the `boards` store:
 src/13zzi-kinds.js	if (c === 'material') return b.kind === 'matcard' || b.kind === 'matsheet' || !!b.inventoryId;
 src/13zzi-kinds.js	if (c === 'paper') return b.kind === 'rmpaper' || b.kind === 'pdf' || marks.some(m => m.type === 'cite');
+src/13zzyb-challenge.js	paper (a PDF card, an RM paper, a component that cites one). Until it
+src/13zzyb-problem.js	paper (a PDF card, an RM paper, a component that cites one). Until it
+src/13zzz-rotate.js	try { const L = window.SIS_LAB || window.SIS_PILLS; if (L && L.paintPills) L.paintPills(); } catch (e) { }
 src/14b-atlas.js	if (b.kind === 'rmpaper' && b.paperId && M.lib(b.paperId)) { const r = M.lib(b.paperId); add(r.id, 'paper', r.title || 'Paper', { t: r.added, go: () => App.go('#/read/' + r.id) }); edge(b.id, r.id, 'paper', 'cite'); }
 src/14e-bubble.js	if (!BUBBLE.on() || (typeof RM === 'function' && RM())) { go(); return; }
 src/14e-bubble.js	still: () => (typeof RM === 'function' && RM()) || !BUBBLE.opt('float') || !BUBBLE.on(),
+src/14j-freewrite.js	the note) to go on with it. Quick cast → Freewrite (lab-mode §11), /freewrite, ⋯ → Freewrite.
 src/15c-litreviews.js	const ps = DB.all('projects').filter(p => !have.has(p.id) && !p.deleted && p.status !== 'archived' && !(p.rm && p.rmAssigned === false));
 src/17e-readtabs.js	/** The Library's entry for an embedded paper or page: linked by hand, the same file, the paper record an older notebook may carry (rmPaper, read only), the page's address. */
 src/17e-readtabs.js	return all.find(l => l.pdf && b.media && l.pdf === b.media) || (b.rmPaper ? all.find(l => String(l.rmId || l.id) === String(b.rmPaper)) : null) || (u ? all.find(l => l.url && RDX.sameUrl(l.url, u)) : null) || null;
+src/20a-features.js	/* V4.20 — the lab's pills in every build (lab-mode.js §11; vendor/lab-pills.js + 99z-pills.js where the lab layer isn't) */
+src/20a-features.js	/* V4.21 — Rotate: the whole app a quarter turn clockwise at a time (13zzz ROTATE; ⊕'s Rotate in lab-mode §11 and the cut) */
+src/20a-features.js	// V4.35 — a note held upright keeps its own places (lab-mode §11 labPills.portrait), or shares one layout (labPills.one)
+src/20c-pillcanvas.js	/** where a pill sits until it is moved: the pills' own rule (lab-mode §11, LAB.pillDefs), else the same numbers */
+src/20c-pillcanvas.js	L: () => window.SIS_LAB || window.SIS_PILLS || null,
+src/20c-pillcanvas.js	cut in vendor/lab-pills.js): in the notebook's settings, so every device
+src/20c-pillcanvas.js	one the pills themselves keep (settings().labPills, lab-mode §11 and its
+src/31-pills.css	body.f-off-pills .lab-pills{display:none!important}
+src/34-pillcanvas.css	(half-moons at its edges, beads in full screen) and their threads sit above the pills (the lab layer's .lab-pills,
+src/34-pillcanvas.css	.canvas-host > .lab-pills.fan-open{z-index:23}
+src/36-look.css	/* the pills' wheels (CSS only — lab-pills is never edited): rail-surface buttons that spring out one after another, and fold back quickly */
+src/36-look.css	body:not(.f-off-look) .lab-pill .lab-fan-item:not(.sel):not(.lab-sub):hover{background:var(--lk-hov)}
+src/36-look.css	body:not(.f-off-look) .lab-pill .lab-fan-item:not(.sel):not(.lab-sub){border-color:transparent;background:var(--lk-rail)}
+src/36-look.css	body:not(.f-off-look) .lab-pill .lab-fan-item:not(.sel){box-shadow:var(--lk-sh2),inset 0 0 0 1px var(--lk-ring)}
+src/36-look.css	body:not(.f-off-look) .lab-pill-btn:active{transform:scale(.94)}
+src/36-look.css	body:not(.f-off-look) .lab-pill-btn{border:0;background:var(--lk-rail);box-shadow:var(--lk-sh2),inset 0 0 0 1px var(--lk-ring);transition:transform var(--lk-ds) var(--lk-spring),background var(--lk-dh) ease}
+src/36-look.css	body:not(.f-off-look) .lab-pill-insert:not(.open):not(.docked) .lab-pill-btn{background:var(--ink);box-shadow:0 14px 26px -14px rgba(36,33,28,.8)}
+src/36-look.css	body:not(.f-off-look) .lab-pill.fanned:not(.docked):not(.lbl-open) .lab-fan-item{transition:transform var(--lk-ds) var(--lk-spring) min(calc(var(--d,0ms) * 3),320ms),opacity calc(var(--lk-ds) * .45) ease min(calc(var(--d,0ms) * 3),320ms),background var(--lk-dh) ease}
+src/36-look.css	body:not(.f-off-look) .lab-pill:not(.docked) .lab-fan-item{transition:transform calc(var(--lk-dp) * .7) ease-in,opacity calc(var(--lk-dp) * .6) ease-in,background var(--lk-dh) ease}
+src/36-look.css	body:not(.f-off-look) :is(.sf-col,.rs-lib,#tabs .tink,.rs-lib .rs-paper,.lab-pill .lab-fan-item){transition:none!important}
+src/99z-pills.js	/** The lab's builds carry lab-mode.js, which runs its own section 11. */
+src/99z-pills.js	app's modules — where lab-mode.js would run — with a LAB of its own (the
+src/99z-pills.js	are lab-mode.js's section 11; the lab's builds run lab-mode.js itself. A
+src/99z-pills.js	const L = PILLS.LAB || window.SIS_LAB;
+src/99z-pills.js	if (!document.getElementById('lab-mode-css')) document.head.append(h('style', { id: 'lab-mode-css' }));
+src/99z-pills.js	lab's flags off; never window.SIS_LAB, which the app reads as "the lab
+src/99z-pills.js	lab: () => window.SIS_TARGET === 'web',
+src/99z-pills.js	layer is here"). Its styles go into #lab-mode-css, as in the lab.
+src/99z-pills.js	vendor/lab-pills.js (LABPILLS.start), and this starts it, once, after the

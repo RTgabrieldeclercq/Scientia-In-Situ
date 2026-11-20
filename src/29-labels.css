@@ -1,0 +1,18 @@
+/* V4.9 (14i) — a label in hand: the cursor is its symbol over the canvas, and a chip says what it is */
+body.lbl-armed .paper, body.lbl-armed .paper *{cursor:var(--lbl-cur, crosshair) !important}
+body.lbl-armed .m-card{outline:1.5px dashed color-mix(in srgb,var(--ink-3) 60%,transparent);outline-offset:2px}   /* the phone's list: what a tap labels */
+.lbl-chip{position:fixed;left:50%;top:62px;transform:translateX(-50%);z-index:900;display:flex;align-items:center;gap:8px;padding:5px 6px 5px 10px;border-radius:999px;background:color-mix(in srgb,var(--surface) 92%,transparent);border:1px solid var(--rule-2);box-shadow:var(--shadow-lg, 0 6px 20px rgba(0,0,0,.18));font:12.5px var(--f-d, system-ui);color:var(--ink);backdrop-filter:blur(6px);max-width:calc(100vw - 32px)}
+.lbl-chip .lbl-ic{display:inline-flex;width:18px;height:18px;flex:none}
+.lbl-chip .lbl-ic svg{width:18px;height:18px}
+.lbl-chip span:not(.lbl-ic){white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body[data-lbl="float"] .lbl-chip{border-color:color-mix(in srgb,var(--float, #93B4F4) 60%,var(--rule-2))}
+body[data-lbl="reference"] .lbl-chip{border-color:color-mix(in srgb,var(--gold, #C9A227) 60%,var(--rule-2))}
+/* the Settings preview */
+.pv-lbl{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.pv-lbl-row{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:999px;background:var(--surface);border:1px solid var(--rule-2)}
+.pv-lbl-row i{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--rule-2);background:var(--paper);font-style:normal}
+.pv-lbl-row i.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.pv-lbl-row i svg{width:16px;height:16px}
+.pv-lbl-card{position:relative;padding:8px 10px;border:1px solid var(--rule);border-radius:7px;background:var(--surface);font:12px var(--f-b, serif);min-width:150px}
+.pv-lbl-card .cur{position:absolute;right:-10px;bottom:-12px;width:26px;height:26px}
+.pv-lbl-card .cur svg{width:26px;height:26px}

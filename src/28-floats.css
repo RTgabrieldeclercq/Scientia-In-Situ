@@ -1,0 +1,95 @@
+/* 28 · Floats (V4.7, 14h): a component waiting for a note — a cloud in sky lavender on its card; /float, a clear glass dome
+   rising from the bottom edge of the canvas and fading into the note's own paper, with the floats drifting inside it. */
+:root{--float:#93B4F4;--float-ink:#2C4C8E;--float-soft:color-mix(in srgb,var(--float) 22%,var(--surface))}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--float:#AFC4FB;--float-ink:#D5E1FF}}
+:root[data-theme="dark"]{--float:#AFC4FB;--float-ink:#D5E1FF}
+@property --flp{syntax:'<percentage>';inherits:false;initial-value:0%}
+
+.fl-cl{display:inline-flex;flex:none;line-height:0} .fl-cl svg{width:14px;height:14px;display:block}
+.fl-cl.o svg path{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linejoin:round}
+
+/* the card: a float waiting, an assigned float, a placed float's bridge */
+.box.is-float{outline:1.5px solid color-mix(in srgb,var(--float) 72%,transparent);outline-offset:2px}
+.box.is-float.fl-old{outline-style:dashed}
+.box > .fl-mark{position:absolute;top:-10px;right:44px;z-index:4;display:inline-flex;align-items:center;gap:4px;height:19px;padding:0 8px 0 6px;border-radius:999px;
+  font:600 10px/1 var(--f-m);letter-spacing:.04em;color:var(--float-ink);background:var(--float-soft);border:1px solid color-mix(in srgb,var(--float) 65%,transparent);box-shadow:0 2px 6px -3px color-mix(in srgb,var(--float) 80%,transparent);white-space:nowrap}
+.box > .fl-mark .fl-d{color:var(--ink-3);font-weight:500}
+.box > .fl-mark.done{background:var(--surface);color:var(--ink-3);border-style:dashed;box-shadow:none}
+.box.float-use .fl-when{font:11px var(--f-m);color:var(--ink-3);margin-left:6px}
+.box.float-use .fl-back{margin-left:auto;border:1px solid var(--rule-2);background:var(--surface);border-radius:999px;font:11px var(--f-d);padding:1px 9px;cursor:pointer;color:var(--ink-2);white-space:nowrap}
+.box.float-use .fl-back:hover{border-color:var(--float);color:var(--float-ink)}
+.ink-selbar .fl-bulk{display:inline-flex;align-items:center;gap:3px} .ink-selbar .fl-bulk .fl-cl{color:var(--float-ink)}
+body.f-off-floats .box > .fl-mark,body.f-off-floats .fl-bulk,body.f-off-floats .fl-back{display:none}
+body.f-off-floats .box.is-float{outline:0}
+
+/* the dome — a wide cap: the top of a much larger sphere, its chord the canvas's whole bottom edge (--Rs: that sphere's radius,
+   --h: the cap's height); the note's paper fading up into it along the full width; the glass clear */
+.fl-wrap{position:absolute;left:0;right:0;bottom:0;height:calc(var(--h,var(--R)) + 60px);pointer-events:none;z-index:40}
+.fl-skirt{position:absolute;left:0;right:0;bottom:0;height:calc(var(--h,var(--R)) * .85);pointer-events:none;
+  background:linear-gradient(to top,color-mix(in srgb,var(--paper) 78%,transparent) 0%,color-mix(in srgb,var(--paper) 42%,transparent) 45%,transparent 100%);opacity:0;transition:opacity .45s ease}
+.fl-wrap.up .fl-skirt{opacity:1}
+.fl-dome{position:absolute;left:0;right:0;bottom:0;height:var(--h);pointer-events:auto;touch-action:none;clip-path:circle(var(--Rs) at 50% var(--Rs));
+  transform:translateY(100%);transition:transform .55s cubic-bezier(.2,.9,.3,1);-webkit-backdrop-filter:var(--bd,none);backdrop-filter:var(--bd,none)}
+.fl-wrap.up .fl-dome{transform:translateY(0)}
+.fl-glass{position:absolute;inset:0;pointer-events:none;overflow:hidden;
+  background:radial-gradient(circle var(--Rs) at 50% var(--Rs),transparent calc(var(--Rs) - var(--h) * .24),color-mix(in srgb,var(--float) 9%,transparent) calc(var(--Rs) - var(--h) * .1),rgba(255,255,255,.30) calc(var(--Rs) - 3px),transparent var(--Rs)),
+    radial-gradient(circle calc(var(--Rs) * .985) at 47% var(--Rs),transparent calc(var(--Rs) * .985 - var(--h) * .12),rgba(255,255,255,.14) calc(var(--Rs) * .985 - var(--h) * .05),transparent calc(var(--Rs) * .985))}
+.fl-edge{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.fl-edge .fl-edge-o{stroke:color-mix(in srgb,var(--ink) 16%,transparent)}
+.fl-glass::before{content:"";position:absolute;top:0;bottom:0;left:-40%;width:28%;transform:skewX(-18deg);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.16),transparent);animation:flsheen 7.5s ease-in-out 1.2s infinite}
+@keyframes flsheen{0%,62%{left:-40%}100%{left:120%}}
+.fl-spec{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.fl-field{position:absolute;inset:0}
+.fl-b{position:absolute;width:var(--d,26px);height:var(--d,26px);margin:calc(var(--d,26px) / -2) 0 0 calc(var(--d,26px) / -2);border-radius:50%;border:0;padding:0;cursor:grab;
+  background:radial-gradient(circle at 33% 28%,rgba(255,255,255,.92),rgba(255,255,255,0) 40%),radial-gradient(circle at 52% 62%,color-mix(in srgb,var(--kc,var(--float)) 58%,transparent),color-mix(in srgb,var(--kc,var(--float)) 22%,transparent) 72%);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.62),inset 0 -3px 6px color-mix(in srgb,var(--kc,var(--float)) 38%,transparent),0 5px 10px -6px rgba(0,0,0,.35);transition:transform .18s ease,filter .2s}
+.fl-b:focus-visible{outline:2px solid var(--float);outline-offset:3px}
+.fl-b.hot{transform:scale(1.2)}
+.fl-b.lift{opacity:.25!important}
+.fl-b.old{filter:saturate(.5)}
+.fl-b.rest::after{content:"";position:absolute;inset:-5px;border-radius:50%;background:conic-gradient(var(--float) var(--flp),transparent 0);
+  -webkit-mask:radial-gradient(circle,transparent 61%,#000 63%);mask:radial-gradient(circle,transparent 61%,#000 63%);animation:flring var(--rest,1s) linear forwards}
+@keyframes flring{to{--flp:100%}}
+.fl-age{position:absolute;bottom:calc(100% + 2px);left:50%;transform:translateX(-50%);font:600 9px var(--f-m);color:var(--ink-3);white-space:nowrap;pointer-events:none}
+.fl-empty{position:absolute;left:50%;bottom:28%;transform:translateX(-50%);display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-3);white-space:nowrap}
+.fl-empty .fl-cl{color:var(--float)}
+.fl-ui{position:absolute;left:50%;bottom:calc(var(--h,var(--R)) + 10px);transform:translateX(-50%);display:flex;align-items:center;gap:8px;pointer-events:auto;
+  background:color-mix(in srgb,var(--surface) 84%,transparent);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid var(--rule);border-radius:999px;padding:4px 5px 4px 10px;box-shadow:var(--shadow);opacity:0;transition:opacity .35s .2s}
+.fl-wrap.up .fl-ui{opacity:1}
+.fl-ui > .fl-cl{color:var(--float-ink)} .fl-ui > .fl-cl svg{width:16px;height:16px}
+.fl-n{font:600 12px var(--f-m);color:var(--ink-2);white-space:nowrap}
+.fl-q{width:170px;border:0;background:transparent;font:13px var(--f-d);color:var(--ink);outline:0;padding:3px 4px}
+.fl-x{width:24px;height:24px;border-radius:50%;border:1px solid var(--rule-2);background:var(--surface);cursor:pointer;color:var(--ink-2);font:15px/1 var(--f-d)}
+.fl-prev{position:absolute;left:50%;bottom:calc(var(--h,var(--R)) * .2);transform:translateX(-50%);width:min(380px,92%);pointer-events:auto;z-index:90;display:grid;gap:6px;
+  background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--float);border-radius:10px;box-shadow:var(--shadow-lg);padding:10px 12px 11px}
+.fl-ph{display:flex;align-items:center;gap:6px;font:600 10px var(--f-m);letter-spacing:.08em;text-transform:uppercase;color:var(--float-ink)} .fl-ph .sp{flex:1}
+.fl-pk{display:inline-flex;align-items:center;gap:4px;color:var(--kc);letter-spacing:.06em} .fl-pk::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--kc)}
+.fl-px{border:0;background:none;cursor:pointer;color:var(--ink-3);font:16px/1 var(--f-d)}
+.fl-pt{font:600 14px var(--f-d)} .fl-pb{font:13.5px/1.5 var(--f-b);color:var(--ink-2);max-height:180px;overflow:auto} .fl-pb p{margin:0} .fl-pb img{max-width:100%;border-radius:4px}
+.fl-pw{font-size:12px;color:var(--ink-3)} .fl-pw i{color:var(--ink-2)}
+.fl-pa{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.fl-ghost{position:fixed;z-index:9999;pointer-events:none;transform:translate(-14px,-14px);display:grid;grid-template-columns:auto 1fr;gap:1px 6px;align-items:center;max-width:260px;
+  background:var(--surface);border:1px solid var(--float);border-radius:8px;padding:6px 10px;box-shadow:var(--shadow-lg);font-size:12px}
+.fl-ghost .fl-cl{color:var(--float-ink);grid-row:span 2} .fl-ghost b{font-weight:600} .fl-ghost span:last-child{color:var(--ink-3);font-size:11px}
+.fl-ghost.back{opacity:.45}
+.paper.fl-drop{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--float) 55%,transparent)}
+@media (max-width:760px){ .fl-q{width:110px} .fl-prev{bottom:calc(var(--h,var(--R)) * .06)} }
+@media (prefers-reduced-motion:reduce){ .fl-dome,.fl-skirt,.fl-ui{transition:none} .fl-glass::before{animation:none;display:none} .fl-b{transition:none} .fl-b.rest::after{animation-duration:.01ms} }
+
+/* Settings → Features → Floats: a mini canvas with its dome */
+.pv-fl{position:relative;height:150px;border-radius:8px;overflow:hidden;background-color:var(--paper);
+  background-image:linear-gradient(to right,var(--grid-line) 0 1px,transparent 1px),linear-gradient(to bottom,var(--grid-line) 0 1px,transparent 1px);background-size:14px 14px;border:1px solid var(--rule)}
+.pv-fl .pv-flcard{position:absolute;left:14px;top:14px;display:inline-flex;align-items:center;gap:4px;font:600 10px var(--f-m);color:var(--float-ink);background:var(--float-soft);border:1px solid color-mix(in srgb,var(--float) 65%,transparent);border-radius:999px;padding:2px 8px 2px 6px}
+.pv-fl .pv-flsk{position:absolute;left:0;right:0;bottom:0;height:60px;background:linear-gradient(to top,color-mix(in srgb,var(--paper) 80%,transparent),transparent)}
+/* the preview's cap spans the mini canvas; an elliptic segment through both bottom corners (its centre 1.5 heights below the base) */
+.pv-fl .pv-fld{position:absolute;left:0;right:0;bottom:0;height:90px;clip-path:ellipse(62.5% 250% at 50% 250%);
+  background:radial-gradient(62.5% 250% at 50% 250%,transparent 90%,color-mix(in srgb,var(--float) 10%,transparent) 96%,rgba(255,255,255,.34) 99.3%,transparent 100%)}
+.pv-fl .pv-fld::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(62.5% 250% at 50% 250%,transparent 99.2%,color-mix(in srgb,var(--ink) 14%,transparent) 99.6%,transparent 100%)}
+.pv-fl .pv-fld i{position:absolute;width:var(--d);height:var(--d);margin:calc(var(--d) / -2) 0 0 calc(var(--d) / -2);border-radius:50%;
+  background:radial-gradient(circle at 33% 28%,rgba(255,255,255,.9),transparent 40%),radial-gradient(circle at 52% 62%,color-mix(in srgb,var(--kc) 58%,transparent),color-mix(in srgb,var(--kc) 22%,transparent) 72%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.6)}
+.pv-fl .pv-fld i.old{filter:saturate(.5);opacity:.7}
+.pv-fl.still .pv-fld i{animation:none}
+.pv-fl:not(.still) .pv-fld i{animation:pvfl 6s ease-in-out infinite alternate}
+@keyframes pvfl{to{transform:translateX(10px)}}
+@media (prefers-reduced-motion:reduce){ .pv-fl .pv-fld i{animation:none!important} }
