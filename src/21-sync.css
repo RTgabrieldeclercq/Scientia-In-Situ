@@ -115,6 +115,22 @@ svg.ink-live path.ink-lasso{fill:color-mix(in srgb,var(--teal) 8%,transparent);s
 /* ink written on an image (13zzc): on top of it, glued to it; only the strokes take the pointer */
 .box.w-ink.on-img{z-index:5;pointer-events:none}
 .box.w-ink.on-img .ink-svg path{pointer-events:visiblePainted;cursor:grab}
+/* V4.104 (Gabe: "The ink background should be invisible/see through. You may interact with components overlaid by ink components."):
+   - no card under ink, whatever the look (36-look's `.box` rules outweigh `.box.w-ink`, hence the doubled class): the dashed outline only when
+     a stroke is hovered or the ink is selected;
+   - only its strokes, its title and its tags take the pointer: a click on its empty part reaches the component or the paper beneath,
+     and the ink stays over it, as ink on an image does;
+     A pen line is thin, so each freehand stroke gets a see-through edge 10 screen pixels wide to catch the pointer.
+   Settings → Ink & shapes → Click through ink; off: body.ink-solid, the whole rectangle takes the pointer as before. */
+.paper .box.w-ink.w-ink{background:transparent;box-shadow:none;border-color:transparent;border-style:dashed}
+.paper .box.w-ink.w-ink:hover{border-color:color-mix(in srgb,var(--ink) 18%,transparent);box-shadow:none}
+.paper .box.w-ink.w-ink.sel{border-color:var(--ink-3);box-shadow:none}
+.canvas-host.far .box.w-ink.w-ink{background:transparent}
+body:not(.ink-solid) .box.w-ink{pointer-events:none;z-index:5}   /* it stays over what it was written on, even a component being edited (z 3) or dragged (z 4) */
+body:not(.ink-solid) .box.w-ink .ink-svg path{pointer-events:visiblePainted}
+body:not(.ink-solid) .box.w-ink .ink-svg path:not(.ink-geo):not(.ink-hl):not(.ink-fill){stroke:transparent;stroke-width:10px;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+body:not(.ink-solid):not(.ink-writing) .box.w-ink .ink-svg path{cursor:grab}
+body:not(.ink-solid) .box.w-ink > .chips{pointer-events:auto}
 /* custom connections */
 .rel-own{width:100%;margin:2px 0 8px} .opt.rel-custom{border:1px solid var(--mag)} .opt.dim{opacity:.55}
 .cd-ownw{padding:6px 6px 2px} .cd-ownw .inp{width:100%;height:30px;font-size:12.5px} .cd-ownw.on .inp{border-color:var(--mag);box-shadow:0 0 0 2px color-mix(in srgb,var(--mag) 18%,transparent)}

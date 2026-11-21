@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "a38209d7e4b21280d94cd804d453fcbc4bd37244",
-  "subject": "V4.101: Scientia — PDF fixes: the ‹ › arrows of one-page view work again (the text layer covered them); pages no longer come out upside down after zooming out (two draws overlapped in one canvas)",
+  "commit": "375b9182166c131f955fd72f3fb5baedff5257b0",
+  "subject": "V4.105: Scientia — search says an experiment note's stage and run: the quick list (Planning, Run, Analysis in its column; \"Run 2\" as a chip), the Atlas and the note pickers (\"30 kPa series — Analysis · Run 2\"); Settings → Experiment series → In search, the stage and run",
   "date": "2026-11-20"
  },
- "cut": "ba6cedfad7b16f3194d182af612da5b53a5991a8",
+ "cut": "f1e550a82bdada7603baa410da20eae9ce9af7fd",
  "names": [
   "DESKLAB",
   "LABSYNC",

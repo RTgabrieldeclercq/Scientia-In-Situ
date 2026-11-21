@@ -1,0 +1,13 @@
+sample,time_h,od600
+30 kPa gel A,0,0.12
+30 kPa gel A,2,0.21
+30 kPa gel A,4,0.39
+30 kPa gel A,6,0.64
+30 kPa gel B,0,0.11
+30 kPa gel B,2,0.19
+30 kPa gel B,4,0.35
+30 kPa gel B,6,0.58
+Glass control,0,0.12
+Glass control,2,0.27
+Glass control,4,0.55
+Glass control,6,0.91

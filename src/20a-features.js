@@ -22,6 +22,20 @@ const PV = {
       o.body != null ? h('div.pvb-tx', o.body) : null, o.chips && o.chips.filter(Boolean).length ? h('div.pvb-ch', o.chips) : null, ...(o.extra || []));
   },
   chip: (t, cls) => h('span.pvc' + (cls ? '.' + cls : ''), t),
+  /** V4.105: search for an experiment's name — its notes, each with its stage and run (Settings → Experiment series → In search, the stage and run). */
+  xsSearch() {
+    const on = FEAT.tune('expseries', 'search') !== false, n = FEAT.on('expseries') && FEAT.tune('expseries', 'runchip') !== false;
+    const rows = [['Planning', n ? 'Planning · Run 3' : 'Planning'], ['Run', n ? 'Run 3' : 'Run'], ['Analysis', n ? 'Analysis · Run 3' : 'Analysis']];
+    return h('div.pv-xs-srch', h('div.pv-xs-sq', '⌕ 30 kPa'), rows.map(([st, sr]) => h('div.pv-xs-sr', h('b', '30 kPa series'), on ? h('span.pv-xs-sb', sr) : h('span.pv-xs-sb.off', ({ Run: 'Experiment' })[st] || st))),
+      h('div.tiny.muted', on ? 'Search says which note is which' : 'Search: the name alone, with the note’s type'));
+  },
+  /** V4.104: ink written over a component, see-through; with Click through ink, the pointer on its empty part reaches the component beneath. */
+  inkThrough() {
+    const thru = FEAT.tune('ink', 'through') !== false;
+    return h('div.pv-inkthru' + (thru ? '' : '.solid'), PV.box({ num: 'Block', label: 'Seeding', body: 'Seed at 40k/cm² on the 30 kPa gels; wait 4 h before imaging.', cls: thru ? 'pv-hit' : '' }),
+      h('div.pv-inkov', PV.svg(220, 70, '<path d="M14 48 q 18 -40 36 -6 t 34 -4 t 36 2" fill="none" stroke="var(--k-barrier, #c92a2a)" stroke-width="2.6" stroke-linecap="round"/><path d="M150 20 l 34 30 M184 20 l -34 30" fill="none" stroke="var(--k-barrier, #c92a2a)" stroke-width="2.4" stroke-linecap="round"/>'), h('span.pv-inkptr', '➚')),
+      PV.cap(thru ? 'A click on the ink’s empty part reaches the component beneath (it is outlined)' : 'The ink’s whole rectangle (dashed) takes the click; the component beneath does not get it'));
+  },
   cap: t => h('div.fpv-cap', t),
   st: (k, t) => h('span.st.st-' + k, t),
   /** A row of things side by side; a stage where children sit where they're put. */
@@ -146,13 +160,16 @@ const PV = {
 
   // V4.15 (13c): + Experiment asks the name and can continue a series; one name for every note of an experiment
   D({ id: 'expseries', group: 'canvas', label: 'Experiment series', isNew: true, presets: { simple: true },
-    tune: [T('runchip', 'Show the run number', 'switch', { isNew: true, def: true, d: 'Beside the experiment in the Portfolio, and beside the title in the note', changed: () => { try { App.refresh(); } catch (e) { } } })],
+    tune: [T('runchip', 'Show the run number', 'switch', { isNew: true, def: true, d: 'Beside the experiment in the Portfolio, and beside the title in the note', changed: () => { try { App.refresh(); } catch (e) { } } }),
+      // V4.105 (Gabe: "the search function should show if the experiment note is planning, run, or analysis, and shows the run on it too")
+      T('search', 'In search, the stage and run', 'switch', { isNew: true, def: true, d: 'The notes of an experiment all carry its name, so search, the Atlas and the note pickers add which one it is: Planning · Run 3, Run 3, Analysis · Run 3. Typing “analysis” or “run 3” finds them. Off: the name alone' })],
     desc: '+ Experiment asks the experiment’s name, and can continue a series of its theme: pick “30 kPa series” and its next run is made — named “30 kPa series” too, its number (Run 3) beside the title, never in it (V4.97): next to the experiment in the Portfolio and beside the title in the note. Titles that ended in “Run N” lost it once; the number stays on the notes. Every note of an experiment carries its name alone — the stage is its chip and the strip, not part of the title — and renaming one renames them all. A series’ runs share one Synthesis. Off: no series to continue (the name is still asked); series already made stay.',
     preview: () => { const on = FEAT.on('expseries');
       return [h('div.pv-xs', h('div.pv-xs-h', 'New experiment'),
         on ? h('div.pv-xs-f', h('span', 'Continue a series'), h('div.pv-xs-sel', '30 kPa series · 2 runs', h('i', '▾'))) : null,
         h('div.pv-xs-f', h('span', 'Name'), h('div.pv-xs-in', '30 kPa series'))),
         h('div.pv-xs-notes', ['Planning', 'Run', 'Analysis'].map(s => h('div.pv-xs-n', h('span.pv-xs-st', s), h('b', '30 kPa series'), on && FEAT.tune('expseries', 'runchip') !== false ? h('span.run-chip', 'Run 3') : null))),
+        PV.xsSearch(),
         PV.cap(on ? 'Picking a series makes its next run; its three notes all carry the series’ name, each stage as its chip' + (FEAT.tune('expseries', 'runchip') !== false ? ', and “Run 3” beside the title (the Portfolio, the note).' : '; the run number is not shown.') : 'Off: the name is asked, with no series to continue; each note still carries the name alone.')]; } });
 
   // V4.16 (15e): one Synthesis per series; Syntheses in the Portfolio; a note's synthesis in its first block and under its row
@@ -243,8 +260,10 @@ const PV = {
     } });
 
   /* =============================== Pen & touch =============================== */
-  D({ id: 'ink', group: 'pen', label: 'Ink & shapes', desc: 'Writing on the paper with a pen (or the mouse): pen, highlighter, eraser and lasso in the ink bar; strokes written close together gather into one ink component. Off: the ink tools leave; ink already written stays.',
-    preview: () => [h('div.pv-ink', PV.svg(300, 90, '<path d="M20 60 q 14 -34 28 0 t 28 0 t 28 0" fill="none" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round"/><path d="M130 30 l 40 40 M170 30 l -40 40" stroke="var(--k-barrier, #c92a2a)" stroke-width="2" stroke-linecap="round"/><rect x="195" y="22" width="90" height="16" rx="3" fill="color-mix(in srgb, #f2c94c 55%, transparent)"/><text x="200" y="34" font-size="11" font-family="Source Serif 4, serif" fill="var(--ink)">highlighted</text>'), h('div.pv-inkbar', ['✎ Pen', 'Highlighter', 'Eraser', 'Lasso'].map((x, i) => h('span' + (i ? '' : '.on'), x))))] });
+  D({ id: 'ink', group: 'pen', label: 'Ink & shapes', desc: 'Writing on the paper with a pen (or the mouse): pen, highlighter, eraser and lasso in the ink bar; strokes written close together gather into one ink component. Ink is see-through, and what it lies over can still be clicked. Off: the ink tools leave; ink already written stays.',
+    // V4.104 (Gabe: "The ink background should be invisible/see through. You may interact with components overlaid by ink components.") — 21-sync.css
+    tune: [T('through', 'Click through ink', 'switch', { isNew: true, def: true, d: 'Only the strokes take the pointer: a click on an empty part of an ink component reaches the component beneath it. Off: the whole of its rectangle takes the pointer, as before', changed: () => FEAT.apply() })],
+    preview: () => [PV.inkThrough(),h('div.pv-ink', PV.svg(300, 90, '<path d="M20 60 q 14 -34 28 0 t 28 0 t 28 0" fill="none" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round"/><path d="M130 30 l 40 40 M170 30 l -40 40" stroke="var(--k-barrier, #c92a2a)" stroke-width="2" stroke-linecap="round"/><rect x="195" y="22" width="90" height="16" rx="3" fill="color-mix(in srgb, #f2c94c 55%, transparent)"/><text x="200" y="34" font-size="11" font-family="Source Serif 4, serif" fill="var(--ink)">highlighted</text>'), h('div.pv-inkbar', ['✎ Pen', 'Highlighter', 'Eraser', 'Lasso'].map((x, i) => h('span' + (i ? '' : '.on'), x))))] });
 
   D({ id: 'pen', group: 'pen', core: true, label: 'Pen & touch shortcuts', desc: 'What the pen’s buttons, taps and gestures do. Today: the Slim Pen’s button switches to the pen and between its modes; the barrel button lassoes (in pen mode) or loops a region; the pen’s back erases; two fingers tapped undo, three redo; a right-drag loop makes a region; P pans. Choosing a different action for each comes in a later version.',
     tune: SYNC.local ? [T('button', 'The Slim Pen’s button (this computer)', 'node', { render: () => { const n = HANDS.settingsUI(); $$(':scope > .sec, :scope > .sec-h', n).forEach(x => x.remove()); return n; } })] : [],
