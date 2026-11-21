@@ -187,11 +187,7 @@ const ED = {
       { label: 'Edit in place', sub: 'Structures keep their recorded text; the marks follow your edits', run: () => { ED.unlocked.add(b.id); DV(e.target).focusAfterRender = { id: b.id, pos: b.body.text.length }; App.refresh(); } },
       { label: 'Add a correction…', sub: 'A new structure that points at the old one', run: () => { const its = IX.itemsOriginatingIn(b.id); if (its.length === 1) ED.correctDialog(its[0]); else pickModal('Correct which structure?', 'The original stays on record; the correction points at it.', its.map(it => ({ label: KIND[it.kind].label + ': ' + snippet(it.text, 60), run: () => ED.correctDialog(it) }))); } }]);
   },
-  matchKey(e, spec) {
-    const p = spec.toLowerCase().split('+'), k = p.pop();
-    const key = k === 'enter' ? e.key === 'Enter' : (e.key || '').toLowerCase() === k || e.code === 'Key' + k.toUpperCase();
-    return key && !!e.ctrlKey === p.includes('ctrl') && !!e.altKey === p.includes('alt') && !!e.shiftKey === p.includes('shift') && (!e.metaKey || p.includes('ctrl'));
-  },
+  matchKey(e, spec) { return KEYS.match(e, spec); },   // V4.96: the one reading of a key (20g-keymap.js)
   termKeyHit(e) { const s = settings(); return ED.matchKey(e, s.termKey) || ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && (e.key || '').toLowerCase() === 'w' && App.focusMode); },
   onKey(e, el, b, save) {
     const s = settings();
@@ -391,4 +387,4 @@ const ED = {
       emptyText: 'Library is empty — add papers in Library' }), h('div.tiny.muted', { style: { marginTop: '6px' } }, 'Or type /cite as you write (/author-cite for one by its author). Select text first and press Ctrl+I to add it to the library instead.')]);
   },
 };
-const keyLabel = s => s.split('+').map(p => p === 'ctrl' ? 'Ctrl' : p === 'alt' ? 'Alt' : p === 'shift' ? 'Shift' : p === 'enter' ? 'Enter' : p.toUpperCase()).join('+');
+const keyLabel = s => typeof KEYS !== 'undefined' && KEYS.parse(s) ? KEYS.label(s) : s.split('+').map(p => p === 'ctrl' ? 'Ctrl' : p === 'alt' ? 'Alt' : p === 'shift' ? 'Shift' : p === 'enter' ? 'Enter' : p.toUpperCase()).join('+');

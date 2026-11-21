@@ -60,7 +60,7 @@ Object.assign(DocView, {
       { label: 'Insert…', sub: 'A well plate, a protocol, a box — everything that can go here', run: () => INSERT.menu(this, { x: e.clientX, y: e.clientY }, { x: Math.round(p.x / 14) * 14, y: Math.round(p.y / 14) * 14 }) },
       { label: 'New protocol here', sub: 'One block, steps linked; register it when it is ready', run: () => PROTO.create(d.id, Math.round(p.x / 14) * 14, Math.round(p.y / 14) * 14) },
       { label: 'Run a registered protocol here…', sub: 'Steps to check, time and observe', run: () => { const defs = DB.where('blocks', b => b.kind === 'protocol' && b.registered); if (!defs.length) return toast('No registered protocols yet'); PROTO.pickProtocol('Run which protocol here?', df => PROTO.newRun(df, d.id, Math.round(p.x / 14) * 14, Math.round(p.y / 14) * 14)); } }, 'sep',
-      { label: 'Fit', key: 'Ctrl+0', run: () => this.paper.fit(this.bbox()) }, ...LAYOUT.menuRows(this, d)]);
+      { label: 'Fit', key: KEYS.label(KEYS.get('fit')), run: () => this.paper.fit(this.bbox()) }, ...LAYOUT.menuRows(this, d)]);
   },
   boxMenu(b, e) {
     if (!b) return; this.select(b.id);

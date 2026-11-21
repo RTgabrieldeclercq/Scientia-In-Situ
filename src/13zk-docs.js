@@ -121,9 +121,15 @@ const PDFW = {
       const cur = M.block(b.id); if (!cur) return; cur.pages = pdf.numPages; cur.body = { text: [cur.label, ...parts].join('\n\n'), marks: [] }; DB.put('blocks', cur); IX.rebuild(); DOCS.repaint(cur); } catch { } finally { PDFW.pin[id]--; } },
   go(b, i) { b.cur = clamp(i, 0, Math.max(0, (b.pages || 1) - 1)); DOCS.save(b); DOCS.repaint(b); },
   /** A page into a canvas `width` px wide; `res` = pixels per px (default: the screen's, at most 2.5). */
+  /** V4.101 (Gabe: "When zoomed out PDF pages appear upside down"): a page still being drawn into this canvas is stopped, and waited for, before the
+      canvas is resized — resizing it under a running draw cleared pdf.js's flip and the rest of the page came out upside down (zooming out redraws a
+      page at each step; on the website, where a page draws slower, two draws overlapped). */
   async page(m, n, canvas, width, res) { const pdf = await PDFW.load(m), pg = await pdf.getPage(n), v0 = pg.getViewport({ scale: 1 }), dpr = res || Math.min(2.5, window.devicePixelRatio || 1), sc = width / v0.width, vp = pg.getViewport({ scale: sc * dpr });
+    const was = canvas._rt; if (was) { try { was.cancel(); } catch { } try { await was.promise; } catch { } }
     canvas.width = Math.round(vp.width); canvas.height = Math.round(vp.height); canvas.style.width = width + 'px'; canvas.style.height = Math.round(v0.height * sc) + 'px';
-    await pg.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise; try { pg.cleanup(); } catch { } return pdf.numPages; },
+    const rt = canvas._rt = pg.render({ canvasContext: canvas.getContext('2d'), viewport: vp });
+    try { await rt.promise; } finally { if (canvas._rt === rt) canvas._rt = null; }
+    try { pg.cleanup(); } catch { } return pdf.numPages; },
   bar(b, m, n, cur, maxed, ro) {
     const set = (k, v) => { const B = M.block(b.id); B[k] = v; DOCS.save(B); DOCS.repaint(B); };
     const count = h('span.dk-count.mono', n ? (b.view === 'page' ? `${cur + 1} / ${n}` : plural(n, 'page')) : '…');
@@ -264,6 +270,11 @@ const PDFW = {
       goes into a new canvas swapped in when done (no white flash). */
   async draw(j) {
     const C = j.C, s = j.s, pdf = C.pdf, n = C.page ? clamp(C.cur, 0, pdf.numPages - 1) + 1 : +s.dataset.p;
+    if (s._drawing) { s._again = j.res; return; }   // V4.101: one draw of a page at a time; the newest sharpness follows when it ends
+    s._drawing = true; try { await PDFW.drawNow(j, C, s, pdf, n); } finally { s._drawing = false; }
+    if (s._again) { const r = s._again; s._again = 0; if (C.active && !C.dead && s.isConnected && r !== s._res) { PDFW.enqueue(C, s, r); PDFW.pump(); } }
+  },
+  async drawNow(j, C, s, pdf, n) {
     let W = C.W; if (C.page) { const v0 = (await pdf.getPage(n)).getViewport({ scale: 1 }); W = Math.floor(Math.min(C.W, ((C.stage.clientHeight || 500) - 12) * v0.width / v0.height)); }
     const old = $('canvas.pdf-page', s), first = !s._res || !$(':scope > .textLayer', s), cv = first ? old : h('canvas.pdf-page');
     await PDFW.page(C.m, n, cv, W, j.res);

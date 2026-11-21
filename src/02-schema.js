@@ -123,6 +123,7 @@ const DEFAULT_SETTINGS = {
   kinds: Object.fromEntries(KINDS.map(k => [k.id, { color: k.color, mode: k.mode }])),
   termKey: 'alt+w',            // Ctrl+W works in Focus mode (fullscreen + keyboard lock); browsers reserve it otherwise
   structKey: 'ctrl+enter',
+  keymap: {},                  // V4.96: the keys a person rebound, { actionId: 'Alt+K' } — read by KEYS (20g-keymap.js); synced with the other settings
   bridgeColor: '#1f9d55',      // V3.981: the underline under bridged words (13zzu)
   bridgeBar: true,             // V3.990: the bridge bar under the tabs (13zzv); bridgeBarShut: the day × closed it; bridgeUse: { since, n, at } the crossings this fortnight
   weekStartDow: 6,             // Saturday → Friday; the review opens on the weekend after

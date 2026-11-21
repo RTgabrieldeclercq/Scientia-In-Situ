@@ -8,12 +8,14 @@
    ========================================================================== */
 const FOCUS = {
   get: () => _ls.get('focus', null),
+  /** The length the ◎ window opens on: the one Settings → Focus sessions says, or the last you used (20 Nov, easy tunes). */
+  startMin() { const s = FEAT.tune('focus', 'start'); return s && s !== 'last' ? +s : _ls.get('focusMin', 50); },
   active() { const f = FOCUS.get(); return !!(f && f.until > Date.now()); },
   left: () => Math.max(0, ((FOCUS.get() || {}).until || 0) - Date.now()),
   fmt(ms) { const s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), ss = s % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(ss).padStart(2, '0'); },
   open() {
     if (FOCUS.active()) { if (!document.fullscreenElement) FOCUS.enter(); return toast('Focus until ' + fmtTime(new Date(FOCUS.get().until)) + ' — ' + FOCUS.fmt(FOCUS.left()) + ' left'); }
-    let min = _ls.get('focusMin', 50);
+    let min = FOCUS.startMin();
     const custom = h('input.inp.mono', { type: 'number', min: 1, max: 600, value: min, style: { width: '90px' } });
     let chips; const until = h('span.tiny.muted'), upd = () => { min = Math.max(1, Math.min(600, +custom.value || 0)); until.textContent = 'until ' + fmtTime(new Date(Date.now() + min * 6e4)); $$('button', chips).forEach(b => b.classList.toggle('on', +b.dataset.m === min)); };
     chips = h('div.seg.fchips', [15, 25, 45, 50, 60, 90, 120].map(m => h('button', { 'data-m': m, on: { click: () => { custom.value = m; upd(); } } }, m < 60 ? m + ' min' : Math.floor(m / 60) + ' h' + (m % 60 ? ' ' + m % 60 : ''))));
