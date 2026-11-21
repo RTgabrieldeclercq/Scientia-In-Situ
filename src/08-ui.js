@@ -39,7 +39,9 @@ function popover(x, y, content, { cls = 'pop', onClose } = {}) {
   setTimeout(() => { const f = el.querySelector('input'); f && f.focus(); }, 10);
   return el;
 }
-document.addEventListener('mousedown', e => { if (_pop && !_pop.contains(e.target) && !e.target.closest('[data-keep-pop]')) { const f = _pop._onClose; closePop(); f && f(); } });
+/** A click outside the open popover closes it — on a PDF's page, on the paper, anywhere (V4.99: the same call when the click is inside an HTML page's frame, which never lets the click through: 13zw). */
+function popAway(t) { if (_pop && !_pop.contains(t) && !(t && t.closest && t.closest('[data-keep-pop]'))) { const f = _pop._onClose; closePop(); f && f(); } }
+document.addEventListener('mousedown', e => popAway(e.target));
 
 /** A searchable option list inside a popover/modal, keyboard-first. */
 /* ---------------- pickers: every list that pulls notes, components or structures can be searched and sorted ---------------- */
@@ -136,7 +138,7 @@ function ctxMenu(x, y, rows) {
 }
 /** A one-line hover card that follows an element (structures, terms, links, citations). */
 let _hc = null, _hcT = null;
-function hoverCard(anchor, build, wait = 260) {   // V4.66: a term's card waits about a second (`wait`); leaving before then cancels it
+function hoverCard(anchor, build, wait = (+FEAT.tune('hover', 'wait') || 260)) {   // 20 Nov (Gabe: easy tunes): the wait is Settings → Hover cards (the default 260 ms); V4.66: a term's card waits about a second (its own `wait`); leaving before then cancels it
   clearTimeout(_hcT); const cancel = () => clearTimeout(_hcT); anchor.addEventListener('mouseleave', cancel, { once: true });
   _hcT = setTimeout(() => { anchor.removeEventListener('mouseleave', cancel); hideHover(); const c = build(); if (!c) return; _hc = h('div.hovercard', c); document.body.append(_hc);
     const b = anchor.getBoundingClientRect(), r = _hc.getBoundingClientRect(); _hc.style.left = clamp(b.left, 8, innerWidth - r.width - 8) + 'px'; _hc.style.top = (b.bottom + r.height + 10 > innerHeight ? b.top - r.height - 8 : b.bottom + 8) + 'px';

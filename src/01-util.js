@@ -2,7 +2,7 @@
    01 · Utilities — DOM builder, ids, dates, formatting
    ========================================================================== */
 'use strict';
-const BUILD = '2026-11-20 · standalone · Shift+click zooms', DEMO_V = 2;
+const BUILD = '2026-11-20 · standalone · search says the stage and run', DEMO_V = 2;
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -76,8 +76,10 @@ const snippet = (t, n = 90) => { t = String(t || '').replace(/￼/g, '‹cite›
 function hashHue(seed) { let x = 2166136261; for (const ch of String(seed || 'x')) { x ^= ch.charCodeAt(0); x = Math.imul(x, 16777619); } return Math.abs(x) % 360; }
 const isDark = () => document.documentElement.dataset.theme === 'dark' || (document.documentElement.dataset.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
 
+/* 20 Nov (Gabe: easy tunes): how long a message stays is Settings → Messages — every toast's time is scaled by it (1 = as before). */
+const TOASTT = { factor: () => { try { const v = +FEAT.tune('toasts', 'time'); return v > 0 ? v : 1; } catch (e) { return 1; } } };
 function toast(msg, ms = 2400) {
-  const t = h('div.toast', msg); $('#toasts').append(t); setTimeout(() => t.remove(), ms);
+  const t = h('div.toast', msg); $('#toasts').append(t); setTimeout(() => t.remove(), ms * TOASTT.factor());
 }
 const SVGNS = 'http://www.w3.org/2000/svg';
 const SV = (tag, attrs = {}, ...kids) => { const e = document.createElementNS(SVGNS, tag); for (const [k, v] of Object.entries(attrs)) if (v != null) e.setAttribute(k, v); kids.forEach(k => k != null && e.append(k)); return e; };

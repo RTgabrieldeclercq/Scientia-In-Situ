@@ -53,7 +53,12 @@ const TLOOK = {
     const others = notes.filter(g => !here || g.d.id !== here.id), hereT = here ? +new Date(here.created || t1) : t1;
     const near = others.slice().sort((a, b) => Math.abs(a.t - hereT) - Math.abs(b.t - hereT)).slice(0, 3);
     let sel = near[0] || notes[0] || null; const t0 = notes.length ? Math.min(notes[0].t, D.since || notes[0].t) : t1, tEnd = Math.max(t1, ...notes.map(g => g.t)), span = Math.max(864e5, tEnd - t0);
-    const quote = h('div.tcd-q'), drawQ = () => { if (!sel) return quote.replaceChildren(h('span.tcd-none', 'Used only here so far.'));
+    let shownD = null;   // the note whose sentence is in the quote area now: pointing at the same one again changes nothing
+    const quote = h('div.tcd-q'), drawQ = () => { const key = sel ? sel.d.id : '';
+      if (shownD === key) return $$('.tcd-dot', tl).forEach(x => x.classList.toggle('sel', !!sel && x.dataset.d === sel.d.id));
+      const first = shownD === null; shownD = key;
+      if (!first) { quote.classList.remove('swap'); void quote.offsetWidth; quote.classList.add('swap'); }   // a short cross-fade; nothing moves
+      if (!sel) return quote.replaceChildren(h('span.tcd-none', 'Used only here so far.'));
       quote.replaceChildren(h('button.tcd-qb', { type: 'button', title: 'Open it there', on: { click: () => { hideHover(); App.openComponent(sel.kw.blockId); } } },
         h('span.tcd-qh', h('i.tcd-k.k-' + sel.kind), h('b', sel.d.title || 'Untitled'), h('span.tcd-sp'), h('span.tcd-m', (sel.rel ? sel.rel + ' · ' : '') + fmtDay(sel.t) + ' · ' + sel.n + '×')),
         h('span.tcd-kw', sel.kw.pre, h('b', sel.kw.term || t.label), sel.kw.post))); $$('.tcd-dot', tl).forEach(x => x.classList.toggle('sel', sel && x.dataset.d === sel.d.id)); };

@@ -24,7 +24,12 @@
      each. With no hot note yet the panel starts with them; with no visit yet,
      the notes edited last.
    - +: a search across every note, to star any of them.
-   HOT: favs() · isFav(id) · toggle(id, on) · visit(id) · visits() · top(n, skip) · open() · close() · paint() · rowEl(o).
+   - V4.92 (Gabe: "Hot notes appear in the tab next to it."): your hot notes
+     also sit in the tab row, right after the button — each a small tab with
+     its kind's colour and its title; a click opens it, the note you are in
+     is lit. As many as fit (Settings: up to 3, 5 or 8, or none); the rest
+     are behind "+n", which opens the panel.
+   HOT: favs() · isFav(id) · toggle(id, on) · visit(id) · visits() · top(n, skip) · open() · close() · paint() · rowEl(o) · strip() · fit().
    Settings → Tabs & overview → Hot notes (hotnotes, 20a): the switch, how many suggestions, the preview.
    ========================================================================== */
 const HOT = {
@@ -77,12 +82,31 @@ const HOT = {
   },
   row(d, fav) { return HOT.rowEl({ id: d.id, title: d.title || 'Untitled', sub: HOT.sub(d), k: NOTEKIND.of(d), ban: HOT.banner(d), fav, open: () => { HOT.close(); App.go('#/doc/' + d.id); }, star: () => HOT.toggle(d.id) }); },
   /* ---------- the button and the panel ---------- */
-  count() { const b = HOT.btn; if (!b) return; const n = HOT.favs().length, c = $('.hn-cnt', b); if (c) c.textContent = n ? String(n) : ''; },
+  count() { const b = HOT.btn; if (!b) return; const n = HOT.favs().length, c = $('.hn-cnt', b); if (c) c.textContent = n ? String(n) : ''; HOT.strip(); },
+  /* ---------- V4.92: the hot notes in the tab row, after the button ---------- */
+  inline: () => { let n = 5; try { const v = FEAT.tune('hotnotes', 'inline'); n = v == null ? 5 : +v; } catch (e) { } return HOT.on() ? clamp(isNaN(n) ? 5 : n, 0, 12) : 0; },
+  strip() {
+    const S = HOT.sbox; if (!S) return; const n = HOT.inline(), F = n ? HOT.favs().slice(0, n) : [], cur = App.route && App.route.name === 'doc' ? App.route.args[0] : null;
+    S.hidden = !F.length;
+    S.replaceChildren(...F.map(d => h('a.hn-tab' + (d.id === cur ? '.on' : ''), { href: '#/doc/' + d.id, 'data-id': d.id, 'data-sk': NOTEKIND.of(d), title: (d.title || 'Untitled') + ' — ' + HOT.sub(d), 'aria-current': d.id === cur ? 'page' : null, on: { click: () => HOT.close() } },
+      h('span.hn-tk', { 'aria-hidden': 'true' }), h('span.hn-tt', d.title || 'Untitled'))),
+      h('button.hn-more', { type: 'button', hidden: true, title: 'The rest of your hot notes', on: { click: e => { e.stopPropagation(); HOT.el ? HOT.close() : HOT.open(); } } }, '+0'));
+    requestAnimationFrame(() => HOT.fit());
+  },
+  /** As many as fit in the tab row; the rest behind "+n". */
+  fit() {
+    const S = HOT.sbox, nav = S && S.parentNode; if (!S || !nav || S.hidden) return; const T = $$('.hn-tab', S), more = $('.hn-more', S); T.forEach(t => { t.hidden = false; }); more.hidden = true;
+    const lim = () => nav.getBoundingClientRect().left + nav.clientWidth - 4; let hid = 0;
+    for (let i = T.length - 1; i >= 0 && S.getBoundingClientRect().right > lim(); i--) { T[i].hidden = true; hid++; more.hidden = false; more.textContent = '+' + hid; }
+    if (hid && S.getBoundingClientRect().right > lim()) { const vis = T.filter(t => !t.hidden); if (vis.length) { vis[vis.length - 1].hidden = true; more.textContent = '+' + (hid + 1); } }
+  },
   mount() {
-    const nav = $('#tabs'); if (!nav) return; if (HOT.btn && HOT.btn.isConnected) { if (HOT.btn !== nav.lastElementChild) nav.append(HOT.btn); return; }
+    const nav = $('#tabs'); if (!nav) return;
+    if (!HOT.sbox) HOT.sbox = h('span#hotstrip.hn-strip', { role: 'group', 'aria-label': 'Your hot notes' });
+    if (HOT.btn && HOT.btn.isConnected) { if (HOT.sbox !== nav.lastElementChild || HOT.btn.nextSibling !== HOT.sbox) nav.append(HOT.btn, HOT.sbox); HOT.strip(); return; }
     HOT.btn = h('button#hotbtn.hot-btn', { type: 'button', title: 'Hot notes — the notes you starred, and the ones you open most', 'aria-haspopup': 'dialog', 'aria-expanded': 'false', on: { click: e => { e.stopPropagation(); HOT.el ? HOT.close() : HOT.open(); } } },
       h('span.hn-ic', { html: HOT.STAR_O }), h('span.hn-l', 'Hot notes'), h('span.hn-cnt'));
-    nav.append(HOT.btn); HOT.count();
+    nav.append(HOT.btn, HOT.sbox); HOT.count();
   },
   open() {
     if (!HOT.on()) return; HOT.close(); HOT.q = null;
@@ -125,7 +149,9 @@ const HOT = {
       wrap.replaceChildren(h('div.hn-pop.pv', h('div.hn-head', h('span.hn-hic', { html: HOT.STAR }), h('b', 'Hot notes'), h('span.hn-n', String(rows.filter(r => st.fav[r.id]).length)), h('button.hn-add', { type: 'button', tabindex: '-1' }, '+')),
         h('div.hn-list', rows.filter(r => st.fav[r.id]).map(r => HOT.rowEl(Object.assign({}, r, { fav: true, ban: BANNER.drawn(r.key), star: () => { st.fav[r.id] = false; draw(); } })))),
         h('div.hn-sh', 'Most visited'), h('div.hn-list.hn-sug', rows.filter(r => !st.fav[r.id]).map(r => HOT.rowEl(Object.assign({}, r, { fav: false, ban: BANNER.drawn(r.key), star: () => { st.fav[r.id] = true; draw(); } }))))),
-        PV.cap('Hover a hot note: its golden star shows, and a click takes it out; an empty star adds one. Up to ' + n + ' of your most visited notes are suggested. Try the stars here.')); };
+        h('div.pv-hnrow', h('span.pv-hnt', 'Settings'), h('span.hot-btn.pv', h('span.hn-ic', { html: HOT.STAR_O }), h('span.hn-l', 'Hot notes'), h('span.hn-cnt', String(rows.filter(r => st.fav[r.id]).length))),
+          HOT.inline() ? h('span.hn-strip', rows.filter(r => st.fav[r.id]).slice(0, HOT.inline()).map(r => h('span.hn-tab', { 'data-sk': r.k }, h('span.hn-tk'), h('span.hn-tt', r.title)))) : null),
+        PV.cap('Hover a hot note: its golden star shows, and a click takes it out; an empty star adds one. Up to ' + n + ' of your most visited notes are suggested. ' + (HOT.inline() ? 'Your hot notes also sit in the tab row, after the button — up to ' + HOT.inline() + ', as many as fit.' : 'They are not shown in the tab row.') + ' Try the stars here.')); };
     draw(); return [wrap];
   },
 };
@@ -134,9 +160,9 @@ const HOT = {
   const rt = App.renderTabs; App.renderTabs = function () { const r = rt.apply(this, arguments); try { HOT.mount(); } catch (e) { console.warn('[hot notes]', e); } return r; };
   // a visit: going to a note (a split counts each of its notes)
   const seen = () => { try { const r = App.parse(); if (r.name === 'doc' && r.args[0]) HOT.visit(r.args[0]); else if (r.name === 'split' && typeof SplitView !== 'undefined') SplitView.parse(r.args).docs.forEach(id => HOT.visit(id)); } catch (e) { } };
-  addEventListener('hashchange', () => { HOT.close(); seen(); });
+  addEventListener('hashchange', () => { HOT.close(); seen(); setTimeout(() => HOT.strip(), 0); });
   const ready = setInterval(() => { if (!window.__ready) return; clearInterval(ready); seen(); HOT.count(); }, 200);
-  addEventListener('resize', () => HOT.place());
+  addEventListener('resize', () => { HOT.place(); HOT.fit(); });
   // the switch: off, no button (and the panel closes)
   const ap = FEAT.apply; FEAT.apply = function () { const r = ap.apply(this, arguments); try { if (!HOT.on()) HOT.close(); } catch (e) { } return r; };
 }

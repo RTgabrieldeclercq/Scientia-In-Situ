@@ -58,7 +58,13 @@ const HANDS = {
   },
   /* ---------- edge hover-pan (V3.960) ---------- */
   /** How fast for a push of p px past the edge: touching it → VMIN, RANGE px → VMAX, rising ever faster between (px a second). */
-  speed: p => HANDS.VMIN + (HANDS.VMAX - HANDS.VMIN) * Math.pow(Math.min(1, Math.max(0, p) / HANDS.RANGE), HANDS.POW),
+  speed: p => HANDS.sens() * (HANDS.VMIN + (HANDS.VMAX - HANDS.VMIN) * Math.pow(Math.min(1, Math.max(0, p) / HANDS.RANGE), HANDS.POW)),
+  /** V4.91 (Gabe: "Edge pan in full screen should have its sensitivity tunable"): Settings → Edge pan in full screen — how fast (Sensitivity, ×),
+      how long the pointer rests at the edge before it starts (DWELL), how close to the edge it reacts (EDGE). The defaults are the old numbers. */
+  etn(k, d) { try { const v = FEAT.tune('edgepan', k); return v == null || v === '' || isNaN(+v) ? d : +v; } catch (e) { return d; } },
+  sens: () => clamp(HANDS.etn('speed', 100), 10, 400) / 100,
+  edge: () => clamp(HANDS.etn('zone', HANDS.EDGE), 0, 40),
+  dwell: () => clamp(HANDS.etn('dwell', HANDS.DWELL), 0, 2000),
   /** The server reads the mouse (api/edge-push): a window on the computer that runs it. */
   desk: () => !!SYNC.local,
   /** V3.980: full screen — Focus mode (the Fullscreen API), or the browser's own (F11: the window is the screen). */
@@ -71,7 +77,7 @@ const HANDS = {
     if (!HANDS.full() || !e.isTrusted || e.pointerType === 'touch' || e.buttons || HANDS.hand() !== 'move' || $('.pop') || $('.ovl') || (t.closest && t.closest('.bw-mk,.ink-bar,.nav:not(.asleep),.embed-max,.fbar,.insp,.dock,.ctools,.slash-menu,.webcap-wait,.iter-slides'))) return HANDS.quiet();
     S.ptype = e.pointerType;
     // in full screen the note's edges are the screen's: the push is at the screen's very edge (−1 left/top, 1 right/bottom)
-    const E = HANDS.EDGE, sx = x <= E ? -1 : x >= innerWidth - 1 - E ? 1 : 0, sy = y <= E ? -1 : y >= innerHeight - 1 - E ? 1 : 0;
+    const E = HANDS.edge(), sx = x <= E ? -1 : x >= innerWidth - 1 - E ? 1 : 0, sy = y <= E ? -1 : y >= innerHeight - 1 - E ? 1 : 0;
     const P = S.P && S.P.el.isConnected ? S.P : HANDS.paneAt(x, y);
     if (!P) return HANDS.quiet();
     if (!sx && !sy) { HANDS.stopPan(); return HANDS.border(P, x, y); }   // off the edge: it stops at once
@@ -79,8 +85,8 @@ const HANDS = {
     S.ax = keep(S.ax, sx); S.ay = keep(S.ay, sy); S.P = P;
     // a rest at the edge first (a flick to it, or overshooting a button there, moves nothing); the pointer resting still sends no
     // more moves, so a timer starts it
-    if (!S.edgeAt) { S.edgeAt = performance.now(); clearTimeout(S.dwellT); S.dwellT = setTimeout(() => { if (S.edgeAt && (S.ax || S.ay) && S.P) HANDS.go(); }, HANDS.DWELL); }
-    else if (performance.now() - S.edgeAt >= HANDS.DWELL) HANDS.go();
+    if (!S.edgeAt) { S.edgeAt = performance.now(); clearTimeout(S.dwellT); S.dwellT = setTimeout(() => { if (S.edgeAt && (S.ax || S.ay) && S.P) HANDS.go(); }, HANDS.dwell()); }
+    else if (performance.now() - S.edgeAt >= HANDS.dwell()) HANDS.go();
     HANDS.border(P, x, y);
   },
   go() {
@@ -178,7 +184,7 @@ const HANDS = {
   // P = Move, outside a text; Esc: the bar, then a popover (dialogs, the strip, the maximised views keep their own)
   const typing = e => e.target && e.target.closest && e.target.closest('input,textarea,select,[contenteditable="true"],[contenteditable="plaintext-only"],math-field');
   document.addEventListener('keydown', e => {
-    if ((e.key === 'p' || e.key === 'P') && !e.ctrlKey && !e.metaKey && !e.altKey && !typing(e) && !$('.ovl') && !$('.pop') && HANDS.pane() && !(typeof NAV !== 'undefined' && NAV.awake)) { e.preventDefault(); e.stopPropagation(); CMD.hand('move'); return; }
+    if (KEYS.is(e, 'hand') && !typing(e) && !$('.ovl') && !$('.pop') && HANDS.pane() && !(typeof NAV !== 'undefined' && NAV.awake)) { e.preventDefault(); e.stopPropagation(); CMD.hand('move'); return; }
     if (e.key === 'Escape' && !$('.ovl') && !$('.strip') && !$('.embed-max:not(.rd-docked)') && !$('.palette') && !(typeof SLASH !== 'undefined' && SLASH.st) && !(typeof HTMLX !== 'undefined' && HTMLX._pick)) {
       if (typeof NAV !== 'undefined' && NAV.awake) { e.preventDefault(); e.stopPropagation(); return NAV.sleep(); }
       if ($('.pop')) { e.preventDefault(); e.stopPropagation(); return closePop(); } }

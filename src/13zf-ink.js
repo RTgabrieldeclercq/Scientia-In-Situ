@@ -129,6 +129,8 @@ const INK = {
     if (INK.tool === 'eraser') return INK.erase(pane, paper, e), true;
     INK.stroke(pane, paper, e, INK.tool === 'lasso'); return true;
   },
+  /** V4.104: Settings → Ink & shapes → Click through ink — off puts body.ink-solid, and the whole rectangle takes the pointer again (21-sync.css). */
+  solid: () => { try { return FEAT.tune('ink', 'through') === false; } catch (e) { return false; } },
   live(paper) { let s = $(':scope > svg.ink-live', paper.world); if (!s) { s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('class', 'ink-live'); paper.world.appendChild(s); } return s; },
   stroke(pane, paper, e, lasso) {
     const hl = INK.tool === 'hl', st = { c: hl ? (INK.HL[INK.hlColor] || INK.HL[0]) : (INK.COLORS[INK.color] || INK.COLORS[0]), w: hl ? 14 : INK.WIDTHS[INK.width] || 2.4, hl: hl || undefined, p: [] };
@@ -363,4 +365,6 @@ window.SIS_PALM = PALM;
     DB.where('blocks', b => b.kind === 'ink' && b.inkItemId && b.status !== 'removed').forEach(b => { if (!M.item(b.inkItemId)) return; const cur = IX.blockItems.get(b.id) || []; if (!cur.includes(b.inkItemId)) IX.blockItems.set(b.id, [...cur, b.inkItemId]); });
     return r; };
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && INK.sel) INK.clearSel(); });
+  // V4.104: body.ink-solid follows Settings → Ink & shapes → Click through ink, with the page's other classes
+  { const fa = FEAT.apply; FEAT.apply = function () { const r = fa.apply(this, arguments); try { document.body && document.body.classList.toggle('ink-solid', INK.solid()); } catch (e) { } return r; }; }
 }

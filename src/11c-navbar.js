@@ -110,8 +110,9 @@ const NAV = {
   addEventListener('hashchange', () => setTimeout(() => NAV.crumb(), 0));
   const typing = e => { const t = e.target; return t && t.closest && t.closest('input,textarea,select,[contenteditable="true"],[contenteditable="plaintext-only"],math-field'); };
   document.addEventListener('keydown', e => {
-    if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && !typing(e) && !$('.ovl') && !$('.pop') && !(App.pane && App.pane.sel) && !NAV.awake && NAV.el) { e.preventDefault(); e.stopPropagation(); NAV.wake('/'); return; }
-    if (e.altKey && !e.ctrlKey && !e.metaKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !typing(e)) { e.preventDefault(); if (!HIST.go(e.key === 'ArrowLeft' ? -1 : 1)) NAV.say(e.key === 'ArrowLeft' ? 'Nothing to go back to' : 'Nothing ahead'); }
+    if (KEYS.is(e, 'cmdbar') && !typing(e) && !$('.ovl') && !$('.pop') && !(App.pane && App.pane.sel) && !NAV.awake && NAV.el) { e.preventDefault(); e.stopPropagation(); NAV.wake('/'); return; }
+    const bk = KEYS.is(e, 'back'), fw = !bk && KEYS.is(e, 'forward');
+    if ((bk || fw) && !typing(e)) { e.preventDefault(); if (!HIST.go(bk ? -1 : 1)) NAV.say(bk ? 'Nothing to go back to' : 'Nothing ahead'); }
   }, true);
   document.addEventListener('mousedown', e => { if (NAV.awake && NAV.el && !NAV.el.contains(e.target)) NAV.sleep(); }, true);
 }

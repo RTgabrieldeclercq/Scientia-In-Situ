@@ -27,7 +27,8 @@ const CMD = {
   all() { const taken = new Set(Object.keys(CMD.by)), ins = CMD.inserts().filter(x => !taken.has(x.slash)); ins.forEach(x => taken.add(x.slash));
     const yours = (settings().commands || []).filter(x => x && x.slash && !taken.has(x.slash)).map(x => { taken.add(x.slash); return CMD.custom(x); });
     const macros = (settings().macros || []).filter(m => m && m.slash && !taken.has(m.slash)).map(m => { taken.add(m.slash); return MACRO.asCommand(m); });
-    return [...CMD.list, ...ins, ...yours, ...macros]; },
+    const flows = typeof SWF === 'undefined' ? [] : SWF.asCommands(taken);   // V4.95: slash commands made of workflows (13zzga)
+    return [...CMD.list, ...ins, ...yours, ...macros, ...flows]; },
   get(slash) { slash = String(slash || '').replace(/^\//, '').toLowerCase(); if (!slash) return null; return CMD.by[slash] || CMD.all().find(c => c.slash === slash || (c.alias || []).includes(slash)) || null; },
   /** A command of the person's own (Settings → Commands): what it stands for. */
   custom(x) { return { slash: x.slash, label: x.label || '/' + x.slash, sub: CMD.describe(x), group: 'Yours', custom: x, args: [], scope: 'both',
@@ -78,7 +79,7 @@ CMD.KINDS = {
   choice: { list: (q, ctx, a) => CMD.choices(a, ctx).filter(c => !q || c.toLowerCase().startsWith(String(q).toLowerCase())).map(c => ({ label: c, v: c })),
     resolve: (v, a, ctx) => { v = String(v).toLowerCase(); const C = CMD.choices(a, ctx), hit = C.find(x => x.toLowerCase() === v) || (C.filter(x => x.toLowerCase().startsWith(v)).length === 1 ? C.find(x => x.toLowerCase().startsWith(v)) : null); if (!hit) toast((a.label || a.name) + ': one of ' + C.join(' · ')); return hit || null; },
     ask: (a, ctx) => new Promise(res => { let got = false; pickModal(a.ask || 'Which?', a.label || a.name, CMD.choices(a, ctx).map(c => ({ label: c, run: () => { got = true; res(c); } }))); setTimeout(() => { const ov = $('.ovl'); if (ov) new MutationObserver(() => { if (!ov.isConnected && !got) res(null); }).observe(document.body, { childList: true }); }, 0); }) },
-  note: CMD.ent(() => DB.where('documents', d => !d.deleted && !d.archived).sort((a, b) => String(b.modified || '').localeCompare(String(a.modified || ''))), d => d.title || 'Untitled', d => M.docPath(d)),
+  note: CMD.ent(() => DB.where('documents', d => !d.deleted && !d.archived).sort((a, b) => String(b.modified || '').localeCompare(String(a.modified || ''))), d => CHAIN.listTitle(d), d => M.docPath(d)),   // V4.105: "30 kPa series — Analysis · Run 3"
   project: CMD.ent(() => DB.all('projects'), p => p.name || p.title || 'Project', p => p.status || ''),
   theme: CMD.ent(() => DB.all('themes'), t => t.name || 'Theme', t => (M.project(t.projectId) || {}).name || ''),
   component: CMD.ent(ctx => DB.where('blocks', b => b.status === 'live' && (b.kind === 'component' || b.kind === 'ink' || (typeof WIDGETS !== 'undefined' && WIDGETS[b.kind]))).sort((a, b) => ((ctx.doc && b.docId === ctx.doc.id) - (ctx.doc && a.docId === ctx.doc.id)) || String(b.modified || '').localeCompare(String(a.modified || ''))),
@@ -268,6 +269,7 @@ CMD.settingsUI = function () {
     folder.replaceChildren('In the notebook folder’s macros/: ', ...j.files.map(f => h('button.btn.xs', { style: { margin: '0 4px 4px 0' }, title: 'Import ' + f, on: { click: async () => { const t = await fetch('api/macros?name=' + encodeURIComponent(f)).then(r => r.text()); MACRO.import(t); App.refresh(); } } }, f))); }).catch(() => { folder.textContent = ''; });
   return h('div.cmd-settings', h('div.sec'), h('div.sec-h', h('h2', 'Commands'), h('span.k', '/ in a component · / on the canvas · macros')),
     h('p.serif.muted', { style: { marginTop: 0, fontSize: '14.5px' } }, 'Type / in a component for the commands that act on the text; press / on the canvas (nothing selected) for the navigation bar at the bottom, which takes every command. /help lists them. Here you add commands of your own and macros — steps behind one /command, from a .sis-macro.json file.'),
+    h('p.tiny', { style: { margin: '-6px 0 10px' } }, h('a', { href: '#/settings/feature/slash' }, 'Slash commands made of workflows'), ' (V4.95) — your own /commands with steps, and tuning the built-in ones — are in Features → Slash commands.'),
     h('div.list', yours.length ? yours.map(x => h('div.li', h('code.mono', '/' + x.slash), h('span.t', x.label || '', h('span.s', CMD.describe(x))), h('button.btn.xs', { on: { click: () => edit(x, false) } }, 'Edit'), h('button.btn.xs.ghost', { on: { click: () => { saveSettings({ commands: (settings().commands || []).filter(c => c.slash !== x.slash) }); App.refresh(); } } }, '×'))) : h('div.li.muted', 'No commands of your own yet.'),
       h('div.li', h('button.btn.sm', { on: { click: () => edit({}, true) } }, '+ Command'), h('button.btn.sm', { on: { click: () => importFile('.json,application/json') } }, 'Import…'), yours.length ? h('button.btn.sm', { on: { click: () => { const a = h('a', { href: URL.createObjectURL(new Blob([JSON.stringify({ format: 'sis-commands/1', commands: yours, macros }, null, 2)], { type: 'application/json' })), download: 'scientia.sis-commands.json' }); document.body.append(a); a.click(); a.remove(); } } }, 'Export all') : null)),
     h('h3', { style: { fontSize: '13px', margin: '14px 0 6px' } }, 'Macros'),

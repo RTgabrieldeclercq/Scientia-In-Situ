@@ -44,6 +44,10 @@ const LABPILLS = { start(LAB) {
   PILL_ICONS['rotate-cw'] = "<path d=\"M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8\"/><path d=\"M21 3v5h-5\"/>";
   /* V3.941 — the Quick cast's Flag (the bottom bar's ⚐) */
   PILL_ICONS.map = "<path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z\"/>";   // V3.963 — a term in this note (14c)
+  /* V4.93 — the Quick cast's Photo (Heroicons v2 camera) */
+  PILL_ICONS.camera = "<path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z\"/>";
+  /* V4.93 — the Quick cast's Float (Heroicons v2 cloud, the floats' own shape) */
+  PILL_ICONS.cloud = "<path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M2.25 15a4.5 4.5 0 0 0 4.5 4.5H18a3.75 3.75 0 0 0 1.332-7.257 3 3 0 0 0-3.758-3.848 5.25 5.25 0 0 0-10.233 2.33A4.502 4.502 0 0 0 2.25 15Z\"/>";
   PILL_ICONS.flag = "<path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M3 3v1.5M3 21v-6m0 0 2.77-.693a9 9 0 0 1 6.208.682l.108.054a9 9 0 0 0 6.086.71l3.114-.732a48.524 48.524 0 0 1-.005-10.499l-3.11.732a9 9 0 0 1-6.085-.711l-.108-.054a9 9 0 0 0-6.208-.682L3 4.5M3 15V4.5\"/>";
   /* V3.926 — icons for the desktop's new + Insert rows: tables, plots of a table, saved ink (Heroicons v2 / Lucide, monochrome) */
   Object.assign(PILL_ICONS, {"chart-bar": "<path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z\"/>", "table": "<path d=\"M12 3v18\"/><rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\"/><path d=\"M3 9h18\"/><path d=\"M3 15h18\"/>", "table-2": "<path d=\"M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18\"/>", "star": "<path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z\"/>"});
@@ -95,6 +99,13 @@ const LABPILLS = { start(LAB) {
     view: { icon: '⊕', label: 'Zoom', side: 'left', vert: 'down', dock: true, orient: 'v', at: function () { return [36, 36]; } } };
   var HAND_NAMES = { zoom: 'Zoom', move: 'Move', pen: 'Pen', hl: 'Highlighter', lasso: 'Lasso', eraser: 'Eraser' };
   LAB.pillDefs = PILLS;   // V4.35 — where each pill sits until it is moved (Settings → Pills draws its canvas from it)
+  /* V4.93 — what a pill holds, for Settings' canvas to draw its extended look: its items' icons and words as on a note (the newest
+     note's, else none), read only — nothing in them runs */
+  LAB.pillPreview = function (name) {
+    try { var docs = DB.where('documents', function (x) { return !x.deleted && !x.archived && x.type !== 'day'; }).sort(function (a, b) { return String(b.modified || '').localeCompare(String(a.modified || '')); });
+      if (!docs.length) return []; var fake = { docId: docs[0].id, sel: null, paper: null, pullMenu: function () {} };
+      return pillItems(name, fake).filter(function (x) { return !x.sub; }).map(function (x) { return { icon: x.icon, label: x.label, sel: !!x.sel }; }); } catch (e) { return []; }
+  };
   var FAN_RINGS = [[5, 84], [7, 140], [9, 196]];
   function fanPos(i, n, side, vert) {
     var k = i, start = 0, ring = 0;
@@ -183,6 +194,18 @@ const LABPILLS = { start(LAB) {
       var flagged = M.flagFor('doc', d.id);
       items.push({ icon: pic('flag'), label: flagged ? 'Flagged for the weekly review — tap to clear it' : 'Flag this note for the weekly review', sel: !!flagged,
         run: function () { Promise.resolve(M.toggleFlag('doc', d.id)).then(paintAll, paintAll); } });
+      /* V4.93 (Gabe: "Add float button in quick cast pill") — Float, after Pull in and Flag: the selected components (a click, the lasso,
+         the bulk ticks) become floats — they wait for the note they belong to; with none selected, the floats waiting come up over
+         this note to be dragged in (the app's FLOATS, 14h — Label's Float, by clicking components, stays behind Label) */
+      if (typeof FLOATS !== 'undefined' && FLOATS.on()) {
+        var flSel = FLOATS.selected(); if (!flSel.length && pane.sel && FLOATS.live(M.block(pane.sel)) && !FLOATS.isFloat(M.block(pane.sel))) flSel = [pane.sel];
+        var flN = FLOATS.waiting().length;
+        items.push({ icon: pic('cloud'), label: flSel.length ? 'Float — make ' + (flSel.length > 1 ? 'the ' + flSel.length + ' selected components floats' : 'the selected component a float') + ': it waits for the note it belongs to' : 'Floats — ' + (flN ? 'the ' + flN + ' waiting come up over this note; drag one in' : 'none waiting; select a component to make it one'), cls: 'lab-float',
+          run: function () { if (flSel.length) FLOATS.mark(flSel); else FLOATS.open({ pane: pane }); } });
+      }
+      /* V4.93 (Gabe: "Include a capture image in quick cast that routes to the device's camera to take a picture, and logs it into the
+         note you were in as a 1x1 image panel") — Photo, after Float: the app's camera (CAMERA, 14fh) */
+      if (typeof CAMERA !== 'undefined' && CAMERA.on()) items.push({ icon: pic('camera'), label: 'Photo — take a picture with this device’s camera; it goes into this note as a 1×1 image panel', cls: 'lab-photo', run: function () { CAMERA.take(d, pane); } });
       /* V4.9 (Gabe) — Label: Float and Reference behind one button, third after Pull in and Flag. Docked as a row, its two
          open beside it, in the row; in the fan they open outwards from it. A label picked is in hand (the app's LABELS):
          the cursor is its symbol, a click on a component labels it (Ctrl keeps it); the button stays lit meanwhile */

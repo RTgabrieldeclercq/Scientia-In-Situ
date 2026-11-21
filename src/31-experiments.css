@@ -10,6 +10,10 @@
 .pv-xs-sel,.pv-xs-in{border:1px solid var(--rule-2);border-radius:6px;padding:5px 8px;font-size:12.5px;background:var(--surface);color:var(--ink);display:flex;align-items:center;gap:6px}
 .pv-xs-sel i{margin-left:auto;font-style:normal;color:var(--ink-3)}
 .pv-xs-notes{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.pv-xs-srch{display:grid;gap:3px;margin-top:8px;max-width:340px;border:1px solid var(--rule);border-radius:9px;padding:6px 8px;background:var(--surface)}
+.pv-xs-sq{font:11px var(--f-m);color:var(--ink-3);border-bottom:1px solid var(--rule);padding-bottom:4px;margin-bottom:2px}
+.pv-xs-sr{display:flex;align-items:center;gap:8px;font-size:12px} .pv-xs-sr b{font-weight:600}
+.pv-xs-sb{margin-left:auto;font:10px var(--f-m);letter-spacing:.04em;color:var(--teal)} .pv-xs-sb.off{color:var(--ink-3)}
 .pv-xs-n{display:flex;align-items:center;gap:6px;border:1px solid var(--rule);border-radius:7px;padding:5px 8px;background:var(--surface);font-size:12px;min-width:0}
 .pv-xs-n b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pv-xs-st{font:9px var(--f-m);letter-spacing:.08em;text-transform:uppercase;color:var(--teal);flex:none}

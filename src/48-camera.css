@@ -1,0 +1,16 @@
+/* ==========================================================================
+   48 · Take a photo into the note (V4.93, 14fh): the camera window, its preview in Settings
+   ========================================================================== */
+.cam{display:flex;flex-direction:column;gap:10px}
+.cam-stage{position:relative;display:grid;place-items:center;min-height:260px;max-height:62vh;border-radius:12px;background:#000;overflow:hidden}
+.cam-v,.cam-shot{display:block;max-width:100%;max-height:62vh;object-fit:contain}
+.cam-v[hidden],.cam-shot[hidden],.cam-msg[hidden],.cam-bar [hidden]{display:none}
+.cam-msg{position:absolute;margin:0;color:#ddd;font:500 13px var(--f-d)}
+.cam-bar{display:flex;align-items:center;gap:8px}
+.cam-flip{font-size:16px}
+.pv-cam{display:flex;align-items:center;gap:8px}
+.pv-camv{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;width:110px;height:76px;padding:6px;border-radius:9px;background:linear-gradient(160deg,#2b3a3a,#111);color:#eee;box-sizing:border-box}
+.pv-camv b{font:600 9.5px var(--f-d)} .pv-camv i{font:normal 600 9px var(--f-d);padding:2px 8px;border-radius:999px;background:var(--teal);color:#fff}
+.pv-camar{color:var(--ink-3)}
+.pv-camp{display:flex;flex-direction:column;gap:3px;width:96px;padding:5px;border-radius:8px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--rule)}
+.pv-camh{font:600 9px var(--f-d);color:var(--ink-2)} .pv-camimg{height:48px;border-radius:5px;background:linear-gradient(160deg,#6a8a7a,#2b3a3a)}

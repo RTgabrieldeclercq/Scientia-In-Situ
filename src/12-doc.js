@@ -8,7 +8,7 @@ const DocView = {
   canvas: true, title: true, docId: null, paper: null, sel: null, pendingFocus: null, openGhosts: new Set(), travel: null,
 
   render(docId) {
-    const d = M.doc(docId); this.docId = docId; this.sel = null; this.travel = VIEWER && d && docId === VIEWER.X.docId ? { at: VIEWER.X.at, viewer: true, doc: d, blocks: M.docBlocks(d.id) } : null;
+    const d = M.doc(docId); this.docId = docId; this.sel = null; this._arrived = null; this.travel = VIEWER && d && docId === VIEWER.X.docId ? { at: VIEWER.X.at, viewer: true, doc: d, blocks: M.docBlocks(d.id) } : null;
     if (!d) { this.paper = null; this.host = null; return h('div.canvas-host', h('div.empty-c', 'Note not found')); }   // V3.942 — no paper: update() draws it whole when the note arrives
     const host = h('div.canvas-host'); host._dv = this; this.host = host;
     host.addEventListener('pointerdown', () => { App.pane = this; }, true); host.addEventListener('focusin', () => { App.pane = this; });
@@ -24,7 +24,8 @@ const DocView = {
     host.append(this.dock, this.hint, this.ctools);
     this.paper.el.addEventListener('pointerdown', e => this.pointer(e));
     this.fill(d);
-    if (!_ls.get('view:' + docId, null)) requestAnimationFrame(() => { this.settle(); const bb = this.bbox(); if (bb) this.paper.fit({ x0: bb.x0, y0: bb.y0, x1: bb.x1, y1: Math.min(bb.y1, bb.y0 + 1100) }, false); });
+    if (!_ls.get('view:' + docId, null)) requestAnimationFrame(() => { if (this._arrived === docId) return;   // V4.102: it was opened to land on a component (landOn ran first)
+      this.settle(); const bb = this.bbox(); if (bb) this.paper.fit({ x0: bb.x0, y0: bb.y0, x1: bb.x1, y1: Math.min(bb.y1, bb.y0 + 1100) }, false); });
     return host;
   },
   update(docId) {
@@ -48,7 +49,7 @@ const DocView = {
     d.layout = d.layout || { head: { x: 0, y: 0 } };
     if (M.liveBlocks(d.id).some(b => b.x == null)) { M.autoLayout(d); }
     $$(':scope > .nextbtn', this.host).forEach(x => x.remove()); { const nb = CHAIN.button(d, this); if (nb) this.host.append(nb); }
-    if (!this.side) App.setTitle(d.title, [typechip(d.type), CHAIN.strip(d), h('span', M.docPath(d).replace(/ › [^›]*$/, '')), h('span', 'edited ' + fmtWhen(d.modified)), this.travel && !this.travel.viewer ? h('span.pill.warn', 'as it stood ' + fmtWhen(this.travel.at)) : null],
+    if (!this.side) App.setTitle(d.title, [typechip(d.type), CHAIN.runChip(d), CHAIN.strip(d), h('span', M.docPath(d).replace(/ › [^›]*$/, '')), h('span', 'edited ' + fmtWhen(d.modified)), this.travel && !this.travel.viewer ? h('span.pill.warn', 'as it stood ' + fmtWhen(this.travel.at)) : null],
       { editable: !this.travel, onEdit: v => { if (v && v !== d.title) { d.title = v; M.touchDoc(d); changed(); } }, more: this.travel ? null : e => this.docMenu(d, e) });
     // V3.980 (Gabe: "changing a thing or two in any note causes whiteboards, PDFs, or HTMLs to refresh/take time to reload"): a page,
     // a PDF or a whiteboard whose box would be drawn exactly as it is — the same record, the same HTML (shape) — stays on the paper
@@ -94,7 +95,7 @@ const DocView = {
     const tags = (d.header && d.header.tags) || [];
     const bound = d.type === 'experiment' && M.docBlocks(d.id).find(b => b.boundTo), pr = bound && M.doc(bound.boundTo.protocolId);
     return h('div.box.head', { 'data-id': '_head', style: { left: L.x + 'px', top: L.y + 'px' } },
-      h('div.bh', h('span.num', p.label), d.backdate ? h('span.pill.warn', { title: 'Entered after the fact — new components are stamped on this day' }, 'past entry') : null, h('span.spacer'), h('span.mono.tiny', fmtDayLong(d.created)),
+      h('div.bh', h('span.num', p.label), CHAIN.runChip(d), d.backdate ? h('span.pill.warn', { title: 'Entered after the fact — new components are stamped on this day' }, 'past entry') : null, h('span.spacer'), h('span.mono.tiny', fmtDayLong(d.created)),
         this.travel ? null : h('button.ib.hedit', { title: 'Note details — title, type, project, theme, date · delete', on: { click: e => { e.stopPropagation(); EDIT.noteDialog(d); } } }, '✎')),
       h('div.hgrid', fields.length ? fields : null,
         h('label.hf', h('span', 'Tags'), h('div.tags', tags.map(t => h('span.tag', t, this.travel ? null : h('button', { title: 'Remove tag', on: { click: () => M.setHeader(d, 'tags', tags.filter(x => x !== t)) } }, '×'))),
@@ -292,7 +293,7 @@ const DocView = {
       document.body.classList.add('resizing');
       const mv = ev => { const z = P.view.z, wx = w0 + (ev.clientX - x0) / z, wy = w0 * (h0 + (ev.clientY - y0) / z) / h0;
         b.w = Math.max(240, Math.round(corner && Math.abs(wy - w0) > Math.abs(wx - w0) ? wy : wx)); box.style.width = b.w + 'px'; this.drawWires(); };
-      const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); document.body.classList.remove('resizing'); b.w = Math.round(b.w / 14) * 14; box.style.width = b.w + 'px'; DB.put('blocks', b); DB.beginGroup(); this.drawWires(); };
+      const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); document.body.classList.remove('resizing'); b.w = Math.round(b.w / PTUNE.snap()) * PTUNE.snap(); box.style.width = b.w + 'px'; DB.put('blocks', b); DB.beginGroup(); this.drawWires(); };
       addEventListener('pointermove', mv); addEventListener('pointerup', up); return; }
     if (e.target.closest('.ed,input,textarea,select,button,a,label,.chips,.ghosts,.refs,.tags,.ptext.edit,.obsn,.itdot,.wplate,.wlegend,.fg-cell')) { if (id[0] !== '_') this.select(id, true); return; }
     // drag the box by its frame or header (V3.992: with Shift held, a grid cell at a time)
@@ -300,9 +301,9 @@ const DocView = {
     const d = M.doc(this.docId), rec = id === '_head' ? d.layout.head : id === '_synth' ? (d.layout.synth = d.layout.synth || { x: box.offsetLeft, y: box.offsetTop }) : M.block(id);
     const sx = e.clientX, sy = e.clientY, ox = rec.x || 0, oy = rec.y || 0; let moved = false, shift = { x: 0, y: 0 };
     const mv = ev => { const dx = (ev.clientX - sx) / P.view.z + shift.x, dy = (ev.clientY - sy) / P.view.z + shift.y; if (!moved && Math.abs(dx) + Math.abs(dy) < 3) return; if (!moved) { moved = true; box.classList.add('dragging'); hideHover(); }
-      const g = ev.shiftKey; rec.x = g ? Math.round((ox + dx) / 14) * 14 : ox + dx; rec.y = g ? Math.round((oy + dy) / 14) * 14 : oy + dy; box.style.left = rec.x + 'px'; box.style.top = rec.y + 'px'; this.drawWires(); P.edgePan(ev, (ddx, ddy) => { shift.x -= ddx / P.view.z; shift.y -= ddy / P.view.z; mv(ev); }); };
+      const g = ev.shiftKey, G = PTUNE.snap(); rec.x = g ? Math.round((ox + dx) / G) * G : ox + dx; rec.y = g ? Math.round((oy + dy) / G) * G : oy + dy; box.style.left = rec.x + 'px'; box.style.top = rec.y + 'px'; this.drawWires(); P.edgePan(ev, (ddx, ddy) => { shift.x -= ddx / P.view.z; shift.y -= ddy / P.view.z; mv(ev); }); };
     const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); P.stopEdgePan(); if (!moved) return; box.classList.remove('dragging');
-      const nx = Math.round(rec.x / 14) * 14, ny = Math.round(rec.y / 14) * 14, ddx = rec.x - nx, ddy = rec.y - ny; rec.x = nx; rec.y = ny; box.style.left = nx + 'px'; box.style.top = ny + 'px';
+      const G = PTUNE.snap(), nx = Math.round(rec.x / G) * G, ny = Math.round(rec.y / G) * G, ddx = rec.x - nx, ddy = rec.y - ny; rec.x = nx; rec.y = ny; box.style.left = nx + 'px'; box.style.top = ny + 'px';
       box.animate && !RM() && box.animate([{ transform: `translate(${ddx}px,${ddy}px)` }, { transform: 'none' }], { duration: 240, easing: 'cubic-bezier(.34,1.4,.64,1)' });
       if (id[0] === '_') DB.put('documents', d); else { DB.put('blocks', rec); REGION.dropped(this, id); } DB.beginGroup(); setTimeout(() => this.drawWires(), 250); this.drawWires(); };
     addEventListener('pointermove', mv); addEventListener('pointerup', up);
@@ -340,7 +341,7 @@ const DocView = {
     if (!FEAT.on('opencomp')) return this.reveal(id);
     const P = this.paper, want = FEAT.tune('opencomp', 'zoom'), z = want === 'keep' ? P.view.z : clamp((+want || 50) / 100, P.o.minZ, P.o.maxZ), pr = P.rect();
     const to = { z, x: pr.width / 2 - (r.x + r.w / 2) * z, y: pr.height / 2 - (r.y + Math.min(r.h, 520) / 2) * z };
-    if (arrive) { P.stop(); Object.assign(P.view, to); P.apply(); } else P.animateView(to);
+    if (arrive) { P.stop(); Object.assign(P.view, to); P.apply(); this._arrived = this.docId; } else P.animateView(to);
   },
   reveal(id) { const r = this.rectOf(id); if (!r) return; const P = this.paper, s = P.toScreen(r.x, r.y), pr = P.rect(); const inView = s.x > pr.left + 20 && s.y > pr.top + 20 && s.x + r.w * P.view.z < pr.right - 20 && s.y + Math.min(r.h, 300) * P.view.z < pr.bottom - 20;
     if (!inView) P.centerOn(r.x + r.w / 2, r.y + Math.min(r.h, 300) / 2, Math.max(P.view.z, .8)); },

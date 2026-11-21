@@ -22,3 +22,18 @@
    z-index 21, in the same note); an open wheel goes above both, so its items stay reachable */
 .canvas-host .paper > .bw-edge,.canvas-host .paper > .bw-threads{z-index:22}
 .canvas-host > .lab-pills.fan-open{z-index:23}
+
+/* V4.93 — each pill's extended look beside it (a row or a column of what it holds); a click turns it */
+.pcv-ext{position:absolute;z-index:1;display:flex;align-items:center;gap:2px;padding:3px;border-radius:999px;background:var(--lk-card,var(--surface));box-shadow:var(--lk-sh1,0 1px 2px rgba(0,0,0,.08)),inset 0 0 0 1px var(--lk-ring,var(--rule));cursor:pointer;--gap:calc(var(--pcv-s) / 2 + 5px)}
+.pcv-ext:hover{box-shadow:var(--lk-sh2,0 4px 12px rgba(0,0,0,.12)),inset 0 0 0 1.5px var(--teal)}
+.pcv-ext.o-v{flex-direction:column}
+.pcv-ext.to-r{transform:translate(var(--gap),-50%)}
+.pcv-ext.to-l{transform:translate(calc(-100% - var(--gap)),-50%)}
+.pcv-ext.to-u{transform:translate(-50%,calc(-100% - var(--gap)))}
+.pcv-ext.to-d{transform:translate(-50%,var(--gap))}
+.pcv-it{display:grid;place-items:center;width:calc(var(--pcv-s) * .52);height:calc(var(--pcv-s) * .52);border-radius:50%;color:var(--ink-2)}
+.pcv-it.sel{background:color-mix(in srgb,var(--teal) 16%,transparent);color:var(--teal)}
+.pcv-it svg{width:62%;height:62%;display:block}
+.pcv-it .lab-insic,.pcv-it span{font:600 10px/1 var(--f-m)}
+.pcv-dot{width:5px;height:5px;border-radius:50%;background:var(--ink-3)}
+.pcv.off .pcv-ext{display:none}

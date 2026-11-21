@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "985bf628e7ddec059f9045891075fc6db637f593",
-  "subject": "V4.89: Scientia — Shift+click a component and the canvas zooms onto it — in every build, with the mouse or the pen; Shift+drag still moves it by the grid",
+  "commit": "375b9182166c131f955fd72f3fb5baedff5257b0",
+  "subject": "V4.105: Scientia — search says an experiment note's stage and run: the quick list (Planning, Run, Analysis in its column; \"Run 2\" as a chip), the Atlas and the note pickers (\"30 kPa series — Analysis · Run 2\"); Settings → Experiment series → In search, the stage and run",
   "date": "2026-11-20"
  },
- "cut": "13720c33398241d57643c49430ec8792386db063",
+ "cut": "f1e550a82bdada7603baa410da20eae9ce9af7fd",
  "names": [
   "DESKLAB",
   "LABSYNC",

@@ -7,7 +7,10 @@
    note; alerts pop up inside the app (and as a system notification if you
    allow it). A meeting can open its own meeting note.
    ========================================================================== */
-const REMKIND = { deadline: { icon: '⚑', label: 'Deadline', lead: 1440 }, meeting: { icon: '◷', label: 'Meeting', lead: 15 }, reminder: { icon: '◔', label: 'Reminder', lead: 0 } };
+/* 20 Nov (Gabe: easy tunes): the alert a new deadline / meeting starts with, the snooze and how far ahead Today's "Coming up" looks are Settings → Reminders
+   (the defaults are the old 1 day, 15 min, 10 min and 7 days). */
+const REMTUNE = (k, d) => { const v = typeof FEAT !== 'undefined' ? FEAT.tune('reminders', k) : undefined; return v == null || isNaN(+v) ? d : +v; };
+const REMKIND = { deadline: { icon: '⚑', label: 'Deadline', get lead() { return REMTUNE('deadline', 1440); } }, meeting: { icon: '◷', label: 'Meeting', get lead() { return REMTUNE('meeting', 15); } }, reminder: { icon: '◔', label: 'Reminder', lead: 0 } };
 const REM = {
   all: () => DB.all('reminders'),
   /** The next occurrence at or after `from` (repeats roll forward). */
@@ -107,8 +110,8 @@ const REM = {
   },
   badge() { const b = $('#remindbtn'); if (!b) return; const n = REM.due().length, late = REM.open().some(x => REM.bucket(x) === 'Overdue'); b.dataset.n = n || ''; b.classList.toggle('late', late); b.title = n ? plural(n, 'reminder') + ' in the next 24 h' + (late ? ' (some overdue)' : '') : 'Reminders — deadlines and meetings'; },
   home() {
-    const items = REM.open().filter(x => +x.at - Date.now() < 7 * 864e5);
-    return [h('div.sec-h', h('h2', 'Coming up'), h('span.r', h('button.btn.sm.ghost', { on: { click: () => REM.edit({}) } }, '+ Add'))), items.length ? h('div.rm-list.home', REM.list(items.slice(0, 8))) : h('div.tiny.muted', { style: { margin: '0 0 14px' } }, 'No deadlines or meetings in the next 7 days.')];
+    const items = REM.open().filter(x => +x.at - Date.now() < REMTUNE('ahead', 7) * 864e5);
+    return [h('div.sec-h', h('h2', 'Coming up'), h('span.r', h('button.btn.sm.ghost', { on: { click: () => REM.edit({}) } }, '+ Add'))), items.length ? h('div.rm-list.home', REM.list(items.slice(0, 8))) : h('div.tiny.muted', { style: { margin: '0 0 14px' } }, 'No deadlines or meetings in the next ' + REMTUNE('ahead', 7) + ' days.')];
   },
 
   /* ---------------- alerts ---------------- */
@@ -127,7 +130,7 @@ const REM = {
     const card = h('div.rm-alert.k-' + r.kind, h('div.rm-ah', h('span', K.icon + ' ' + K.label), h('span.spacer'), h('span.tiny', REM.fmtAt(x))), h('b', r.title), r.where ? h('div.tiny', r.where) : null, h('div.tiny.muted', REM.rel(x)),
       h('div.row', { style: { gap: '6px', marginTop: '8px' } },
         r.kind === 'meeting' ? h('button.btn.xs.pri', { on: { click: () => { card.remove(); REM.meetingNote(r, x.at); } } }, 'Meeting note') : null,
-        h('button.btn.xs', { on: { click: () => { card.remove(); r.alerted = null; r.lead = Math.max(0, Math.round((+x.at - Date.now()) / 6e4) - 10); if (+x.at <= Date.now()) { r.at = isoLocal(new Date(Date.now() + 10 * 6e4)); r.lead = 0; } DB.put('reminders', r); toast('Snoozed 10 min'); } } }, 'Snooze 10 min'),
+        h('button.btn.xs', { on: { click: () => { card.remove(); r.alerted = null; const sn = REMTUNE('snooze', 10); r.lead = Math.max(0, Math.round((+x.at - Date.now()) / 6e4) - sn); if (+x.at <= Date.now()) { r.at = isoLocal(new Date(Date.now() + sn * 6e4)); r.lead = 0; } DB.put('reminders', r); toast('Snoozed ' + sn + ' min'); } } }, 'Snooze ' + REMTUNE('snooze', 10) + ' min'),
         h('button.btn.xs', { on: { click: () => { card.remove(); REM.done(r, x.at); } } }, '✓ Done'), h('button.btn.xs.ghost', { on: { click: () => card.remove() } }, 'Dismiss')));
     host.append(card); toast(msg);
   },

@@ -117,7 +117,8 @@ const IX = {
   /** V3.965: is the day index behind — a write since it was built, a timer running, or a new day? */
   daysStale(now = Date.now()) { return this._daysRev !== DB.rev || this._daysDate !== localDate(now) || TIMER.runningAll().length > 0; },
   day(d) { return this.days.get(typeof d === 'string' ? d : localDate(d)) || { date: localDate(d), total: 0, union: 0, multi: 0, manual: 0, byTheme: {}, edits: 0, open: 0 }; },
-  level(ms) { const m = ms / 6e4; return m <= 0 ? 0 : m < 45 ? 1 : m < 105 ? 2 : m < 165 ? 3 : m < 240 ? 4 : 5; },
+  level(ms) { const m = ms / 6e4 * 240 / ((+FEAT.tune('today', 'heat') || 4) * 60);   /* 20 Nov (easy tunes): the hours at which a day gets the darkest shade — Settings → The Today page (4 h as before) */
+    return m <= 0 ? 0 : m < 45 ? 1 : m < 105 ? 2 : m < 165 ? 3 : m < 240 ? 4 : 5; },
 
   /* ---------------- weeks & review ---------------- */
   weekStartFor(d) { d = dayStart(d); const ws = settings().weekStartDow; while (d.getDay() !== ws) d = addDays(d, -1); return d; },
