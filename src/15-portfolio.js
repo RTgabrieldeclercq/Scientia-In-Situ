@@ -195,7 +195,7 @@ const PFLIST = {
     const el = h('div.pf-n' + (stage ? '.stage' : ''), { role: 'link', tabindex: '0', 'data-doc': d.id, title: d.title || '', on: { click: go, keydown: e => { if (e.target === el && e.key === 'Enter') { e.preventDefault(); go(); } },
         mouseenter: () => PFLIST.light([d.id], true, el), mouseleave: () => PFLIST.light([d.id], false, el) } },
       stage ? h('span.pf-stg', prof(d.type).stage || prof(d.type).label) : typechip(d.type),
-      h('span.pf-t', d.title || 'Untitled'), TIMER.activeFor(d.id) ? h('span.live', { title: 'Its timer is running' }, '●') : null, PortfolioView.notePills(d),
+      h('span.pf-t', d.title || 'Untitled'), !stage && d.chain ? CHAIN.runChip(d, 'pf-run') : null, TIMER.activeFor(d.id) ? h('span.live', { title: 'Its timer is running' }, '●') : null, PortfolioView.notePills(d),
       L.length ? h('span.pf-lk', { title: 'Linked to ' + L.map(x => x.title).join(', ') }, '↔ ' + L.length) : null,
       tail ? h('span.pf-tail', tail) : null, h('span.spacer'), PFKIT.dots([d]), h('span.pf-d', { title: 'Its date · edited ' + fmtWhen(d.modified) }, fmtDay(d.created)));
     return el;
@@ -208,7 +208,7 @@ const PFLIST = {
     const head = h('div.pf-er', { role: 'button', tabindex: '0', 'aria-expanded': String(open), 'data-docs': ids.join(','), title: 'An experiment: ' + plural(g.docs.length, 'note'), on: {
         click: flip, keydown: e => { if (e.target === head && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); flip(); } },
         mouseenter: () => PFLIST.light(ids, true, wrap), mouseleave: () => PFLIST.light(ids, false, wrap) } },
-      h('div.pf-er1', h('span.pf-tog', '▸'), h('span.pill', 'Experiment'), h('span.pf-t', g.name || 'Experiment'), linked ? h('span.pf-lk', { title: 'Its notes link to others' }, '↔') : null,
+      h('div.pf-er1', h('span.pf-tog', '▸'), h('span.pill', 'Experiment'), h('span.pf-t', g.name || 'Experiment'), CHAIN.runChip(g.docs[0], 'pf-run'), linked ? h('span.pf-lk', { title: 'Its notes link to others' }, '↔') : null,
         h('span.spacer'), PFKIT.dots(g.docs), h('span.pf-d', { title: 'From its first note to its last' }, fmtDay(g.docs[0].created) + (g.docs.length > 1 ? ' → ' + fmtDay(g.docs[g.docs.length - 1].created) : ''))),
       h('div.pf-stages', g.docs.map(d => h('a.pf-stage', { href: '#/doc/' + d.id, title: d.title, on: { pointerdown: stop, click: stop } }, prof(d.type).stage || prof(d.type).label))));
     wrap.append(head, h('div.pf-eb', h('div.pf-ei', g.docs.map((d, i) => { const n = PFLIST.note(d, row, true); n.style.setProperty('--i', i); return n; }))));

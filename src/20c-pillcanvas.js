@@ -15,6 +15,12 @@
    layout for both.
    The canvas has the shape of a note on this screen (the window's long and
    short sides, less the header), so a place here is the place on a note.
+   V4.93 (Gabe: "Live preview of pills should show their extended look as
+   well, and clicking on it sets it horizontal/vertical and vice versa."):
+   each pill shows its extended look beside it — its row or column of what
+   it holds, the icons it has on a note (LAB.pillPreview, lab-mode §11) — and
+   a click on the pill or its strip (not a drag) turns a row into a column
+   and back (labPills.orient, what a docked pill reads).
    ========================================================================== */
 const PILLCANVAS = {
   NAMES: [['view', '⊕', 'Zoom'], ['tools', '✦', 'Tools'], ['insert', '＋', 'Quick cast'], ['hand', '✎', 'The hand']],
@@ -55,6 +61,18 @@ const PILLCANVAS = {
     const L = PILLCANVAS.L(); try { if (L && L.pillLayout) L.pillLayout.load(); if (L && L.paintPills) L.paintPills(); } catch (e) { }
     $$('.pcv').forEach(x => { try { x.replaceWith(PILLCANVAS.el()); } catch (e) { } });   // every canvas on screen shows the layout as it is now
   },
+  /** V4.93: a pill's docked form here — this shape's, else the landscape one, else the pill's own start ('h' a row, 'v' a column) */
+  orient(name, port) { const s = PILLCANVAS.read(), L = PILLCANVAS.L(), X = port && !s.one ? (s.portrait || {}) : s, d = L && L.pillDefs && L.pillDefs[name];
+    return (X.orient && X.orient[name]) || (s.orient && s.orient[name]) || (d && d.orient) || ({ hand: 'v', insert: 'h', tools: 'h', view: 'v' })[name] || 'h'; },
+  /** what the pill holds, as icons: the pills' own (lab-mode §11), else dots */
+  items(name) { const L = PILLCANVAS.L(); let I = []; try { I = L && L.pillPreview ? L.pillPreview(name) : []; } catch (e) { } return I.length ? I : Array.from({ length: name === 'insert' ? 6 : 5 }, () => ({ icon: '<i class="pcv-dot"></i>', label: '' })); },
+  /** the extended look beside the pill: a row (to the side with more room; the Quick cast in the middle splits) or a column (up from the bottom half) */
+  strip(name, port, p, flip) {
+    const o = PILLCANVAS.orient(name, port), I = PILLCANVAS.items(name).slice(0, 9), cell = x => h('span.pcv-it' + (x.sel ? '.sel' : ''), { title: x.label || '', html: x.icon });
+    const mk = (L, dir) => h('span.pcv-ext.o-' + o + '.to-' + dir, { 'data-pill': name, title: (o === 'h' ? 'A row' : 'A column') + ' — click to make it ' + (o === 'h' ? 'a column' : 'a row'), style: { left: (p.fx * 100) + '%', top: (p.fy * 100) + '%' }, on: { click: e => { e.stopPropagation(); flip(); } } }, L.map(cell));
+    if (o === 'h') { if (p.fx > .38 && p.fx < .62) { const k = Math.ceil(I.length / 2); return [mk(I.slice(0, k), 'l'), mk(I.slice(k), 'r')]; } return [mk(I, p.fx >= .5 ? 'l' : 'r')]; }
+    return [mk(I, p.fy >= .5 ? 'u' : 'd')];
+  },
   setOne(v) { const s = JSON.parse(JSON.stringify(PILLCANVAS.read())); if (v) s.one = true; else delete s.one; PILLCANVAS.write(s); },
   /** the canvas: an empty note in the shape shown, its four pills where they sit; drag one to place it */
   el() {
@@ -71,14 +89,16 @@ const PILLCANVAS = {
     const k = () => note.getBoundingClientRect().width / W;   // canvas px per note px
     PILLCANVAS.NAMES.forEach(([name, glyph, label]) => {
       const p = PILLCANVAS.place(name, port), b = h('button.pcv-pill', { type: 'button', 'data-pill': name, title: label + ' — drag to place it', 'aria-label': label + ': drag to place it', style: { left: (p.fx * 100) + '%', top: (p.fy * 100) + '%' } }, glyph);
+      const flip = () => { if (!on) return; const o = PILLCANVAS.orient(name, port) === 'h' ? 'v' : 'h'; PILLCANVAS.save(name, port, p.fx, p.fy, o); toast(label + ': ' + (o === 'h' ? 'a row' : 'a column') + ' — on every note' + (port ? ' held upright' : '') + ', on every device', 2200); };
+      if (on) PILLCANVAS.strip(name, port, p, flip).forEach(x => note.append(x));
       b.addEventListener('pointerdown', e => {
         if (e.button !== 0 || !on) return; e.preventDefault(); e.stopPropagation();
         const R = note.getBoundingClientRect(), half = b.offsetWidth / 2, sx = e.clientX, sy = e.clientY; let moved = false, cx = p.fx * R.width, cy = p.fy * R.height;
         try { b.setPointerCapture(e.pointerId); } catch (x) { }
         const mv = ev => { const dx = ev.clientX - sx, dy = ev.clientY - sy; if (!moved && Math.hypot(dx, dy) < 4) return; moved = true; b.classList.add('drag');
           cx = clamp(p.fx * R.width + dx, half, R.width - half); cy = clamp(p.fy * R.height + dy, half, R.height - half); b.style.left = (cx / R.width * 100) + '%'; b.style.top = (cy / R.height * 100) + '%'; };
-        const up = () => { b.removeEventListener('pointermove', mv); b.removeEventListener('pointerup', up); b.removeEventListener('pointercancel', up); b.classList.remove('drag');
-          if (!moved) return;
+        const up = ev => { b.removeEventListener('pointermove', mv); b.removeEventListener('pointerup', up); b.removeEventListener('pointercancel', up); b.classList.remove('drag');
+          if (!moved) { if (ev && ev.type === 'pointerup') flip(); return; }   // V4.93: a click flips its row and column
           // as on a note: against a side it docks as a column, against the top or bottom as a row (a corner keeps it)
           const E = half + 3 * Math.max(.5, k()), side = cx <= E || cx >= R.width - E, end = cy <= E || cy >= R.height - E;
           PILLCANVAS.save(name, port, cx / R.width, cy / R.height, side !== end ? (side ? 'v' : 'h') : null);
@@ -90,8 +110,8 @@ const PILLCANVAS = {
     // the pills' size on a note, scaled to the canvas
     requestAnimationFrame(() => { const s = Math.max(26, Math.round(44 * k())); wrap.style.setProperty('--pcv-s', s + 'px'); });
     wrap.append(h('div.pcv-bar', h('span.pcv-t', 'Your pill layout'), seg, h('span.spacer'), reset), note,
-      h('div.pcv-cap', !on ? 'The pills are off — turn them on to place them.' : one ? 'One layout for every shape of note. Drag a pill to its place: every note, every device.'
-        : port ? 'A note held upright (a tablet turned, or the app turned by Rotate). A pill you have not placed here keeps its landscape place.' : 'Drag a pill to its place: every note, every device. Portrait keeps its own places.'));
+      h('div.pcv-cap', !on ? 'The pills are off — turn them on to place them.' : one ? 'One layout for every shape of note. Drag a pill to its place; click it (or its strip) to turn its row into a column and back: every note, every device.'
+        : port ? 'A note held upright (a tablet turned, or the app turned by Rotate). A pill you have not placed here keeps its landscape place.' : 'Drag a pill to its place; click it (or its strip) to turn its row into a column and back — every note, every device. Portrait keeps its own places.'));
     return wrap;
   },
 };

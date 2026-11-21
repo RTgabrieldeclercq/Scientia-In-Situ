@@ -16,7 +16,7 @@ const SettingsView = {
      then the ordinary settings, a section each. Search covers both. */
   section: 'features', q: '', spy: null, back: null,
   SECTIONS: [['features', 'Features', '◉'], ['look', 'Look & feel', '◐'], ['keys', 'Keys & commands', '⌘'], ['templates', 'Templates & note types', '⧉'], ['devices', 'Notebook & devices', '⇆'], ['data', 'Data & storage', '⛁']],
-  WORDS: { look: 'theme light dark appearance colour', keys: 'keys shortcut shortcuts hotkeys gestures commands macro ctrl+w focus mode', templates: 'templates note types profiles', devices: 'notebook folder devices phone tablet ipad lab computer handwriting recordings whisper obsidian', data: 'storage export import json snapshots backup re-index round-trip start empty' },
+  WORDS: { look: 'theme light dark appearance colour', keys: 'keys shortcut shortcuts hotkeys gestures commands macro slash workflow ctrl+w focus mode', templates: 'templates note types profiles', devices: 'notebook folder devices phone tablet ipad lab computer handwriting recordings whisper obsidian', data: 'storage export import json snapshots backup re-index round-trip start empty' },
   render(a0, a1) {
     const s = settings(), V = SettingsView;
     App.setTitle('Settings', [h('span', DB.mode === 'idb' ? 'IndexedDB · ' + (DB.durable && DB.durable.persisted ? 'persistent' : 'evictable') : 'memory only')]);

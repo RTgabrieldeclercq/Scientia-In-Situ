@@ -45,33 +45,36 @@ const SHORT = {
     const tabs = (typeof TABS === 'undefined' ? [] : TABS).slice(0, 7).map((t, i) => (i + 1) + ' ' + t[1]).join(' · ');
 
     /* ---- everywhere (11-shell.js, 11c-navbar.js, 14b-atlas.js, 13zzz-rotate.js) ---- */
-    K('all', 'Ctrl+K', 'Search — relevance, recent or keyword; earlier versions open beside', { tags: 'find' });
-    K('all', 'Ctrl+Shift+K', 'Quick search', { tags: 'find' });
-    K('all', 'Ctrl+P', 'Command palette — everything the app can do', { tags: 'commands' });
-    K('all', 'Ctrl+O', 'Quick switcher — open a note by name', { tags: 'go to open' });
-    K('all', 'Ctrl+Shift+Space', 'Capture to today’s day note, from anywhere (Ctrl+Enter in its box saves)', { tags: 'day note quick' });
-    K('all', 'Ctrl+Alt+N', 'New note');
-    K('all', 'Ctrl+Z', 'Undo — outside a text box');
-    K('all', ['Ctrl+Shift+Z', 'Ctrl+Y'], 'Redo — outside a text box');
-    K('all', 'Ctrl+.', 'Focus mode: full screen, with the W key locked so Ctrl+W can mark a term; Esc (hold) leaves', { tags: 'fullscreen' });
-    K('all', 'Alt+←', 'Back to the note you had open before', { tags: 'history' });
-    K('all', 'Alt+→', 'Forward again', { tags: 'history' });
-    K('all', '/', 'The command bar at the bottom of the window — when nothing is selected, outside a text', { tags: 'commands navigation' });
+    // a row with act: is rebindable (20g-keymap.js): its key is the person's binding, with Change · Reset
+    const A = id => KEYS.label(KEYS.get(id));
+    K('all', A('search'), 'Search — relevance, recent or keyword; earlier versions open beside', { act: 'search', tags: 'find' });
+    if (!KEYS.changed('search')) K('all', 'Ctrl+Shift+K', 'Quick search', { tags: 'find' });
+    K('all', A('palette'), 'Command palette — everything the app can do', { act: 'palette', tags: 'commands' });
+    K('all', A('switcher'), 'Quick switcher — open a note by name', { act: 'switcher', tags: 'go to open' });
+    K('all', A('capture'), 'Capture to today’s day note, from anywhere (Ctrl+Enter in its box saves)', { act: 'capture', tags: 'day note quick' });
+    K('all', A('newNote'), 'New note', { act: 'newNote' });
+    K('all', A('undo'), 'Undo — outside a text box', { act: 'undo' });
+    K('all', A('redo'), 'Redo — outside a text box', { act: 'redo' });
+    K('all', A('redo2'), 'Redo — the second key, outside a text box', { act: 'redo2' });
+    K('all', A('focus'), 'Focus mode: full screen, with the W key locked so Ctrl+W can mark a term; Esc (hold) leaves', { act: 'focus', tags: 'fullscreen' });
+    K('all', A('back'), 'Back to the note you had open before', { act: 'back', tags: 'history' });
+    K('all', A('forward'), 'Forward again', { act: 'forward', tags: 'history' });
+    K('all', A('cmdbar'), 'The command bar at the bottom of the window — when nothing is selected, outside a text', { act: 'cmdbar', tags: 'commands navigation' });
     K('all', ['1 … 7'], 'Go to a tab, outside a note — ' + tabs, { tags: 'sections tabs numbers' });
     K('all', 'Esc', 'Close what is on top: a dialog, a popover, a maximised view, the command bar');
-    K('all', '?', 'This list of keys and gestures — outside a text box (also /keys, and Ctrl+P → Keys and gestures)', { feat: 'shortcuts', tags: 'help shortcuts' });
+    K('all', A('help'), 'This list of keys and gestures — outside a text box (also /keys, and ' + A('palette') + ' → Keys and gestures)', { act: 'help', feat: 'shortcuts', tags: 'help shortcuts' });
     K('all', '~Esc three times', 'Puts the app upright again after Rotate', { feat: 'rotate', tags: 'rotate turn' });
 
     /* ---- in a note (99-boot.js, 13zzh-hands.js, 10-paper.js, 13zu2-bulk.js, 13zn-rec.js…) ---- */
-    K('note', 'P', 'The Move tool (the hand) — pan the note with the pointer, outside a text', { tags: 'pan hand' });
-    K('note', 'N', 'A new component in the middle of what you see');
+    K('note', A('hand'), 'The Move tool (the hand) — pan the note with the pointer, outside a text', { act: 'hand', tags: 'pan hand' });
+    K('note', A('newComponent'), 'A new component in the middle of what you see', { act: 'newComponent' });
     K('note', 'Enter', 'Edit the selected component, the caret at the end of its text');
     K('note', ['Delete', 'Backspace'], 'Remove the selected component (it asks first when it holds something) or the selected ink and components');
-    K('note', 'Ctrl+0', 'Fit the whole note on the screen', { tags: 'zoom' });
+    K('note', A('fit'), 'Fit the whole note on the screen', { act: 'fit', tags: 'zoom' });
     K('note', '~Hold Space, drag', 'Pan the paper, even over components', { tags: 'pan' });
     K('note', ['←', '→'], 'Page through the selected Documents component, or flip the versions of the selected deck', { tags: 'pages deck' });
     K('note', 'Ctrl+C', 'Copy the selected components or ink (several selections: one piece per line); paste them in another note');
-    K('note', 'Alt+M', 'While a Recording component records: mark this moment', { tags: 'recorder mark important' });
+    K('note', A('mark'), 'While a Recording component records: mark this moment', { act: 'mark', tags: 'recorder mark important' });
     K('note', 'Esc', 'Let go of the selection (ink, lasso, held selections)');
 
     /* ---- typing in a component (09-editor.js, 13u-write.js, 13z-multisel.js, 13zzg-slash.js) ---- */
@@ -86,8 +89,8 @@ const SHORT = {
     K('text', ['Tab', 'Shift+Tab'], 'In a list: indent · outdent the line');
     K('text', 'Backspace', 'Right after an automatic replacement (an arrow, a symbol, a superscript): puts back what you typed', { feat: 'writing', tags: 'undo replace' });
     K('text', 'Ctrl+I', 'Cite from the library — with text selected: add that text to the library', { tags: 'citation reference' });
-    K('text', [keyLabel(s.structKey)], 'Say what the selected words are: opens the structure letters (next group)', { bind: 'structKey', feat: 'structures', tags: 'structure claim barrier mark meaning' });
-    K('text', [keyLabel(s.termKey), 'Ctrl+W in Focus mode'], 'Mark the selected words as a term (the browser keeps Ctrl+W for closing the tab outside Focus mode)', { bind: 'termKey', feat: 'terms', tags: 'term glossary' });
+    K('text', [A('structure')], 'Say what the selected words are: opens the structure letters (next group)', { act: 'structure', feat: 'structures', tags: 'structure claim barrier mark meaning' });
+    K('text', [A('term'), 'Ctrl+W in Focus mode'], 'Mark the selected words as a term (the browser keeps Ctrl+W for closing the tab outside Focus mode)', { act: 'term', feat: 'terms', tags: 'term glossary' });
     K('text', '/', 'At the start of a word: the commands that act on the text, and every + Insert row', { feat: 'slash', tags: 'slash commands' });
     K('text', '@', 'Name a person', { feat: 'slash' });
     K('text', 'Esc', 'Save and leave the component');
@@ -106,6 +109,7 @@ const SHORT = {
       K('mouse', '~Double-click the paper', 'A new component there');
       K('mouse', '~Shift + drag a component', 'Move it a grid cell at a time', { tags: 'grid snap' });
       K('mouse', '~Shift + click a component', 'Zoom onto it (not while typing in it)', { feat: 'shiftzoom', tags: 'zoom fit focus' });
+      K('mouse', '~Highlight words, then click a component’s title', 'Those words become the title; click it with nothing highlighted to type one (Esc puts the old one back)', { feat: 'comptitle', tags: 'label name rename' });
       K('mouse', '~Right-click', 'Pull in barriers or structures; bridge a component to another note; the component’s actions', { tags: 'context menu' });
       K('mouse', '~Drag ● on a component', 'Connect two components and say how — the direction matters', { feat: 'wires', tags: 'wire connect' });
       K('mouse', '~Drag the paper · wheel', 'Pan; Shift+wheel pans sideways', { tags: 'move scroll' });
@@ -156,7 +160,7 @@ const SHORT = {
     K('read', ['Tab', 'Enter'], 'Library search: take the highlighted suggestion', { feat: 'libsearch' });
     K('read', 'Enter', 'The DOI box: look the DOI up', { tags: 'doi add paper' });
     K('read', ['Enter', 'Shift+Enter'], 'Reader search: the next · previous hit', { tags: 'find' });
-    K('read', ['Ctrl+B', keyLabel(s.structKey)], 'Reader, with text selected: say what it is, then the letter (as in a note)', { bind: 'structKey', feat: 'structures', tags: 'highlight' });
+    K('read', ['Ctrl+B', A('structure')], 'Reader, with text selected: say what it is, then the letter (as in a note)', { act: 'structure', feat: 'structures', tags: 'highlight' });
     K('read', ['→', 'PageDown'], 'Turn to the next page of the PDF under the pointer', { tags: 'pdf page' });
     K('read', ['←', 'PageUp'], 'Turn to the previous page', { tags: 'pdf page' });
     K('read', 'Esc', 'Leave a full-screen reader, or stop drawing a capture box');
@@ -195,7 +199,7 @@ const SHORT = {
   },
   /** The text a search looks at for one item. */
   hay(it) {
-    const g = SHORT.GROUPS.find(x => x[0] === it.g), ks = it.keys.join(' ').replace(/^~/, '').replace(/\+/g, ' ');
+    const g = SHORT.GROUPS.find(x => x[0] === it.g), ks = it.keys.join(' ').replace(/^~/, '').replace(/\+/g, ' ') + (it.act ? ' ' + KEYS.defOf(it.act).replace(/\+/g, ' ') + (KEYS.changed(it.act) ? ' changed rebound' : '') : '');
     return (ks + ' ' + it.d + ' ' + (g ? g[1] : '') + ' ' + (it.tags || '') + ' ' + (/ctrl/i.test(ks) ? 'cmd command control ⌘' : '') + ' ' + (/alt/i.test(ks) ? 'option' : '')).toLowerCase();
   },
   /** The items that fit what is typed (every word of it) and the group chosen. */
@@ -211,13 +215,24 @@ const SHORT = {
   },
   /** Where it is set: the page of the feature that holds the choice (the ? dialog closes first). */
   change(feat) { const ov = $('.ovl'); if (ov) { const x = $('.mh .btn', ov); x ? x.click() : ov.remove(); } App.go('#/settings/feature/' + feat); },
+  /** One row. A rebindable one (it.act) shows the binding it has now, the default, a "changed" mark, and Change (opens the capture box in the row) · Reset (20g-keymap.js). it.over draws it as if bound to that (the Settings preview). */
   row(it) {
-    const off = it.feat && FEAT.by[it.feat] && !FEAT.on(it.feat);
-    let bound = null;
-    if (it.bind) { const now = settings()[it.bind], def = (typeof DEFAULT_SETTINGS !== 'undefined' ? DEFAULT_SETTINGS : {})[it.bind];
-      bound = h('span.sk-bind', now === def ? 'your binding · the default' : 'your binding · default ' + keyLabel(def || ''), h('button.sk-chg', { type: 'button', title: 'Change it in Features', on: { click: () => SHORT.change(it.feat) } }, 'Change')); }
-    return h('div.sk-r' + (off ? '.off' : ''), h('div.sk-k', it.keys.flatMap((k, i) => [i ? h('span.sk-or', it.keys.length > 3 ? '' : 'or') : null, SHORT.keyEl(k)])),
-      h('div.sk-d', it.d, bound, off ? h('span.sk-off', 'feature off') : null));
+    const off = it.feat && FEAT.by[it.feat] && !FEAT.on(it.feat), r = h('div.sk-r' + (off ? '.off' : ''));
+    const paint = cap => {
+      let bound = null, keys = it.keys;
+      if (it.act) {
+        const def = KEYS.defOf(it.act), now = it.over || KEYS.get(it.act), chd = now !== def, live = KEYS.live() && !it.over, A = KEYS.byId[it.act];
+        if (it.over) keys = [KEYS.label(it.over)].concat(it.keys.slice(1));
+        r.classList.toggle('chd', chd);
+        bound = h('span.sk-bind' + (chd ? '.chd' : ''), chd ? h('b.sk-mark', 'changed') : null, 'default ' + KEYS.label(def),
+          live ? h('button.sk-chg', { type: 'button', title: 'Press the keys you want instead', on: { click: () => paint(true) } }, 'Change') : (!it.over && A.set && it.feat ? h('button.sk-chg', { type: 'button', title: 'Change it in Features', on: { click: () => SHORT.change(it.feat) } }, 'Change') : null),
+          live && chd ? h('button.sk-chg', { type: 'button', title: 'Back to ' + KEYS.label(def), on: { click: () => KEYS.reset(it.act) } }, 'Reset') : null);
+      }
+      r.replaceChildren(h('div.sk-k', keys.flatMap((k, i) => [i ? h('span.sk-or', keys.length > 3 ? '' : 'or') : null, SHORT.keyEl(k)])),
+        h('div.sk-d', it.d, bound, off ? h('span.sk-off', 'feature off') : null, cap ? KEYS.box(it.act, () => paint(false)) : null));
+    };
+    paint(false);
+    return r;
   },
   /** The list: a search box, a chip per group, the groups. Redraws itself in place (typing keeps its place). */
   view() {
@@ -233,7 +248,7 @@ const SHORT = {
     };
     const q = h('input.sk-q', { type: 'search', value: S.q, placeholder: 'Search keys, gestures, what they do…', 'aria-label': 'Search the shortcuts', autocomplete: 'off', spellcheck: 'false',
       on: { input: e => { S.q = e.target.value; draw(); }, keydown: e => { e.stopPropagation(); if (e.key === 'Escape' && q.value) { e.preventDefault(); q.value = ''; S.q = ''; draw(); } } } });
-    draw();
+    draw(); KEYS.views.add(() => list.isConnected ? (draw(), true) : false);   // a key changed in a row: every list drawn redraws
     return h('div.sk', h('div.sk-top', h('label.sk-ql', h('span', { 'aria-hidden': 'true' }, '⌕'), q), count), chips, list);
   },
   /** The ? dialog (helpModal): the same view. */

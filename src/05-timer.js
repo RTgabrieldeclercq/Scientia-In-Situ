@@ -18,7 +18,7 @@ const TIMER = {
     if (ex) return TIMER.resume(ex);
     const running = TIMER.runningAll();
     if (running.length >= settings().maxTimers) {
-      return pickModal('Two timers are already running', 'Overlapping time is recorded as multitask and counted once. Pause one to start this note’s timer.',
+      const n = settings().maxTimers; return pickModal((n === 1 ? 'A timer is' : ['', '', 'Two', 'Three', 'Four'][n] + ' timers are') + ' already running', n === 1 ? 'Pause it to start this note’s timer.' : 'Overlapping time is recorded as multitask and counted once. Pause one to start this note’s timer.',
         running.map(s => ({ label: 'Pause “' + (M.doc(s.docId) || {}).title + '”', run: () => { TIMER.pause(s); TIMER.start(docId); } })));
     }
     const d = M.doc(docId), now = new Date();
@@ -28,7 +28,7 @@ const TIMER = {
   },
   pause(s) { const g = s.segments[s.segments.length - 1]; if (g && !g.e) g.e = isoLocal(new Date()); s.state = 'paused'; DB.put('sessions', s); changed(); },
   resume(s) {
-    if (TIMER.runningAll().length >= settings().maxTimers) { toast('Two timers already running — pause one first'); return s; }
+    if (TIMER.runningAll().length >= settings().maxTimers) { toast(settings().maxTimers === 1 ? 'A timer is already running — pause it first' : ['', '', 'Two', 'Three', 'Four'][settings().maxTimers] + ' timers already running — pause one first'); return s; }
     s.segments.push({ s: isoLocal(new Date()), e: null }); s.state = 'running'; DB.put('sessions', s); changed(); return s;
   },
   stop(s) {

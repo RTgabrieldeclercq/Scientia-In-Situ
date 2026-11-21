@@ -282,35 +282,27 @@ body.lk-still:not(.f-off-look) :is(.pop,.modal,.toast,.ovl,.lk-rail,.rs-grip.lk-
 .pv-lk-list{display:grid;gap:4px;min-width:150px}
 .pv-lk-list span{display:block;height:16px;border-radius:6px;background:var(--surface-2)}
 /* V4.51: the pill is the tab's own box (20d sets its top and height too), so the name is in its middle both ways */
-
-/* V4.63 — Terms as cards (Gabe: "Change terms to look like a new UI in the cards based on the newly added theme."): each term a card on the
-   warm surface with its ring and soft shadow, in a grid under its group's name; its name, where it is and how many notes; its uses with a
-   bar; its last 12 weeks; its structures and open barriers; when it was last used at its corner. The table's column names go (Sort is in
-   the bar above). Look off: the table as it was. */
-.tl-ul{display:none}
-body:not(.f-off-look) .tl-list{padding:0 16px 18px}
-body:not(.f-off-look) .tl-cols{display:none}
-body:not(.f-off-look) .tl-sec{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin:0 0 4px}
-body:not(.f-off-look) .tl-g{grid-column:1/-1;top:0;margin:0 -16px;padding:14px 18px 6px;border-bottom:0;background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(6px);font:650 13px var(--f-d)}
-body:not(.f-off-look) .tl-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"t l" "u u" "w w" "s s";gap:9px 10px;align-items:start;min-height:0;padding:13px 14px 14px;border:0;border-radius:12px;background:var(--lk-card);box-shadow:var(--lk-sh1),inset 0 0 0 1px var(--lk-ring);transition:box-shadow var(--lk-dh) ease,transform var(--lk-dh) ease}
-body:not(.f-off-look) .tl-row:hover{background:var(--lk-card);box-shadow:var(--lk-lift),inset 0 0 0 1px var(--lk-ring-2);transform:translateY(-1px)}
-body:not(.f-off-look) .tl-row.act{background:var(--lk-card);box-shadow:var(--lk-lift),inset 0 0 0 1.5px var(--teal)}
-body:not(.f-off-look) .tl-row:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
-body:not(.f-off-look) .tl-t{grid-area:t;gap:3px} body:not(.f-off-look) .tl-t .term-demo{font-size:16.5px;line-height:1.25}
-body:not(.f-off-look) .tl-l{grid-area:l;padding-top:3px}
-body:not(.f-off-look) .tl-u{grid-area:u;grid-template-columns:auto auto minmax(0,1fr);gap:6px}
-body:not(.f-off-look) .tl-u b{font:650 15px var(--f-d);text-align:left}
-body:not(.f-off-look) .tl-ul{display:inline;font:11px var(--f-m);color:var(--ink-3)}
-body:not(.f-off-look) .tl-bar{height:5px;margin-left:4px}
-body:not(.f-off-look) .tl-w{grid-area:w;justify-content:space-between;padding:6px 8px;border-radius:9px;background:color-mix(in srgb,var(--ink) 3%,transparent)}
-body:not(.f-off-look) .tl-s{grid-area:s;gap:5px}
-body:not(.f-off-look) .tl-s:empty,body:not(.f-off-look) .tl-kds:empty{display:none}
-body:not(.f-off-look) .tl-end{padding:14px 2px 4px}
-body:not(.f-off-look) .tl-host.tl-in .tl-row{animation:lk-rise var(--lk-ds) var(--lk-rise) both;animation-delay:calc(var(--i,0) * 14ms)}
-body:not(.f-off-look) .tl-tile{background:var(--lk-card);border:0;border-radius:12px;box-shadow:var(--lk-sh1),inset 0 0 0 1px var(--lk-ring)}
-body:not(.f-off-look) .tl-row .tl-sub{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.4}
 /* V4.89 — Shift+click zooms: its preview */
 .pv-sz{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
 .pv-szf{display:grid;place-items:center;width:180px;height:96px;border-radius:9px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--rule)}
 .pv-szf i{display:grid;place-items:center;min-width:30px;border-radius:5px;background:var(--lk-card,var(--surface-2));box-shadow:inset 0 0 0 1.5px var(--teal);font:normal 600 9px var(--f-d);overflow:hidden;white-space:nowrap}
 .pv-szk{font:600 10px var(--f-m);padding:2px 7px;border-radius:5px;box-shadow:inset 0 0 0 1px var(--rule);color:var(--ink-2)}
+/* V4.98 — component titles: a click types or takes the highlighted words; the toast's Undo; the preview */
+body:not(.f-off-comptitle) .box > .bh .blab:not(:focus){cursor:text}
+.toast .t-toast{display:inline-flex;align-items:center;gap:10px;pointer-events:auto}
+.toast .t-undo{pointer-events:auto;color:inherit;background:transparent;border:0;box-shadow:inset 0 0 0 1px currentColor;border-radius:999px;padding:1px 9px;font:600 11px var(--f-m);cursor:pointer;opacity:.85}
+.toast .t-undo:hover{opacity:1}
+.pv-tt{display:flex;flex-direction:column;align-items:stretch;gap:6px}
+.pv-tt{min-width:0;max-width:100%}.pv-tt > *{min-width:0}.pv-tt .pvb{width:auto;max-width:100%;box-sizing:border-box}.pv-tt .pvb-tx{overflow-wrap:anywhere}
+.pv-ttl{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;max-width:62%;color:var(--ink-4)}
+.pv-ttl.on{color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--teal);border-radius:3px;padding:0 3px}
+.pv-ttm{background:color-mix(in srgb,var(--teal) 28%,transparent);color:inherit;border-radius:2px}
+.pv-ttk{align-self:flex-start;font:600 10px var(--f-m);padding:2px 7px;border-radius:5px;box-shadow:inset 0 0 0 1px var(--rule);color:var(--ink-2)}
+/* V4.99 — Selection popup: its preview */
+.pv-sp{display:flex;flex-direction:column;align-items:stretch;gap:6px;min-width:0}
+.pv-spp{position:relative;border-radius:8px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--rule);padding:8px 10px 10px;display:flex;flex-direction:column;gap:6px}
+.pv-spl{font:600 9.5px var(--f-m);color:var(--ink-3)}
+.pv-spx{font:14px/1.4 var(--f-d);color:var(--ink)}
+.pv-spm{display:flex;flex-wrap:wrap;align-items:center;gap:5px;padding:6px 8px;border-radius:8px;background:var(--lk-card,var(--surface-2));box-shadow:var(--lk-sh2,0 4px 12px rgba(0,0,0,.18)),inset 0 0 0 1px var(--lk-ring,var(--rule));align-self:flex-start;font-size:11px}
+.pv-spm b{flex-basis:100%;font:600 10.5px var(--f-m);color:var(--ink-2)}
+.pv-spm span{padding:1px 8px;border-radius:999px;box-shadow:inset 0 0 0 1px var(--rule);color:var(--ink-2)}

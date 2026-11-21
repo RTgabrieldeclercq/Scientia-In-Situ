@@ -121,10 +121,12 @@ const CHORES = {
 
 /* ---------------- one old claim or question, every day ---------------- */
 const RESURF = {
+  /** The kinds that come back: both, or only claims, or only questions (Settings → Resurfaced claims). */
+  kinds() { const k = FEAT.tune('resurface', 'kinds'); return k === 'claim' ? ['claim'] : k === 'question' ? ['question'] : ['claim', 'question']; },
   pick(date = localDate(new Date()), skip) {
     const s = settings(); if (!skip && s.resurface && s.resurface.date === date && M.item(s.resurface.id)) return M.item(s.resurface.id);
-    const seen = s.resurfaced || {}, cut = Date.now() - 14 * 864e5;
-    const pool = DB.where('items', i => (i.kind === 'claim' || i.kind === 'question') && !i.correctedBy && IX.status(i) !== 'closed' && i.stance !== 'abandoned' && +new Date(i.created) < cut && i.id !== (skip || ''));
+    const seen = s.resurfaced || {}, cut = Date.now() - (+FEAT.tune('resurface', 'after') || 14) * 864e5, kinds = RESURF.kinds();   // 20 Nov (easy tunes): how old, and which kinds, are Settings
+    const pool = DB.where('items', i => kinds.includes(i.kind) && !i.correctedBy && IX.status(i) !== 'closed' && i.stance !== 'abandoned' && +new Date(i.created) < cut && i.id !== (skip || ''));
     if (!pool.length) return null;
     const hsh = x => { let v = 0; for (const c of x) v = (v * 31 + c.charCodeAt(0)) >>> 0; return v; };
     pool.sort((a, b) => (seen[a.id] || '').localeCompare(seen[b.id] || '') || hsh(date + a.id) - hsh(date + b.id));
@@ -149,18 +151,18 @@ const PAL = {
     return [
       ...TABS.map(([k, l]) => ({ g: 'Go to', label: l, run: go('#/' + k) })),
       { g: 'Go to', label: 'Today’s day note', key: '', run: () => App.go('#/doc/' + DAY.doc().id) },
-      { g: 'Create', label: 'Capture to today', key: 'Ctrl+Shift+Space', run: () => DAY.capture() },
-      { g: 'Create', label: 'New note', key: 'Ctrl+Alt+N', run: () => App.newDoc() }, { g: 'Create', label: 'New experiment', run: () => CHAIN.start() },
+      { g: 'Create', label: 'Capture to today', key: KEYS.label(KEYS.get('capture')), run: () => DAY.capture() },
+      { g: 'Create', label: 'New note', key: KEYS.label(KEYS.get('newNote')), run: () => App.newDoc() }, { g: 'Create', label: 'New experiment', run: () => CHAIN.start() },
       { g: 'Create', label: 'New material', run: () => App.newDoc({ type: 'resource' }) },
       ...(d ? INSERTS.filter(x => !x.when || x.when(d)).map(x => ({ g: 'Insert into this note', label: typeof x.label === 'function' ? x.label(d) : x.label, run: () => { const r = pane.paper.rect(), c = pane.paper.toWorld(r.left + r.width / 2, r.top + r.height / 2); x.run(d, { x: Math.round((c.x - 200) / 14) * 14, y: Math.round((c.y - 140) / 14) * 14 }, pane); } })) : []),
-      d ? { g: 'This note', label: 'Calculator', run: () => CALC.open(pane) } : null, d ? { g: 'This note', label: 'Fit to screen', key: 'Ctrl+0', run: () => pane.paper.fit(pane.bbox()) } : null,
+      d ? { g: 'This note', label: 'Calculator', run: () => CALC.open(pane) } : null, d ? { g: 'This note', label: 'Fit to screen', key: KEYS.label(KEYS.get('fit')), run: () => pane.paper.fit(pane.bbox()) } : null,
       d ? { g: 'This note', label: 'Export canvas (HTML)', run: () => Exporter.doc(d.id) } : null, d ? { g: 'This note', label: 'Flag this note for review', run: () => M.toggleFlag('doc', d.id) } : null,
-      { g: 'Tools', label: 'Search', key: 'Ctrl+K', run: () => Search.open() }, SHORT.on() ? { g: 'Tools', label: 'Keys and gestures', key: '?', run: () => SHORT.open() } : null, { g: 'Tools', label: 'Quick switcher', key: 'Ctrl+O', run: () => PAL.switcher() },
+      { g: 'Tools', label: 'Search', key: KEYS.label(KEYS.get('search')), run: () => Search.open() }, SHORT.on() ? { g: 'Tools', label: 'Keys and gestures', key: KEYS.label(KEYS.get('help')), run: () => SHORT.open() } : null, { g: 'Tools', label: 'Quick switcher', key: 'Ctrl+O', run: () => PAL.switcher() },
       { g: 'Create', label: 'New deadline', run: () => REM.edit({ kind: 'deadline' }) }, { g: 'Create', label: 'New meeting', run: () => REM.edit({ kind: 'meeting' }) }, { g: 'Go to', label: 'Reminders', run: () => App.go('#/reminders') },
       { g: 'Tools', label: 'Recurring chores…', run: () => CHORES.manage() }, { g: 'Tools', label: 'Rescan data folders', run: () => DATA.rescanAll() },
       { g: 'Tools', label: (settings().labs || {}).canvas ? 'Turn off spatial canvases (lab)' : 'Turn on spatial canvases (lab)', run: () => CANVAS.toggleLab() },
       { g: 'Tools', label: 'Toggle light / dark', run: () => $('#themetoggle').click() }, { g: 'Tools', label: 'Focus mode', key: 'Ctrl+.', run: () => App.toggleFocus() },
-      { g: 'Tools', label: 'Export everything (JSON)', run: () => Exporter.json() }, window.SIS_TARGET === 'web' ? null : { g: 'Tools', label: 'Export for the lab website', run: () => LABX.export() }, { g: 'Tools', label: 'Undo', key: 'Ctrl+Z', run: () => App.undo() },
+      { g: 'Tools', label: 'Export everything (JSON)', run: () => Exporter.json() }, window.SIS_TARGET === 'web' ? null : { g: 'Tools', label: 'Export for the lab website', run: () => LABX.export() }, { g: 'Tools', label: 'Undo', key: KEYS.label(KEYS.get('undo')), run: () => App.undo() },
     ].filter(Boolean);
   },
   fuzzy(q, s) { q = q.toLowerCase(); s = String(s).toLowerCase(); if (!q) return 1; if (s.includes(q)) return 100 - s.indexOf(q); let i = 0, score = 0, run = 0; for (const c of s) { if (c === q[i]) { i++; run++; score += run; } else run = 0; if (i === q.length) return score; } return 0; },
