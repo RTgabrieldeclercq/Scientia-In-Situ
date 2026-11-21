@@ -428,11 +428,12 @@ const ATLAS3 = (() => {
       around = nb.map(n => ({ spec: BUBBLE.spec(n.id), rel: n.rel })).filter(a => a.spec);
       const rg = typeof REGION !== 'undefined' && REGION.of(d.blockId);
       if (rg) region = { name: rg.r.name, ids: nb.filter(n => { const x = REGION.of(n.id); return x && x.r.id === rg.r.id; }).map(n => n.id) };
-      cap = [(doc && doc.title) || 'Untitled', kl(d.kind) + ' · ' + fmtDay(d.t) + (rg ? ' · region ' + rg.r.name : '') + (d.status === 'open' ? ' · open' : '')];
+      cap = [CHAIN.listTitle(doc), kl(d.kind) + ' · ' + fmtDay(d.t) + (rg ? ' · region ' + rg.r.name : '') + (d.status === 'open' ? ' · open' : '')];
     } else if (d.type === 'note') {
       const bs = DB.where('blocks', b => b.docId === d.id && b.status === 'live' && b.kind !== 'ink' && b.kind !== 'ref').sort((a, b) => ms(M.blockTime(a)) - ms(M.blockTime(b)));
-      centre = card(d.id, prof((doc || {}).type).label, '', (doc && doc.title) || 'Untitled', 24); around = blocksOf(bs.slice(0, 5).map(b => b.id));
-      cap = [(doc && doc.title) || 'Untitled', prof((doc || {}).type).label.toLowerCase() + ' · ' + plural(bs.length, 'component')];
+      const sr = CHAIN.stageRun(doc);   // V4.105: an experiment's note, by its stage and run
+      centre = card(d.id, sr || prof((doc || {}).type).label, '', (doc && doc.title) || 'Untitled', 24); around = blocksOf(bs.slice(0, 5).map(b => b.id));
+      cap = [(doc && doc.title) || 'Untitled', (sr || prof((doc || {}).type).label).toLowerCase() + ' · ' + plural(bs.length, 'component')];
     } else if (d.type === 'term') {
       const occ = typeof TERMLIT !== 'undefined' ? TERMLIT.occ(d.id) : (IX.termOcc.get(d.id) || []), ids = [...new Set(occ.map(o => o.blockId))];
       centre = card(d.id, 'Term', '', [h('span.term-demo', d.label)], 14); around = blocksOf(ids.slice(0, 4));

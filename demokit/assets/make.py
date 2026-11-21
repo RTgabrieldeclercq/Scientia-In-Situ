@@ -103,6 +103,21 @@ def micrograph(seed, hue, name):
     im.convert('RGB').save(os.path.join(HERE, name), quality=82)
 
 
+def banner(name):
+    """A made-up theme banner, 1600 x 200 px (8 : 1): a field of soft cell-like shapes across a gel-green wash."""
+    r = np.random.default_rng(77)
+    w, h = 1600, 200
+    yy, xx = np.mgrid[0:h, 0:w]
+    base = np.array([0.10, 0.34, 0.40]) + (xx / w)[..., None] * np.array([0.10, 0.22, 0.05]) + (yy / h)[..., None] * np.array([0.0, -0.06, -0.05])
+    img = base.astype(np.float32)
+    for _ in range(70):
+        cx, cy, rad = r.uniform(0, w), r.uniform(0, h), r.uniform(16, 52)
+        blob = np.exp(-(((xx - cx) ** 2 + ((yy - cy) * 1.4) ** 2) / (2 * rad ** 2)))
+        img += blob[..., None] * np.array([0.55, 0.80, 0.55]) * r.uniform(.12, .38)
+    img += r.normal(0, .015, img.shape)
+    Image.fromarray((np.clip(img, 0, 1) * 255).astype('uint8')).filter(ImageFilter.GaussianBlur(1.4)).convert('RGB').save(os.path.join(HERE, name), quality=80)
+
+
 def main():
     for p in PAPERS:
         src = os.path.join(HERE, p[0] + '.src.html')
@@ -122,7 +137,8 @@ def main():
     open(os.path.join(HERE, 'report-run3.html'), 'w', encoding='utf-8').write(page)
     for i, hue in enumerate([(0.1, 0.9, 0.35), (0.95, 0.25, 0.55), (0.2, 0.55, 1.0), (1.0, 0.75, 0.15)]):
         micrograph(20 + i, hue, f'micrograph-{i + 1}.jpg')
-    print('report-run3.html, micrograph-1..4.jpg')
+    banner('banner-gels.jpg')
+    print('report-run3.html, micrograph-1..4.jpg, banner-gels.jpg')
 
 
 if __name__ == '__main__':

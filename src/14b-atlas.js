@@ -38,7 +38,7 @@ const ATLAS = {
     const edge = (a, b, rel, kind) => { if (!a || !b || a === b || !N.has(a) || !N.has(b)) return; E.push({ a, b, rel: rel || '', kind: kind || 'wire' }); N.get(a).deg++; N.get(b).deg++; };
     const blocks = DB.where('blocks', b => b.status === 'live' && docIds.has(b.docId) && (only ? which(b) >= 0 : (b.kind === 'component' || (typeof WIDGETS !== 'undefined' && WIDGETS[b.kind]) || b.kind === 'ref' || b.kind === 'noteref')));
     const held = only ? new Set(blocks.map(b => b.docId)) : null;
-    docs.forEach(d => { if (!held || held.has(d.id)) add(d.id, 'note', d.title || 'Untitled', { t: d.created, go: () => App.go('#/doc/' + d.id), sub: M.docPath(d) }); });
+    docs.forEach(d => { if (!held || held.has(d.id)) add(d.id, 'note', CHAIN.listTitle(d), { t: d.created, go: () => App.go('#/doc/' + d.id), sub: M.docPath(d) }); });
     blocks.forEach(b => { if (!only && (b.kind === 'ref' || b.kind === 'noteref')) return; const K = typeof CKINDS !== 'undefined' && CKINDS.of(b), i = only ? which(b) : -1;
       add(b.id, 'cmp', M.blockName(b) + (b.body && b.body.text ? ' — ' + snippet(b.body.text, 40) : ''), { t: b.created, ck: i >= 0 ? only[i].label : K && K.label, color: i >= 0 ? ATLAS.ccol(i) : K && K.color, go: () => App.openComponent(b.id), sub: (M.doc(b.docId) || {}).title }); });
     const items = DB.where('items', it => docIds.has(it.originDocId) && !it.correctedBy); items.forEach(it => add(it.id, 'item', (KIND[it.kind] ? KIND[it.kind].label : it.kind) + ': ' + snippet(it.text, 50), { t: it.created, sk: it.kind, go: () => App.openComponent(it.originBlockId) }));
