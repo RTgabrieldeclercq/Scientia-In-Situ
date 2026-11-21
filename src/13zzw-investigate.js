@@ -43,7 +43,7 @@ const INVEST = {
       h('span.t', h('span.serif', snippet(it.text, 110)), h('span.s', INVEST.where(it))), h('span.tiny.mono.muted', INVEST.age(it)),
       h('button.btn.xs', { title: 'Investigated — its dot goes', on: { click: e => { e.stopPropagation(); INVEST.done(it); } } }, '✓'));
     return [h('div.sec-h.inv-h', { style: { marginTop: '24px' } }, h('h2', 'Needs investigation'), L.length ? h('span.k', String(L.length)) : null),
-      L.length ? capped(L, 8, row) : rs ? null : h('div.tiny.muted', { style: { margin: '0 0 14px' } }, 'Nothing to look into. Select words, Ctrl+Enter → X (Needs investigation).'), rs];
+      L.length ? capped(L, TODAY.cap(8), row) : rs ? null : h('div.tiny.muted', { style: { margin: '0 0 14px' } }, 'Nothing to look into. Select words, Ctrl+Enter → X (Needs investigation).'), rs];
   },
   pop(list, e) {
     popover(e.clientX, e.clientY + 10, [h('h5', 'Needs investigation'), ...list.map(it => h('div.inv-pp', h('div.serif', it.text),

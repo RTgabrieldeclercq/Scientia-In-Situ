@@ -160,12 +160,12 @@ const REGION = {
     const folds = [r, ...REGION.subRegions(d, r)].filter(x => x.at).map(x => ({ r: x, x: x.at.x, y: x.at.y }));
     let moved = false;
     const mv = ev => { let dx = (ev.clientX - sx) / P.view.z, dy = (ev.clientY - sy) / P.view.z; if (!moved && Math.abs(dx) + Math.abs(dy) < 3) return; moved = true;
-      if (ev.shiftKey) { dx = Math.round(dx / 14) * 14; dy = Math.round(dy / 14) * 14; }   // V3.992: Shift moves it a grid cell at a time
+      if (ev.shiftKey) { const G = PTUNE.snap(); dx = Math.round(dx / G) * G; dy = Math.round(dy / G) * G; }   // V3.992: Shift moves it a grid cell at a time
       start.forEach(s => { s.b.x = s.x + dx; s.b.y = s.y + dy; if (s.el) { s.el.style.left = s.b.x + 'px'; s.el.style.top = s.b.y + 'px'; } }); folds.forEach(s => { s.r.at = { x: s.x + dx, y: s.y + dy }; }); pane.drawWires(); };
     const up = ev => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); if (!moved) return;
       if (REGION._stay) { REGION._stay = false; start.forEach(s => { s.b.x = s.x; s.b.y = s.y; if (s.el) { s.el.style.left = s.x + 'px'; s.el.style.top = s.y + 'px'; } }); folds.forEach(s => { s.r.at = { x: s.x, y: s.y }; }); pane.drawWires(); return; }   // embedded elsewhere (13zb): it stays here
-      start.forEach(s => { s.b.x = Math.round(s.b.x / 14) * 14; s.b.y = Math.round(s.b.y / 14) * 14; DB.put('blocks', s.b); if (s.el) { s.el.style.left = s.b.x + 'px'; s.el.style.top = s.b.y + 'px'; } });
-      folds.forEach(s => { s.r.at = { x: Math.round(s.r.at.x / 14) * 14, y: Math.round(s.r.at.y / 14) * 14 }; }); if (folds.length) REGION.save(d);
+      const G = PTUNE.snap(); start.forEach(s => { s.b.x = Math.round(s.b.x / G) * G; s.b.y = Math.round(s.b.y / G) * G; DB.put('blocks', s.b); if (s.el) { s.el.style.left = s.b.x + 'px'; s.el.style.top = s.b.y + 'px'; } });
+      folds.forEach(s => { s.r.at = { x: Math.round(s.r.at.x / G) * G, y: Math.round(s.r.at.y / G) * G }; }); if (folds.length) REGION.save(d);
       DB.beginGroup(); pane.drawWires(); REGION.droppedRegion(pane, d, r, ev); };
     addEventListener('pointermove', mv); addEventListener('pointerup', up);
   },

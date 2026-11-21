@@ -176,18 +176,18 @@ function bootShell() {
   document.addEventListener('keydown', e => {
     const k = (e.key || '').toLowerCase(), mod = e.ctrlKey || e.metaKey, inField = e.target.closest && e.target.closest('input,textarea,select,[contenteditable="true"]');
     TIMER.noteInput();
-    if (mod && k === 'k' && !inField) { e.preventDefault(); Search.open(); return; }
-    if (mod && k === 'k' && inField && !e.target.closest('.ed')) { e.preventDefault(); Search.open(); return; }
-    if (mod && e.altKey && k === 'n') { e.preventDefault(); App.newDoc(); return; }
-    if (mod && e.shiftKey && (k === ' ' || e.code === 'Space')) { e.preventDefault(); DAY.capture(); return; }
-    if (mod && !e.shiftKey && !e.altKey && k === 'p' && !e.target.closest('.ed')) { e.preventDefault(); PAL.open(); return; }
-    if (mod && !e.shiftKey && !e.altKey && k === 'o' && !e.target.closest('.ed')) { e.preventDefault(); PAL.switcher(); return; }
+    // V4.96: each key is asked of KEYS (20g-keymap.js): the person's binding, or the default
+    if ((KEYS.is(e, 'search') || KEYS.alias(e, 'search', 'Ctrl+Shift+K')) && (!inField || !e.target.closest('.ed'))) { e.preventDefault(); Search.open(); return; }
+    if (KEYS.is(e, 'newNote')) { e.preventDefault(); App.newDoc(); return; }
+    if (KEYS.is(e, 'capture')) { e.preventDefault(); DAY.capture(); return; }
+    if (KEYS.is(e, 'palette') && !e.target.closest('.ed')) { e.preventDefault(); PAL.open(); return; }
+    if (KEYS.is(e, 'switcher') && !e.target.closest('.ed')) { e.preventDefault(); PAL.switcher(); return; }
     if ($('.ovl')) return;
     if (inField) return;
-    if (mod && k === 'z') { e.preventDefault(); e.shiftKey ? App.redo() : App.undo(); return; }
-    if (mod && k === 'y') { e.preventDefault(); App.redo(); return; }
-    if (mod && k === '.') { e.preventDefault(); App.toggleFocus(); return; }
-    if (e.key === '?' && SHORT.on() && SHORT.tune('help')) { helpModal(); return; }
+    if (KEYS.is(e, 'undo')) { e.preventDefault(); App.undo(); return; }
+    if (KEYS.is(e, 'redo') || KEYS.is(e, 'redo2')) { e.preventDefault(); App.redo(); return; }
+    if (KEYS.is(e, 'focus')) { e.preventDefault(); App.toggleFocus(); return; }
+    if (KEYS.is(e, 'help') && SHORT.on() && SHORT.tune('help')) { e.preventDefault(); helpModal(); return; }
     if (!mod && !e.altKey && /^[1-7]$/.test(e.key) && !App.route.name.match(/doc|lens|portfolio/)) { App.go('#/' + TABS[+e.key - 1][0]); }
   });
   document.addEventListener('pointerdown', () => TIMER.noteInput(), true);

@@ -29,10 +29,10 @@
     const DocView_ = App.pane && App.panes().includes(App.pane) ? App.pane : DocView;
     if (!App.panes().length || $('.ovl') || (e.target.closest && e.target.closest('input,textarea,select,[contenteditable="true"]'))) return;
     const k = (e.key || '').toLowerCase(), mod = e.ctrlKey || e.metaKey;
-    if (mod && k === '0') { e.preventDefault(); DocView_.paper.fit(DocView_.bbox()); }
+    if (KEYS.is(e, 'fit')) { e.preventDefault(); DocView_.paper.fit(DocView_.bbox()); }
     else if (!mod && (k === 'delete' || k === 'backspace') && DocView_.sel) { const b = M.block(DocView_.sel); if (b && b.kind === 'ref') M.removeRef(b); else if (b && !M.removeEmptyBlock(b)) EDIT.confirmBlock(b); }
     else if (!mod && k === 'enter' && DocView_.sel) { e.preventDefault(); const ed = $(`.box[data-id="${DocView_.sel}"] .ed`); if (ed && ed.contentEditable === 'true') { ed.focus(); ED.setCaret(ed, ED.read(ed, []).text.length); } }
-    else if (!mod && k === 'n') { e.preventDefault(); const P = DocView_.paper, r = P.rect(), p = P.toWorld(r.left + r.width / 2, r.top + r.height / 2); DocView_.newAt(p.x - 180, p.y - 40); }
+    else if (KEYS.is(e, 'newComponent')) { e.preventDefault(); const P = DocView_.paper, r = P.rect(), p = P.toWorld(r.left + r.width / 2, r.top + r.height / 2); DocView_.newAt(p.x - 180, p.y - 40); }
   });
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { applyKindCSS(); App.refresh(); });
   window.addEventListener('hashchange', () => { closePop(); hideHover(); App._mounted = false; App.refresh(); });

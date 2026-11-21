@@ -20,6 +20,13 @@ function legendEl() {
     h('i', { style: { marginLeft: '10px', background: 'var(--hm-0)', position: 'relative' } }, h('b', { style: { position: 'absolute', right: '1px', top: '1px', width: '4px', height: '4px', borderRadius: '50%', background: 'var(--mag)' } })), 'multitask');
 }
 function tile(n, l, d, kind) { return h('div.tile' + (kind ? '.k' : ''), { style: kind ? { '--kc': `var(--k-${kind})` } : {} }, h('div.n', n), h('div.l', l), d ? h('div.d', d) : null); }
+/* 20 Nov (Gabe: easy tunes): how much of the Today page's lists shows (Settings → The Today page). */
+const TODAY = {
+  recent: () => { const v = +FEAT.tune('today', 'recent'); return v > 0 ? v : 7; },
+  weeks: () => { const v = +FEAT.tune('today', 'weeks'); return v > 0 ? v : 5; },
+  /** A list's length before "and N more", scaled: short half, long double. */
+  cap: n => { const k = FEAT.tune('today', 'list'); return Math.max(2, Math.round(n * (k === 'short' ? .5 : k === 'long' ? 2 : 1))); },
+};
 function capped(list, n, render, emptyText) {
   if (!list.length) return h('div.list', h('div.empty', emptyText || 'Nothing here'));
   const box = h('div.list'); let shown = n;
@@ -45,7 +52,7 @@ const HomeView = {
     ev.sort((a, b) => a.t - b.t);
     App.setTitle('Today', [h('span', fmtDayLong(now))]);
     const pend = IX.pendingReviews(), flags = DB.where('flags', f => f.status === 'open'), openB = IX.openBarriers();
-    const recent = DB.all('documents').sort((a, b) => b.modified.localeCompare(a.modified)).slice(0, 7);
+    const recent = DB.all('documents').sort((a, b) => b.modified.localeCompare(a.modified)).slice(0, TODAY.recent());
     return h('div.page',
       h('div.eyebrow', fmtDayLong(now)), h('h1.title', 'Today'),
       DISK.server && !DISK.nb ? h('div.callout.nbwarn', h('b.h', 'Choose a notebook folder'), 'Your work is only in this browser until you pick a folder for it. ', h('a', { href: '#/settings' }, 'Settings → Notebook folder'), ' — then any copy of the app reloads everything from there, and each component is also saved as Markdown.') : null,
@@ -67,9 +74,9 @@ const HomeView = {
           TIMER.active().length ? [h('div.sec-h', h('h2', 'Running')), h('div.list', TIMER.active().map(s => { const d = M.doc(s.docId); return h('div.li.click', { on: { click: () => App.go('#/doc/' + s.docId) } }, h('span.tchip' + (s.state === 'running' ? '.run' : '.paused'), h('i'), h('span.wt', { 'data-sess': s.id }, fmtDur(TIMER.elapsed(s), true))), h('span.t', d ? d.title : '—', h('span.s', d ? M.docPath(d) : '')), s.steps && s.steps.length ? h('span.tiny.mono.muted', plural(s.steps.length, 'step') + ' checked') : null); }))] : null,
           h('div.sec-h', h('h2', 'Needs attention')),
           h('div.tiles', { style: { marginBottom: '12px' } }, tile(openB.length, 'open barriers', null, 'barrier'), tile(flags.length, 'flags'), tile(DB.where('sessions', s => s.state === 'open').length, 'open time entries')),
-          capped(openB.sort((a, b) => a.created.localeCompare(b.created)), 4, it => itemRow(it, h('span.tiny.mono.muted', Math.floor((Date.now() - +new Date(it.created)) / 864e5) + 'd')), 'No open barriers'),
-          h('div.sec-h', { style: { marginTop: '24px' } }, h('h2', 'Last five weeks'), h('span.r', h('a.btn.sm.ghost', { href: '#/activity' }, 'Activity →'))),
-          heatmapEl({ weeks: 5, cell: 15 }), h('div', { style: { marginTop: '8px' } }, legendEl()),
+          capped(openB.sort((a, b) => a.created.localeCompare(b.created)), TODAY.cap(4), it => itemRow(it, h('span.tiny.mono.muted', Math.floor((Date.now() - +new Date(it.created)) / 864e5) + 'd')), 'No open barriers'),
+          h('div.sec-h', { style: { marginTop: '24px' } }, h('h2', 'Last ' + ({ 3: 'three', 5: 'five', 8: 'eight', 12: 'twelve' }[TODAY.weeks()] || TODAY.weeks()) + ' weeks'), h('span.r', h('a.btn.sm.ghost', { href: '#/activity' }, 'Activity →'))),
+          heatmapEl({ weeks: TODAY.weeks(), cell: 15 }), h('div', { style: { marginTop: '8px' } }, legendEl()),
           INVEST.home(),   // V3.991, a structure since V3.992 (13zzw): what needs investigating, and the resurfaced claim with it
           h('div.sec-h', { style: { marginTop: '24px' } }, h('h2', 'Recent notes')),
           h('div.list', recent.map(d => h('div.li.click', { on: { click: () => App.go('#/doc/' + d.id) } }, typechip(d.type), h('span.t', d.title, h('span.s', M.docPath(d))), h('span.tiny.mono.muted', fmtWhen(d.modified))))))));

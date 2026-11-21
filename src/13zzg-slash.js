@@ -33,17 +33,18 @@ const SLASH = {
   rows(q, people) {
     q = (q || '').toLowerCase();
     if (people) return SLASH.members().filter(p => !q || p.name.toLowerCase().includes(q)).slice(0, 10).map(p => ({ label: '@' + p.name, sub: p.category || '', person: p }));
-    return CMD.all().filter(c => c.scope !== 'canvas').map(c => ({ c, s: SLASH.score(q, c) })).filter(x => x.s > 0)
-      .sort((a, b) => b.s - a.s || (a.c.group === 'Insert') - (b.c.group === 'Insert') || a.c.slash.localeCompare(b.c.slash)).slice(0, 12).map(x => ({ label: '/' + x.c.slash, sub: x.c.label, c: x.c }));
+    // V4.95 (13zzga): the built-ins you hid are out, the ones you pinned (and your own commands, if asked) come first
+    return CMD.all().filter(c => c.scope !== 'canvas' && !(typeof SWF !== 'undefined' && SWF.hidden(c))).map(c => ({ c, s: SLASH.score(q, c) })).filter(x => x.s > 0).map(x => ({ c: x.c, s: x.s + (typeof SWF === 'undefined' ? 0 : SWF.boost(x.c, q)) }))
+      .sort((a, b) => b.s - a.s || (a.c.group === 'Insert') - (b.c.group === 'Insert') || a.c.slash.localeCompare(b.c.slash)).slice(0, 12).map(x => ({ label: '/' + x.c.slash, sub: x.c.label, c: x.c, mine: !!x.c.swf }));
   },
   /** What is typed matches a slash from its start first; then anywhere in a slash or an alias; then, more weakly, the label. */
-  score(q, c) { if (!q) return 1; const names = [c.slash, ...(c.alias || [])]; if (names.some(n => n.startsWith(q))) return 500 - c.slash.length; return Math.max(...names.map(n => PAL.fuzzy(q, n)), PAL.fuzzy(q, c.label) * .5);
+  score(q, c) { if (!q) return 1; const names = [c.slash, ...(c.alias || []), ...(typeof SWF === 'undefined' ? [] : SWF.aliasesOf(c.slash))]; if (names.includes(q)) return 1000; if (names.some(n => n.startsWith(q))) return 500 - c.slash.length; return Math.max(...names.map(n => PAL.fuzzy(q, n)), PAL.fuzzy(q, c.label) * .5);
   },
   open(el, b, at, q, rect, people) {
     const rows = SLASH.rows(q, people); if (!rows.length && !people) { SLASH.close(); return; }
     let st = SLASH.st; if (!st || st.el !== el) { SLASH.close(); st = SLASH.st = { el, b, at, q, people, hi: 0, menu: h('div.slash-menu', { on: { mousedown: e => e.preventDefault() } }) }; document.body.append(st.menu); document.addEventListener('keydown', SLASH.key, true); }
     Object.assign(st, { at, q, people, rows, hi: Math.min(st.hi, Math.max(0, rows.length - 1)) });
-    st.menu.replaceChildren(h('div.sm-h', people ? 'Who?' : 'Commands' + (q ? ' · ' + q : '')), ...rows.map((r, i) => h('div.sm-row' + (i === st.hi ? '.hi' : ''), { on: { click: () => { st.hi = i; SLASH.choose(); } } }, h('b', r.label), r.sub ? h('span.s', r.sub) : null)),
+    st.menu.replaceChildren(h('div.sm-h', people ? 'Who?' : 'Commands' + (q ? ' · ' + q : '')), ...rows.map((r, i) => h('div.sm-row' + (i === st.hi ? '.hi' : '') + (r.mine ? '.mine' : ''), { on: { click: () => { st.hi = i; SLASH.choose(); } } }, h('b', r.mine && SWF.opt('icon', true) ? h('span.sm-mine', { title: 'Your own command', html: SWF.ICON }) : null, r.label), r.sub ? h('span.s', r.sub) : null)),
       !rows.length && people ? h('div.sm-row.muted', SLASH.members().length ? 'No one by that name' : 'No one named yet — type the name and press Enter') : null, h('div.sm-f', people ? 'Enter picks · Esc leaves the text' : '↑ ↓ · Enter runs · Esc leaves what you typed'));
     const m = st.menu, r = m.getBoundingClientRect(); m.style.left = clamp(rect.left, 8, innerWidth - r.width - 8) + 'px'; m.style.top = (rect.bottom + r.height + 12 < innerHeight ? rect.bottom + 6 : rect.top - r.height - 6) + 'px';
   },
