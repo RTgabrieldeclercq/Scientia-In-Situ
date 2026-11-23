@@ -318,16 +318,24 @@ window.SIS_PALM = PALM;
 {
   /* fingers and pen on every paper */
   const mp = makePaper; makePaper = function (host, opts) {
-    const P = mp(host, opts), el = P.el, T = { touch: new Set(), palm: new Set() };
+    const P = mp(host, opts), el = P.el, T = { touch: new Set(), palm: new Set(), seen: new Set() };
     // V3.941 — the palm: what the fingers had started stops, and those touches count for nothing until they lift
     T.drop = () => { clearTimeout(T.timer); T.pend = null; if (P.mode && (P.mode.k === 'pinch' || (P.mode.k === 'pan' && T.touch.size))) { P.stop(); P.mode = null; el.classList.remove('panning'); }
       T.touch.forEach(id => { P.ptrs.delete(id); T.palm.add(id); }); T.touch.clear(); };
+    // V4.108 (Gabe, 23 Nov: "after some time on a note canvas, while in pen mode, your fingers stop being able to pan on the note. You have to exit out
+    // of the note and re enter it to be able to pan again"): a touch's lift that never reached the paper left it counted — as a palm (then every finger
+    // after it was a palm too) or as a finger still down (then the next finger pinched with it) — for as long as the note stayed open. The iPad sends a
+    // lift to the element the touch began on, and a pen stroke draws the ink's strokes again, so a hand resting on earlier writing while the pen wrote
+    // lost its lift. A first finger on the glass (isPrimary: no other touch is down) starts afresh: every touch still remembered has lifted.
+    T.fresh = () => { if (!T.touch.size && !T.palm.size && !T.seen.size) return; [...T.touch, ...T.palm, ...T.seen].forEach(id => P.ptrs.delete(id)); T.touch.clear(); T.palm.clear(); T.seen.clear(); clearTimeout(T.timer); T.pend = null;
+      const m = P.mode; if (m && (m.k === 'pinch' || (m.k === 'pan' && m.start && m.start.pointerType === 'touch'))) { P.stop(); P.mode = null; el.classList.remove('panning'); } };
     el.addEventListener('pointermove', e => { if (e.pointerType === 'pen' && T.touch.size) T.drop(); else if (T.palm.has(e.pointerId)) e.stopPropagation(); }, true);
-    const lift = e => { T.touch.delete(e.pointerId); if (T.palm.delete(e.pointerId)) e.stopPropagation(); };
+    const lift = e => { T.touch.delete(e.pointerId); T.seen.delete(e.pointerId); if (T.palm.delete(e.pointerId)) e.stopPropagation(); };
     el.addEventListener('pointerup', lift, true); el.addEventListener('pointercancel', lift, true);
     el.addEventListener('pointerdown', e => {
       if (e.pointerType === 'pen' || (e.pointerType === 'mouse' && INK.mouse && e.button === 0)) { if (e.pointerType === 'pen' && T.touch.size) T.drop(); if (INK.penDown(P, e)) { e.preventDefault(); e.stopPropagation(); } return; }
       if (e.pointerType !== 'touch') return;
+      if (e.isPrimary) T.fresh(); T.seen.add(e.pointerId);   // V4.108: the first finger down forgets lifts that never arrived
       if (INK.drawing != null) { e.stopPropagation(); return; } // the palm while the pen writes
       if (T.palm.size || PALM.palm(e)) { T.palm.add(e.pointerId); e.stopPropagation(); return; }   // V3.941 — a palm, or a hand with one already down
       if (e.target.closest('button,input,select,textarea,a,label,.pop,.ink-bar,.ink-selbar,.port,.rz,.embed-rz,.scrolly,.embed')) return;

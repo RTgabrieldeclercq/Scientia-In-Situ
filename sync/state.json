@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "96c00d1e677549aa0fa89601b31ff04960f0f925",
-  "subject": "V4.107: Scientia — ink: a dotted outline round all of it while the pointer is over any part of it, and while it is selected; none while the pen writes; see-through at all times (checked by pixels, light and dark)",
+  "commit": "efb2dccb3d4102e1133ac8268497c2e3eca68408",
+  "subject": "V4.108: Scientia — fix: in pen mode, fingers keep panning the note — a touch whose lift never reached the paper (the iPad sends it to the ink stroke the hand rested on, which the pen's next stroke had drawn again) no longer counts as a palm for as long as the note is open",
   "date": "2026-11-23"
  },
- "cut": "bd3952d055e196b55d1075b378b882fb489e7219",
+ "cut": "29dfd81b1903d832954dad351c3baa693c405cd1",
  "names": [
   "DESKLAB",
   "LABSYNC",
