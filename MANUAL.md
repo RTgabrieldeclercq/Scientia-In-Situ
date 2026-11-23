@@ -147,7 +147,7 @@ A note has a **header box** (title, type, profile fields, tags, ✎ for note det
 ### Components
 - **Select:** click. Then click again, or press Enter, to type.
 - **Move:** drag by the header. Boxes snap to 14 px and never overlap. Hold **Shift** while dragging to move one grid cell (14 px) at a time — a component, a region by its title, or a lasso selection.
-- **Resize:** drag the right edge or the corner grip — as large as you like, there is no limit. Image panels and slides keep their shape: drag their corner down and they grow both ways; PDFs, HTML pages and tables take any width and height.
+- **Resize:** drag the right edge or the corner grip — as large as you like, there is no limit. Image panels and slides keep their shape: drag their corner down and they grow both ways; PDFs, HTML pages and tables take any width and height. Hold **Shift** while you drag and it grows or shrinks one grid cell at a time, as Shift moves it (the cell is Settings → Moving around the paper → *A component settles to*).
 - **Title:** each component has a title line. **Tab** or **Enter** in the title moves to the text.
 - **Stamp:** each component shows its full date and time (e.g. 16 Oct 2026 14:32). Click the stamp to move it to any date and time.
 - **⋯ menu:** edit, label as a structure, Data, materials & code…, Move to another note…, Delete component…
@@ -793,6 +793,8 @@ A view is a saved query that updates as your notes change.
 
 ### The pen and the ink bar
 - **The pen writes ink** the way the lab's whiteboard does: a smooth line through every point, its width easing with pressure, round ends. Strokes written close together gather into one **ink component**. It moves, connects, takes timers and labels like any component.
+  - **It is see-through:** no card under it, and a click on its empty part reaches what lies beneath; a click on a stroke picks the ink (Settings → Ink & shapes → *Click through ink*).
+  - **A dotted outline** shows all of an ink component while the pointer is over any part of it, and while it is selected. None shows while the pen writes.
 - **On a whiteboard** (an image panel's ✎ Whiteboard) the pen is the same pen: the ink bar sits under the whiteboard's title, and its colours, widths, ◧ fill, pressure, ↶ ↷, the back of the pen (it erases whole strokes there) and two- and three-finger taps all work on the board.
   - **The lasso** works there too: ◌ in the bar, or hold the pen's barrel button. Loop around ink and cards; drag inside to move, a corner to scale; the bar under it has Copy, Duplicate, ⇋ ⇵ flip, Pen ↔ Highlighter, ◧ Fill / Unfill, Delete. A colour or width from the ink bar restyles the selection. A barrel tap on it copies; a barrel tap elsewhere pastes. Ctrl+C / Ctrl+V, Delete, Esc.
   - Shapes and the ink library stay in notes; the board has its own cards and pan · zoom.
