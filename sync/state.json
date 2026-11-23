@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "375b9182166c131f955fd72f3fb5baedff5257b0",
-  "subject": "V4.105: Scientia — search says an experiment note's stage and run: the quick list (Planning, Run, Analysis in its column; \"Run 2\" as a chip), the Atlas and the note pickers (\"30 kPa series — Analysis · Run 2\"); Settings → Experiment series → In search, the stage and run",
-  "date": "2026-11-20"
+  "commit": "96c00d1e677549aa0fa89601b31ff04960f0f925",
+  "subject": "V4.107: Scientia — ink: a dotted outline round all of it while the pointer is over any part of it, and while it is selected; none while the pen writes; see-through at all times (checked by pixels, light and dark)",
+  "date": "2026-11-23"
  },
- "cut": "f1e550a82bdada7603baa410da20eae9ce9af7fd",
+ "cut": "bd3952d055e196b55d1075b378b882fb489e7219",
  "names": [
   "DESKLAB",
   "LABSYNC",

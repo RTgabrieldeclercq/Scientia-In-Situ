@@ -367,4 +367,19 @@ window.SIS_PALM = PALM;
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && INK.sel) INK.clearSel(); });
   // V4.104: body.ink-solid follows Settings → Ink & shapes → Click through ink, with the page's other classes
   { const fa = FEAT.apply; FEAT.apply = function () { const r = fa.apply(this, arguments); try { document.body && document.body.classList.toggle('ink-solid', INK.solid()); } catch (e) { } return r; }; }
+  // V4.107 (Gabe: "When hovering over the ink board you should be able to see a dotted outline of the entire board. The same when clicking on it. During the
+  // pen writing, you should not see any outline."): only its strokes take the pointer (V4.104), so the paper itself says which ink the pointer is over —
+  // .ink-hov on each ink component whose rectangle holds it (21-sync.css draws the dotted outline). body.ink-pen while the pointer in use writes: the pen
+  // in pen mode, or the mouse when it draws too (the lab's pen hand) — then no outline, hovered or selected.
+  { let ev = null, kind = 'mouse', raf = 0;
+    const pen = () => { const on = INK.writing() && (!!INK.mouse || kind === 'pen'); if (document.body) document.body.classList.toggle('ink-pen', on); return on; };
+    const paint = () => { raf = 0; const e = ev, was = $$('.box.w-ink.ink-hov'); let on = [];
+      const p = e && !e.buttons && !pen() && e.target && e.target.closest ? e.target.closest('.paper') : null;
+      if (p) on = $$(':scope > .world > .box.w-ink', p).filter(b => { const r = b.getBoundingClientRect(); return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom; });
+      was.forEach(b => { if (!on.includes(b)) b.classList.remove('ink-hov'); }); on.forEach(b => b.classList.add('ink-hov')); };
+    const look = e => { ev = e; kind = e.pointerType || 'mouse'; if (!raf) raf = requestAnimationFrame(paint); };
+    document.addEventListener('pointermove', look, { passive: true, capture: true }); document.addEventListener('pointerdown', look, { passive: true, capture: true });
+    document.documentElement.addEventListener('pointerleave', () => { ev = null; if (!raf) raf = requestAnimationFrame(paint); });
+    const pb = INK.paintBars; INK.paintBars = function () { const r = pb.apply(this, arguments); pen(); return r; };
+    pen(); }
 }

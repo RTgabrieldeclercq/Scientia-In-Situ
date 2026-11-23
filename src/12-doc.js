@@ -291,8 +291,9 @@ const DocView = {
     // follows its width (an image panel, slides) follows a drag down too: the larger of the two pulls.
     if (e.target.closest('.rz')) { e.preventDefault(); const b = M.block(id); if (!b) return; const x0 = e.clientX, y0 = e.clientY, w0 = box.offsetWidth, h0 = Math.max(1, box.offsetHeight), corner = !!e.target.closest('.rz-corner');
       document.body.classList.add('resizing');
-      const mv = ev => { const z = P.view.z, wx = w0 + (ev.clientX - x0) / z, wy = w0 * (h0 + (ev.clientY - y0) / z) / h0;
-        b.w = Math.max(240, Math.round(corner && Math.abs(wy - w0) > Math.abs(wx - w0) ? wy : wx)); box.style.width = b.w + 'px'; this.drawWires(); };
+      // V4.106: with Shift held it grows or shrinks a grid cell at a time, as a Shift+drag moves it (PTUNE.cells)
+      const mv = ev => { const z = P.view.z, wx = w0 + (ev.clientX - x0) / z, wy = w0 * (h0 + (ev.clientY - y0) / z) / h0, w = corner && Math.abs(wy - w0) > Math.abs(wx - w0) ? wy : wx;
+        b.w = ev.shiftKey ? PTUNE.cells(w, 240) : Math.max(240, Math.round(w)); box.style.width = b.w + 'px'; this.drawWires(); };
       const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); document.body.classList.remove('resizing'); b.w = Math.round(b.w / PTUNE.snap()) * PTUNE.snap(); box.style.width = b.w + 'px'; DB.put('blocks', b); DB.beginGroup(); this.drawWires(); };
       addEventListener('pointermove', mv); addEventListener('pointerup', up); return; }
     if (e.target.closest('.ed,input,textarea,select,button,a,label,.chips,.ghosts,.refs,.tags,.ptext.edit,.obsn,.itdot,.wplate,.wlegend,.fg-cell')) { if (id[0] !== '_') this.select(id, true); return; }

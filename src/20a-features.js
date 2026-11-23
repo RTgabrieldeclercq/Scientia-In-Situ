@@ -34,8 +34,12 @@ const PV = {
     const thru = FEAT.tune('ink', 'through') !== false;
     return h('div.pv-inkthru' + (thru ? '' : '.solid'), PV.box({ num: 'Block', label: 'Seeding', body: 'Seed at 40k/cm² on the 30 kPa gels; wait 4 h before imaging.', cls: thru ? 'pv-hit' : '' }),
       h('div.pv-inkov', PV.svg(220, 70, '<path d="M14 48 q 18 -40 36 -6 t 34 -4 t 36 2" fill="none" stroke="var(--k-barrier, #c92a2a)" stroke-width="2.6" stroke-linecap="round"/><path d="M150 20 l 34 30 M184 20 l -34 30" fill="none" stroke="var(--k-barrier, #c92a2a)" stroke-width="2.4" stroke-linecap="round"/>'), h('span.pv-inkptr', '➚')),
-      PV.cap(thru ? 'A click on the ink’s empty part reaches the component beneath (it is outlined)' : 'The ink’s whole rectangle (dashed) takes the click; the component beneath does not get it'));
+      PV.cap(thru ? 'Point at the ink: a dotted outline shows all of it. A click on its empty part reaches the component beneath (it is outlined)' : 'The ink’s whole rectangle (dotted) takes the click; the component beneath does not get it'));
   },
+  /** V4.107: the preview's ink is outlined while the pointer is over any part of it, as on a note. */
+  inkHover(el) { const ov = el.querySelector('.pv-inkov'); if (!ov) return el;
+    el.addEventListener('pointermove', e => { const r = ov.getBoundingClientRect(); ov.classList.toggle('hov', e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom); });
+    el.addEventListener('pointerleave', () => ov.classList.remove('hov')); return el; },
   cap: t => h('div.fpv-cap', t),
   st: (k, t) => h('span.st.st-' + k, t),
   /** A row of things side by side; a stage where children sit where they're put. */
@@ -242,28 +246,33 @@ const PV = {
       PV.cap('The ◎ window opens on ' + m + ' min' + ([15, 25, 45, 50, 60, 90, 120].includes(m) ? '' : ' (set by hand last time)') + '.')]; } });
 
   // 20 Nov (Gabe: "Search for other features like these that could get some easy customization"): the numbers of moving around a note, in 10-paper.js (PTUNE)
-  D({ id: 'paper', group: 'canvas', core: true, label: 'Moving around the paper', isNew: true, desc: 'Ctrl+wheel (or a pinch) zooms at the pointer — as fast as you like and as far in as you like; a component you move or resize settles on the grid (Shift+drag moves it a cell at a time, and the same cell is where it lands when you let go); and a flick of the paper keeps gliding until it slows. The paper below is a real one: zoom it, drag the box, flick it.',
+  D({ id: 'paper', group: 'canvas', core: true, label: 'Moving around the paper', isNew: true, desc: 'Ctrl+wheel (or a pinch) zooms at the pointer — as fast as you like and as far in as you like; a component you move or resize settles on the grid (hold Shift while you drag it or its edge and it moves or grows a cell at a time; the same cell is where it lands when you let go); and a flick of the paper keeps gliding until it slows. The paper below is a real one: zoom it, drag the box or its right edge (with Shift too), flick it.',
     tune: [T('zoom', 'Ctrl+wheel zooms', 'seg', { isNew: true, def: '1', opts: [['0.5', 'Slowly'], ['1', 'As before'], ['2', 'Quickly']], d: 'How far each notch of the wheel goes' }),
       T('maxz', 'Zoom in up to', 'seg', { isNew: true, def: '2', opts: [['2', '200%'], ['3', '300%'], ['4', '400%']] }),
-      T('snap', 'A component settles to', 'seg', { isNew: true, def: '14', opts: [['1', 'No grid'], ['7', 'Half a cell'], ['14', 'One cell'], ['28', 'Two cells']], d: 'Moving and resizing; Shift+drag also moves by it. A cell is the paper’s small square' }),
+      T('snap', 'A component settles to', 'seg', { isNew: true, def: '14', opts: [['1', 'No grid'], ['7', 'Half a cell'], ['14', 'One cell'], ['28', 'Two cells']], d: 'Moving and resizing; with Shift held, a drag moves or resizes by it. A cell is the paper’s small square' }),
       T('glide', 'A flick keeps gliding', 'switch', { isNew: true, def: true, d: 'Off: the paper stops where you let go' })],
     preview: () => {
       const G = PTUNE.snap(), host = h('div.pv-paper'), out = h('span.pv-paper-z', '100%'), P = makePaper(host, { anyWheel: true, view: { x: 24, y: 18, z: 1 }, onView: v => { out.textContent = Math.round(v.z * 100) + '%'; } });
-      const bx = h('div.pv-paper-b.nopan', { style: { left: '28px', top: '28px' } }, 'Run 3 · drag me'), cell = h('span.pv-paper-c');
+      const grip = h('span.pv-paper-rz', { title: 'Drag to resize — hold Shift for a cell at a time' }), bx = h('div.pv-paper-b.nopan', { style: { left: '28px', top: '28px' } }, 'Run 3 · drag me', grip), cell = h('span.pv-paper-c');
       P.world.append(bx);
+      // V4.106: its right edge resizes it, a cell at a time with Shift held, as on a note
+      grip.addEventListener('pointerdown', e => { if (e.button) return; e.preventDefault(); e.stopPropagation(); grip.setPointerCapture(e.pointerId); const sx = e.clientX, w0 = bx.offsetWidth; bx.classList.add('dragging');
+        const mv = ev => { const w = w0 + (ev.clientX - sx) / P.view.z; bx.style.width = (ev.shiftKey ? PTUNE.cells(w, 84) : Math.max(84, Math.round(w))) + 'px'; };
+        const up = () => { grip.removeEventListener('pointermove', mv); grip.removeEventListener('pointerup', up); bx.classList.remove('dragging'); bx.style.width = PTUNE.cells(bx.offsetWidth, 84) + 'px'; };
+        grip.addEventListener('pointermove', mv); grip.addEventListener('pointerup', up); });
       bx.addEventListener('pointerdown', e => { if (e.button) return; e.preventDefault(); bx.setPointerCapture(e.pointerId); const sx = e.clientX, sy = e.clientY, ox = bx.offsetLeft, oy = bx.offsetTop; bx.classList.add('dragging');
         const mv = ev => { let x = ox + (ev.clientX - sx) / P.view.z, y = oy + (ev.clientY - sy) / P.view.z; if (ev.shiftKey) { x = Math.round(x / G) * G; y = Math.round(y / G) * G; } bx.style.left = x + 'px'; bx.style.top = y + 'px'; };
         const up = () => { bx.removeEventListener('pointermove', mv); bx.removeEventListener('pointerup', up); bx.classList.remove('dragging'); bx.style.left = Math.round(bx.offsetLeft / G) * G + 'px'; bx.style.top = Math.round(bx.offsetTop / G) * G + 'px'; };
         bx.addEventListener('pointermove', mv); bx.addEventListener('pointerup', up); });
       host.append(out);
-      return [host, PV.cap('Ctrl+wheel zooms ' + ({ '0.5': 'slowly', '1': 'at the usual pace', '2': 'quickly' }[String(tune('paper', 'zoom'))] || 'at the usual pace') + ', up to ' + Math.round(PTUNE.maxZ() * 100) + '%; the box settles to ' + (G === 1 ? 'wherever you let go' : (G === 14 ? 'one cell' : G === 7 ? 'half a cell' : G === 28 ? 'two cells' : G + ' px')) + '; a flick ' + (PTUNE.glide() ? 'keeps gliding' : 'stops where you let go') + '.')];
+      return [host, PV.cap('Ctrl+wheel zooms ' + ({ '0.5': 'slowly', '1': 'at the usual pace', '2': 'quickly' }[String(tune('paper', 'zoom'))] || 'at the usual pace') + ', up to ' + Math.round(PTUNE.maxZ() * 100) + '%; the box settles to ' + (G === 1 ? 'wherever you let go' : (G === 14 ? 'one cell' : G === 7 ? 'half a cell' : G === 28 ? 'two cells' : G + ' px')) + ', and Shift+drag moves it or its right edge by that; a flick ' + (PTUNE.glide() ? 'keeps gliding' : 'stops where you let go') + '.')];
     } });
 
   /* =============================== Pen & touch =============================== */
-  D({ id: 'ink', group: 'pen', label: 'Ink & shapes', desc: 'Writing on the paper with a pen (or the mouse): pen, highlighter, eraser and lasso in the ink bar; strokes written close together gather into one ink component. Ink is see-through, and what it lies over can still be clicked. Off: the ink tools leave; ink already written stays.',
+  D({ id: 'ink', group: 'pen', label: 'Ink & shapes', desc: 'Writing on the paper with a pen (or the mouse): pen, highlighter, eraser and lasso in the ink bar; strokes written close together gather into one ink component. Ink is see-through, and what it lies over can still be clicked; a dotted outline shows all of an ink component while you point at it or it is selected, and none while the pen writes. Off: the ink tools leave; ink already written stays.',
     // V4.104 (Gabe: "The ink background should be invisible/see through. You may interact with components overlaid by ink components.") — 21-sync.css
     tune: [T('through', 'Click through ink', 'switch', { isNew: true, def: true, d: 'Only the strokes take the pointer: a click on an empty part of an ink component reaches the component beneath it. Off: the whole of its rectangle takes the pointer, as before', changed: () => FEAT.apply() })],
-    preview: () => [PV.inkThrough(),h('div.pv-ink', PV.svg(300, 90, '<path d="M20 60 q 14 -34 28 0 t 28 0 t 28 0" fill="none" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round"/><path d="M130 30 l 40 40 M170 30 l -40 40" stroke="var(--k-barrier, #c92a2a)" stroke-width="2" stroke-linecap="round"/><rect x="195" y="22" width="90" height="16" rx="3" fill="color-mix(in srgb, #f2c94c 55%, transparent)"/><text x="200" y="34" font-size="11" font-family="Source Serif 4, serif" fill="var(--ink)">highlighted</text>'), h('div.pv-inkbar', ['✎ Pen', 'Highlighter', 'Eraser', 'Lasso'].map((x, i) => h('span' + (i ? '' : '.on'), x))))] });
+    preview: () => [PV.inkHover(PV.inkThrough()),h('div.pv-ink', PV.svg(300, 90, '<path d="M20 60 q 14 -34 28 0 t 28 0 t 28 0" fill="none" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round"/><path d="M130 30 l 40 40 M170 30 l -40 40" stroke="var(--k-barrier, #c92a2a)" stroke-width="2" stroke-linecap="round"/><rect x="195" y="22" width="90" height="16" rx="3" fill="color-mix(in srgb, #f2c94c 55%, transparent)"/><text x="200" y="34" font-size="11" font-family="Source Serif 4, serif" fill="var(--ink)">highlighted</text>'), h('div.pv-inkbar', ['✎ Pen', 'Highlighter', 'Eraser', 'Lasso'].map((x, i) => h('span' + (i ? '' : '.on'), x))))] });
 
   D({ id: 'pen', group: 'pen', core: true, label: 'Pen & touch shortcuts', desc: 'What the pen’s buttons, taps and gestures do. Today: the Slim Pen’s button switches to the pen and between its modes; the barrel button lassoes (in pen mode) or loops a region; the pen’s back erases; two fingers tapped undo, three redo; a right-drag loop makes a region; P pans. Choosing a different action for each comes in a later version.',
     tune: SYNC.local ? [T('button', 'The Slim Pen’s button (this computer)', 'node', { render: () => { const n = HANDS.settingsUI(); $$(':scope > .sec, :scope > .sec-h', n).forEach(x => x.remove()); return n; } })] : [],
