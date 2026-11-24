@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "efb2dccb3d4102e1133ac8268497c2e3eca68408",
-  "subject": "V4.108: Scientia — fix: in pen mode, fingers keep panning the note — a touch whose lift never reached the paper (the iPad sends it to the ink stroke the hand rested on, which the pen's next stroke had drawn again) no longer counts as a palm for as long as the note is open",
+  "commit": "41f31d1f2f97be1a4b7ad0e2d799c13e797bdb6d",
+  "subject": "V4.109: Scientia — fix: in pen mode, fingers keep panning the note — a touch whose lift never reached the paper (the iPad sends it to the ink stroke the hand rested on, which the pen's next stroke had drawn again) no longer counts as a palm for as long as the note is open",
   "date": "2026-11-23"
  },
- "cut": "29dfd81b1903d832954dad351c3baa693c405cd1",
+ "cut": "366954800e45d87e748b7dcdeb106af9e3b9c2c6",
  "names": [
   "DESKLAB",
   "LABSYNC",

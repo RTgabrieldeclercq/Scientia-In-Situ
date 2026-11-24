@@ -115,7 +115,7 @@ svg.ink-live path.ink-lasso{fill:color-mix(in srgb,var(--teal) 8%,transparent);s
 /* ink written on an image (13zzc): on top of it, glued to it; only the strokes take the pointer */
 .box.w-ink.on-img{z-index:5;pointer-events:none}
 .box.w-ink.on-img .ink-svg path{pointer-events:visiblePainted;cursor:grab}
-/* V4.104 (Gabe: "The ink background should be invisible/see through. You may interact with components overlaid by ink components."):
+/* V4.105 (Gabe: "The ink background should be invisible/see through. You may interact with components overlaid by ink components."):
    - no card under ink, whatever the look (36-look's `.box` rules outweigh `.box.w-ink`, hence the doubled class);
    - only its strokes, its title and its tags take the pointer: a click on its empty part reaches the component or the paper beneath,
      and the ink stays over it, as ink on an image does;
@@ -123,7 +123,7 @@ svg.ink-live path.ink-lasso{fill:color-mix(in srgb,var(--teal) 8%,transparent);s
    Settings → Ink & shapes → Click through ink; off: body.ink-solid, the whole rectangle takes the pointer as before. */
 .paper .box.w-ink.w-ink{background:transparent;box-shadow:none;border-color:transparent;border-style:dashed}
 .paper .box.w-ink.w-ink:hover,.paper .box.w-ink.w-ink.sel{border-color:transparent;box-shadow:none}
-/* V4.107 (Gabe, 23 Nov: "When hovering over the ink board you should be able to see a dotted outline of the entire board. The same when clicking on it. During the pen writing, you should not see any outline."):
+/* V4.108 (Gabe, 23 Nov: "When hovering over the ink board you should be able to see a dotted outline of the entire board. The same when clicking on it. During the pen writing, you should not see any outline."):
    a dotted outline round the whole ink component while the pointer is over any part of it (.ink-hov, 13zf: its empty part lets the pointer through,
    so :hover alone would only see the strokes) and while it is selected; an outline, not the border, so nothing moves. None while the pen writes:
    body.ink-pen (pen mode, for the pointer that writes), body.ink-writing (a stroke going down), and the lab's pills with any hand but pan (V3.942). */

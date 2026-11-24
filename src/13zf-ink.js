@@ -129,7 +129,7 @@ const INK = {
     if (INK.tool === 'eraser') return INK.erase(pane, paper, e), true;
     INK.stroke(pane, paper, e, INK.tool === 'lasso'); return true;
   },
-  /** V4.104: Settings → Ink & shapes → Click through ink — off puts body.ink-solid, and the whole rectangle takes the pointer again (21-sync.css). */
+  /** V4.105: Settings → Ink & shapes → Click through ink — off puts body.ink-solid, and the whole rectangle takes the pointer again (21-sync.css). */
   solid: () => { try { return FEAT.tune('ink', 'through') === false; } catch (e) { return false; } },
   live(paper) { let s = $(':scope > svg.ink-live', paper.world); if (!s) { s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('class', 'ink-live'); paper.world.appendChild(s); } return s; },
   stroke(pane, paper, e, lasso) {
@@ -322,7 +322,7 @@ window.SIS_PALM = PALM;
     // V3.941 — the palm: what the fingers had started stops, and those touches count for nothing until they lift
     T.drop = () => { clearTimeout(T.timer); T.pend = null; if (P.mode && (P.mode.k === 'pinch' || (P.mode.k === 'pan' && T.touch.size))) { P.stop(); P.mode = null; el.classList.remove('panning'); }
       T.touch.forEach(id => { P.ptrs.delete(id); T.palm.add(id); }); T.touch.clear(); };
-    // V4.108 (Gabe, 23 Nov: "after some time on a note canvas, while in pen mode, your fingers stop being able to pan on the note. You have to exit out
+    // V4.109 (Gabe, 23 Nov: "after some time on a note canvas, while in pen mode, your fingers stop being able to pan on the note. You have to exit out
     // of the note and re enter it to be able to pan again"): a touch's lift that never reached the paper left it counted — as a palm (then every finger
     // after it was a palm too) or as a finger still down (then the next finger pinched with it) — for as long as the note stayed open. The iPad sends a
     // lift to the element the touch began on, and a pen stroke draws the ink's strokes again, so a hand resting on earlier writing while the pen wrote
@@ -335,7 +335,7 @@ window.SIS_PALM = PALM;
     el.addEventListener('pointerdown', e => {
       if (e.pointerType === 'pen' || (e.pointerType === 'mouse' && INK.mouse && e.button === 0)) { if (e.pointerType === 'pen' && T.touch.size) T.drop(); if (INK.penDown(P, e)) { e.preventDefault(); e.stopPropagation(); } return; }
       if (e.pointerType !== 'touch') return;
-      if (e.isPrimary) T.fresh(); T.seen.add(e.pointerId);   // V4.108: the first finger down forgets lifts that never arrived
+      if (e.isPrimary) T.fresh(); T.seen.add(e.pointerId);   // V4.109: the first finger down forgets lifts that never arrived
       if (INK.drawing != null) { e.stopPropagation(); return; } // the palm while the pen writes
       if (T.palm.size || PALM.palm(e)) { T.palm.add(e.pointerId); e.stopPropagation(); return; }   // V3.941 — a palm, or a hand with one already down
       if (e.target.closest('button,input,select,textarea,a,label,.pop,.ink-bar,.ink-selbar,.port,.rz,.embed-rz,.scrolly,.embed')) return;
@@ -373,10 +373,10 @@ window.SIS_PALM = PALM;
     DB.where('blocks', b => b.kind === 'ink' && b.inkItemId && b.status !== 'removed').forEach(b => { if (!M.item(b.inkItemId)) return; const cur = IX.blockItems.get(b.id) || []; if (!cur.includes(b.inkItemId)) IX.blockItems.set(b.id, [...cur, b.inkItemId]); });
     return r; };
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && INK.sel) INK.clearSel(); });
-  // V4.104: body.ink-solid follows Settings → Ink & shapes → Click through ink, with the page's other classes
+  // V4.105: body.ink-solid follows Settings → Ink & shapes → Click through ink, with the page's other classes
   { const fa = FEAT.apply; FEAT.apply = function () { const r = fa.apply(this, arguments); try { document.body && document.body.classList.toggle('ink-solid', INK.solid()); } catch (e) { } return r; }; }
-  // V4.107 (Gabe: "When hovering over the ink board you should be able to see a dotted outline of the entire board. The same when clicking on it. During the
-  // pen writing, you should not see any outline."): only its strokes take the pointer (V4.104), so the paper itself says which ink the pointer is over —
+  // V4.108 (Gabe: "When hovering over the ink board you should be able to see a dotted outline of the entire board. The same when clicking on it. During the
+  // pen writing, you should not see any outline."): only its strokes take the pointer (V4.105), so the paper itself says which ink the pointer is over —
   // .ink-hov on each ink component whose rectangle holds it (21-sync.css draws the dotted outline). body.ink-pen while the pointer in use writes: the pen
   // in pen mode, or the mouse when it draws too (the lab's pen hand) — then no outline, hovered or selected.
   { let ev = null, kind = 'mouse', raf = 0;

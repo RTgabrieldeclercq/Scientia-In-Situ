@@ -431,7 +431,7 @@ const ATLAS3 = (() => {
       cap = [CHAIN.listTitle(doc), kl(d.kind) + ' · ' + fmtDay(d.t) + (rg ? ' · region ' + rg.r.name : '') + (d.status === 'open' ? ' · open' : '')];
     } else if (d.type === 'note') {
       const bs = DB.where('blocks', b => b.docId === d.id && b.status === 'live' && b.kind !== 'ink' && b.kind !== 'ref').sort((a, b) => ms(M.blockTime(a)) - ms(M.blockTime(b)));
-      const sr = CHAIN.stageRun(doc);   // V4.105: an experiment's note, by its stage and run
+      const sr = CHAIN.stageRun(doc);   // V4.106: an experiment's note, by its stage and run
       centre = card(d.id, sr || prof((doc || {}).type).label, '', (doc && doc.title) || 'Untitled', 24); around = blocksOf(bs.slice(0, 5).map(b => b.id));
       cap = [(doc && doc.title) || 'Untitled', (sr || prof((doc || {}).type).label).toLowerCase() + ' · ' + plural(bs.length, 'component')];
     } else if (d.type === 'term') {

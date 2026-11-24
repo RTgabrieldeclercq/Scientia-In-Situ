@@ -22,21 +22,21 @@ const PV = {
       o.body != null ? h('div.pvb-tx', o.body) : null, o.chips && o.chips.filter(Boolean).length ? h('div.pvb-ch', o.chips) : null, ...(o.extra || []));
   },
   chip: (t, cls) => h('span.pvc' + (cls ? '.' + cls : ''), t),
-  /** V4.105: search for an experiment's name — its notes, each with its stage and run (Settings → Experiment series → In search, the stage and run). */
+  /** V4.106: search for an experiment's name — its notes, each with its stage and run (Settings → Experiment series → In search, the stage and run). */
   xsSearch() {
     const on = FEAT.tune('expseries', 'search') !== false, n = FEAT.on('expseries') && FEAT.tune('expseries', 'runchip') !== false;
     const rows = [['Planning', n ? 'Planning · Run 3' : 'Planning'], ['Run', n ? 'Run 3' : 'Run'], ['Analysis', n ? 'Analysis · Run 3' : 'Analysis']];
     return h('div.pv-xs-srch', h('div.pv-xs-sq', '⌕ 30 kPa'), rows.map(([st, sr]) => h('div.pv-xs-sr', h('b', '30 kPa series'), on ? h('span.pv-xs-sb', sr) : h('span.pv-xs-sb.off', ({ Run: 'Experiment' })[st] || st))),
       h('div.tiny.muted', on ? 'Search says which note is which' : 'Search: the name alone, with the note’s type'));
   },
-  /** V4.104: ink written over a component, see-through; with Click through ink, the pointer on its empty part reaches the component beneath. */
+  /** V4.105: ink written over a component, see-through; with Click through ink, the pointer on its empty part reaches the component beneath. */
   inkThrough() {
     const thru = FEAT.tune('ink', 'through') !== false;
     return h('div.pv-inkthru' + (thru ? '' : '.solid'), PV.box({ num: 'Block', label: 'Seeding', body: 'Seed at 40k/cm² on the 30 kPa gels; wait 4 h before imaging.', cls: thru ? 'pv-hit' : '' }),
       h('div.pv-inkov', PV.svg(220, 70, '<path d="M14 48 q 18 -40 36 -6 t 34 -4 t 36 2" fill="none" stroke="var(--k-barrier, #c92a2a)" stroke-width="2.6" stroke-linecap="round"/><path d="M150 20 l 34 30 M184 20 l -34 30" fill="none" stroke="var(--k-barrier, #c92a2a)" stroke-width="2.4" stroke-linecap="round"/>'), h('span.pv-inkptr', '➚')),
       PV.cap(thru ? 'Point at the ink: a dotted outline shows all of it. A click on its empty part reaches the component beneath (it is outlined)' : 'The ink’s whole rectangle (dotted) takes the click; the component beneath does not get it'));
   },
-  /** V4.107: the preview's ink is outlined while the pointer is over any part of it, as on a note. */
+  /** V4.108: the preview's ink is outlined while the pointer is over any part of it, as on a note. */
   inkHover(el) { const ov = el.querySelector('.pv-inkov'); if (!ov) return el;
     el.addEventListener('pointermove', e => { const r = ov.getBoundingClientRect(); ov.classList.toggle('hov', e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom); });
     el.addEventListener('pointerleave', () => ov.classList.remove('hov')); return el; },
@@ -165,7 +165,7 @@ const PV = {
   // V4.15 (13c): + Experiment asks the name and can continue a series; one name for every note of an experiment
   D({ id: 'expseries', group: 'canvas', label: 'Experiment series', isNew: true, presets: { simple: true },
     tune: [T('runchip', 'Show the run number', 'switch', { isNew: true, def: true, d: 'Beside the experiment in the Portfolio, and beside the title in the note', changed: () => { try { App.refresh(); } catch (e) { } } }),
-      // V4.105 (Gabe: "the search function should show if the experiment note is planning, run, or analysis, and shows the run on it too")
+      // V4.106 (Gabe: "the search function should show if the experiment note is planning, run, or analysis, and shows the run on it too")
       T('search', 'In search, the stage and run', 'switch', { isNew: true, def: true, d: 'The notes of an experiment all carry its name, so search, the Atlas and the note pickers add which one it is: Planning · Run 3, Run 3, Analysis · Run 3. Typing “analysis” or “run 3” finds them. Off: the name alone' })],
     desc: '+ Experiment asks the experiment’s name, and can continue a series of its theme: pick “30 kPa series” and its next run is made — named “30 kPa series” too, its number (Run 3) beside the title, never in it (V4.97): next to the experiment in the Portfolio and beside the title in the note. Titles that ended in “Run N” lost it once; the number stays on the notes. Every note of an experiment carries its name alone — the stage is its chip and the strip, not part of the title — and renaming one renames them all. A series’ runs share one Synthesis. Off: no series to continue (the name is still asked); series already made stay.',
     preview: () => { const on = FEAT.on('expseries');
@@ -255,7 +255,7 @@ const PV = {
       const G = PTUNE.snap(), host = h('div.pv-paper'), out = h('span.pv-paper-z', '100%'), P = makePaper(host, { anyWheel: true, view: { x: 24, y: 18, z: 1 }, onView: v => { out.textContent = Math.round(v.z * 100) + '%'; } });
       const grip = h('span.pv-paper-rz', { title: 'Drag to resize — hold Shift for a cell at a time' }), bx = h('div.pv-paper-b.nopan', { style: { left: '28px', top: '28px' } }, 'Run 3 · drag me', grip), cell = h('span.pv-paper-c');
       P.world.append(bx);
-      // V4.106: its right edge resizes it, a cell at a time with Shift held, as on a note
+      // V4.107: its right edge resizes it, a cell at a time with Shift held, as on a note
       grip.addEventListener('pointerdown', e => { if (e.button) return; e.preventDefault(); e.stopPropagation(); grip.setPointerCapture(e.pointerId); const sx = e.clientX, w0 = bx.offsetWidth; bx.classList.add('dragging');
         const mv = ev => { const w = w0 + (ev.clientX - sx) / P.view.z; bx.style.width = (ev.shiftKey ? PTUNE.cells(w, 84) : Math.max(84, Math.round(w))) + 'px'; };
         const up = () => { grip.removeEventListener('pointermove', mv); grip.removeEventListener('pointerup', up); bx.classList.remove('dragging'); bx.style.width = PTUNE.cells(bx.offsetWidth, 84) + 'px'; };
@@ -270,7 +270,7 @@ const PV = {
 
   /* =============================== Pen & touch =============================== */
   D({ id: 'ink', group: 'pen', label: 'Ink & shapes', desc: 'Writing on the paper with a pen (or the mouse): pen, highlighter, eraser and lasso in the ink bar; strokes written close together gather into one ink component. Ink is see-through, and what it lies over can still be clicked; a dotted outline shows all of an ink component while you point at it or it is selected, and none while the pen writes. Off: the ink tools leave; ink already written stays.',
-    // V4.104 (Gabe: "The ink background should be invisible/see through. You may interact with components overlaid by ink components.") — 21-sync.css
+    // V4.105 (Gabe: "The ink background should be invisible/see through. You may interact with components overlaid by ink components.") — 21-sync.css
     tune: [T('through', 'Click through ink', 'switch', { isNew: true, def: true, d: 'Only the strokes take the pointer: a click on an empty part of an ink component reaches the component beneath it. Off: the whole of its rectangle takes the pointer, as before', changed: () => FEAT.apply() })],
     preview: () => [PV.inkHover(PV.inkThrough()),h('div.pv-ink', PV.svg(300, 90, '<path d="M20 60 q 14 -34 28 0 t 28 0 t 28 0" fill="none" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round"/><path d="M130 30 l 40 40 M170 30 l -40 40" stroke="var(--k-barrier, #c92a2a)" stroke-width="2" stroke-linecap="round"/><rect x="195" y="22" width="90" height="16" rx="3" fill="color-mix(in srgb, #f2c94c 55%, transparent)"/><text x="200" y="34" font-size="11" font-family="Source Serif 4, serif" fill="var(--ink)">highlighted</text>'), h('div.pv-inkbar', ['✎ Pen', 'Highlighter', 'Eraser', 'Lasso'].map((x, i) => h('span' + (i ? '' : '.on'), x))))] });
 
