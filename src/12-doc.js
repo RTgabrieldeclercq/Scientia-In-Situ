@@ -24,7 +24,7 @@ const DocView = {
     host.append(this.dock, this.hint, this.ctools);
     this.paper.el.addEventListener('pointerdown', e => this.pointer(e));
     this.fill(d);
-    if (!_ls.get('view:' + docId, null)) requestAnimationFrame(() => { if (this._arrived === docId) return;   // V4.102: it was opened to land on a component (landOn ran first)
+    if (!_ls.get('view:' + docId, null)) requestAnimationFrame(() => { if (this._arrived === docId) return;   // V4.103: it was opened to land on a component (landOn ran first)
       this.settle(); const bb = this.bbox(); if (bb) this.paper.fit({ x0: bb.x0, y0: bb.y0, x1: bb.x1, y1: Math.min(bb.y1, bb.y0 + 1100) }, false); });
     return host;
   },
@@ -291,7 +291,7 @@ const DocView = {
     // follows its width (an image panel, slides) follows a drag down too: the larger of the two pulls.
     if (e.target.closest('.rz')) { e.preventDefault(); const b = M.block(id); if (!b) return; const x0 = e.clientX, y0 = e.clientY, w0 = box.offsetWidth, h0 = Math.max(1, box.offsetHeight), corner = !!e.target.closest('.rz-corner');
       document.body.classList.add('resizing');
-      // V4.106: with Shift held it grows or shrinks a grid cell at a time, as a Shift+drag moves it (PTUNE.cells)
+      // V4.107: with Shift held it grows or shrinks a grid cell at a time, as a Shift+drag moves it (PTUNE.cells)
       const mv = ev => { const z = P.view.z, wx = w0 + (ev.clientX - x0) / z, wy = w0 * (h0 + (ev.clientY - y0) / z) / h0, w = corner && Math.abs(wy - w0) > Math.abs(wx - w0) ? wy : wx;
         b.w = ev.shiftKey ? PTUNE.cells(w, 240) : Math.max(240, Math.round(w)); box.style.width = b.w + 'px'; this.drawWires(); };
       const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); document.body.classList.remove('resizing'); b.w = Math.round(b.w / PTUNE.snap()) * PTUNE.snap(); box.style.width = b.w + 'px'; DB.put('blocks', b); DB.beginGroup(); this.drawWires(); };

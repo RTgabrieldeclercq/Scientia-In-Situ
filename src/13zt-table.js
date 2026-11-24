@@ -184,7 +184,7 @@ const TABLE = {
     setTimeout(() => { const box = wrap.closest('.box'); if (box) box._tbMove = move; show(); }, 0);
     // height: drag the bottom edge
     if (!ro) { const rz = h('div.tb-rz', { title: 'Drag to change the height' }); wrap.append(rz); rz.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); const z = pane && pane.paper ? pane.paper.view.z : 1, y0 = e.clientY, h0 = b.h || 360;
-      const mv = ev => { const hh = h0 + (ev.clientY - y0) / z; b.h = ev.shiftKey ? PTUNE.cells(hh, 120) : Math.max(120, Math.round(hh)); wrap.style.setProperty('--tbh', b.h + 'px'); pane && pane.drawWires && pane.drawWires(); };   // V3.942 — no largest height; V4.106 — Shift: a grid cell at a time
+      const mv = ev => { const hh = h0 + (ev.clientY - y0) / z; b.h = ev.shiftKey ? PTUNE.cells(hh, 120) : Math.max(120, Math.round(hh)); wrap.style.setProperty('--tbh', b.h + 'px'); pane && pane.drawWires && pane.drawWires(); };   // V3.942 — no largest height; V4.107 — Shift: a grid cell at a time
       const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); const cur = M.block(b.id); cur.h = b.h; DB.put('blocks', cur); DB.beginGroup(); };
       addEventListener('pointermove', mv); addEventListener('pointerup', up); }); }
     return wrap;
