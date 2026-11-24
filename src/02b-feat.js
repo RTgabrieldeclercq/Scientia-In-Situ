@@ -43,6 +43,7 @@ const FEAT = {
     { id: 'reading', label: 'Reading & sources', gl: '❡' },
     { id: 'widgets', label: 'Widgets', gl: '∑' },
     { id: 'tabs', label: 'Tabs & overview', gl: '▤' },
+    { id: 'device', label: 'This device & sync', gl: '⇅' },   // V4.113
   ],
   PRESETS: [['simple', 'Simple'], ['standard', 'Standard'], ['all', 'Everything']],
   list: [], by: {}, _live: {}, demos: {},

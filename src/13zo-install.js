@@ -40,7 +40,8 @@ const INSTALL = {
     const want = typeof SYNC !== 'undefined' && SYNC.on && !SYNC.local && !INSTALL.standalone() && Date.now() > until && window.isSecureContext;
     if (!want) { old && old.remove(); return; } if (old) return;
     const ios = INSTALL.platform() === 'ios';
-    const b = h('div#insbanner', h('span', { style: { flex: '1 1 auto' } }, h('b', 'Install Scientia'), ios ? ' — Share → Add to Home Screen. It opens from its icon and works with the computer off (pair it again inside the installed app).' : ' — opens from its icon and works with the computer off.'),
+    const b = h('div#insbanner', h('span', { style: { flex: '1 1 auto' } }, h('b', 'Install Scientia'), window.__sisCloud ? (ios ? ' — Share → Add to Home Screen. It opens from its icon and works offline; sign in again inside the installed app.' : ' — opens from its icon and works offline; what you write goes to the lab cloud when there is a connection.')   // V4.113: on the lab site the record is the lab cloud, not a computer
+        : ios ? ' — Share → Add to Home Screen. It opens from its icon and works with the computer off (pair it again inside the installed app).' : ' — opens from its icon and works with the computer off.'),
       INSTALL.prompt ? h('button.btn.xs.pri', { on: { click: () => INSTALL.install() } }, 'Install') : h('button.btn.xs', { on: { click: () => INSTALL.howTo() } }, 'How'),
       h('button.btn.xs.ghost', { title: 'Not now (asks again in two weeks)', on: { click: () => { _ls.set('insLater', Date.now() + 14 * 864e5); b.remove(); } } }, '×'));
     document.body.append(b);

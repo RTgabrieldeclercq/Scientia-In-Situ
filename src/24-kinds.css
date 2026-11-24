@@ -613,3 +613,11 @@ body.f-off-syncdot .syncdot:not([data-tone="red"]){display:none}
 .pv-xs-n .run-chip{margin-left:6px}
 /* V4.110: the hint by the caret while super- or subscripts stay on (13u) */
 .wscript{position:fixed;z-index:9000;pointer-events:none;padding:1px 7px;border:1px solid color-mix(in srgb,var(--teal) 55%,var(--rule-2));border-radius:999px;background:var(--surface);color:var(--ink-2);font:10.5px/16px var(--f-m);box-shadow:var(--shadow);white-space:nowrap}
+/* V4.113: the notebook on this device (13zob) — the card in Settings → Devices and its preview */
+.off-card{border:1px solid var(--rule-2);border-radius:10px;padding:10px 12px;margin:0 0 12px;background:var(--surface)} .off-card .h{display:block;margin-bottom:2px}
+.off-dl{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:4px 14px;margin:8px 0 2px;font-size:12.5px} .off-dl dt{color:var(--ink-3)} .off-dl dd{margin:0;color:var(--ink-2)} .off-dl dd.ok{color:var(--ink)}
+.off-m{display:inline-block;width:1em;text-align:center;font-weight:600;color:var(--ink-4)} .off-dl dd.ok .off-m{color:var(--teal)}
+.off-how{margin-top:10px;font-size:12.5px} .off-how .ins-steps{margin:4px 0 0}
+.pv-off{display:grid;gap:5px;border:1px solid var(--rule-2);border-radius:9px;padding:10px 12px;background:var(--surface);font-size:12px} .pv-off b{font-size:12.5px}
+.pv-off-r{display:flex;gap:10px} .pv-off-r .k{flex:0 0 120px;color:var(--ink-3)} .pv-off-r .v{color:var(--ink-2)} .pv-off-r i{font-style:normal;font-weight:600;color:var(--ink-4)} .pv-off-r.ok i{color:var(--teal)}
+.pv-off-b{justify-self:start;margin-top:4px;padding:3px 10px;border-radius:999px;background:var(--ink);color:var(--paper);font-size:11.5px}

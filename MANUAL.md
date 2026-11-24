@@ -913,6 +913,23 @@ Your computer is the hub. Open **Settings → Notebook & devices → Devices** a
   - **Reminders**.
 - **Notes on the phone** open as a single column. ⋯ → **Use the full layout** switches to the canvas; tablets get it by default.
 - **Remove** a device in Settings → Notebook & devices → Devices to stop it at once.
+
+### The notebook on this device (offline)
+On an iPad, a phone or a laptop, the notebook can live on the device: it opens and works without a connection, and what you write goes to the lab cloud (on the lab site; to your computer otherwise) as soon as there is one.
+
+- **Keep it:** Settings → Notebook & devices → Devices → **Keep it on this device**. The card shows where this device stands:
+  - **Opens offline** — the page and its scripts are kept on the device;
+  - **Kept by the browser** — the browser has agreed not to clear the notebook's storage;
+  - **Installed**;
+  - **Signed in** (on the lab site);
+  - **The lab cloud** — in step, or offline with the changes waiting;
+  - **Space used**.
+- **Install it too.** On the iPad: Safari → Share → **Add to Home Screen**. Open it from the Home Screen once with a connection and sign in there; email and password is the sure way, as the installed app keeps its own storage. From then on it opens offline and keeps itself, with no button pressed. On Chrome or Edge: **Install**.
+- **Changes made offline** wait on the device. They go when the app is open and online again; an iPad does not sync in the background.
+- **Pictures and PDFs** added on other devices need a connection to show. Your notes, ink and what you add on this device do not.
+- **Refresh its files** fetches anything not kept yet. **Stop keeping it** takes the page back out; your notes stay and sync as before.
+- **Settings → Features → The notebook on this device:** the switch for this device, and *Keep it when installed*.
+- On a Windows computer, the desktop app keeps the whole notebook in a folder instead (Settings → Notebook & devices → The lab).
 - **Done only on the computer:** importing, starting empty and switching notebooks.
 
 ---
