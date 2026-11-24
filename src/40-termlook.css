@@ -19,7 +19,9 @@ body.f-off-terms .ed .tm{border:0;background:none;text-decoration:none;padding:0
 /* the card */
 .hovercard:has(> .tcd){width:auto;max-width:calc(100vw - 16px);padding:0;border:0;background:transparent;box-shadow:none}
 .tcd{display:flex;width:572px;max-width:calc(100vw - 16px);border-radius:14px;background:var(--lk-rail,var(--surface));box-shadow:var(--lk-sh3,var(--shadow-lg)),inset 0 0 0 1px var(--lk-ring,var(--rule-2));overflow:hidden;color:var(--ink);font:400 13px/1.4 var(--f-d);animation:tcd-in .22s cubic-bezier(.2,.9,.25,1.15) both}
-@keyframes tcd-in{from{opacity:0;transform:translateY(-4px) scale(.97)}to{opacity:1;transform:none}}
+/* V4.100: it only fades in — a scale or a slide would change the box the card is placed by (08-ui hoverCard measures it once) */
+@keyframes tcd-in{from{opacity:0}to{opacity:1}}
+@keyframes tcd-swap{from{opacity:.2}to{opacity:1}}
 .tcd .k-exp{--kc:#0B7268} .tcd .k-notes{--kc:#2F64A8} .tcd .k-lit{--kc:#8F5600} .tcd .k-syn{--kc:#9B356B}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tcd .k-exp{--kc:#3FB3A2}:root:not([data-theme="light"]) .tcd .k-notes{--kc:#7FA8E0}:root:not([data-theme="light"]) .tcd .k-lit{--kc:#D9A64A}:root:not([data-theme="light"]) .tcd .k-syn{--kc:#E08AB4}}
 :root[data-theme="dark"] .tcd .k-exp{--kc:#3FB3A2} :root[data-theme="dark"] .tcd .k-notes{--kc:#7FA8E0} :root[data-theme="dark"] .tcd .k-lit{--kc:#D9A64A} :root[data-theme="dark"] .tcd .k-syn{--kc:#E08AB4}
@@ -47,15 +49,18 @@ body.f-off-terms .ed .tm{border:0;background:none;text-decoration:none;padding:0
 .tcd-area{fill:color-mix(in srgb,var(--teal) 14%,transparent)} .tcd-ln{fill:none;stroke:var(--teal);stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round} .tcd-end{fill:var(--teal)}
 .tcd-ax{display:flex;justify-content:space-between;padding:3px 14px 8px;font:500 9.5px var(--f-m);color:var(--ink-3)}
 .tcd-open{color:var(--bad);font-weight:600}
-.tcd-q{padding:0 8px}
-.tcd-qb{display:flex;flex-direction:column;gap:4px;width:100%;padding:9px 10px;border:0;border-radius:10px;background:var(--lk-card,var(--paper));box-shadow:inset 0 0 0 1px var(--lk-ring,var(--rule));color:var(--ink);text-align:left;cursor:pointer}
+/* V4.100 (Gabe: "Current term popup should not move too much/stagger when hovering over timeline points or notes displaying context around the term appearance."):
+   the sentence area has one fixed height, 3 lines of the sentence, its own scroll for more; the card is placed once when it shows and never again */
+.tcd-q{padding:0 8px;height:92px;box-sizing:content-box;overflow:hidden}
+.tcd-q.swap > *{animation:tcd-swap .16s ease-out both}
+.tcd-qb{display:flex;flex-direction:column;gap:4px;width:100%;height:100%;box-sizing:border-box;overflow:hidden;padding:9px 10px;border:0;border-radius:10px;background:var(--lk-card,var(--paper));box-shadow:inset 0 0 0 1px var(--lk-ring,var(--rule));color:var(--ink);text-align:left;cursor:pointer}
 .tcd-qb:hover{box-shadow:inset 0 0 0 1px var(--lk-ring-2,var(--rule-2))}
 .tcd-qh{display:flex;align-items:center;gap:6px;min-width:0;font:600 12.5px var(--f-d)}
 .tcd-qh b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tcd-k{flex:none;width:8px;height:8px;border-radius:3px;background:var(--kc)}
 .tcd-sp{flex:1}
 .tcd-m{flex:none;font:500 10px var(--f-m);color:var(--ink-3)}
-.tcd-kw{font:400 12.5px/1.45 var(--f-b);color:var(--ink-2)} .tcd-kw b{color:var(--ink);font-weight:600}
+.tcd-kw{flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;font:400 12.5px/1.45 var(--f-b);color:var(--ink-2)} .tcd-kw b{color:var(--ink);font-weight:600}
 .tcd-none{display:block;padding:6px 6px 2px;font:500 11px var(--f-m);color:var(--ink-3)}
 .tcd-nh{padding:9px 14px 2px;font:600 9.5px/1 var(--f-m);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
 .tcd-near{display:flex;flex-direction:column;padding:2px 4px}
@@ -66,7 +71,7 @@ body.f-off-terms .ed .tm{border:0;background:none;text-decoration:none;padding:0
 .tcd-rr{font:500 10px var(--f-m);color:var(--kc,var(--ink-3));white-space:nowrap}
 .tcd-f{display:flex;align-items:center;gap:6px;margin-top:6px;padding:5px 8px 6px;border-top:1px solid var(--lk-ring,var(--rule))}
 .tcd-hint{font:500 10px var(--f-m);color:var(--ink-3)}
-@media (prefers-reduced-motion:reduce){.tcd{animation:none}}
+@media (prefers-reduced-motion:reduce){.tcd,.tcd-q.swap > *{animation:none}}
 @media (max-width:640px){.tcd-tl{display:none}}
 
 /* Settings → Terms: the preview's sentence in the chosen look */

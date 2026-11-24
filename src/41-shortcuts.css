@@ -37,3 +37,23 @@
 .sk-pv .sk-rows{box-shadow:inset 0 0 0 1px var(--lk-ring,var(--rule-2))}
 .sk-pv .sk-r{padding:6px 10px;grid-template-columns:1fr}
 .sk-pv .sk-top{position:static}
+/* V4.96 · rebinding (20g-keymap.js): a changed row, and the capture box a row opens */
+.sk-r.chd .sk-k kbd{color:var(--teal)}
+.sk-bind.chd{box-shadow:inset 0 0 0 1px var(--teal)}
+.sk-mark{font-weight:650;color:var(--teal);letter-spacing:.02em}
+.kc{display:flex;flex-direction:column;gap:8px;margin:8px 0 2px;padding:10px 12px;border-radius:10px;background:var(--lk-card,var(--surface));box-shadow:inset 0 0 0 1.5px var(--teal);outline:0;min-width:0}
+.kc:focus{box-shadow:inset 0 0 0 2px var(--teal),0 0 0 3px color-mix(in srgb,var(--teal) 22%,transparent)}
+.kc-p{display:flex;flex-wrap:wrap;align-items:center;gap:8px;color:var(--ink);font-size:12.5px}
+.kc-dot{width:8px;height:8px;border-radius:50%;background:var(--teal);animation:kcpulse 1.4s ease-in-out infinite}
+@keyframes kcpulse{50%{opacity:.35}}
+.kc-live{display:inline-flex;align-items:center;gap:2px;min-height:18px}
+.kc-live i{font-style:normal;font-size:10px;color:var(--ink-3)}
+.kc-esc{margin-left:auto;font-size:10.5px;color:var(--ink-3)}
+.kc-m:empty{display:none}
+.kc-v{display:flex;flex-direction:column;gap:6px;font-size:12.5px}
+.kc-w{color:var(--ink);display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;line-height:1.5}
+.kc-o{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;color:var(--ink-2)}
+.kc-o .btn{margin-left:4px}
+.kc-b{display:flex;gap:6px}
+.sk-pv .kc{margin:4px 0 0}
+@media (prefers-reduced-motion:reduce){.kc-dot{animation:none}}

@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "985bf628e7ddec059f9045891075fc6db637f593",
-  "subject": "V4.89: Scientia — Shift+click a component and the canvas zooms onto it — in every build, with the mouse or the pen; Shift+drag still moves it by the grid",
+  "commit": "a38209d7e4b21280d94cd804d453fcbc4bd37244",
+  "subject": "V4.101: Scientia — PDF fixes: the ‹ › arrows of one-page view work again (the text layer covered them); pages no longer come out upside down after zooming out (two draws overlapped in one canvas)",
   "date": "2026-11-20"
  },
- "cut": "13720c33398241d57643c49430ec8792386db063",
+ "cut": "ba6cedfad7b16f3194d182af612da5b53a5991a8",
  "names": [
   "DESKLAB",
   "LABSYNC",

@@ -161,7 +161,7 @@ const REC = {
   statusEl(b) {
     const r = REC.r(b), P = REC.progress.get(b.id) || {}, local = typeof SYNC === 'undefined' || SYNC.local;
     const S = (cls, ...k) => h('div.rc-status' + cls, ...k);
-    if (r.state === 'recording') return S('.on', h('span.rc-dot'), r.paused ? 'Paused' : 'Recording', ' · ', h('span.tiny.muted', 'Alt+M drops a bookmark'));
+    if (r.state === 'recording') return S('.on', h('span.rc-dot'), r.paused ? 'Paused' : 'Recording', ' · ', h('span.tiny.muted', KEYS.label(KEYS.get('mark')) + ' drops a bookmark'));
     if (r.state === 'saving') return S('', 'Saving the recording…');
     if (r.state === 'local') return S('.warn', 'Kept on this device (', REC.kb(r.bytes), ') — it moves to the notebook folder when the computer is reachable. ', h('button.btn.xs', { on: { click: e => { e.stopPropagation(); REC.flush().then(n => n ? null : toast('Still can’t reach the computer')); } } }, 'Try now'));
     if (r.state === 'queued') return S('', P.waiting === 'missing' ? ['Saved. The transcriber isn’t installed on the computer yet — ', local ? h('button.btn.xs', { on: { click: e => { e.stopPropagation(); STTUI.install(); } } }, 'Install it') : 'install it there: Settings → Recordings', '. This recording is transcribed once it is.'] : ['Saved · waiting for the transcriber', P.position > 1 ? ` (${P.position - 1} ahead)` : '', '…']);
@@ -178,7 +178,7 @@ const REC = {
       r.state === 'new' ? btn('● Record', 'Start recording from this device’s microphone', () => REC.start(M.block(b.id)), '.rc-rec') :
       live ? [h('span.rc-time.mono', { 'data-recclock': b.id }, REC.mmss(REC.elapsed())),
         REC.active.paused ? btn('▶ Resume', 'Go on recording (same file)', () => REC.resume()) : btn('❚❚ Pause', 'Pause — resume later into the same file', () => REC.pause()),
-        btn('◆', 'Bookmark this moment (Alt+M)', () => REC.mark(b.id)), btn('■ Stop', 'Stop and save', () => REC.stop(), '.rc-stop')] :
+        btn('◆', 'Bookmark this moment (' + KEYS.label(KEYS.get('mark')) + ')', () => REC.mark(b.id)), btn('■ Stop', 'Stop and save', () => REC.stop(), '.rc-stop')] :
       r.state === 'recording' ? h('span.tiny.muted', 'Recording on another device…') :
       [h('button.rc-play', { title: 'Play / pause', on: { click: e => { e.stopPropagation(); REC.toggle(M.block(b.id)); } } }, REC.player && REC.player.id === b.id && !REC.player.audio.paused ? '❚❚' : '▶'),
         h('span.rc-time.mono', `${REC.mmss(REC.player && REC.player.id === b.id ? REC.player.audio.currentTime : 0)} / ${REC.mmss(dur)}`),
@@ -247,7 +247,7 @@ INSERTS.push({ id: 'rec', group: 'Writing', icon: '●', label: 'Recording', sub
 SLIM.BARS.rec = '.rc-bar';
 {
   // Alt+M: bookmark while recording, from anywhere in the app
-  document.addEventListener('keydown', e => { if (REC.active && e.altKey && !e.ctrlKey && (e.key || '').toLowerCase() === 'm') { e.preventDefault(); REC.mark(); } }, true);
+  document.addEventListener('keydown', e => { if (REC.active && KEYS.is(e, 'mark')) { e.preventDefault(); REC.mark(); } }, true);
   // don't lose a recording by closing the page
   window.addEventListener('beforeunload', e => { if (REC.active) { e.preventDefault(); e.returnValue = 'A recording is running.'; } });
   // recordings kept on a device move with the other kept files

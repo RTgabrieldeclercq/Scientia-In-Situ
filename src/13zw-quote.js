@@ -102,11 +102,15 @@ const QUOTE = {
     }, 350);
   },
 
+  /** V4.99 — Gabe: "Clicking out of a highlight in HTML removes the popup, just like in PDF." Settings → Selection popup (selpop). */
+  awayOn(how) { try { if (typeof FEAT === 'undefined' || !FEAT.on('selpop')) return false; return FEAT.tune('selpop', how === 'esc' ? 'esc' : 'away') !== false; } catch (e) { return true; } },
+
   /* ---------- the HTML page: its copy carries a little reporter ---------- */
   SCRIPT: `<script>(function(){var P=window.parent;function norm(){var W=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),s='',map=[],n,sp=true;while((n=W.nextNode())){var pe=n.parentNode;if(pe&&pe.closest&&pe.closest('script,style,noscript'))continue;var v=n.nodeValue;for(var i=0;i<v.length;i++){var c=v[i];if(/\\s/.test(c)){if(sp)continue;sp=true;s+=' ';map.push([n,i]);}else{sp=false;s+=c;map.push([n,i]);}}}return{s:s,map:map};}
 function report(ce){var S=getSelection();var t=String(S).replace(/\\s+/g,' ').trim();if(!S.rangeCount||t.length<2){P.postMessage({sis:'sel',text:''},'*');return;}var r=S.getRangeAt(0).getBoundingClientRect();var N=norm(),i=N.s.indexOf(t);P.postMessage({sis:'sel',text:t,prefix:i>0?N.s.slice(Math.max(0,i-32),i):'',suffix:i>=0?N.s.slice(i+t.length,i+t.length+32):'',x:r.left,y:r.bottom,ce:!!ce},'*');}
+document.addEventListener('pointerdown',function(){P.postMessage({sis:'away'},'*');},true);var had=false;document.addEventListener('selectionchange',function(){var S=getSelection(),now=!!(S.rangeCount&&!S.isCollapsed&&String(S).trim());if(had&&!now)P.postMessage({sis:'away',gone:1},'*');had=now;});
 document.addEventListener('mouseup',function(){setTimeout(report,10);});document.addEventListener('keyup',function(e){if(e.shiftKey)setTimeout(report,10);});
-document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();report(true);return;}if(!e.ctrlKey&&!e.metaKey&&!e.altKey&&(e.key.length===1||e.key==='Escape')&&String(getSelection()).trim()){P.postMessage({sis:'key',key:e.key},'*');e.preventDefault();}},true);
+document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();report(true);return;}if(!e.ctrlKey&&!e.metaKey&&!e.altKey){if((e.key.length===1||e.key==='Escape')&&String(getSelection()).trim()){P.postMessage({sis:'key',key:e.key},'*');e.preventDefault();}else if(e.key==='Escape')P.postMessage({sis:'key',key:'Escape'},'*');}},true);
 function unmark(){var ms=document.querySelectorAll('mark.sis-q');for(var k=0;k<ms.length;k++){var m=ms[k],p=m.parentNode;while(m.firstChild)p.insertBefore(m.firstChild,m);p.removeChild(m);p.normalize();}}
 function wrap(q){var N=norm(),i=-1;if(q.prefix){var j=N.s.indexOf(q.prefix+q.exact);if(j>=0)i=j+q.prefix.length;}if(i<0)i=N.s.indexOf(q.exact);if(i<0)return;var a=N.map[i],z=N.map[i+q.exact.length-1];if(!a||!z)return;var nodes=[],W=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),n,on=false;while((n=W.nextNode())){if(n===a[0])on=true;if(on)nodes.push(n);if(n===z[0])break;}
 nodes.forEach(function(t){var s0=t===a[0]?a[1]:0,e0=t===z[0]?z[1]+1:t.nodeValue.length;if(e0<=s0)return;var r=document.createRange();r.setStart(t,s0);r.setEnd(t,e0);var m=document.createElement('mark');m.className='sis-q';m.dataset.q=q.id;if(q.c){m.style.background=q.c;m.style.opacity='.85';}try{r.surroundContents(m);}catch(x){}});}
@@ -142,6 +146,8 @@ P.postMessage({sis:'ready'},'*');})();<\/script>`,
     if (d.sis === 'sel') { if (!d.text) return; const r = fr.getBoundingClientRect(), k = r.width / (fr.clientWidth || r.width || 1); const sel = { src, exact: d.text, prefix: d.prefix, suffix: d.suffix, frame: fr }; const x = r.left + d.x * k, y = r.top + d.y * k + 8;
       if (d.ce) QUOTE.strip(sel, x, y); else if (d.pen) QUOTE.penSave(sel, x, y); else QUOTE.menu(sel, x, y); }
     if (d.sis === 'erase' && d.id) QUOTE.erase([d.id]);
+    if (d.sis === 'away') { if (QUOTE.awayOn(d.gone ? 'gone' : 'click')) popAway(fr); return; }   // V4.99: a click in the page, or its highlight gone: the popup closes, as on a PDF
+    if (d.sis === 'key' && d.key === 'Escape' && $('.pop')) { if (QUOTE.awayOn('esc')) closePop(); else if (typeof FEAT !== 'undefined' && FEAT.on('selpop')) return; }   // Esc: closes it (unless Settings says it stays)
     if (d.sis === 'key' && $('.pop')) document.dispatchEvent(new KeyboardEvent('keydown', { key: d.key, bubbles: true, cancelable: true })); });
   // PDF widgets: a text layer on every drawn page
   const pg = PDFW.page; PDFW.page = async function (m, n, canvas, width, res) { const r = await pg.call(PDFW, m, n, canvas, width, res); QUOTE.textLayer(m, n, canvas, width).catch(() => { }); return r; };

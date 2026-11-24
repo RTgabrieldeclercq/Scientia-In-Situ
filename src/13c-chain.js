@@ -62,8 +62,24 @@ const CHAIN = {
     out.forEach(s => { s.runs.sort((a, b) => a.run - b.run || String(a.doc.created).localeCompare(String(b.doc.created))); s.last = s.runs[s.runs.length - 1]; });
     return out.sort((a, b) => String(b.last.doc.created).localeCompare(String(a.last.doc.created)));
   },
-  /** The next run of a series: its number and its name. */
-  nextRun(s) { const n = Math.max(...s.runs.map(r => r.run)) + 1; return { run: n, name: CHAIN.baseOf(s.last.name) + ' Run ' + n }; },
+  /** The next run of a series: its number and its name — V4.97: the series' name alone; the number is kept on its notes (`run`), not in the title. */
+  nextRun(s) { const n = Math.max(...s.runs.map(r => r.run)) + 1; return { run: n, name: CHAIN.baseOf(s.last.name) }; },
+  /* ---------- V4.97 (Gabe: "Each experiment should not have Run x in their note title, but rather have it as information next to their placement in
+     Portfolio. The run number also appears when you are in the note canvas."): the run beside the title, never in it ---------- */
+  /** The run number to show for a note of an experiment: a run of a series (or a run past the first), else null. */
+  runNo(d) {
+    if (!d || !d.chain || !CHAIN.seriesOn()) return null; try { if (FEAT.tune('expseries', 'runchip') === false) return null; } catch (e) { }
+    const n = d.run || (CHAIN.members(d).find(x => x.run) || {}).run; return n && (d.series || n > 1) ? n : null;
+  },
+  /** The chip: "Run 3", with the series' name in its tooltip. */
+  runChip(d, cls) { const n = CHAIN.runNo(d); if (!n) return null; return h('span.run-chip' + (cls ? '.' + cls : ''), { title: 'Run ' + n + ' of the series “' + CHAIN.baseOf(CHAIN.name(d)) + '”' }, 'Run ' + n); },
+  /** Once: a title ending in "Run N" (V4.15's names) loses it; the number stays on the notes (`run`). */
+  migrateRuns() {
+    if (settings().expRunTitles497) return; let n = 0;
+    DB.where('documents', d => d.chain && !d.deleted).forEach(d => { const name = CHAIN.name(d), m = name.match(CHAIN.RUN_RX); if (!m || !m[1].trim()) return; const base = m[1].trim(), k = +m[2];
+      if (!d.run) d.run = k; if (d.title === name) d.title = base; if (d.chainName) d.chainName = base; DB.put('documents', d); if (CHAIN.seen) CHAIN.seen(d); n++; });
+    saveSettings({ expRunTitles497: true }); if (n) console.info('[experiment runs] ' + n + ' titles lost their "Run N"; the number is on the notes');
+  },
   /** A series takes its id the first time a run continues it (the first experiment's chain id), written on every note of its runs with their numbers. */
   openSeries(s) { s.runs.forEach(r => DB.where('documents', x => x.chain === r.chain).forEach(x => { if (x.series !== s.id || !x.run) { x.series = s.id; x.run = x.run || r.run; DB.put('documents', x); } })); },
   /** "+ Experiment": a modal asking for project, theme, the series it continues (if any) and its name, then the first stage as its own note. */
@@ -149,9 +165,10 @@ CHAIN.migrate = function () {
     const id = 'tp_pre415_' + type; if (PROFILE[type] && !DB.get('templates', id)) DB.put('templates', { id, type, name: (PROFILE[type].stage || PROFILE[type].label) + ' — the preset before V4.15 (' + rows.map(r => r[0]).join(' · ') + ')', isStandard: false, enabled: false, blocks: rows.map(([label, body]) => ({ label, body })) });
   });
   // notes of an experiment titled "name — Stage" (before V4.15) → the name alone, once; then every experiment note's title is remembered (CHAIN.renamed)
-  const st = settings(); if (st.expTitles415) { DB.where('documents', d => d.chain).forEach(d => CHAIN.seen && CHAIN.seen(d)); return; }
+  const st = settings(); if (st.expTitles415) { DB.where('documents', d => d.chain).forEach(d => CHAIN.seen && CHAIN.seen(d)); CHAIN.migrateRuns(); return; }
   DB.where('documents', d => d.chain && d.chainName && !d.deleted).forEach(d => { const p = prof(d.type); if (d.title === d.chainName + ' — ' + (p.stage || p.label)) { d.title = d.chainName; DB.put('documents', d); } });
   saveSettings({ expTitles415: true }); DB.where('documents', d => d.chain).forEach(d => CHAIN.seen && CHAIN.seen(d));
+  CHAIN.migrateRuns();
 };
 {
   // run with the standard templates (boot, a changed profile, an import)

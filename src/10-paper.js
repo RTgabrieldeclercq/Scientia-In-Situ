@@ -7,9 +7,19 @@
    pans, Ctrl+wheel or pinch zooms at the cursor.
    ========================================================================== */
 const RM = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+/* 20 Nov (Gabe: "Search for other features like these that could get some easy customization"): what Settings → Features → Moving around the paper
+   chooses — how fast Ctrl+wheel zooms, how far in, the cell a moved component settles to, and whether a flick keeps gliding. The old numbers are the defaults. */
+const PTUNE = {
+  zoom: () => +FEAT.tune('paper', 'zoom') || 1,
+  maxZ: () => +FEAT.tune('paper', 'maxz') || 2,
+  /** The grid cell (px) a dragged or resized component settles to; 1 = free. */
+  snap: () => { const v = +FEAT.tune('paper', 'snap'); return v > 0 ? v : 14; },
+  glide: () => FEAT.tune('paper', 'glide') !== false,
+};
 class Paper {
   constructor(host, opts = {}) {
     this.o = Object.assign({ minZ: .3, maxZ: 2, noPan: '.box,.nopan,input,textarea,select,button,[contenteditable="true"],.port' }, opts);
+    if (opts.maxZ == null) Object.defineProperty(this.o, 'maxZ', { configurable: true, enumerable: true, get: PTUNE.maxZ, set(v) { Object.defineProperty(this.o, 'maxZ', { value: v, writable: true, configurable: true, enumerable: true }); } });   // how far in: Settings
     this.view = Object.assign({ x: 60, y: 40, z: 1 }, opts.view || {});
     this.el = h('div.paper', { tabindex: -1 }); this.grid = h('div.grid'); this.world = h('div.world'); this.fade = h('div.fade');
     this.el.append(this.grid, this.world, this.fade); host.append(this.el);
@@ -38,7 +48,7 @@ class Paper {
   fit(bb, animate = true) { const t = this.fitTarget(bb); animate ? this.animateView(t) : (Object.assign(this.view, t), this.apply()); }
   centerOn(wx, wy, z) { const r = this.rect(); z = z || this.view.z; this.animateView({ z, x: r.width / 2 - wx * z, y: r.height / 2 - wy * z }); }
   stop() { if (this.mom) cancelAnimationFrame(this.mom); this.mom = null; if (this.tween) { cancelAnimationFrame(this.tween); this.tween = null; } }
-  _momentum(vs) { if (RM() || !vs.length) return; const now = performance.now(), rec = vs.filter(s => now - s.t < 90); if (!rec.length) return; const span = Math.max(16, now - rec[0].t);
+  _momentum(vs) { if (RM() || !vs.length || !PTUNE.glide()) return; const now = performance.now(), rec = vs.filter(s => now - s.t < 90); if (!rec.length) return; const span = Math.max(16, now - rec[0].t);
     let vx = rec.reduce((s, q) => s + q.dx, 0) / span * 16, vy = rec.reduce((s, q) => s + q.dy, 0) / span * 16; if (Math.hypot(vx, vy) < 2) return;
     const step = () => { vx *= .93; vy *= .93; this.view.x += vx; this.view.y += vy; this.apply(); this.mom = Math.hypot(vx, vy) > .25 ? requestAnimationFrame(step) : null; }; this.mom = requestAnimationFrame(step); }
   /** Pan the paper while something is dragged near an edge. */
@@ -67,9 +77,10 @@ class Paper {
     const end = e => { this.ptrs.delete(e.pointerId); const m = this.mode; if (!m) return; if (m.k === 'pinch') { if (this.ptrs.size < 2) this.mode = null; return; } this.mode = null; el.classList.remove('panning');
       if (m.k === 'pan') { if (m.moved < 4 && e.type === 'pointerup') this.o.onTap && this.o.onTap(m.start); else this._momentum(m.v); } };
     el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
-    el.addEventListener('wheel', e => { if (e.target.closest('.scrolly,.pop')) return; e.preventDefault(); this.stop(); hideHover();
+    el.addEventListener('wheel', e => { const sc = e.target.closest('.scrolly,.pop'); if (sc && !(this.o.anyWheel && !el.contains(sc))) return; e.preventDefault(); this.stop();   /* 20 Nov: anyWheel — a paper inside a scrolling page (the Settings preview) still takes the wheel; only a scroller inside it keeps it */
+      hideHover();
       const k = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
-      if (e.ctrlKey || e.metaKey) this.zoomAt(this.view.z * Math.exp(-e.deltaY * k * .0022), e.clientX, e.clientY);
+      if (e.ctrlKey || e.metaKey) this.zoomAt(this.view.z * Math.exp(-e.deltaY * k * .0022 * PTUNE.zoom()), e.clientX, e.clientY);
       else { this.view.x -= (e.shiftKey && !e.deltaX ? e.deltaY : e.deltaX) * k; this.view.y -= (e.shiftKey && !e.deltaX ? 0 : e.deltaY) * k; this.apply(); } }, { passive: false });
     el.addEventListener('dblclick', e => { if (!e.target.closest(this.o.noPan)) this.o.onDouble && this.o.onDouble(e, this.toWorld(e.clientX, e.clientY)); });
     el.addEventListener('contextmenu', e => { if (e.target.closest('input,textarea')) return; if (this.o.onContext) { e.preventDefault(); this.o.onContext(e, this.toWorld(e.clientX, e.clientY)); } });
