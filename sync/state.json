@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "41f31d1f2f97be1a4b7ad0e2d799c13e797bdb6d",
-  "subject": "V4.109: Scientia — fix: in pen mode, fingers keep panning the note — a touch whose lift never reached the paper (the iPad sends it to the ink stroke the hand rested on, which the pen's next stroke had drawn again) no longer counts as a palm for as long as the note is open",
+  "commit": "1c7ff26f4b8c40856cf8067181d98f575e3eae47",
+  "subject": "V4.111: Scientia — the iPad pen: strokes the iPad's Scribble took are kept for the page where the pen writes ink; the live line drawn once a frame with every sample kept; the pen writes again on ink lying over a component; a cancelled stroke on an HTML page kept; #touchlog says why a pen touch did not write",
   "date": "2026-11-23"
  },
- "cut": "366954800e45d87e748b7dcdeb106af9e3b9c2c6",
+ "cut": "e4d7c3d4a2a7c2bff1385493a10285b58c3dccce",
  "names": [
   "DESKLAB",
   "LABSYNC",

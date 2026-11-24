@@ -142,6 +142,10 @@ addEventListener('touchstart', e => { const g = gStart(); g.live = e.touches.len
   [...e.changedTouches].forEach(t => { if (big(t)) g.palm = true; g.tpts.push([t.clientX, t.clientY]); }); if (penNear()) g.palm = true; }, { capture: true, passive: true });
 const tEnd = e => { if (!G) return; G.live = e.touches.length; gEnd(); };
 addEventListener('touchend', tEnd, { capture: true, passive: true }); addEventListener('touchcancel', tEnd, { capture: true, passive: true });
+// V4.111 (the iPad pen): the Pencil's touch on the board's drawing surface is stopped as it starts, so the iPad's Scribble (handwriting → typed text)
+// does not take the stroke; cards, text and buttons keep their own (13zf does the same on a note)
+addEventListener('touchstart', e => { const t = [...(e.changedTouches || [])].find(x => x.touchType === 'stylus'); if (t && e.target && e.target.tagName === 'CANVAS') e.preventDefault(); }, { capture: true, passive: false });
+addEventListener('touchmove', e => { if (CUR && [...(e.changedTouches || [])].some(x => x.touchType === 'stylus') && e.target && e.target.tagName === 'CANVAS') e.preventDefault(); }, { capture: true, passive: false });
 // Windows makes a right-click of a two-finger tap: that is the tap
 addEventListener('contextmenu', e => { const g = G; if (!g || performance.now() - g.t0 > 1500 || g.max < 2) return; if (gReal(g)) gFire(g, g.max); e.preventDefault(); e.stopImmediatePropagation(); }, true);
 addEventListener('keydown', e => {

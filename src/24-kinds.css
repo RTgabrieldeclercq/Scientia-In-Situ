@@ -611,3 +611,5 @@ body.f-off-syncdot .syncdot:not([data-tone="red"]){display:none}
 .run-chip{display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:999px;background:color-mix(in srgb,var(--sec-exp,var(--teal)) 14%,transparent);color:var(--ink-2);font:600 10px/1 var(--f-m);letter-spacing:.02em;white-space:nowrap}
 .run-chip.pf-run{margin-left:6px;flex:none}
 .pv-xs-n .run-chip{margin-left:6px}
+/* V4.110: the hint by the caret while super- or subscripts stay on (13u) */
+.wscript{position:fixed;z-index:9000;pointer-events:none;padding:1px 7px;border:1px solid color-mix(in srgb,var(--teal) 55%,var(--rule-2));border-radius:999px;background:var(--surface);color:var(--ink-2);font:10.5px/16px var(--f-m);box-shadow:var(--shadow);white-space:nowrap}
