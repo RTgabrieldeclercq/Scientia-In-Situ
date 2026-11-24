@@ -915,7 +915,7 @@ Your computer is the hub. Open **Settings → Notebook & devices → Devices** a
 - **Remove** a device in Settings → Notebook & devices → Devices to stop it at once.
 
 ### The notebook on this device (offline)
-On an iPad, a phone or a laptop, the notebook can live on the device: it opens and works without a connection, and what you write goes to the lab cloud (on the lab site; to your computer otherwise) as soon as there is one.
+On any device — an iPad, an iPhone, an Android phone or tablet, a Mac, a Windows PC, a Chromebook — the notebook can live on the device: it opens and works without a connection, and what you write goes to the lab cloud (on the lab site; to your computer otherwise) as soon as there is one.
 
 - **Keep it:** Settings → Notebook & devices → Devices → **Keep it on this device**. The card shows where this device stands:
   - **Opens offline** — the page and its scripts are kept on the device;
@@ -924,7 +924,13 @@ On an iPad, a phone or a laptop, the notebook can live on the device: it opens a
   - **Signed in** (on the lab site);
   - **The lab cloud** — in step, or offline with the changes waiting;
   - **Space used**.
-- **Install it too.** On the iPad: Safari → Share → **Add to Home Screen**. Open it from the Home Screen once with a connection and sign in there; email and password is the sure way, as the installed app keeps its own storage. From then on it opens offline and keeps itself, with no button pressed. On Chrome or Edge: **Install**.
+- **Install it too.** The card shows the steps for the device you are on:
+  - **iPad, iPhone:** Share → **Add to Home Screen** (in Safari, or from the menu in Chrome and Edge). Open it from the Home Screen once with a connection and sign in there: the installed app keeps its own storage (email and password is the sure way).
+  - **Android:** Chrome ⋮ → **Install app** (Samsung Internet ≡ → Add page to → Home screen; Firefox ⋮ → Install).
+  - **Mac:** Safari → File → **Add to Dock** (macOS Sonoma or later; sign in again in it), or Chrome or Edge → the install icon in the address bar.
+  - **Windows, Chromebook, Linux:** Chrome or Edge → the install icon in the address bar.
+  - **Firefox on a computer** cannot install a site as an app. Kept, the notebook still opens offline in Firefox.
+  - From then on it opens from its icon, works offline and keeps itself, with no button pressed.
 - **Changes made offline** wait on the device. They go when the app is open and online again; an iPad does not sync in the background.
 - **Pictures and PDFs** added on other devices need a connection to show. Your notes, ink and what you add on this device do not.
 - **Refresh its files** fetches anything not kept yet. **Stop keeping it** takes the page back out; your notes stay and sync as before.

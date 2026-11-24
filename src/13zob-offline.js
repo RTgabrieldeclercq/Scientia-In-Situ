@@ -90,16 +90,16 @@ const OFFLINE = {
   /** Settings → Devices: where this device stands, and the one button. */
   card() {
     const el = h('div.off-card'); el._draw = async () => {
-      const st = await OFFLINE.state(), kept = OFFLINE.kept(), ios = typeof INSTALL !== 'undefined' && INSTALL.platform() === 'ios', lab = OFFLINE.lab(), cloud = lab ? 'The lab cloud' : 'Your computer';
+      const st = await OFFLINE.state(), kept = OFFLINE.kept(), K = OFFLINE.kind(), lab = OFFLINE.lab(), cloud = lab ? 'The lab cloud' : 'Your computer';
       const sync = typeof SYNC === 'undefined' || !SYNC.on ? 'Not connected' : SYNC.online === false ? 'Offline — ' + plural(SYNC.outbox.size, 'change') + ' waiting here, sent when it is back' : (SYNC.outbox.size ? plural(SYNC.outbox.size, 'change') + ' going · ' : 'In step') + (SYNC.lastOk ? ' · last contact ' + fmtWhen(SYNC.lastOk) : '');
       const user = lab && window.__sisCloud.user ? (window.__sisCloud.user.email || 'signed in') : null;
       const row = (ok, k, v) => [h('dt', k), h('dd' + (ok ? '.ok' : ''), h('span.off-m', ok ? '✓' : '–'), ' ', v)];
       el.replaceChildren(
         h('b.h', kept ? 'The notebook is kept on this device' : 'Keep the notebook on this device'),
-        h('p.tiny', kept ? 'It opens and works without a connection; what you write waits here and goes to ' + cloud.toLowerCase() + ' when there is one.' : 'Then it opens and works without a connection — on the iPad, a phone, a laptop — and what you write goes to ' + cloud.toLowerCase() + ' when there is one.'),
+        h('p.tiny', kept ? 'It opens and works on this ' + K.name + ' without a connection; what you write waits here and goes to ' + cloud.toLowerCase() + ' when there is one.' : 'Then it opens and works without a connection — the same on an iPad, an iPhone, an Android phone or tablet, a Mac, a Windows PC or a Chromebook — and what you write goes to ' + cloud.toLowerCase() + ' when there is one.'),
         h('dl.off-dl',
           row(st.offline, 'Opens offline', st.offline ? 'Yes' : kept ? 'Once this page has loaded with a connection' : 'Not yet'),
-          row(st.persisted, 'Kept by the browser', st.persisted ? 'Yes — it will not clear it' : ios && !st.installed ? 'Safari may clear it after 7 days unused — install it' : 'May be cleared if space runs out' + (st.installed ? '' : ' — installing it helps')),
+          row(st.persisted, 'Kept by the browser', st.persisted ? 'Yes — it will not clear it' : (K.pf === 'ios' || K.safari) && !st.installed ? 'Safari may clear it after 7 days unused — install it' : 'May be cleared if space runs out' + (st.installed ? '' : ' — installing it helps')),
           row(st.installed, 'Installed', st.installed ? 'Opens from its icon' : 'In the browser'),
           lab ? row(!!user, 'Signed in', user || 'Not signed in') : null,
           row(typeof SYNC !== 'undefined' && SYNC.on && SYNC.online !== false && !SYNC.outbox.size, cloud, sync),
@@ -108,18 +108,49 @@ const OFFLINE = {
           !kept ? h('button.btn.sm.pri', { disabled: OFFLINE.busy, on: { click: () => OFFLINE.keep() } }, OFFLINE.busy ? 'Keeping…' : 'Keep it on this device')
             : [h('button.btn.sm', { disabled: OFFLINE.busy, title: 'Fetch any of its files that are not kept yet', on: { click: () => OFFLINE.keep() } }, OFFLINE.busy ? 'Keeping…' : 'Refresh its files'),
               h('button.btn.sm.ghost', { on: { click: () => OFFLINE.stop() } }, 'Stop keeping it')]),
-        !st.installed ? h('div.off-how', h('b', 'Install it, too'), ios ? h('ol.ins-steps', h('li', 'In Safari tap ', h('b', 'Share'), ' → ', h('b', 'Add to Home Screen'), '.'), h('li', 'Open it from the Home Screen once with a connection, and ' + (lab ? 'sign in there (the installed app keeps its own storage; email and password is the sure way).' : 'pair it there (the installed app keeps its own storage).')), h('li', 'From then on it opens offline, and keeps itself on the iPad.'))
-          : (typeof INSTALL !== 'undefined' && INSTALL.prompt ? h('button.btn.sm', { on: { click: () => INSTALL.install() } }, 'Install') : (typeof INSTALL !== 'undefined' ? INSTALL.steps() : null))) : null,
-        lab ? h('p.tiny.muted', 'Pictures and PDFs added on other devices need a connection to show; your notes, ink and what you add here do not. On a Windows computer, the desktop app keeps the whole notebook in a folder (Settings → The lab).') : null);
+        !st.installed ? h('div.off-how', h('b', 'Install it on this ' + K.name + ', too'), typeof INSTALL !== 'undefined' && INSTALL.prompt ? h('div', h('button.btn.sm', { on: { click: () => INSTALL.install() } }, 'Install')) : null, OFFLINE.how()) : null,
+        lab ? h('p.tiny.muted', 'Pictures and PDFs added on other devices need a connection to show; your notes, ink and what you add here do not.') : null);
     };
     el._draw(); return el;
   },
   paint() { $$('.off-card').forEach(c => c._draw && c._draw()); },
+  /** V4.114 (Gabe: "It should be universal across devices. It should work on an iPad, a computer, an iPhone, etc..."): what this device is, for its install steps. */
+  kind() {
+    const u = navigator.userAgent, pf = typeof INSTALL !== 'undefined' ? INSTALL.platform() : 'other', ff = /Firefox\/|FxiOS/.test(u), edge = /Edg\//.test(u);
+    if (pf === 'ios') return { pf, name: /iPhone|iPod/.test(u) ? 'iPhone' : 'iPad', ff };
+    if (pf === 'android') return { pf, name: /Mobile/.test(u) ? 'Android phone' : 'Android tablet', ff, samsung: /SamsungBrowser/.test(u) };
+    if (/CrOS/.test(u)) return { pf: 'chromeos', name: 'Chromebook', ff };
+    if (pf === 'mac') return { pf, name: 'Mac', ff, edge, safari: typeof INSTALL !== 'undefined' && INSTALL.safari() };
+    if (pf === 'windows') return { pf, name: 'Windows PC', ff, edge };
+    return { pf: 'other', name: 'computer', ff, edge };
+  },
+  /** How to install it on this device — every kind: iPad and iPhone, Android, Mac, Windows, Chromebook, Linux; Safari, Chrome, Edge, Samsung Internet, Firefox. */
+  how() {
+    const K = OFFLINE.kind(), lab = OFFLINE.lab(), S = (...x) => h('li', ...x), b = t => h('b', t);
+    const own = lab ? 'sign in there once with a connection — the installed app keeps its own storage (email and password is the sure way)' : 'pair it there — the installed app keeps its own storage';
+    const end = S('From then on it opens from its icon, works offline, and keeps itself on this ' + K.name + '.');
+    const ffDesk = S(b('Firefox can’t install a site as an app'), ': kept here, the notebook still opens offline in Firefox. To have it as an app, open this page in Chrome or Edge', K.pf === 'mac' ? ' (or Safari)' : '', ' and install it there.');
+    const chromium = (where) => S('In ', b(K.edge ? 'Edge' : 'Chrome'), ', click the ', b('install icon'), ' at the right of the address bar (or the menu ', b(K.edge ? '⋯ → Apps → Install this site as an app' : '⋮ → Cast, save and share → Install page as app'), ').', where ? ' It then opens from ' + where + '.' : '');
+    if (K.pf === 'ios') return h('ol.ins-steps', S('Tap ', b('Share'), ' ', h('span.ins-ic', '⬆︎'), K.name === 'iPad' ? ' (top right in Safari)' : ' (at the bottom in Safari)', ' — in Chrome or Edge, Share is in their menu.'),
+      S('Choose ', b('Add to Home Screen'), ', then ', b('Add'), '.'), S('Open ', b('Scientia'), ' from the Home Screen, and ' + own + '.'), end);
+    if (K.pf === 'android') return h('ol.ins-steps', K.samsung ? S('In Samsung Internet, tap ', b('≡'), ' → ', b('Add page to'), ' → ', b('Home screen'), '.') : K.ff ? S('In Firefox, tap ', b('⋮'), ' → ', b('Install'), ' (or ', b('Add to Home screen'), ').') : S('In Chrome, tap ', b('⋮'), ' → ', b('Install app'), ' (or ', b('Add to Home screen'), ').'),
+      S('Open ', b('Scientia'), ' from its icon — it shares this browser’s sign-in.'), end);
+    if (K.pf === 'mac') return h('ol.ins-steps', K.ff ? ffDesk : K.safari ? [S('In Safari, choose ', b('File → Add to Dock'), ' (macOS Sonoma or later).'), S('Open ', b('Scientia'), ' from the Dock, and ' + own + '.')] : chromium('the Dock or Launchpad'), K.ff ? null : end);
+    return h('ol.ins-steps', K.ff ? ffDesk : chromium(K.pf === 'windows' ? 'the Start menu and the taskbar' : K.pf === 'chromeos' ? 'the launcher' : 'your apps'), K.ff ? null : end);
+  },
+  /** The lab site's install banner → How: the same steps (13zo's own speak of pairing with a computer). */
+  howModal() { const K = OFFLINE.kind(); modal({ title: 'Install Scientia on this ' + K.name, body: h('div', h('p.serif', { style: { marginTop: 0 } }, 'Installed, it opens from its own icon and works offline — the same on an iPad, an iPhone, an Android phone or tablet, a Mac, a Windows PC or a Chromebook. What you write goes to ' + (OFFLINE.lab() ? 'the lab cloud' : 'your computer') + ' when there is a connection.'), OFFLINE.how()) }); },
 };
+{ const ht = INSTALL.howTo; INSTALL.howTo = function () { if (OFFLINE.lab()) return OFFLINE.howModal(); return ht.apply(this, arguments); }; }
 {
   // Settings → Devices on a device: the card first
   // (it says how to install, so the older install card (13zo) steps aside)
-  const st = DEVICES.settings; DEVICES.settings = function () { const el = st.call(DEVICES); try { if (FEAT.on('offline') && OFFLINE.device()) { $$(':scope > .ins-card', el).forEach(x => x.remove()); el.prepend(OFFLINE.card()); } } catch (e) { } return el; };
+  const st = DEVICES.settings; DEVICES.settings = function () { const el = st.call(DEVICES); try { if (FEAT.on('offline') && OFFLINE.device()) { $$(':scope > .ins-card', el).forEach(x => x.remove()); el.prepend(OFFLINE.card());
+    // V4.114: on the lab site this device is paired with the lab cloud, not a computer (13zd's words are for a device of your computer)
+    if (OFFLINE.lab()) $$(':scope > .callout', el).forEach(co => [...co.childNodes].forEach(n => { if (n.nodeType === 3) n.nodeValue = n.nodeValue.replace(/your computer/g, 'the lab cloud'); }));
+    setTimeout(() => INSTALL.banner(), 0); } } catch (e) { } return el; };
+  // V4.114: while the card is on screen (it says how to install), the install banner steps aside — on a phone it lay over the card
+  const bn = INSTALL.banner; INSTALL.banner = function () { if ($('.off-card')) { const b = $('#insbanner'); if (b) b.remove(); return; } return bn.apply(this, arguments); };
   // kept: a new version of the worker empties its caches — keep the files again; installed (opened from its icon): keep it without asking
   const again = debounce(() => { if (FEAT.on('offline') && OFFLINE.kept() && navigator.onLine !== false) OFFLINE.warm().then(() => OFFLINE.paint()); }, 3000);
   if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('controllerchange', again);
