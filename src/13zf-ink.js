@@ -118,11 +118,28 @@ const INK = {
   onImage: (box, t) => box.classList.contains('w-figure') && !!(t.closest && t.closest('.fg-grid')),
   /** The image panel at a point of the paper (the topmost), or null. */
   imageAt(pane, x, y) { const el = $$(':scope > .box.w-figure', pane.paper.world).reverse().find(el => el.offsetWidth && x >= el.offsetLeft && x <= el.offsetLeft + el.offsetWidth && y >= el.offsetTop && y <= el.offsetTop + el.offsetHeight); return el ? el.dataset.id : null; },
+  /* V4.111 (Gabe, 23 Nov: "Get a fix for an iPad pen. As of now, it seems like the pen does not write well." — "sometimes, the pen won't write on the screen"):
+     where the pen writes, one rule (penDown, the Scribble guard below, #touchlog): '' = it writes, or why not. As before — pen mode off, on a
+     control, in a component's text or title (left to the iPad's Scribble), on a component — with one rule put back: on an ink component's rectangle
+     the pen writes, even where its empty part lies over a component (since V4.105 only its strokes take the pointer, so the component was found). */
+  HARD: 'button,input,textarea,select,a,label,.port,.rz,.pop,.ink-bar,.region .rg-tab,.region .rg-port',
+  inkUnder(paper, x, y) { return $$(':scope > .box.w-ink', paper.world).some(b => { const r = b.getBoundingClientRect(); return r.width > 0 && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom; }); },
+  writeWhy(paper, t, x, y) {
+    const host = paper.el.closest('.canvas-host'), pane = host && host._dv; if (!pane || !pane.docId || pane.travel || !M.doc(pane.docId)) return 'not on a note';
+    if (!INK.writing()) return 'pen mode is off';   // the pen pans the paper and moves components (13zz2)
+    if (!t || !t.closest) return '';
+    if (t.closest(INK.HARD)) return 'on a button or control';
+    if (t.closest('.box.w-ink') || INK.inkUnder(paper, x, y)) return '';
+    if (INK.interactive(t)) return 'on a component’s text or title (the iPad’s Scribble writes there)';
+    const box = t.closest('.box'); if (box && !INK.onImage(box, t)) return 'on a component';
+    return '';
+  },
+  /** #touchlog in the address: what the screen reports, and why a pen touch did or did not write (13zm's log). */
+  log(m) { if (typeof PEN2 !== 'undefined' && PEN2.tapLog) PEN2.tapLog(m); },
   penDown(paper, e) {
-    const host = paper.el.closest('.canvas-host'), pane = host && host._dv; if (!pane || !pane.docId || pane.travel || !M.doc(pane.docId)) return false;
-    if (!INK.writing()) return false; // pen mode off: the pen pans the paper and moves components (13zz2)
-    if (INK.interactive(e.target)) return false;
-    const box = e.target.closest('.box'); if (box && !box.classList.contains('w-ink') && !INK.onImage(box, e.target)) return false;
+    const host = paper.el.closest('.canvas-host'), pane = host && host._dv;
+    const why = INK.writeWhy(paper, e.target, e.clientX, e.clientY); INK.log('pen down: ' + (why ? 'no ink — ' + why : 'writes'));
+    if (why) return false;
     const wp = paper.toWorld(e.clientX, e.clientY);
     if (INK.sel && INK.sel.docId === pane.docId && INK.inSel(wp)) return INK.moveSel(pane, paper, e, wp), true;
     if (INK.sel) INK.clearSel();
@@ -144,11 +161,15 @@ const INK = {
     const arm = () => { clearTimeout(holdT); if (lasso || shaped) return; holdT = setTimeout(() => { if (st.p.length < 6) return; const g = SHAPE.guess(st.p); if (!g) return;
       shaped = { g, pen: st.p[st.p.length - 1].slice(0, 2) }; Object.assign(st, { p: g.p.map(q => [INK.r1(q[0]), INK.r1(q[1]), .6]), geo: true, br: g.br, closed: g.closed, shape: g.type }); if (g.closed && hl) st.area = true; draw(); path.classList.add('ink-snap'); setTimeout(() => path.classList.remove('ink-snap'), 260); }, 550); };
     arm();
-    const mv = ev => { if (ev.pointerId !== e.pointerId) return; ev.preventDefault();
-      if (shaped) { const w = paper.toWorld(ev.clientX, ev.clientY), P = SHAPE.transform(shaped.g, shaped.pen, [w.x, w.y]); st.p = P.map(q => [INK.r1(q[0]), INK.r1(q[1]), .6]); draw(); return; }
-      (ev.getCoalescedEvents ? ev.getCoalescedEvents() : [ev]).forEach(add); if (!ev.getCoalescedEvents || !ev.getCoalescedEvents().length) add(ev); draw();
+    // V4.111: every sample is kept as it comes, but the line on screen is drawn once a frame (it was redrawn whole on every event — on the iPad, up to
+    // 240 a second, and Safari drops pen events when frames run late)
+    let raf = 0, nMv = 0; const t0 = performance.now(); const paint = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; draw(); }); };
+    const mv = ev => { if (ev.pointerId !== e.pointerId) return; ev.preventDefault(); nMv++;
+      if (shaped) { const w = paper.toWorld(ev.clientX, ev.clientY), P = SHAPE.transform(shaped.g, shaped.pen, [w.x, w.y]); st.p = P.map(q => [INK.r1(q[0]), INK.r1(q[1]), .6]); paint(); return; }
+      (ev.getCoalescedEvents ? ev.getCoalescedEvents() : [ev]).forEach(add); if (!ev.getCoalescedEvents || !ev.getCoalescedEvents().length) add(ev); paint();
       if (Math.hypot(ev.clientX - still.x, ev.clientY - still.y) > 3) { still = { x: ev.clientX, y: ev.clientY }; arm(); } };
-    const up = ev => { if (ev.pointerId !== e.pointerId) return; clearTimeout(holdT); paper.el.removeEventListener('pointermove', mv, true); paper.el.removeEventListener('pointerup', up, true); paper.el.removeEventListener('pointercancel', up, true); INK.drawing = null;
+    const up = ev => { if (ev.pointerId !== e.pointerId) return; clearTimeout(holdT); if (raf) { cancelAnimationFrame(raf); raf = 0; }
+      INK.log('pen ' + (ev.type === 'pointercancel' ? 'cancelled — the stroke is kept' : 'up') + ': ' + st.p.length + ' points from ' + nMv + ' moves in ' + Math.round(performance.now() - t0) + ' ms'); paper.el.removeEventListener('pointermove', mv, true); paper.el.removeEventListener('pointerup', up, true); paper.el.removeEventListener('pointercancel', up, true); INK.drawing = null;
       if (lasso) { path.remove(); INK.lassoSelect(pane, st.p); return; }
       if (st.p.length === 1 && hl) { path.remove(); return; }
       if (st.pr && !st.hl && !st.geo) { const m = st.p.reduce((s0, q) => s0 + (q[2] == null ? .5 : q[2]), 0) / st.p.length; st.o = Math.round(clamp(1 - INK.curve.fade * (1 - m) * 1.15, .22, 1) * 100) / 100; }
@@ -352,6 +373,15 @@ window.SIS_PALM = PALM;
       if (Math.hypot(e.clientX - pd.x, e.clientY - pd.y) < 8) return;
       clearTimeout(T.timer); T.pend = null; P.stop(); P.mode = { k: 'pan', x: e.clientX, y: e.clientY, moved: 10, v: [], start: pd.e }; el.classList.add('panning'); try { el.setPointerCapture(e.pointerId); } catch { }
     }, true);
+    // V4.111: the Pencil on the iPad — Scribble (handwriting → typed text) can take a stroke the page should get, and then no pointer event comes. Where
+    // the pen writes ink (INK.writeWhy), the stylus touch's default is stopped as it starts — as tldraw and Excalidraw do — and its moves while a stroke
+    // goes down; in a component's text it is left to Scribble, as before. #touchlog notes a stylus touch that came without its pen pointerdown.
+    const stylus = e => e.changedTouches ? [...e.changedTouches].find(t => t.touchType === 'stylus') : null;
+    el.addEventListener('pointerdown', e => { if (e.pointerType === 'pen') T.penAt = performance.now(); }, true);
+    el.addEventListener('touchstart', e => { const t = stylus(e); if (!t) return;
+      if (INK.drawing != null || !INK.writeWhy(P, e.target, t.clientX, t.clientY)) e.preventDefault();
+      if (performance.now() - (T.penAt || -1e9) > 300) INK.log('stylus touch with no pen pointerdown before it (Scribble or the system took it)'); }, { passive: false });
+    el.addEventListener('touchmove', e => { if (INK.drawing != null && stylus(e)) e.preventDefault(); }, { passive: false });
     const tap = e => { const pd = T.pend; if (!pd || pd.id !== e.pointerId) return; clearTimeout(T.timer); T.pend = null; P.ptrs.delete(e.pointerId);
       const pane = host._dv; if (e.type === 'pointerup' && pd.box && pane && pane.select && pd.box.dataset.id && pd.box.dataset.id[0] !== '_') pane.select(pd.box.dataset.id, true); };
     el.addEventListener('pointerup', tap, true); el.addEventListener('pointercancel', tap, true);
