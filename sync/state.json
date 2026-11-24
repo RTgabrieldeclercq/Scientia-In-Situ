@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "6bcf9a923c75ead82667a4ece21d6f97783adae9",
-  "subject": "V4.113: Scientia — the lab notebook kept on this device: it opens and works offline and syncs back to the lab cloud — Settings → Notebook & devices → Keep it on this device (the site's service worker, the notebook's files and sign-in kept, persistent storage), an install manifest, Settings → Features → The notebook on this device",
+  "commit": "aa8712dc5a54e73bfd1031ffb3fe20b01c5097dc",
+  "subject": "V4.114: Scientia — the notebook kept on any device: the card names the device and gives its own install steps (iPad, iPhone, Android, Mac, Windows, Chromebook; Safari, Chrome, Edge, Samsung Internet, Firefox), tested on eight emulated devices sharing one lab cloud",
   "date": "2026-11-24"
  },
- "cut": "2407478425a3ed3ddcf3024182d7d0c2077e39b2",
+ "cut": "ebb66e5adbdca12b724e33f548298a52efce256c",
  "names": [
   "DESKLAB",
   "LABSYNC",

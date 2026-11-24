@@ -313,7 +313,7 @@ const PV = {
   /* =============================== This device & sync =============================== */
   // V4.113 — the notebook kept on a device paired with your computer — 13zob
   D({ id: 'offline', group: 'device', label: 'The notebook on this device', isNew: true, presets: { simple: true, standard: true },
-    desc: 'Keep the notebook on this device — an iPad, a phone, a laptop: it opens and works without a connection, and what you write waits here and goes to your computer when it can be reached. Install it too (Add to Home Screen on the iPad) so the browser keeps it. Settings → Devices shows where this device stands. Off: no card and nothing kept; your notes and their sync stay as they are.',
+    desc: 'Keep the notebook on this device — the same on an iPad, an iPhone, an Android phone or tablet, a Mac, a Windows PC or a Chromebook: it opens and works without a connection, and what you write waits here and goes to your computer when it can be reached. Install it too (Add to Home Screen, Install, Add to Dock — Settings shows this device’s steps) so the browser keeps it. Settings → Devices shows where this device stands. Off: no card and nothing kept; your notes and their sync stay as they are.',
     tune: [T('keep', 'Keep it on this device', 'switch', { isNew: true, d: 'This device only. Keeps the page, its scripts and the sign-in for offline use, and asks the browser to keep the notebook’s storage',
         get: () => OFFLINE.kept(), set: v => { v ? OFFLINE.keep() : OFFLINE.stop(); } }),
       T('auto', 'Keep it when installed', 'switch', { isNew: true, def: true, d: 'Opened from its icon (installed), the notebook keeps itself on the device with no button pressed. Off: only when you switch Keep it on this device on' })],
