@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "1c7ff26f4b8c40856cf8067181d98f575e3eae47",
-  "subject": "V4.111: Scientia — the iPad pen: strokes the iPad's Scribble took are kept for the page where the pen writes ink; the live line drawn once a frame with every sample kept; the pen writes again on ink lying over a component; a cancelled stroke on an HTML page kept; #touchlog says why a pen touch did not write",
+  "commit": "2cd99bbef2238e0677a041781add18b159949436",
+  "subject": "V4.112: Scientia — fix: ink folded away in a region is out of the pen's reach — a stroke written where it lay makes new, visible ink (it joined the hidden ink and vanished); the eraser, lasso, fill, loop and dumbbell leave it alone",
   "date": "2026-11-23"
  },
- "cut": "e4d7c3d4a2a7c2bff1385493a10285b58c3dccce",
+ "cut": "0bb2141a22c90b4df5cd0cd2567f91e90942c4ea",
  "names": [
   "DESKLAB",
   "LABSYNC",

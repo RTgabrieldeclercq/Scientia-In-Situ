@@ -19,7 +19,7 @@ const PEN3 = {
   /** What a loop surrounds: components (boxes) and ink components with most of their ink inside. */
   inside(pane, poly) {
     const ids = new Set(LASSO2.boxesIn(pane, poly));
-    INK.blocks(pane.docId).forEach(b => { const S = b.ink.strokes || []; let n = 0, k = 0; S.forEach(s => s.p.forEach(p => { n++; if (INK.inPoly(b.x + p[0], b.y + p[1], poly)) k++; })); if (n && k >= n * .6) ids.add(b.id); });
+    INK.reachable(pane.docId).forEach(b => { const S = b.ink.strokes || []; let n = 0, k = 0; S.forEach(s => s.p.forEach(p => { n++; if (INK.inPoly(b.x + p[0], b.y + p[1], poly)) k++; })); if (n && k >= n * .6) ids.add(b.id); });
     return [...ids].filter(id => { const b = M.block(id); return b && b.docId === pane.docId && b.status === 'live'; });
   },
   region(pane, poly) { const ids = PEN3.inside(pane, poly); if (!ids.length) return toast('Nothing inside the loop to make a region of');
