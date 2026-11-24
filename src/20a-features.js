@@ -310,6 +310,21 @@ const PV = {
     } });
 
   /* V4.21 — Rotate: the whole app a quarter turn clockwise at a time (13zzz ROTATE; ⊕'s Rotate in lab-mode §11 and the cut) */
+  /* =============================== This device & sync =============================== */
+  // V4.113 — the notebook kept on a device paired with your computer — 13zob
+  D({ id: 'offline', group: 'device', label: 'The notebook on this device', isNew: true, presets: { simple: true, standard: true },
+    desc: 'Keep the notebook on this device — an iPad, a phone, a laptop: it opens and works without a connection, and what you write waits here and goes to your computer when it can be reached. Install it too (Add to Home Screen on the iPad) so the browser keeps it. Settings → Devices shows where this device stands. Off: no card and nothing kept; your notes and their sync stay as they are.',
+    tune: [T('keep', 'Keep it on this device', 'switch', { isNew: true, d: 'This device only. Keeps the page, its scripts and the sign-in for offline use, and asks the browser to keep the notebook’s storage',
+        get: () => OFFLINE.kept(), set: v => { v ? OFFLINE.keep() : OFFLINE.stop(); } }),
+      T('auto', 'Keep it when installed', 'switch', { isNew: true, def: true, d: 'Opened from its icon (installed), the notebook keeps itself on the device with no button pressed. Off: only when you switch Keep it on this device on' })],
+    preview: () => { const kept = OFFLINE.kept(), auto = tune('offline', 'auto') !== false;
+      const row = (ok, k, v) => h('div.pv-off-r' + (ok ? '.ok' : ''), h('span.k', k), h('span.v', h('i', ok ? '✓' : '–'), ' ', v));
+      return [h('div.pv-off', h('b', kept ? 'The notebook is kept on this device' : 'Keep the notebook on this device'),
+          row(kept, 'Opens offline', kept ? 'Yes' : 'Not yet'), row(kept, 'Kept by the browser', kept ? 'Yes — it will not clear it' : 'May be cleared'),
+          row(false, 'Installed', 'In the browser'), row(true, 'Your computer', kept ? 'Offline — 2 changes waiting here' : 'In step'),
+          h('span.pv-off-b', kept ? 'Refresh its files' : 'Keep it on this device')),
+        PV.cap((kept ? 'Kept here: it opens without a connection, and changes wait until there is one. ' : 'Not kept on this device yet. ') + (auto ? 'Installed, it keeps itself.' : 'Installed, it waits for the switch.'))]; } });
+
   D({ id: 'rotate', group: 'pen', label: 'Rotate the app', isNew: true, presets: { simple: true }, desc: 'Rotate in the ⊕ zoom pill (and /rotate) turns the whole app 90° clockwise; each tap turns it 90° more, and the fourth puts it upright again — for a tablet or a screen held the other way. Kept on this device. The pen, the canvas, menus and selections all follow the turn. Esc three times, /rotate reset or Upright here puts it back. Off: upright, and no Rotate.',
     changed: () => ROTATE.sync(),
     tune: [T('turn', 'On this device, the app is', 'seg', { isNew: true, def: '0', opts: [['0', 'Upright'], ['90', '90°'], ['180', '180°'], ['270', '270°']], d: 'Clockwise, as Rotate turns it',
