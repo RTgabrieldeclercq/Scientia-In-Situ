@@ -8,7 +8,7 @@ const DocView = {
   canvas: true, title: true, docId: null, paper: null, sel: null, pendingFocus: null, openGhosts: new Set(), travel: null,
 
   render(docId) {
-    const d = M.doc(docId); this.docId = docId; this.sel = null; this.travel = VIEWER && d && docId === VIEWER.X.docId ? { at: VIEWER.X.at, viewer: true, doc: d, blocks: M.docBlocks(d.id) } : null;
+    const d = M.doc(docId); this.docId = docId; this.sel = null; this._arrived = null; this.travel = VIEWER && d && docId === VIEWER.X.docId ? { at: VIEWER.X.at, viewer: true, doc: d, blocks: M.docBlocks(d.id) } : null;
     if (!d) { this.paper = null; this.host = null; return h('div.canvas-host', h('div.empty-c', 'Note not found')); }   // V3.942 — no paper: update() draws it whole when the note arrives
     const host = h('div.canvas-host'); host._dv = this; this.host = host;
     host.addEventListener('pointerdown', () => { App.pane = this; }, true); host.addEventListener('focusin', () => { App.pane = this; });
@@ -24,7 +24,8 @@ const DocView = {
     host.append(this.dock, this.hint, this.ctools);
     this.paper.el.addEventListener('pointerdown', e => this.pointer(e));
     this.fill(d);
-    if (!_ls.get('view:' + docId, null)) requestAnimationFrame(() => { this.settle(); const bb = this.bbox(); if (bb) this.paper.fit({ x0: bb.x0, y0: bb.y0, x1: bb.x1, y1: Math.min(bb.y1, bb.y0 + 1100) }, false); });
+    if (!_ls.get('view:' + docId, null)) requestAnimationFrame(() => { if (this._arrived === docId) return;   // V4.103: it was opened to land on a component (landOn ran first)
+      this.settle(); const bb = this.bbox(); if (bb) this.paper.fit({ x0: bb.x0, y0: bb.y0, x1: bb.x1, y1: Math.min(bb.y1, bb.y0 + 1100) }, false); });
     return host;
   },
   update(docId) {
@@ -290,8 +291,9 @@ const DocView = {
     // follows its width (an image panel, slides) follows a drag down too: the larger of the two pulls.
     if (e.target.closest('.rz')) { e.preventDefault(); const b = M.block(id); if (!b) return; const x0 = e.clientX, y0 = e.clientY, w0 = box.offsetWidth, h0 = Math.max(1, box.offsetHeight), corner = !!e.target.closest('.rz-corner');
       document.body.classList.add('resizing');
-      const mv = ev => { const z = P.view.z, wx = w0 + (ev.clientX - x0) / z, wy = w0 * (h0 + (ev.clientY - y0) / z) / h0;
-        b.w = Math.max(240, Math.round(corner && Math.abs(wy - w0) > Math.abs(wx - w0) ? wy : wx)); box.style.width = b.w + 'px'; this.drawWires(); };
+      // V4.107: with Shift held it grows or shrinks a grid cell at a time, as a Shift+drag moves it (PTUNE.cells)
+      const mv = ev => { const z = P.view.z, wx = w0 + (ev.clientX - x0) / z, wy = w0 * (h0 + (ev.clientY - y0) / z) / h0, w = corner && Math.abs(wy - w0) > Math.abs(wx - w0) ? wy : wx;
+        b.w = ev.shiftKey ? PTUNE.cells(w, 240) : Math.max(240, Math.round(w)); box.style.width = b.w + 'px'; this.drawWires(); };
       const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); document.body.classList.remove('resizing'); b.w = Math.round(b.w / PTUNE.snap()) * PTUNE.snap(); box.style.width = b.w + 'px'; DB.put('blocks', b); DB.beginGroup(); this.drawWires(); };
       addEventListener('pointermove', mv); addEventListener('pointerup', up); return; }
     if (e.target.closest('.ed,input,textarea,select,button,a,label,.chips,.ghosts,.refs,.tags,.ptext.edit,.obsn,.itdot,.wplate,.wlegend,.fg-cell')) { if (id[0] !== '_') this.select(id, true); return; }
@@ -340,7 +342,7 @@ const DocView = {
     if (!FEAT.on('opencomp')) return this.reveal(id);
     const P = this.paper, want = FEAT.tune('opencomp', 'zoom'), z = want === 'keep' ? P.view.z : clamp((+want || 50) / 100, P.o.minZ, P.o.maxZ), pr = P.rect();
     const to = { z, x: pr.width / 2 - (r.x + r.w / 2) * z, y: pr.height / 2 - (r.y + Math.min(r.h, 520) / 2) * z };
-    if (arrive) { P.stop(); Object.assign(P.view, to); P.apply(); } else P.animateView(to);
+    if (arrive) { P.stop(); Object.assign(P.view, to); P.apply(); this._arrived = this.docId; } else P.animateView(to);
   },
   reveal(id) { const r = this.rectOf(id); if (!r) return; const P = this.paper, s = P.toScreen(r.x, r.y), pr = P.rect(); const inView = s.x > pr.left + 20 && s.y > pr.top + 20 && s.x + r.w * P.view.z < pr.right - 20 && s.y + Math.min(r.h, 300) * P.view.z < pr.bottom - 20;
     if (!inView) P.centerOn(r.x + r.w / 2, r.y + Math.min(r.h, 300) / 2, Math.max(P.view.z, .8)); },

@@ -69,10 +69,22 @@ const CHAIN = {
   /** The run number to show for a note of an experiment: a run of a series (or a run past the first), else null. */
   runNo(d) {
     if (!d || !d.chain || !CHAIN.seriesOn()) return null; try { if (FEAT.tune('expseries', 'runchip') === false) return null; } catch (e) { }
+    if (Array.isArray(d.synthRuns)) return null;   // V4.103: the series' own Synthesis (15e) covers every run, so it carries none
     const n = d.run || (CHAIN.members(d).find(x => x.run) || {}).run; return n && (d.series || n > 1) ? n : null;
   },
   /** The chip: "Run 3", with the series' name in its tooltip. */
   runChip(d, cls) { const n = CHAIN.runNo(d); if (!n) return null; return h('span.run-chip' + (cls ? '.' + cls : ''), { title: 'Run ' + n + ' of the series “' + CHAIN.baseOf(CHAIN.name(d)) + '”' }, 'Run ' + n); },
+  /* ---------- V4.106 (Gabe: "the search function should show if the experiment note is planning, run, or analysis, and shows the run on it too"):
+     an experiment's notes all carry its name, so a list of notes says which is which ---------- */
+  /** "Planning · Run 3", "Run 3", "Analysis · Run 3", "Synthesis": the note's stage, and its run where runNo shows one (the Run note's own is just
+      "Run 3"); '' for a note with no stage, or with Settings → Experiment series → In search, the stage and run off. */
+  stageRun(d) {
+    if (!d) return ''; try { if (FEAT.tune('expseries', 'search') === false) return ''; } catch (e) { }
+    const p = prof(d.type), st = p && p.stage; if (!st) return ''; const n = CHAIN.runNo(d);
+    return n ? (st === 'Run' ? 'Run ' + n : st + ' · Run ' + n) : st;
+  },
+  /** A note's title in a list of notes (the Atlas, the note pickers): "30 kPa series — Analysis · Run 3". */
+  listTitle(d) { const t = (d && d.title) || 'Untitled', s = CHAIN.stageRun(d); return s ? t + ' — ' + s : t; },
   /** Once: a title ending in "Run N" (V4.15's names) loses it; the number stays on the notes (`run`). */
   migrateRuns() {
     if (settings().expRunTitles497) return; let n = 0;
@@ -91,7 +103,7 @@ const CHAIN = {
     let S = [], auto = '';
     const fillThemes = () => th.replaceChildren(h('option', { value: '' }, '— none —'), ...DB.where('themes', t => t.projectId === proj.value && t.status === 'active').map(t => h('option', { value: t.id, selected: t.id === pre.themeId }, t.name)));
     const pickSeries = () => { const s = S.find(x => x.id === ser.value);
-      if (s) { const nx = CHAIN.nextRun(s); name.value = auto = nx.name; hint.textContent = 'Run ' + nx.run + ' of “' + CHAIN.baseOf(s.last.name) + '” — after ' + s.runs.map(r => r.name).join(', ') + '. Its runs share one Synthesis.'; }
+      if (s) { const nx = CHAIN.nextRun(s); name.value = auto = nx.name; hint.textContent = 'Run ' + nx.run + ' of “' + CHAIN.baseOf(s.last.name) + '” — after ' + s.runs.map(r => 'Run ' + r.run).join(', ') + '. Its runs share one Synthesis.'; }   // V4.103: by number (V4.97: every run has the series' name)
       else { if (auto && name.value === auto) name.value = ''; auto = ''; hint.textContent = ''; } };
     const fillSeries = () => { S = CHAIN.seriesOn() ? CHAIN.seriesIn(proj.value || null, proj.value ? th.value || null : null) : [];
       ser.replaceChildren(h('option', { value: '' }, '— No: a new experiment —'), ...S.map(s => h('option', { value: s.id }, s.last.name + (s.runs.length > 1 ? ' · ' + plural(s.runs.length, 'run') : ''))));

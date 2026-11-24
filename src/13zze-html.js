@@ -20,6 +20,8 @@
      written on (like a note), so it stays put however wide the page is
      shown, and is kept with the component (block.htmlInk, one undo step a
      stroke). Strokes written close together are one ink label.
+     V4.111 (the iPad pen): a stroke the system cancels is kept, not dropped; the Pencil's touch is stopped as it starts, so Scribble does not take it
+     (except on a note pinned to the page); the line on screen is drawn once a frame.
      ⋯ → Export ink labels (or the maximised page's bar): for each label the
      page around it is drawn into a picture (html2canvas, vendor/workers,
      run inside the page), you crop it, and out come an image panel of that
@@ -105,7 +107,7 @@ if(document.readyState==='complete')setTimeout(start,0);else window.addEventList
       V3.961: each SVG element carries the styles it was drawn with (SVP; html2canvas draws an SVG as a picture of it, which
       keeps no stylesheet), boxes scrolled sideways or down say how far (data-sis-sx / -sy), and the element asked for
       (`mark`, a path) is marked data-sis-snip — the snip (13zzm) draws that element alone, without those in `hide`. */
-  INKSCRIPT: `<script>(function(){var P=window.parent,NS='http://www.w3.org/2000/svg',ON=false,M={},INKS=[],cur=null,svg=null,live=null,gone={},eat=false,TS=null,penAt=0;
+  INKSCRIPT: `<script>(function(){var P=window.parent,NS='http://www.w3.org/2000/svg',ON=false,M={},INKS=[],cur=null,svg=null,live=null,gone={},eat=false,TS=null,penAt=0,RAF=0;
 var SVP=['fill','fill-opacity','fill-rule','stroke','stroke-width','stroke-opacity','stroke-dasharray','stroke-dashoffset','stroke-linecap','stroke-linejoin','stroke-miterlimit','opacity','visibility','display','color','stop-color','stop-opacity','font-family','font-size','font-weight','font-style','text-anchor','dominant-baseline','letter-spacing','word-spacing','paint-order','text-decoration','white-space'];
 function kids(p){return [].filter.call(p.children,function(c){return !(c.tagName==='MARK'&&c.classList.contains('sis-q'));});}
 function pathOf(el){var a=[];while(el&&el.parentElement&&el!==document.body){a.unshift(kids(el.parentElement).indexOf(el));el=el.parentElement;}return a.join('/');}
@@ -119,15 +121,19 @@ function hit(x,y){var out=[];[].forEach.call(layer().querySelectorAll('path[data
 function samples(e){var L=e.getCoalescedEvents?e.getCoalescedEvents():null;return L&&L.length?L:[e];}
 function move(e){samples(e).forEach(function(q){var x=q.clientX+scrollX,y=q.clientY+scrollY;if(cur.er){var ids=hit(x,y).filter(function(i){return !gone[i];});if(ids.length){ids.forEach(function(i){gone[i]=1;var el=layer().querySelector('path[data-id="'+i+'"]');if(el)el.remove();});P.postMessage({sis:'inkerase',ids:ids},'*');}return;}
 var l=cur.p[cur.p.length-1],dx=x-cur.x0,dy=y-cur.y0;if(l&&Math.hypot(dx-l[0],dy-l[1])<.6)return;cur.p.push([Math.round(dx*10)/10,Math.round(dy*10)/10,q.pointerType==='pen'&&q.pressure>0?Math.round(q.pressure*100)/100:.5]);cur.b=[Math.min(cur.b[0],x),Math.min(cur.b[1],y),Math.max(cur.b[2],x),Math.max(cur.b[3],y)];});
-if(live)live.setAttribute('d','M'+cur.p.map(function(p){return p[0]+','+p[1];}).join('L'));}
+if(live&&!RAF)RAF=requestAnimationFrame(drawLive);}
+function drawLive(){RAF=0;if(live&&cur)live.setAttribute('d','M'+cur.p.map(function(p){return p[0]+','+p[1];}).join('L'));}
 window.addEventListener('pointerdown',function(e){if(e.pointerType==='pen')penAt=Date.now();if(!ON)return;var pen=e.pointerType==='pen',ms=e.pointerType==='mouse'&&M.mouse&&e.button===0;if(!pen&&!ms)return;if(e.target.closest&&e.target.closest('.sis-note'))return;e.preventDefault();e.stopImmediatePropagation();
 var x=e.clientX+scrollX,y=e.clientY+scrollY;cur={id:e.pointerId,er:!!M.erase||(pen&&(e.button===5||(e.buttons&32)===32)),at:spot(e.clientX,e.clientY),x0:x,y0:y,p:[],b:[x,y,x,y]};
 if(!cur.er){live=document.createElementNS(NS,'path');live.setAttribute('class','live');live.setAttribute('fill','none');live.setAttribute('stroke',M.c||'#1d1d1b');live.setAttribute('stroke-width',M.hl?14:(M.w||2.4));live.setAttribute('stroke-linecap','round');live.setAttribute('stroke-linejoin','round');if(M.hl)live.setAttribute('opacity','.35');live.setAttribute('transform','translate('+x+','+y+')');layer().appendChild(live);}
 move(e);},true);
 window.addEventListener('pointermove',function(e){if(!cur||e.pointerId!==cur.id)return;e.preventDefault();e.stopImmediatePropagation();move(e);},true);
-window.addEventListener('pointerup',function(e){if(!cur||e.pointerId!==cur.id)return;e.preventDefault();e.stopImmediatePropagation();var c=cur;cur=null;eat=true;setTimeout(function(){eat=false;},400);if(c.er||!c.p.length){if(live){live.remove();live=null;}return;}
-P.postMessage({sis:'inkstroke',s:{at:c.at,p:c.p,c:M.c||'#1d1d1b',w:M.hl?14:(M.w||2.4),hl:!!M.hl},abs:c.b},'*');},true);
-window.addEventListener('pointercancel',function(e){if(cur&&e.pointerId===cur.id){cur=null;if(live){live.remove();live=null;}}},true);
+function UP(e){if(!cur||e.pointerId!==cur.id)return;e.preventDefault();e.stopImmediatePropagation();if(RAF){cancelAnimationFrame(RAF);drawLive();}var c=cur;cur=null;eat=true;setTimeout(function(){eat=false;},400);if(c.er||!c.p.length){if(live){live.remove();live=null;}return;}
+P.postMessage({sis:'inkstroke',s:{at:c.at,p:c.p,c:M.c||'#1d1d1b',w:M.hl?14:(M.w||2.4),hl:!!M.hl},abs:c.b},'*');}
+window.addEventListener('pointerup',UP,true);window.addEventListener('pointercancel',UP,true);
+function stylus(e){return [].filter.call(e.changedTouches||[],function(x){return x.touchType==='stylus';})[0];}
+window.addEventListener('touchstart',function(e){if(!ON||!stylus(e))return;if(cur||!(e.target.closest&&e.target.closest('.sis-note')))e.preventDefault();},{capture:true,passive:false});
+window.addEventListener('touchmove',function(e){if(cur&&stylus(e))e.preventDefault();},{capture:true,passive:false});
 window.addEventListener('click',function(e){if(eat){e.preventDefault();e.stopImmediatePropagation();}},true);
 function scroller(n){for(;n&&n!==document.body&&n!==document.documentElement;n=n.parentElement){var cs=getComputedStyle(n);if(/(auto|scroll|overlay)/.test(cs.overflowY+' '+cs.overflowX)&&(n.scrollHeight>n.clientHeight+1||n.scrollWidth>n.clientWidth+1))return n;}return document.scrollingElement||document.documentElement;}
 window.addEventListener('pointerdown',function(e){if(!ON||e.pointerType!=='touch')return;var pl=M.palm||[90,600],sz=Math.max(e.width||0,e.height||0);if(TS||cur||Date.now()-penAt<pl[1]||sz>pl[0])return;TS={id:e.pointerId,x:e.clientX,y:e.clientY,el:scroller(e.target)};},true);

@@ -36,7 +36,7 @@ const FILL = {
   add(s, f) { const cur = INK.fillsOf(s).filter(x => !x.light); s.fills = f.hl ? [...cur, { c: f.c, hl: true }].slice(-8) : [{ c: f.c }]; delete s.fill; },
   /** The smallest closed stroke of this note around a world point. */
   at(pane, wp) { let best = null, ba = 1e18;
-    INK.blocks(pane.docId).forEach(b => (b.ink.strokes || []).forEach((s, i) => { if (!INK.fillable(s)) return; const x = wp.x - b.x, y = wp.y - b.y; if (!INK.inPoly(x, y, s.p)) return;
+    INK.reachable(pane.docId).forEach(b => (b.ink.strokes || []).forEach((s, i) => { if (!INK.fillable(s)) return; const x = wp.x - b.x, y = wp.y - b.y; if (!INK.inPoly(x, y, s.p)) return;
       let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; s.p.forEach(p => { x0 = Math.min(x0, p[0]); y0 = Math.min(y0, p[1]); x1 = Math.max(x1, p[0]); y1 = Math.max(y1, p[1]); }); const a = (x1 - x0) * (y1 - y0); if (a < ba) { ba = a; best = { b, i }; } }));
     return best; },
   tap(pane, paper, e) {

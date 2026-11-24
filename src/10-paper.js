@@ -14,6 +14,8 @@ const PTUNE = {
   maxZ: () => +FEAT.tune('paper', 'maxz') || 2,
   /** The grid cell (px) a dragged or resized component settles to; 1 = free. */
   snap: () => { const v = +FEAT.tune('paper', 'snap'); return v > 0 ? v : 14; },
+  /** V4.107 (Gabe, 23 Nov: "Expanding and holding Shift key should also expand grid block by grid block"): a size while Shift is held — whole grid cells, never below min. */
+  cells: (v, min = 0) => { const G = PTUNE.snap(); return Math.max(Math.ceil(min / G) * G, Math.round(v / G) * G); },
   glide: () => FEAT.tune('paper', 'glide') !== false,
 };
 class Paper {

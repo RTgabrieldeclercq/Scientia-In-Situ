@@ -58,7 +58,7 @@ const NEST = {
     notes.forEach((kids, did) => { const d = M.doc(did), g = group(d); if (!groups.has(g.id)) groups.set(g.id, Object.assign({ notes: [] }, g));
       const dots = kids.map(v => ({ id: v.id, kind: v.kind, label: v.label, r: v.kind === 'item' ? 4.2 : v.via ? 4.4 : 6, v, color: v.color || pal[v.kind], x: 0, y: 0, z: 0 }));
       const rr = dots.length ? NEST.pack(dots, 3) + 12 : 20;
-      const n = mk(did, 'note', d.title || 'Untitled', Math.max(22, rr), { kids: dots, doc: d, t: d.created }); dots.forEach(k => k.nest = n); groups.get(g.id).notes.push(n); });
+      const n = mk(did, 'note', CHAIN.listTitle(d), Math.max(22, rr), { kids: dots, doc: d, t: d.created }); dots.forEach(k => k.nest = n); groups.get(g.id).notes.push(n); });
     const gnests = [...groups.values()].map((g, i) => { const r = NEST.pack(g.notes, 14) + 30; const n = mk(g.id, 'project', g.name, r, { kids: g.notes, proj: g, pi: i }); g.notes.forEach(k => k.parent = n); return n; });
     const R = gnests.length ? NEST.pack(gnests, 26) + 40 : 120;
     const root = mk('root', 'root', o.rootLabel || 'The notebook', R, { kids: gnests, center: !!C }); root.v = null; gnests.forEach(k => k.parent = root);

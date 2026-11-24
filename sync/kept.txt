@@ -1,21 +1,38 @@
 # Lines that look like the lab's and stay (sync/lab_sync.py): path<TAB>line. Remove a row to be asked again.
 README.md	**Left out** (they belong to the lab's site, RM): the lab layer (`lab-mode.js`: RM's library, inventory, tasks and My Week, the Portfolio's assigned work, the canvas pills and Quick cast, the one recorder, sharing), the lab cloud and pairing this computer with it (`labsync.py`, `scientia_cloud.py`, Settings → The lab), the installer and updater the lab site hands out (`install/`, `service.py`, `open_local.py`), the ✓ that reports a component to My Week, Export for the lab website, the sync dot for the lab, presence and locks, and the @-list of lab members. A notebook that was synced with the lab opens here as it is: its records stay, and what only the lab could do simply doesn't happen.
 board/store.js	so the website's boards on the same address (mcgheelab.com) keep theirs */
+demokit/camera.mjs	await K(R, '.lab-pill-insert .lab-pill-btn');
 demokit/eqcap.mjs	await K(R, '.lab-pill-tools .lab-pill-btn');
+demokit/freewrite.mjs	await R.click('.lab-pill-insert .lab-pill-btn', q);
 demokit/hw.mjs	await R.click({ sel: `.lab-pill-hand .lab-fan-item[title^="${name}"]` }); await R.sleep(500);
 demokit/hw.mjs	if (!await R.ev(`const p = document.querySelector('.lab-pill-hand'); return !!p && p.classList.contains('open')`)) { await R.click('.lab-pill-hand .lab-pill-btn'); await R.sleep(600); }
 demokit/ink.mjs	await R.click({ sel: `.lab-pill-hand .lab-fan-item[title^="${name}"]` }); await R.sleep(500);
 demokit/ink.mjs	if (!await R.ev(`const p = document.querySelector('.lab-pill-hand'); return !!p && p.classList.contains('open')`)) { await R.click('.lab-pill-hand .lab-pill-btn'); await R.sleep(600); }
 demokit/pen.mjs	await R.click({ sel: `.lab-pill-hand .lab-fan-item[title^="${name}"]` }); await R.sleep(500);
 demokit/pen.mjs	if (!await R.ev(`const p = document.querySelector('.lab-pill-hand'); return !!p && p.classList.contains('open')`)) { await R.click('.lab-pill-hand .lab-pill-btn'); await R.sleep(600); }
+demokit/pills.mjs	// Pills (lab-mode §11 cut into vendor/lab-pills.js; 20c-pillcanvas.js) — the demonstration on its page in Settings. Record: node scientia/demokit/record.mjs pills
+demokit/pills.mjs	await K(R, '.lab-pill-insert .lab-pill-btn');
+demokit/pills.mjs	await K(R, '.lab-pill-tools .lab-pill-btn');   // open it: its tools stand in a column against the edge
+demokit/pills.mjs	await R.drag({ sel: '.lab-pill-tools .lab-pill-btn' }, [24, 330], { ms: 1300, hold: 300 });
+demokit/pills.mjs	await R.move({ sel: '.lab-pill-tools .lab-pill-btn' });
+demokit/pills.mjs	await R.until(`!!document.querySelector('.lab-pill-tools.docked')`, 6000);   // left open, it settles as a column
+demokit/pills.mjs	if (!await R.until(`!!document.querySelector('.lab-pill-tools .lab-fan-item')`, 3000)) throw new Error('the tools did not open');
+demokit/pills.mjs	if (!await R.until(`document.querySelector('.lab-pill-tools') && document.querySelector('.lab-pill-tools').dataset.orient === 'v'`, 3000)) throw new Error('the tools pill did not turn to a column');
 demokit/record.mjs	const done = async () => { try { slot && rmSync(slot, { recursive: true, force: true }); } catch { } try { py && py.kill(); } catch { } if (nbDir) { await sleep(600); await rm(nbDir, { recursive: true, force: true }).catch(() => { }); } try { ws && ws.close(); } catch { } try { chrome.kill(); } catch { } server.close(); await sleep(400); await rm(profile, { recursive: true, force: true }).catch(() => { }); if (!flag('keep')) await rm(frames, { recursive: true, force: true }).catch(() => { }); process.exit(code); };
 demokit/record.mjs	for (const f of readdirSync(slotDir)) { try { if (Date.now() - statSync(path.join(slotDir, f)).mtimeMs > 8 * 60000) rmSync(path.join(slotDir, f), { recursive: true, force: true }); } catch { } }   // a take that died
 demokit/record.mjs	import { existsSync, readFileSync, writeFileSync, statSync, mkdirSync, rmSync, readdirSync } from 'node:fs';
+demokit/rotate.mjs	await K(R, '.lab-pill-view .lab-fan-item[title^="Rotate"]');
+demokit/rotate.mjs	await K(R, '.lab-pill-view .lab-pill-btn');
+demokit/rotate.mjs	await R.click('.lab-pill-hand .lab-pill-btn'); await R.sleep(500);   // the pen is the tool in hand
+demokit/rotate.mjs	await R.click({ sel: '.lab-pill-hand .lab-fan-item[title^="Pen"]' }); await R.sleep(900);
+demokit/rotate.mjs	await R.ev(`document.querySelector('.lab-pill-view') && document.querySelector('.lab-pill-view').classList.contains('open') && document.querySelector('.lab-pill-view .lab-pill-btn').click(); return 1`);
+demokit/rotate.mjs	if (!await R.until(`!!document.querySelector('.lab-pill-view .lab-fan-item[title^="Rotate"]')`, 3000)) throw new Error('the zoom pill has no Rotate');
 demokit/split.mjs	await R.click({ js: `(document.querySelector('.split > .pane.p0 .lab-pill-tools .lab-pill-btn') || document.querySelector('.lab-pill-tools .lab-pill-btn'))` });
 demokit/split.mjs	await R.click({ sel: '.lab-pill-tools .lab-fan-item[aria-label^="Split"]' }, F);
 demokit/split.mjs	await R.until(`!!document.querySelector('.lab-pill-tools .lab-fan-item[aria-label^="Split"]')`, 3000);
 demokit/split.mjs	const pane = '.lab-pills .lab-pill-tools';
 demokit/synthflag.mjs	await R.click('.lab-pill-view .lab-pill-btn');   // ⊕ → Fit everything
+demokit/tidy.mjs	if (e && !e.closest('.box, .wl, svg, button, nav, header, #tabs, .lab-pill, .pop, .toast, .ink-selbar')) return { x, y }; } return null; })()`;
 demokit/timers.mjs	await R.click('.lab-pill-tools .lab-pill-btn');
 demokit/timers.mjs	await R.click('.lab-pill-tools .lab-pill-btn');   // fold the wheel away again
 demokit/timers.mjs	await R.click({ js: `[...document.querySelectorAll('.lab-pill-tools .lab-fan-item')].find(e => /Start this note/.test(e.title))` });

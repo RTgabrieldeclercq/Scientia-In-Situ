@@ -67,7 +67,10 @@ const MATH = {
   editor({ tex = '', display = false, ro = false, title = 'Equation', onSave, onRemove }) {
     if (!MATH.ok()) { askText(title + ' (LaTeX)', 'LaTeX', tex, { multiline: true }).then(t => { if (t != null && onSave) onSave(t.trim(), display); }); return; }
     const mf = new MathfieldElement(); mf.value = tex; mf.className = 'meq'; mf.readOnly = ro;
-    try { mf.mathVirtualKeyboardPolicy = 'manual'; mf.smartFence = true; mf.smartSuperscript = true; mf.letterShapeStyle = 'tex'; } catch { }
+    // V4.110 (Gabe, 23 Nov: "Superscripts or subscripts need to remain in that notation until the user hits that key shortcut again."): with Settings → Writing in components → Super- and subscripts stay on (the default), a power stays open after its first
+    // digit (MathLive's smartSuperscript left it at once) until ^ again — or _ again for a subscript — steps out of it (MATH.branch)
+    const stay = (() => { try { return FEAT.tune('writing', 'stay') !== false; } catch (e) { return true; } })();
+    try { mf.mathVirtualKeyboardPolicy = 'manual'; mf.smartFence = true; mf.smartSuperscript = !stay; mf.letterShapeStyle = 'tex'; } catch { }
     const src = h('textarea.inp.mtex', { rows: 2, spellcheck: false, readOnly: ro, placeholder: 'LaTeX' }, tex);
     mf.addEventListener('input', () => { if (document.activeElement !== src) src.value = mf.value; });
     src.addEventListener('input', () => { mf.setValue(src.value, { silenceNotifications: true }); });
@@ -103,10 +106,18 @@ const MATH = {
       let collapsed = true; try { collapsed = mf.selectionIsCollapsed; } catch { } if (collapsed) return;
       e.preventDefault(); e.stopPropagation(); try { mf.insert(t, { selectionMode: 'placeholder', format: 'latex' }); } catch { } src.value = mf.value;
     }, true);
+    mf.addEventListener('keydown', e => {
+      if (!stay || e.ctrlKey || e.metaKey || e.altKey || (e.key !== '^' && e.key !== '_')) return;
+      let collapsed = true; try { collapsed = mf.selectionIsCollapsed; } catch { } if (!collapsed) return;   // a selection: the key wraps it (above)
+      if (MATH.branch(mf) !== (e.key === '^' ? 'superscript' : 'subscript')) return;
+      e.preventDefault(); e.stopPropagation(); try { mf.executeCommand('moveAfterParent'); } catch { } src.value = mf.value;
+    }, true);
     mf.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); $('.modal .mf .btn.pri') && $('.modal .mf .btn.pri').click(); } });
     setTimeout(() => { try { mf.focus(); } catch { } }, 60);
     return m;
   },
+  /** V4.110: the part of the equation the caret is in — 'superscript', 'subscript', 'body', a fraction's 'above'… (MathLive's model; null if unknown). */
+  branch(mf) { try { const m = mf._mathfield && mf._mathfield.model, a = m && m.at(m.position); return a && typeof a.parentBranch === 'string' ? a.parentBranch : null; } catch (e) { return null; } },
   WRAP: { _: '_{#@}', '^': '^{#@}', '/': '\\frac{#@}{#?}', '(': '\\left(#@\\right)', '[': '\\left[#@\\right]', '|': '\\left|#@\\right|', '{': '\\left\\lbrace #@\\right\\rbrace' },
   WRAP_ALT: { KeyR: '\\sqrt{#@}', KeyN: '\\sqrt[#?]{#@}', KeyB: '\\overline{#@}', KeyH: '\\hat{#@}', KeyV: '\\vec{#@}', KeyD: '\\dot{#@}', KeyT: '\\text{#@}' },
   SHORTCUTS: [
@@ -114,7 +125,7 @@ const MATH = {
     ['Select, then ( [ { |', 'wrap the selection in brackets or bars'], ['Select, then Alt+R · Alt+N', 'square root · nth root of the selection'],
     ['Select, then Alt+B · Alt+H · Alt+V · Alt+D', 'bar · hat · vector · dot over it'], ['Select, then Alt+T', 'make it upright text'],
     ['Select, then One name', 'letters that are one name (MESF, Re) become one term'],
-    ['/', 'fraction — what you typed becomes the numerator'], ['^', 'superscript / power'], ['_', 'subscript'], ['Tab / Shift+Tab', 'next / previous placeholder'],
+    ['/', 'fraction — what you typed becomes the numerator'], ['^', 'superscript / power — what you type stays up there until ^ again'], ['_', 'subscript — until _ again'], ['Tab / Shift+Tab', 'next / previous placeholder'],
     ['→ ← ↑ ↓', 'move through the equation'], ['Space', 'leave a superscript or subscript'], ['\\', 'type a LaTeX command (\\frac, \\sum…) then Enter'],
     ['sqrt', '√'], ['nthroot', 'ⁿ√'], ['sum · prod · int', 'Σ · Π · ∫ with limits'], ['lim', 'limit'], ['alpha … omega', 'Greek letters (Alpha for capitals)'],
     ['pi · infty', 'π · ∞'], ['xx · *', '×  ·  ·'], ['+- · -+', '± · ∓'], ['<= · >= · !=', '≤ · ≥ · ≠'], ['~~ · ~=', '≈ · ≅'], ['->  · =>', '→ · ⇒'],

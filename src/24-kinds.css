@@ -502,6 +502,12 @@ body.f-off-demos .ft-n .dm{display:none}
 .pv-open .po-f{position:absolute;left:50%;top:50%;aspect-ratio:1.6;transform:translate(-50%,-50%);border:2px solid var(--teal);border-radius:6px;box-shadow:0 0 0 400px color-mix(in srgb,var(--paper) 55%,transparent);transition:width .35s cubic-bezier(.2,.8,.3,1)}
 .pv-open.off .po-t{box-shadow:none}
 .pv-focus{border:5px solid var(--surface);outline:1px solid var(--rule-2);border-radius:8px;padding:10px;display:grid;gap:8px} .pv-focus-t{font:11px var(--f-m);color:var(--ink-3);text-align:right}
+.pv-inkthru{position:relative;display:grid;gap:6px;margin-bottom:6px}
+.pv-inkthru .pvb.pv-hit{outline:2px solid var(--teal);outline-offset:1px}
+.pv-inkov{position:absolute;left:34%;top:6px;width:58%;height:70px;border:1.5px dashed transparent;border-radius:4px;pointer-events:none}
+.pv-inkthru.solid .pv-inkov{border-color:var(--ink-3);border-style:dotted}
+.pv-inkov.hov{border-style:dotted;border-color:color-mix(in srgb,var(--ink) 55%,transparent)} .pv-inkthru.solid .pv-inkov.hov{border-color:var(--ink-2)}   /* V4.108 */
+.pv-inkptr{position:absolute;left:12%;top:40px;font-size:15px;color:var(--ink)}
 .pv-ink{display:grid;gap:6px} .pv-inkbar{display:flex;gap:4px;flex-wrap:wrap;font-size:11px} .pv-inkbar span{border:1px solid var(--rule-2);border-radius:6px;padding:2px 8px;background:var(--surface);color:var(--ink-2)} .pv-inkbar .on{background:var(--ink);color:var(--paper)}
 .pv-pen{display:grid;gap:5px;font-size:12px} .pv-pen div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dashed var(--rule);padding-bottom:4px} .pv-pen span{color:var(--ink-3)}
 .pv-edge{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px} .pv-edge > span{font:600 15px var(--f-m);color:var(--teal);animation:pvnudge 1.4s ease-in-out infinite} .pv-edge > .l{animation-direction:reverse}
@@ -594,6 +600,7 @@ body.f-off-syncdot .syncdot:not([data-tone="red"]){display:none}
 .pv-paper{position:relative;height:160px;border:1px solid var(--rule-2);border-radius:8px;overflow:hidden;background:var(--paper)} .pv-paper .paper{cursor:grab}
 .pv-paper-b{position:absolute;width:112px;padding:7px 9px;border:1px solid var(--rule-2);border-radius:7px;background:var(--surface);box-shadow:var(--shadow);font-size:12px;cursor:move;touch-action:none;user-select:none} .pv-paper-b.dragging{box-shadow:var(--shadow-lg);border-color:var(--teal)}
 .pv-paper-z{position:absolute;right:8px;bottom:6px;z-index:6;font:10px var(--f-m);color:var(--ink-3);pointer-events:none}
+.pv-paper-b{box-sizing:border-box} .pv-paper-rz{position:absolute;right:-4px;top:0;bottom:0;width:9px;cursor:ew-resize;touch-action:none} .pv-paper-rz::after{content:'';position:absolute;right:3px;top:30%;bottom:30%;width:2px;border-radius:1px;background:var(--rule-2)} .pv-paper-b:hover .pv-paper-rz::after{background:var(--teal)}   /* V4.107: the preview box's resize edge */
 .pv-fochips{display:flex;flex-wrap:wrap;gap:4px;font-size:11px} .pv-fochips span{padding:2px 8px;border:1px solid var(--rule-2);border-radius:999px;color:var(--ink-2)} .pv-fochips span.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .pv-today{display:grid;gap:6px;max-width:340px} .pv-today-h{font:500 10px var(--f-m);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-top:4px} .pv-today .li{padding:3px 6px;font-size:11.5px;min-height:0} .pv-today .list{gap:0}
 .pv-toast-t{position:relative;display:inline-block;overflow:hidden;background:var(--ink);color:var(--paper);padding:8px 14px;border-radius:999px;font-size:12.5px;box-shadow:var(--shadow-lg)}
@@ -604,3 +611,5 @@ body.f-off-syncdot .syncdot:not([data-tone="red"]){display:none}
 .run-chip{display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:999px;background:color-mix(in srgb,var(--sec-exp,var(--teal)) 14%,transparent);color:var(--ink-2);font:600 10px/1 var(--f-m);letter-spacing:.02em;white-space:nowrap}
 .run-chip.pf-run{margin-left:6px;flex:none}
 .pv-xs-n .run-chip{margin-left:6px}
+/* V4.110: the hint by the caret while super- or subscripts stay on (13u) */
+.wscript{position:fixed;z-index:9000;pointer-events:none;padding:1px 7px;border:1px solid color-mix(in srgb,var(--teal) 55%,var(--rule-2));border-radius:999px;background:var(--surface);color:var(--ink-2);font:10.5px/16px var(--f-m);box-shadow:var(--shadow);white-space:nowrap}

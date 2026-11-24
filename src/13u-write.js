@@ -17,8 +17,11 @@ const WRITE = {
   roman(n) { let s = ''; for (const [v, r] of [[1000, 'm'], [900, 'cm'], [500, 'd'], [400, 'cd'], [100, 'c'], [90, 'xc'], [50, 'l'], [40, 'xl'], [10, 'x'], [9, 'ix'], [5, 'v'], [4, 'iv'], [1, 'i']]) while (n >= v) { s += r; n -= v; } return s; },
   numTok: (lvl, n) => lvl === 1 ? WRITE.alpha(n) : lvl >= 2 ? WRITE.roman(n) : String(n),
   on: g => { const a = settings().autoReplace || {}; return a[g] !== false; },
-  SUP: { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹', '-': '⁻', '+': '⁺' },
-  SUB: { '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄', '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉' },
+  SUP: { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹', '-': '⁻', '+': '⁺',
+    '=': '⁼', '(': '⁽', ')': '⁾', a: 'ᵃ', b: 'ᵇ', c: 'ᶜ', d: 'ᵈ', e: 'ᵉ', f: 'ᶠ', g: 'ᵍ', h: 'ʰ', i: 'ⁱ', j: 'ʲ', k: 'ᵏ', l: 'ˡ', m: 'ᵐ', n: 'ⁿ', o: 'ᵒ', p: 'ᵖ', r: 'ʳ', s: 'ˢ', t: 'ᵗ', u: 'ᵘ', v: 'ᵛ', w: 'ʷ', x: 'ˣ', y: 'ʸ', z: 'ᶻ',
+    A: 'ᴬ', B: 'ᴮ', D: 'ᴰ', E: 'ᴱ', G: 'ᴳ', H: 'ᴴ', I: 'ᴵ', J: 'ᴶ', K: 'ᴷ', L: 'ᴸ', M: 'ᴹ', N: 'ᴺ', O: 'ᴼ', P: 'ᴾ', R: 'ᴿ', T: 'ᵀ', U: 'ᵁ', V: 'ⱽ', W: 'ᵂ' },
+  SUB: { '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄', '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉',
+    '+': '₊', '-': '₋', '=': '₌', '(': '₍', ')': '₎', a: 'ₐ', e: 'ₑ', h: 'ₕ', i: 'ᵢ', j: 'ⱼ', k: 'ₖ', l: 'ₗ', m: 'ₘ', n: 'ₙ', o: 'ₒ', p: 'ₚ', r: 'ᵣ', s: 'ₛ', t: 'ₜ', u: 'ᵤ', v: 'ᵥ', x: 'ₓ' },
   /** [group, pattern at the caret, replacement] — first match wins. */
   RULES: [
     ['arrows', /<->$/, '↔'], ['arrows', /<--$/, '←'], ['arrows', /(?:–|--)>$/, '→'], ['arrows', /≤>$/, '⇔'], ['arrows', /≤=$/, '⇐'], ['arrows', /=>$/, '⇒'], ['arrows', /<–$/, '←'],
@@ -27,22 +30,54 @@ const WRITE = {
     ['science', /(\d) ?deg([\sC.,;:)])$/, (m, d, e) => d + '°' + e],
     ['science', /(\d ?)u(L|l|M|g|m|mol|s|A|W|V|Pa)([\s.,;:)\/])$/, (m, a, u, e) => a + 'µ' + u + e],
     ['science', /(\d)( ?)x( ?)(\d)$/, (m, a, s1, s2, b) => a + s1 + '×' + s2 + b],
-    ['scripts', /\^(-?\d)$/, (m, x) => [...x].map(c => WRITE.SUP[c]).join('')],
-    ['scripts', /([A-Za-z)\]])_(\d)$/, (m, a, d) => a + WRITE.SUB[d]],
+    ['scripts', /\^(-?\d)$/, (m, x) => [...x].map(c => WRITE.SUP[c]).join(''), 'sup'],
+    ['scripts', /([A-Za-z)\]])_(\d)$/, (m, a, d) => a + WRITE.SUB[d], 'sub'],
   ],
   _last: null,
+  /* V4.110 (Gabe, 23 Nov: "Superscripts or subscripts need to remain in that notation until the user hits that key shortcut again."):
+     after ^2 (or CO_2) what you type stays raised (lowered) until ^ (_) is typed again — that key goes, it only ends the run. Characters with a
+     Unicode super- or subscript form change; the others go in as typed. Enter, Esc, the arrows, a click elsewhere or leaving the text end it too.
+     A small hint by the caret says how to end it. Settings → Writing in components → Super- and subscripts stay on (off: one character, as before). */
+  mode: null,
+  stays: () => { try { return FEAT.tune('writing', 'stay') !== false; } catch (e) { return true; } },
+  /** The caret's place in el, counted in characters of its text. */
+  caretAt(el) { const s = getSelection(); if (!s.rangeCount || !el.contains(s.anchorNode)) return -1; const r = document.createRange(); r.selectNodeContents(el); try { r.setEnd(s.anchorNode, s.anchorOffset); } catch (e) { return -1; } return r.toString().length; },
+  startMode(el, k) {
+    WRITE.endMode(); const M = WRITE.mode = { el, k, at: WRITE.caretAt(el), hint: h('div.wscript', { 'aria-hidden': 'true' }, k === 'sup' ? 'x² · type ^ to end' : 'x₂ · type _ to end') };
+    M.blur = () => WRITE.endMode(); el.addEventListener('blur', M.blur); document.body.append(M.hint); WRITE.placeHint();
+  },
+  endMode() { const M = WRITE.mode; if (!M) return; WRITE.mode = null; M.el.removeEventListener('blur', M.blur); M.hint.remove(); },
+  placeHint() { const M = WRITE.mode; if (!M) return; const s = getSelection(); let r = null; try { r = s.rangeCount && s.getRangeAt(0).getBoundingClientRect(); } catch (e) { }
+    if (!r || (!r.width && !r.height && !r.left)) r = M.el.getBoundingClientRect();
+    Object.assign(M.hint.style, { left: Math.round(Math.min(innerWidth - 150, Math.max(4, r.right + 6))) + 'px', top: Math.round(Math.max(4, r.top - 22)) + 'px' }); },
+  /** A super- or subscript run: what was just typed, raised or lowered, or the run ended. Returns true when it changed the text. */
+  inMode(el, e, node, off) {
+    const M = WRITE.mode; if (!M) return false;
+    if (M.el !== el || !WRITE.stays()) { WRITE.endMode(); return false; }
+    const at = WRITE.caretAt(el) - e.data.length; if (at !== M.at) { WRITE.endMode(); return false; }
+    const end = M.k === 'sup' ? '^' : '_';
+    if (e.data === end) { WRITE.endMode(); WRITE.swap(node, off, 1, '', end); WRITE._last = null; return true; }   // the key again: the run ends, the key goes
+    if (e.data === '^' || e.data === '_') { WRITE.endMode(); return false; }   // the other one: this run ends, that one may begin
+    const map = M.k === 'sup' ? WRITE.SUP : WRITE.SUB, out = [...e.data].map(c => map[c] || c).join(''); M.at = at + out.length;
+    if (out !== e.data) { WRITE.swap(node, off, e.data.length, out, e.data); WRITE._last = null; }
+    WRITE.placeHint(); return out !== e.data;
+  },
   /** Called on input: replace what was just typed if it matches a rule. Returns true when it changed the text. */
   autoReplace(el, e) {
-    if (!e || e.inputType !== 'insertText' || !e.data) return false;
+    if (WRITE.mode && e && /^delete/.test(e.inputType || '') && WRITE.mode.el === el) { WRITE.mode.at = WRITE.caretAt(el); WRITE.placeHint(); return false; }   // V4.110: a typo taken back keeps the run
+    if (!e || e.inputType !== 'insertText' || !e.data) { if (WRITE.mode && e && WRITE.mode.el === el) WRITE.endMode(); return false; }
     const s = getSelection(); if (!s.rangeCount || !s.isCollapsed) return false;
     const node = s.anchorNode, off = s.anchorOffset; if (!node || node.nodeType !== 3 || !el.contains(node)) return false;
     if (node.parentElement && node.parentElement.closest('.mx,.ct')) return false;
+    if (WRITE.mode && WRITE.inMode(el, e, node, off)) return true;
+    if (WRITE.mode && WRITE.mode.el === el) return false;   // V4.110: inside a run, nothing else is replaced
     const before = node.nodeValue.slice(0, off);
     // quotes
     if ((e.data === '"' || e.data === "'") && WRITE.on('typo')) { const prev = before.slice(-2, -1), open = !prev || /[\s(\[{–—]/.test(prev);
       return WRITE.swap(node, off, 1, e.data === '"' ? (open ? '“' : '”') : (open ? '‘' : '’'), e.data); }
-    for (const [g, rx, rep] of WRITE.RULES) { if (!WRITE.on(g)) continue; const m = rx.exec(before.slice(-12)); if (!m) continue;
-      const out = typeof rep === 'function' ? rep(...m) : rep; if (out === m[0]) continue; return WRITE.swap(node, off, m[0].length, out, m[0]); }
+    for (const [g, rx, rep, run] of WRITE.RULES) { if (!WRITE.on(g)) continue; const m = rx.exec(before.slice(-12)); if (!m) continue;
+      const out = typeof rep === 'function' ? rep(...m) : rep; if (out === m[0]) continue; const r = WRITE.swap(node, off, m[0].length, out, m[0]);
+      if (run && WRITE.stays()) WRITE.startMode(el, run); return r; }
     WRITE._last = null; return false;
   },
   swap(node, off, len, out, orig) {
@@ -54,6 +89,7 @@ const WRITE = {
   undoReplace() {
     const L = WRITE._last; WRITE._last = null; if (!L) return false; const s = getSelection();
     if (!s.isCollapsed || s.anchorNode !== L.node || s.anchorOffset !== L.pos || L.node.nodeValue.slice(L.pos - L.out.length, L.pos) !== L.out) return false;
+    WRITE.endMode();   // V4.110: ^2 put back ends its run
     const v = L.node.nodeValue; L.node.nodeValue = v.slice(0, L.pos - L.out.length) + L.orig + v.slice(L.pos); const p = L.pos - L.out.length + L.orig.length;
     const r = document.createRange(); r.setStart(L.node, p); r.collapse(true); s.removeAllRanges(); s.addRange(r); return true;
   },
@@ -188,6 +224,7 @@ const WRITE = {
   /** Keys inside a component. Returns true when handled. */
   onKey(e, el, b) {
     const mod = e.ctrlKey || e.metaKey, k = (e.key || '').toLowerCase();
+    if (WRITE.mode && (/^(Enter|Escape|Tab|Home|End|PageUp|PageDown)$/.test(e.key) || /^Arrow/.test(e.key) || mod)) WRITE.endMode();   // V4.110: the run ends when the caret goes elsewhere
     if (mod && !e.shiftKey && !e.altKey && k === 'b') { e.preventDefault(); WRITE.toggle(el, b, 'b'); return true; }
     if (mod && !e.shiftKey && !e.altKey && k === 'u') { e.preventDefault(); WRITE.toggle(el, b, 'u'); return true; }
     if (e.altKey && !mod && !e.shiftKey && e.code === 'KeyI') { e.preventDefault(); WRITE.toggle(el, b, 'i'); return true; }
@@ -199,3 +236,5 @@ const WRITE = {
     return false;
   },
 };
+// V4.110: a run of super- or subscripts ends when the caret leaves the place it is typing at (a click, a tap, another text)
+document.addEventListener('selectionchange', () => { const M = WRITE.mode; if (!M) return; if (document.activeElement !== M.el && !M.el.contains(document.activeElement)) return WRITE.endMode(); const s = getSelection(); if (!s.isCollapsed || WRITE.caretAt(M.el) !== M.at) WRITE.endMode(); });

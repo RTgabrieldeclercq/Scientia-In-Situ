@@ -48,7 +48,7 @@ const SYNN = {
     let s = null; try { s = SYNN.seriesNext(d); } catch (x) { }
     if (s && !SYNN.runsOf(s).includes(d.chain)) {   // Run 3 comes to the series' Synthesis: it covers Run 3 from now on, and gathers it
       const cur = M.doc(s.id); cur.synthRuns = [...SYNN.runsOf(cur), d.chain]; DB.put('documents', cur); changed();
-      setTimeout(() => { const g = SYNTH.gather(M.doc(s.id), true); toast('“' + CHAIN.name(d) + '” joins the series’ synthesis' + (g ? ' — ' + plural(g, 'thing') + ' gathered' : ''), 3200); }, 0);
+      setTimeout(() => { const g = SYNTH.gather(M.doc(s.id), true); toast('Run ' + CHAIN.runOf(d) + ' joins the series’ synthesis' + (g ? ' — ' + plural(g, 'thing') + ' gathered' : ''), 3200); }, 0);
     }
     const r = adv.apply(this, arguments);
     try {   // the first Synthesis of a series: the series' own, titled with its name
@@ -70,7 +70,7 @@ const SYNN = {
     try {
       const s = M.doc(b.docId) || d; if (!SYNN.on() || !s || !s.series || !el) return el; const R = SYNN.runs(s); if (!R.length) return el;
       const head = el.querySelector('.sy-h'); if (head) head.textContent = 'Notes this synthesizes';
-      const line = h('div.sy-runs', h('span', 'The series’ synthesis — it covers '), R.map((r, i) => [i ? (i === R.length - 1 ? ' and ' : ', ') : '', h('a', { href: '#/doc/' + r.doc.id, title: 'Open it', on: { pointerdown: stop } }, r.name)]), '.');
+      const line = h('div.sy-runs', h('span', 'The series’ synthesis — it covers '), R.map((r, i) => [i ? (i === R.length - 1 ? ' and ' : ', ') : '', h('a', { href: '#/doc/' + r.doc.id, title: 'Open it', on: { pointerdown: stop } }, 'Run ' + r.run)]), '.');   // V4.103: by number (V4.97)
       if (head) head.after(line); else el.prepend(line);
       let list = el.querySelector('.sy-list'); if (!list) { list = h('div.sy-list'); line.after(list); }
       const shown = new Set([...list.querySelectorAll('a.sy-t')].map(a => (a.getAttribute('href') || '').replace('#/doc/', '')));

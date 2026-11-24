@@ -22,6 +22,24 @@ const PV = {
       o.body != null ? h('div.pvb-tx', o.body) : null, o.chips && o.chips.filter(Boolean).length ? h('div.pvb-ch', o.chips) : null, ...(o.extra || []));
   },
   chip: (t, cls) => h('span.pvc' + (cls ? '.' + cls : ''), t),
+  /** V4.106: search for an experiment's name — its notes, each with its stage and run (Settings → Experiment series → In search, the stage and run). */
+  xsSearch() {
+    const on = FEAT.tune('expseries', 'search') !== false, n = FEAT.on('expseries') && FEAT.tune('expseries', 'runchip') !== false;
+    const rows = [['Planning', n ? 'Planning · Run 3' : 'Planning'], ['Run', n ? 'Run 3' : 'Run'], ['Analysis', n ? 'Analysis · Run 3' : 'Analysis']];
+    return h('div.pv-xs-srch', h('div.pv-xs-sq', '⌕ 30 kPa'), rows.map(([st, sr]) => h('div.pv-xs-sr', h('b', '30 kPa series'), on ? h('span.pv-xs-sb', sr) : h('span.pv-xs-sb.off', ({ Run: 'Experiment' })[st] || st))),
+      h('div.tiny.muted', on ? 'Search says which note is which' : 'Search: the name alone, with the note’s type'));
+  },
+  /** V4.105: ink written over a component, see-through; with Click through ink, the pointer on its empty part reaches the component beneath. */
+  inkThrough() {
+    const thru = FEAT.tune('ink', 'through') !== false;
+    return h('div.pv-inkthru' + (thru ? '' : '.solid'), PV.box({ num: 'Block', label: 'Seeding', body: 'Seed at 40k/cm² on the 30 kPa gels; wait 4 h before imaging.', cls: thru ? 'pv-hit' : '' }),
+      h('div.pv-inkov', PV.svg(220, 70, '<path d="M14 48 q 18 -40 36 -6 t 34 -4 t 36 2" fill="none" stroke="var(--k-barrier, #c92a2a)" stroke-width="2.6" stroke-linecap="round"/><path d="M150 20 l 34 30 M184 20 l -34 30" fill="none" stroke="var(--k-barrier, #c92a2a)" stroke-width="2.4" stroke-linecap="round"/>'), h('span.pv-inkptr', '➚')),
+      PV.cap(thru ? 'Point at the ink: a dotted outline shows all of it. A click on its empty part reaches the component beneath (it is outlined)' : 'The ink’s whole rectangle (dotted) takes the click; the component beneath does not get it'));
+  },
+  /** V4.108: the preview's ink is outlined while the pointer is over any part of it, as on a note. */
+  inkHover(el) { const ov = el.querySelector('.pv-inkov'); if (!ov) return el;
+    el.addEventListener('pointermove', e => { const r = ov.getBoundingClientRect(); ov.classList.toggle('hov', e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom); });
+    el.addEventListener('pointerleave', () => ov.classList.remove('hov')); return el; },
   cap: t => h('div.fpv-cap', t),
   st: (k, t) => h('span.st.st-' + k, t),
   /** A row of things side by side; a stage where children sit where they're put. */
@@ -49,14 +67,17 @@ const PV = {
   /* =============================== Canvas & notes =============================== */
   D({ id: 'writing', group: 'canvas', core: true, label: 'Writing in components', desc: 'Components and their text: the notebook itself. Typing replacements turn what you type into the symbols scientists write — in components and in a protocol’s steps (5 uL becomes 5 µL there too); where pasted and inserted things land; and gravity — what a component pushed out of its way comes back when it shrinks.',
     tune: [T('land', 'Pasted and inserted things land', 'seg', { isNew: true, def: 'centre', opts: [['centre', 'At the centre of the view, on top'], ['room', 'Where the pointer was, making room']], d: 'A pasted component, a PDF, an HTML file…: at the centre, over what is there, until you move it' }),
-      T('gravity', 'What a component pushed comes back when it shrinks', 'switch', { isNew: true, def: true, d: 'Fold it, close its earlier versions, or empty it: what it pushed down (or a region pushed aside) comes back by as much. What you moved since stays.' }),T('replace', 'Typing replacements', 'node', { d: 'Backspace right after a replacement undoes it', render: () => h('div.st-checks', [['arrows', 'Arrows', '--> → · <-- ← · <-> ↔ · => ⇒'], ['science', 'Science symbols', '+- ± · >= ≥ · <= ≤ · != ≠ · ~= ≈ · 37 deg → 37° · 5 uL → 5 µL · 3x4 → 3×4'], ['scripts', 'Super- and subscripts', '^2 → ² · ^-1 → ⁻¹ · CO_2 → CO₂'], ['typo', 'Dashes and quotes', '-- → – · --- → — · ... → … · “curly” ‘quotes’']].map(([k, l, ex]) =>
+      T('gravity', 'What a component pushed comes back when it shrinks', 'switch', { isNew: true, def: true, d: 'Fold it, close its earlier versions, or empty it: what it pushed down (or a region pushed aside) comes back by as much. What you moved since stays.' }),
+      // V4.110 (Gabe: "Superscripts or subscripts need to remain in that notation until the user hits that key shortcut again.") — 13u, 13h
+      T('stay', 'Super- and subscripts stay on', 'switch', { isNew: true, def: true, d: 'After ^2 or CO_2 what you type stays raised or lowered until you type ^ (or _) again — in a component, and in the equation editor after ^ or _. Off: one character, as before' }),T('replace', 'Typing replacements', 'node', { d: 'Backspace right after a replacement undoes it', render: () => h('div.st-checks', [['arrows', 'Arrows', '--> → · <-- ← · <-> ↔ · => ⇒'], ['science', 'Science symbols', '+- ± · >= ≥ · <= ≤ · != ≠ · ~= ≈ · 37 deg → 37° · 5 uL → 5 µL · 3x4 → 3×4'], ['scripts', 'Super- and subscripts', '^2 → ² · ^-1 → ⁻¹ · CO_2 → CO₂'], ['typo', 'Dashes and quotes', '-- → – · --- → — · ... → … · “curly” ‘quotes’']].map(([k, l, ex]) =>
       h('label.st-check', h('input', { type: 'checkbox', checked: (settings().autoReplace || {})[k] !== false, on: { change: e => { saveSettings({ autoReplace: Object.assign({}, settings().autoReplace, { [k]: e.target.checked }) }); SettingsView.repaint(); } } }), h('span', h('b', l), h('div.st-th', ex))))) })],
-    preview: () => { const r = settings().autoReplace || {}, x = (k, a, b) => r[k] !== false ? b : a;
+    preview: () => { const r = settings().autoReplace || {}, x = (k, a, b) => r[k] !== false ? b : a, stay = tune('writing', 'stay') !== false;
       const centre = tune('writing', 'land') !== 'room', grav = tune('writing', 'gravity') !== false;
-      return [PV.box({ num: 'Block', label: 'Gels', body: ['Batch 14 ', x('arrows', '-->', '→'), ' stiffer: 30 kPa ', x('science', '+-', '±'), ' 2, at 37', x('science', ' deg', '°'), ', 5 ', x('science', 'uL', 'µL'), ' beads, CO', x('scripts', '_2', '₂'), ' 5 % ', x('typo', '--', '–'), ' as planned', x('typo', '...', '…')] }),
+      return [PV.box({ num: 'Block', label: 'Gels', body: ['Batch 14 ', x('arrows', '-->', '→'), ' stiffer: 30 kPa ', x('science', '+-', '±'), ' 2, at 37', x('science', ' deg', '°'), ', 5 ', x('science', 'uL', 'µL'), ' beads, CO', x('scripts', '_2', '₂'), ', 10', x('scripts', '^-12', stay ? '⁻¹²' : '⁻¹2'), ' M, x', x('scripts', '_12', stay ? '₁₂' : '₁2'), ' 5 % ', x('typo', '--', '–'), ' as planned', x('typo', '...', '…')] }),
         PV.box({ num: 'Step 3', label: 'Protocol', body: ['Add 5 ', x('science', 'uL', 'µL'), ' of antibody to each well; ', x('science', '3x4', '3×4'), ' plate.'] }),
         h('div.pv-land' + (centre ? '.centre' : ''), h('div.pv-view', h('span.k', 'the view'), h('i.c')), PV.box({ num: 'Block', label: 'Run 3', body: 'The edge collapsed.', cls: 'pv-under' }), PV.box({ num: 'Pasted', label: 'Seeding', body: 'Seed at 40k/cm².', cls: 'pv-pasted' })),
         h('div.pv-grav' + (grav ? '.on' : ''), h('div.pv-gA', PV.box({ num: 'Block', label: 'Edge', body: grav ? 'Folded — it shrank.' : 'Folded.' })), h('div.pv-gB', PV.box({ num: 'Block', label: 'Gels', body: grav ? 'Back up where it was.' : 'Still where it was pushed.' })), grav ? h('span.pv-up', '↑') : null),
+        h('div.tiny.muted', stay ? 'Super- and subscripts stay on: ^-12 gives ⁻¹² until you type ^ again' : 'Super- and subscripts: one character, then back to normal (^-12 gives ⁻¹2)'),
         PV.cap((centre ? 'Pasted and inserted: at the centre of the view, on top of what is there. ' : 'Pasted and inserted: where the pointer was, making room. ') + (grav ? 'Gravity: what a component pushed comes back when it shrinks.' : 'Gravity off: pushed components stay where they went.'))]; } });
 
   D({ id: 'templates', group: 'canvas', label: 'Template canvas', isNew: true, presets: { simple: false },
@@ -146,13 +167,16 @@ const PV = {
 
   // V4.15 (13c): + Experiment asks the name and can continue a series; one name for every note of an experiment
   D({ id: 'expseries', group: 'canvas', label: 'Experiment series', isNew: true, presets: { simple: true },
-    tune: [T('runchip', 'Show the run number', 'switch', { isNew: true, def: true, d: 'Beside the experiment in the Portfolio, and beside the title in the note', changed: () => { try { App.refresh(); } catch (e) { } } })],
+    tune: [T('runchip', 'Show the run number', 'switch', { isNew: true, def: true, d: 'Beside the experiment in the Portfolio, and beside the title in the note', changed: () => { try { App.refresh(); } catch (e) { } } }),
+      // V4.106 (Gabe: "the search function should show if the experiment note is planning, run, or analysis, and shows the run on it too")
+      T('search', 'In search, the stage and run', 'switch', { isNew: true, def: true, d: 'The notes of an experiment all carry its name, so search, the Atlas and the note pickers add which one it is: Planning · Run 3, Run 3, Analysis · Run 3. Typing “analysis” or “run 3” finds them. Off: the name alone' })],
     desc: '+ Experiment asks the experiment’s name, and can continue a series of its theme: pick “30 kPa series” and its next run is made — named “30 kPa series” too, its number (Run 3) beside the title, never in it (V4.97): next to the experiment in the Portfolio and beside the title in the note. Titles that ended in “Run N” lost it once; the number stays on the notes. Every note of an experiment carries its name alone — the stage is its chip and the strip, not part of the title — and renaming one renames them all. A series’ runs share one Synthesis. Off: no series to continue (the name is still asked); series already made stay.',
     preview: () => { const on = FEAT.on('expseries');
       return [h('div.pv-xs', h('div.pv-xs-h', 'New experiment'),
         on ? h('div.pv-xs-f', h('span', 'Continue a series'), h('div.pv-xs-sel', '30 kPa series · 2 runs', h('i', '▾'))) : null,
         h('div.pv-xs-f', h('span', 'Name'), h('div.pv-xs-in', '30 kPa series'))),
         h('div.pv-xs-notes', ['Planning', 'Run', 'Analysis'].map(s => h('div.pv-xs-n', h('span.pv-xs-st', s), h('b', '30 kPa series'), on && FEAT.tune('expseries', 'runchip') !== false ? h('span.run-chip', 'Run 3') : null))),
+        PV.xsSearch(),
         PV.cap(on ? 'Picking a series makes its next run; its three notes all carry the series’ name, each stage as its chip' + (FEAT.tune('expseries', 'runchip') !== false ? ', and “Run 3” beside the title (the Portfolio, the note).' : '; the run number is not shown.') : 'Off: the name is asked, with no series to continue; each note still carries the name alone.')]; } });
 
   // V4.16 (15e): one Synthesis per series; Syntheses in the Portfolio; a note's synthesis in its first block and under its row
@@ -225,26 +249,33 @@ const PV = {
       PV.cap('The ◎ window opens on ' + m + ' min' + ([15, 25, 45, 50, 60, 90, 120].includes(m) ? '' : ' (set by hand last time)') + '.')]; } });
 
   // 20 Nov (Gabe: "Search for other features like these that could get some easy customization"): the numbers of moving around a note, in 10-paper.js (PTUNE)
-  D({ id: 'paper', group: 'canvas', core: true, label: 'Moving around the paper', isNew: true, desc: 'Ctrl+wheel (or a pinch) zooms at the pointer — as fast as you like and as far in as you like; a component you move or resize settles on the grid (Shift+drag moves it a cell at a time, and the same cell is where it lands when you let go); and a flick of the paper keeps gliding until it slows. The paper below is a real one: zoom it, drag the box, flick it.',
+  D({ id: 'paper', group: 'canvas', core: true, label: 'Moving around the paper', isNew: true, desc: 'Ctrl+wheel (or a pinch) zooms at the pointer — as fast as you like and as far in as you like; a component you move or resize settles on the grid (hold Shift while you drag it or its edge and it moves or grows a cell at a time; the same cell is where it lands when you let go); and a flick of the paper keeps gliding until it slows. The paper below is a real one: zoom it, drag the box or its right edge (with Shift too), flick it.',
     tune: [T('zoom', 'Ctrl+wheel zooms', 'seg', { isNew: true, def: '1', opts: [['0.5', 'Slowly'], ['1', 'As before'], ['2', 'Quickly']], d: 'How far each notch of the wheel goes' }),
       T('maxz', 'Zoom in up to', 'seg', { isNew: true, def: '2', opts: [['2', '200%'], ['3', '300%'], ['4', '400%']] }),
-      T('snap', 'A component settles to', 'seg', { isNew: true, def: '14', opts: [['1', 'No grid'], ['7', 'Half a cell'], ['14', 'One cell'], ['28', 'Two cells']], d: 'Moving and resizing; Shift+drag also moves by it. A cell is the paper’s small square' }),
+      T('snap', 'A component settles to', 'seg', { isNew: true, def: '14', opts: [['1', 'No grid'], ['7', 'Half a cell'], ['14', 'One cell'], ['28', 'Two cells']], d: 'Moving and resizing; with Shift held, a drag moves or resizes by it. A cell is the paper’s small square' }),
       T('glide', 'A flick keeps gliding', 'switch', { isNew: true, def: true, d: 'Off: the paper stops where you let go' })],
     preview: () => {
       const G = PTUNE.snap(), host = h('div.pv-paper'), out = h('span.pv-paper-z', '100%'), P = makePaper(host, { anyWheel: true, view: { x: 24, y: 18, z: 1 }, onView: v => { out.textContent = Math.round(v.z * 100) + '%'; } });
-      const bx = h('div.pv-paper-b.nopan', { style: { left: '28px', top: '28px' } }, 'Run 3 · drag me'), cell = h('span.pv-paper-c');
+      const grip = h('span.pv-paper-rz', { title: 'Drag to resize — hold Shift for a cell at a time' }), bx = h('div.pv-paper-b.nopan', { style: { left: '28px', top: '28px' } }, 'Run 3 · drag me', grip), cell = h('span.pv-paper-c');
       P.world.append(bx);
+      // V4.107: its right edge resizes it, a cell at a time with Shift held, as on a note
+      grip.addEventListener('pointerdown', e => { if (e.button) return; e.preventDefault(); e.stopPropagation(); grip.setPointerCapture(e.pointerId); const sx = e.clientX, w0 = bx.offsetWidth; bx.classList.add('dragging');
+        const mv = ev => { const w = w0 + (ev.clientX - sx) / P.view.z; bx.style.width = (ev.shiftKey ? PTUNE.cells(w, 84) : Math.max(84, Math.round(w))) + 'px'; };
+        const up = () => { grip.removeEventListener('pointermove', mv); grip.removeEventListener('pointerup', up); bx.classList.remove('dragging'); bx.style.width = PTUNE.cells(bx.offsetWidth, 84) + 'px'; };
+        grip.addEventListener('pointermove', mv); grip.addEventListener('pointerup', up); });
       bx.addEventListener('pointerdown', e => { if (e.button) return; e.preventDefault(); bx.setPointerCapture(e.pointerId); const sx = e.clientX, sy = e.clientY, ox = bx.offsetLeft, oy = bx.offsetTop; bx.classList.add('dragging');
         const mv = ev => { let x = ox + (ev.clientX - sx) / P.view.z, y = oy + (ev.clientY - sy) / P.view.z; if (ev.shiftKey) { x = Math.round(x / G) * G; y = Math.round(y / G) * G; } bx.style.left = x + 'px'; bx.style.top = y + 'px'; };
         const up = () => { bx.removeEventListener('pointermove', mv); bx.removeEventListener('pointerup', up); bx.classList.remove('dragging'); bx.style.left = Math.round(bx.offsetLeft / G) * G + 'px'; bx.style.top = Math.round(bx.offsetTop / G) * G + 'px'; };
         bx.addEventListener('pointermove', mv); bx.addEventListener('pointerup', up); });
       host.append(out);
-      return [host, PV.cap('Ctrl+wheel zooms ' + ({ '0.5': 'slowly', '1': 'at the usual pace', '2': 'quickly' }[String(tune('paper', 'zoom'))] || 'at the usual pace') + ', up to ' + Math.round(PTUNE.maxZ() * 100) + '%; the box settles to ' + (G === 1 ? 'wherever you let go' : (G === 14 ? 'one cell' : G === 7 ? 'half a cell' : G === 28 ? 'two cells' : G + ' px')) + '; a flick ' + (PTUNE.glide() ? 'keeps gliding' : 'stops where you let go') + '.')];
+      return [host, PV.cap('Ctrl+wheel zooms ' + ({ '0.5': 'slowly', '1': 'at the usual pace', '2': 'quickly' }[String(tune('paper', 'zoom'))] || 'at the usual pace') + ', up to ' + Math.round(PTUNE.maxZ() * 100) + '%; the box settles to ' + (G === 1 ? 'wherever you let go' : (G === 14 ? 'one cell' : G === 7 ? 'half a cell' : G === 28 ? 'two cells' : G + ' px')) + ', and Shift+drag moves it or its right edge by that; a flick ' + (PTUNE.glide() ? 'keeps gliding' : 'stops where you let go') + '.')];
     } });
 
   /* =============================== Pen & touch =============================== */
-  D({ id: 'ink', group: 'pen', label: 'Ink & shapes', desc: 'Writing on the paper with a pen (or the mouse): pen, highlighter, eraser and lasso in the ink bar; strokes written close together gather into one ink component. Off: the ink tools leave; ink already written stays.',
-    preview: () => [h('div.pv-ink', PV.svg(300, 90, '<path d="M20 60 q 14 -34 28 0 t 28 0 t 28 0" fill="none" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round"/><path d="M130 30 l 40 40 M170 30 l -40 40" stroke="var(--k-barrier, #c92a2a)" stroke-width="2" stroke-linecap="round"/><rect x="195" y="22" width="90" height="16" rx="3" fill="color-mix(in srgb, #f2c94c 55%, transparent)"/><text x="200" y="34" font-size="11" font-family="Source Serif 4, serif" fill="var(--ink)">highlighted</text>'), h('div.pv-inkbar', ['✎ Pen', 'Highlighter', 'Eraser', 'Lasso'].map((x, i) => h('span' + (i ? '' : '.on'), x))))] });
+  D({ id: 'ink', group: 'pen', label: 'Ink & shapes', desc: 'Writing on the paper with a pen (or the mouse): pen, highlighter, eraser and lasso in the ink bar; strokes written close together gather into one ink component. Ink is see-through, and what it lies over can still be clicked; a dotted outline shows all of an ink component while you point at it or it is selected, and none while the pen writes. Off: the ink tools leave; ink already written stays.',
+    // V4.105 (Gabe: "The ink background should be invisible/see through. You may interact with components overlaid by ink components.") — 21-sync.css
+    tune: [T('through', 'Click through ink', 'switch', { isNew: true, def: true, d: 'Only the strokes take the pointer: a click on an empty part of an ink component reaches the component beneath it. Off: the whole of its rectangle takes the pointer, as before', changed: () => FEAT.apply() })],
+    preview: () => [PV.inkHover(PV.inkThrough()),h('div.pv-ink', PV.svg(300, 90, '<path d="M20 60 q 14 -34 28 0 t 28 0 t 28 0" fill="none" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round"/><path d="M130 30 l 40 40 M170 30 l -40 40" stroke="var(--k-barrier, #c92a2a)" stroke-width="2" stroke-linecap="round"/><rect x="195" y="22" width="90" height="16" rx="3" fill="color-mix(in srgb, #f2c94c 55%, transparent)"/><text x="200" y="34" font-size="11" font-family="Source Serif 4, serif" fill="var(--ink)">highlighted</text>'), h('div.pv-inkbar', ['✎ Pen', 'Highlighter', 'Eraser', 'Lasso'].map((x, i) => h('span' + (i ? '' : '.on'), x))))] });
 
   D({ id: 'pen', group: 'pen', core: true, label: 'Pen & touch shortcuts', desc: 'What the pen’s buttons, taps and gestures do. Today: the Slim Pen’s button switches to the pen and between its modes; the barrel button lassoes (in pen mode) or loops a region; the pen’s back erases; two fingers tapped undo, three redo; a right-drag loop makes a region; P pans. Choosing a different action for each comes in a later version.',
     tune: SYNC.local ? [T('button', 'The Slim Pen’s button (this computer)', 'node', { render: () => { const n = HANDS.settingsUI(); $$(':scope > .sec, :scope > .sec-h', n).forEach(x => x.remove()); return n; } })] : [],

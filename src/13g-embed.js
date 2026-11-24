@@ -27,8 +27,8 @@ const EMBED = {
     if (!ro) $('.embed-rz', wrap).addEventListener('pointerdown', e => {
       e.preventDefault(); e.stopPropagation(); const box = wrap.closest('.box'), z = pane.paper.view.z, x0 = e.clientX, y0 = e.clientY, w0 = box.offsetWidth, h0 = wrap.offsetHeight;
       document.body.classList.add('resizing');
-      const mv = ev => { b.w = Math.max(280, Math.round(w0 + (ev.clientX - x0) / z)); b.h = Math.max(120, Math.round(h0 + (ev.clientY - y0) / z)); box.style.width = b.w + 'px'; wrap.style.height = b.h + 'px'; pane.drawWires(); };   // V3.942 — no largest size
-      const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); document.body.classList.remove('resizing'); b.w = Math.round(b.w / 14) * 14; b.h = Math.round(b.h / 14) * 14; box.style.width = b.w + 'px'; wrap.style.height = b.h + 'px'; DB.put('blocks', b); DB.beginGroup(); pane.settle && pane.settle(); };
+      const mv = ev => { const w = w0 + (ev.clientX - x0) / z, hh = h0 + (ev.clientY - y0) / z; b.w = ev.shiftKey ? PTUNE.cells(w, 280) : Math.max(280, Math.round(w)); b.h = ev.shiftKey ? PTUNE.cells(hh, 120) : Math.max(120, Math.round(hh)); box.style.width = b.w + 'px'; wrap.style.height = b.h + 'px'; pane.drawWires(); };   // V3.942 — no largest size; V4.107 — Shift: a grid cell at a time
+      const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); document.body.classList.remove('resizing'); const G = PTUNE.snap(); b.w = Math.round(b.w / G) * G; b.h = Math.round(b.h / G) * G; box.style.width = b.w + 'px'; wrap.style.height = b.h + 'px'; DB.put('blocks', b); DB.beginGroup(); pane.settle && pane.settle(); };
       addEventListener('pointermove', mv); addEventListener('pointerup', up);
     });
     return wrap;

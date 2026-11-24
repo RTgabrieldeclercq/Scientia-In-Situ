@@ -30,6 +30,11 @@ const INK = {
   tool: _ls.get('inkTool', 'pen'), color: _ls.get('inkColor', 0), width: _ls.get('inkWidth', 1), mouse: false, shown: _ls.get('inkBar', false),
   drawing: null, sel: null, _last: null,
   blocks: docId => M.docBlocks(docId).filter(b => b.kind === 'ink' && b.status === 'live'),
+  /** V4.112 (Gabe, 23 Nov: the pen would not write — "It had to do with me collapsing ink components that were inside regions"): the ink components the
+   *  pen can reach — not those hidden in a folded region, nor ink glued to an image hidden there (13v). A new stroke started near ink folded away had
+   *  joined it and vanished with it; the eraser, the lasso, the fill, the pen's loop and dumbbell reached it too. */
+  reachable(docId) { const L = INK.blocks(docId), d = M.doc(docId); if (!d || typeof REGION === 'undefined' || !REGION.list(d).some(r => r.collapsed)) return L;
+    return L.filter(b => !REGION.hider(d, b.id) && !(b.glue && b.glue.to && REGION.hider(d, b.glue.to))); },
   rect: b => ({ x: b.x || 0, y: b.y || 0, w: b.w || 60, h: b.inkH || 60 }),
   r1: v => Math.round(v * 10) / 10,
 
@@ -97,7 +102,7 @@ const INK = {
   /** Where a new stroke goes: the ink component it starts near, or a new one. */
   target(pane, wp) {
     const near = (b, m) => { const r = INK.rect(b); return wp.x > r.x - m && wp.x < r.x + r.w + m && wp.y > r.y - m && wp.y < r.y + r.h + m; };
-    const list = INK.blocks(pane.docId), last = INK._last && list.find(b => b.id === INK._last);
+    const list = INK.reachable(pane.docId), last = INK._last && list.find(b => b.id === INK._last);
     return (last && near(last, INK.NEAR)) ? last : list.find(b => near(b, INK.NEAR / 2)) || null;
   },
   addStroke(pane, s) {
@@ -118,17 +123,36 @@ const INK = {
   onImage: (box, t) => box.classList.contains('w-figure') && !!(t.closest && t.closest('.fg-grid')),
   /** The image panel at a point of the paper (the topmost), or null. */
   imageAt(pane, x, y) { const el = $$(':scope > .box.w-figure', pane.paper.world).reverse().find(el => el.offsetWidth && x >= el.offsetLeft && x <= el.offsetLeft + el.offsetWidth && y >= el.offsetTop && y <= el.offsetTop + el.offsetHeight); return el ? el.dataset.id : null; },
+  /* V4.111 (Gabe, 23 Nov: "Get a fix for an iPad pen. As of now, it seems like the pen does not write well." — "sometimes, the pen won't write on the screen"):
+     where the pen writes, one rule (penDown, the Scribble guard below, #touchlog): '' = it writes, or why not. As before — pen mode off, on a
+     control, in a component's text or title (left to the iPad's Scribble), on a component — with one rule put back: on an ink component's rectangle
+     the pen writes, even where its empty part lies over a component (since V4.105 only its strokes take the pointer, so the component was found). */
+  HARD: 'button,input,textarea,select,a,label,.port,.rz,.pop,.ink-bar,.region .rg-tab,.region .rg-port',
+  inkUnder(paper, x, y) { return $$(':scope > .box.w-ink', paper.world).some(b => { const r = b.getBoundingClientRect(); return r.width > 0 && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom; }); },
+  writeWhy(paper, t, x, y) {
+    const host = paper.el.closest('.canvas-host'), pane = host && host._dv; if (!pane || !pane.docId || pane.travel || !M.doc(pane.docId)) return 'not on a note';
+    if (!INK.writing()) return 'pen mode is off';   // the pen pans the paper and moves components (13zz2)
+    if (!t || !t.closest) return '';
+    if (t.closest(INK.HARD)) return 'on a button or control';
+    if (t.closest('.box.w-ink') || INK.inkUnder(paper, x, y)) return '';
+    if (INK.interactive(t)) return 'on a component’s text or title (the iPad’s Scribble writes there)';
+    const box = t.closest('.box'); if (box && !INK.onImage(box, t)) return 'on a component';
+    return '';
+  },
+  /** #touchlog in the address: what the screen reports, and why a pen touch did or did not write (13zm's log). */
+  log(m) { if (typeof PEN2 !== 'undefined' && PEN2.tapLog) PEN2.tapLog(m); },
   penDown(paper, e) {
-    const host = paper.el.closest('.canvas-host'), pane = host && host._dv; if (!pane || !pane.docId || pane.travel || !M.doc(pane.docId)) return false;
-    if (!INK.writing()) return false; // pen mode off: the pen pans the paper and moves components (13zz2)
-    if (INK.interactive(e.target)) return false;
-    const box = e.target.closest('.box'); if (box && !box.classList.contains('w-ink') && !INK.onImage(box, e.target)) return false;
+    const host = paper.el.closest('.canvas-host'), pane = host && host._dv;
+    const why = INK.writeWhy(paper, e.target, e.clientX, e.clientY); INK.log('pen down: ' + (why ? 'no ink — ' + why : 'writes'));
+    if (why) return false;
     const wp = paper.toWorld(e.clientX, e.clientY);
     if (INK.sel && INK.sel.docId === pane.docId && INK.inSel(wp)) return INK.moveSel(pane, paper, e, wp), true;
     if (INK.sel) INK.clearSel();
     if (INK.tool === 'eraser') return INK.erase(pane, paper, e), true;
     INK.stroke(pane, paper, e, INK.tool === 'lasso'); return true;
   },
+  /** V4.105: Settings → Ink & shapes → Click through ink — off puts body.ink-solid, and the whole rectangle takes the pointer again (21-sync.css). */
+  solid: () => { try { return FEAT.tune('ink', 'through') === false; } catch (e) { return false; } },
   live(paper) { let s = $(':scope > svg.ink-live', paper.world); if (!s) { s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('class', 'ink-live'); paper.world.appendChild(s); } return s; },
   stroke(pane, paper, e, lasso) {
     const hl = INK.tool === 'hl', st = { c: hl ? (INK.HL[INK.hlColor] || INK.HL[0]) : (INK.COLORS[INK.color] || INK.COLORS[0]), w: hl ? 14 : INK.WIDTHS[INK.width] || 2.4, hl: hl || undefined, p: [] };
@@ -142,11 +166,15 @@ const INK = {
     const arm = () => { clearTimeout(holdT); if (lasso || shaped) return; holdT = setTimeout(() => { if (st.p.length < 6) return; const g = SHAPE.guess(st.p); if (!g) return;
       shaped = { g, pen: st.p[st.p.length - 1].slice(0, 2) }; Object.assign(st, { p: g.p.map(q => [INK.r1(q[0]), INK.r1(q[1]), .6]), geo: true, br: g.br, closed: g.closed, shape: g.type }); if (g.closed && hl) st.area = true; draw(); path.classList.add('ink-snap'); setTimeout(() => path.classList.remove('ink-snap'), 260); }, 550); };
     arm();
-    const mv = ev => { if (ev.pointerId !== e.pointerId) return; ev.preventDefault();
-      if (shaped) { const w = paper.toWorld(ev.clientX, ev.clientY), P = SHAPE.transform(shaped.g, shaped.pen, [w.x, w.y]); st.p = P.map(q => [INK.r1(q[0]), INK.r1(q[1]), .6]); draw(); return; }
-      (ev.getCoalescedEvents ? ev.getCoalescedEvents() : [ev]).forEach(add); if (!ev.getCoalescedEvents || !ev.getCoalescedEvents().length) add(ev); draw();
+    // V4.111: every sample is kept as it comes, but the line on screen is drawn once a frame (it was redrawn whole on every event — on the iPad, up to
+    // 240 a second, and Safari drops pen events when frames run late)
+    let raf = 0, nMv = 0; const t0 = performance.now(); const paint = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; draw(); }); };
+    const mv = ev => { if (ev.pointerId !== e.pointerId) return; ev.preventDefault(); nMv++;
+      if (shaped) { const w = paper.toWorld(ev.clientX, ev.clientY), P = SHAPE.transform(shaped.g, shaped.pen, [w.x, w.y]); st.p = P.map(q => [INK.r1(q[0]), INK.r1(q[1]), .6]); paint(); return; }
+      (ev.getCoalescedEvents ? ev.getCoalescedEvents() : [ev]).forEach(add); if (!ev.getCoalescedEvents || !ev.getCoalescedEvents().length) add(ev); paint();
       if (Math.hypot(ev.clientX - still.x, ev.clientY - still.y) > 3) { still = { x: ev.clientX, y: ev.clientY }; arm(); } };
-    const up = ev => { if (ev.pointerId !== e.pointerId) return; clearTimeout(holdT); paper.el.removeEventListener('pointermove', mv, true); paper.el.removeEventListener('pointerup', up, true); paper.el.removeEventListener('pointercancel', up, true); INK.drawing = null;
+    const up = ev => { if (ev.pointerId !== e.pointerId) return; clearTimeout(holdT); if (raf) { cancelAnimationFrame(raf); raf = 0; }
+      INK.log('pen ' + (ev.type === 'pointercancel' ? 'cancelled — the stroke is kept' : 'up') + ': ' + st.p.length + ' points from ' + nMv + ' moves in ' + Math.round(performance.now() - t0) + ' ms'); paper.el.removeEventListener('pointermove', mv, true); paper.el.removeEventListener('pointerup', up, true); paper.el.removeEventListener('pointercancel', up, true); INK.drawing = null;
       if (lasso) { path.remove(); INK.lassoSelect(pane, st.p); return; }
       if (st.p.length === 1 && hl) { path.remove(); return; }
       if (st.pr && !st.hl && !st.geo) { const m = st.p.reduce((s0, q) => s0 + (q[2] == null ? .5 : q[2]), 0) / st.p.length; st.o = Math.round(clamp(1 - INK.curve.fade * (1 - m) * 1.15, .22, 1) * 100) / 100; }
@@ -156,7 +184,7 @@ const INK = {
   erase(pane, paper, e) {
     DB.beginGroup('erase'); const touched = new Set(); INK.drawing = e.pointerId; try { paper.el.setPointerCapture(e.pointerId); } catch { }
     const at = ev => { const wp = paper.toWorld(ev.clientX, ev.clientY), rad = 9 / paper.view.z;
-      for (const b of INK.blocks(pane.docId)) { const r = INK.rect(b); if (wp.x < r.x - rad || wp.x > r.x + r.w + rad || wp.y < r.y - rad || wp.y > r.y + r.h + rad) continue;
+      for (const b of INK.reachable(pane.docId)) { const r = INK.rect(b); if (wp.x < r.x - rad || wp.x > r.x + r.w + rad || wp.y < r.y - rad || wp.y > r.y + r.h + rad) continue;
         const lx = wp.x - b.x, ly = wp.y - b.y, before = b.ink.strokes.length;
         b.ink.strokes = b.ink.strokes.filter(s => !s.p.some((p, i) => { const q = s.p[i + 1] || p, rr = rad + (s.w || 2) / 2; const vx = q[0] - p[0], vy = q[1] - p[1], L2 = vx * vx + vy * vy || 1, t = clamp(((lx - p[0]) * vx + (ly - p[1]) * vy) / L2, 0, 1); return Math.hypot(lx - p[0] - t * vx, ly - p[1] - t * vy) < rr; }));
         if (b.ink.strokes.length !== before) { touched.add(b.id); if (b.ink.strokes.length) { INK.fit(b); INK.save(pane, b); } else { INK.remove(b); const el = $(`:scope > .box[data-id="${b.id}"]`, paper.world); el && el.remove(); pane.drawWires(); } } } };
@@ -170,7 +198,7 @@ const INK = {
   inPoly(x, y, P) { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [xi, yi] = P[i], [xj, yj] = P[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi + 1e-9) + xi) c = !c; } return c; },
   lassoSelect(pane, poly) {
     if (poly.length < 3) return; const items = [];
-    INK.blocks(pane.docId).forEach(b => b.ink.strokes.forEach((s, i) => { const inside = s.p.filter(p => INK.inPoly(b.x + p[0], b.y + p[1], poly)).length; if (inside >= Math.max(1, s.p.length * .6)) items.push({ id: b.id, i }); }));
+    INK.reachable(pane.docId).forEach(b => b.ink.strokes.forEach((s, i) => { const inside = s.p.filter(p => INK.inPoly(b.x + p[0], b.y + p[1], poly)).length; if (inside >= Math.max(1, s.p.length * .6)) items.push({ id: b.id, i }); }));
     if (!items.length) return toast('Nothing inside the lasso');
     INK.sel = { docId: pane.docId, items, pane }; INK.paintSel();
   },
@@ -316,16 +344,24 @@ window.SIS_PALM = PALM;
 {
   /* fingers and pen on every paper */
   const mp = makePaper; makePaper = function (host, opts) {
-    const P = mp(host, opts), el = P.el, T = { touch: new Set(), palm: new Set() };
+    const P = mp(host, opts), el = P.el, T = { touch: new Set(), palm: new Set(), seen: new Set() };
     // V3.941 — the palm: what the fingers had started stops, and those touches count for nothing until they lift
     T.drop = () => { clearTimeout(T.timer); T.pend = null; if (P.mode && (P.mode.k === 'pinch' || (P.mode.k === 'pan' && T.touch.size))) { P.stop(); P.mode = null; el.classList.remove('panning'); }
       T.touch.forEach(id => { P.ptrs.delete(id); T.palm.add(id); }); T.touch.clear(); };
+    // V4.109 (Gabe, 23 Nov: "after some time on a note canvas, while in pen mode, your fingers stop being able to pan on the note. You have to exit out
+    // of the note and re enter it to be able to pan again"): a touch's lift that never reached the paper left it counted — as a palm (then every finger
+    // after it was a palm too) or as a finger still down (then the next finger pinched with it) — for as long as the note stayed open. The iPad sends a
+    // lift to the element the touch began on, and a pen stroke draws the ink's strokes again, so a hand resting on earlier writing while the pen wrote
+    // lost its lift. A first finger on the glass (isPrimary: no other touch is down) starts afresh: every touch still remembered has lifted.
+    T.fresh = () => { if (!T.touch.size && !T.palm.size && !T.seen.size) return; [...T.touch, ...T.palm, ...T.seen].forEach(id => P.ptrs.delete(id)); T.touch.clear(); T.palm.clear(); T.seen.clear(); clearTimeout(T.timer); T.pend = null;
+      const m = P.mode; if (m && (m.k === 'pinch' || (m.k === 'pan' && m.start && m.start.pointerType === 'touch'))) { P.stop(); P.mode = null; el.classList.remove('panning'); } };
     el.addEventListener('pointermove', e => { if (e.pointerType === 'pen' && T.touch.size) T.drop(); else if (T.palm.has(e.pointerId)) e.stopPropagation(); }, true);
-    const lift = e => { T.touch.delete(e.pointerId); if (T.palm.delete(e.pointerId)) e.stopPropagation(); };
+    const lift = e => { T.touch.delete(e.pointerId); T.seen.delete(e.pointerId); if (T.palm.delete(e.pointerId)) e.stopPropagation(); };
     el.addEventListener('pointerup', lift, true); el.addEventListener('pointercancel', lift, true);
     el.addEventListener('pointerdown', e => {
       if (e.pointerType === 'pen' || (e.pointerType === 'mouse' && INK.mouse && e.button === 0)) { if (e.pointerType === 'pen' && T.touch.size) T.drop(); if (INK.penDown(P, e)) { e.preventDefault(); e.stopPropagation(); } return; }
       if (e.pointerType !== 'touch') return;
+      if (e.isPrimary) T.fresh(); T.seen.add(e.pointerId);   // V4.109: the first finger down forgets lifts that never arrived
       if (INK.drawing != null) { e.stopPropagation(); return; } // the palm while the pen writes
       if (T.palm.size || PALM.palm(e)) { T.palm.add(e.pointerId); e.stopPropagation(); return; }   // V3.941 — a palm, or a hand with one already down
       if (e.target.closest('button,input,select,textarea,a,label,.pop,.ink-bar,.ink-selbar,.port,.rz,.embed-rz,.scrolly,.embed')) return;
@@ -342,6 +378,15 @@ window.SIS_PALM = PALM;
       if (Math.hypot(e.clientX - pd.x, e.clientY - pd.y) < 8) return;
       clearTimeout(T.timer); T.pend = null; P.stop(); P.mode = { k: 'pan', x: e.clientX, y: e.clientY, moved: 10, v: [], start: pd.e }; el.classList.add('panning'); try { el.setPointerCapture(e.pointerId); } catch { }
     }, true);
+    // V4.111: the Pencil on the iPad — Scribble (handwriting → typed text) can take a stroke the page should get, and then no pointer event comes. Where
+    // the pen writes ink (INK.writeWhy), the stylus touch's default is stopped as it starts — as tldraw and Excalidraw do — and its moves while a stroke
+    // goes down; in a component's text it is left to Scribble, as before. #touchlog notes a stylus touch that came without its pen pointerdown.
+    const stylus = e => e.changedTouches ? [...e.changedTouches].find(t => t.touchType === 'stylus') : null;
+    el.addEventListener('pointerdown', e => { if (e.pointerType === 'pen') T.penAt = performance.now(); }, true);
+    el.addEventListener('touchstart', e => { const t = stylus(e); if (!t) return;
+      if (INK.drawing != null || !INK.writeWhy(P, e.target, t.clientX, t.clientY)) e.preventDefault();
+      if (performance.now() - (T.penAt || -1e9) > 300) INK.log('stylus touch with no pen pointerdown before it (Scribble or the system took it)'); }, { passive: false });
+    el.addEventListener('touchmove', e => { if (INK.drawing != null && stylus(e)) e.preventDefault(); }, { passive: false });
     const tap = e => { const pd = T.pend; if (!pd || pd.id !== e.pointerId) return; clearTimeout(T.timer); T.pend = null; P.ptrs.delete(e.pointerId);
       const pane = host._dv; if (e.type === 'pointerup' && pd.box && pane && pane.select && pd.box.dataset.id && pd.box.dataset.id[0] !== '_') pane.select(pd.box.dataset.id, true); };
     el.addEventListener('pointerup', tap, true); el.addEventListener('pointercancel', tap, true);
@@ -363,4 +408,21 @@ window.SIS_PALM = PALM;
     DB.where('blocks', b => b.kind === 'ink' && b.inkItemId && b.status !== 'removed').forEach(b => { if (!M.item(b.inkItemId)) return; const cur = IX.blockItems.get(b.id) || []; if (!cur.includes(b.inkItemId)) IX.blockItems.set(b.id, [...cur, b.inkItemId]); });
     return r; };
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && INK.sel) INK.clearSel(); });
+  // V4.105: body.ink-solid follows Settings → Ink & shapes → Click through ink, with the page's other classes
+  { const fa = FEAT.apply; FEAT.apply = function () { const r = fa.apply(this, arguments); try { document.body && document.body.classList.toggle('ink-solid', INK.solid()); } catch (e) { } return r; }; }
+  // V4.108 (Gabe: "When hovering over the ink board you should be able to see a dotted outline of the entire board. The same when clicking on it. During the
+  // pen writing, you should not see any outline."): only its strokes take the pointer (V4.105), so the paper itself says which ink the pointer is over —
+  // .ink-hov on each ink component whose rectangle holds it (21-sync.css draws the dotted outline). body.ink-pen while the pointer in use writes: the pen
+  // in pen mode, or the mouse when it draws too (the lab's pen hand) — then no outline, hovered or selected.
+  { let ev = null, kind = 'mouse', raf = 0;
+    const pen = () => { const on = INK.writing() && (!!INK.mouse || kind === 'pen'); if (document.body) document.body.classList.toggle('ink-pen', on); return on; };
+    const paint = () => { raf = 0; const e = ev, was = $$('.box.w-ink.ink-hov'); let on = [];
+      const p = e && !e.buttons && !pen() && e.target && e.target.closest ? e.target.closest('.paper') : null;
+      if (p) on = $$(':scope > .world > .box.w-ink', p).filter(b => { const r = b.getBoundingClientRect(); return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom; });
+      was.forEach(b => { if (!on.includes(b)) b.classList.remove('ink-hov'); }); on.forEach(b => b.classList.add('ink-hov')); };
+    const look = e => { ev = e; kind = e.pointerType || 'mouse'; if (!raf) raf = requestAnimationFrame(paint); };
+    document.addEventListener('pointermove', look, { passive: true, capture: true }); document.addEventListener('pointerdown', look, { passive: true, capture: true });
+    document.documentElement.addEventListener('pointerleave', () => { ev = null; if (!raf) raf = requestAnimationFrame(paint); });
+    const pb = INK.paintBars; INK.paintBars = function () { const r = pb.apply(this, arguments); pen(); return r; };
+    pen(); }
 }

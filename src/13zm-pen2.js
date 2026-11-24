@@ -125,11 +125,11 @@ const PENERASE = {
     // Work on copies; the record changes once, at pen-up (one pass = one undo). Samples are queued and handled once per
     // screen frame: the eraser's path since the last frame is cut as one swept stroke, each touched component is repainted
     // once, and connections are redrawn only at pen-up.
-    const touched = new Set(), W = new Map(), Q = []; let last = null, raf = 0, lastEv = e;
+    const touched = new Set(), W = new Map(), Q = [], shown = INK.reachable(pane.docId); let last = null, raf = 0, lastEv = e;
     const frame = () => { raf = 0; if (!Q.length) return; const dirty = new Set(); const z = paper.view.z;
       for (const q of Q.splice(0)) { const a = last || q; last = q; const r = q.r / z;
         const ex0 = Math.min(a.x, q.x) - r, ex1 = Math.max(a.x, q.x) + r, ey0 = Math.min(a.y, q.y) - r, ey1 = Math.max(a.y, q.y) + r;
-        for (const b0 of INK.blocks(pane.docId)) { const b = W.get(b0.id) || b0, R = INK.rect(b); if (ex1 < R.x || ex0 > R.x + R.w || ey1 < R.y || ey0 > R.y + R.h) continue;
+        for (const b0 of shown) { const b = W.get(b0.id) || b0, R = INK.rect(b);   // V4.112: not ink folded away in a region if (ex1 < R.x || ex0 > R.x + R.w || ey1 < R.y || ey0 > R.y + R.h) continue;
           if (!b.ink || !b.ink.strokes.length) continue;
           const wb = W.get(b.id) || JSON.parse(JSON.stringify(b)); if (!PENERASE.cut(wb, a.x, a.y, q.x, q.y, r)) continue; W.set(b.id, wb); touched.add(b.id); dirty.add(b.id); } }
       dirty.forEach(id => { const wb = W.get(id), el = $(`:scope > .box[data-id="${id}"]`, paper.world); if (!el) return;
