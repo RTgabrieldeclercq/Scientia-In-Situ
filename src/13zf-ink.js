@@ -30,6 +30,11 @@ const INK = {
   tool: _ls.get('inkTool', 'pen'), color: _ls.get('inkColor', 0), width: _ls.get('inkWidth', 1), mouse: false, shown: _ls.get('inkBar', false),
   drawing: null, sel: null, _last: null,
   blocks: docId => M.docBlocks(docId).filter(b => b.kind === 'ink' && b.status === 'live'),
+  /** V4.112 (Gabe, 23 Nov: the pen would not write — "It had to do with me collapsing ink components that were inside regions"): the ink components the
+   *  pen can reach — not those hidden in a folded region, nor ink glued to an image hidden there (13v). A new stroke started near ink folded away had
+   *  joined it and vanished with it; the eraser, the lasso, the fill, the pen's loop and dumbbell reached it too. */
+  reachable(docId) { const L = INK.blocks(docId), d = M.doc(docId); if (!d || typeof REGION === 'undefined' || !REGION.list(d).some(r => r.collapsed)) return L;
+    return L.filter(b => !REGION.hider(d, b.id) && !(b.glue && b.glue.to && REGION.hider(d, b.glue.to))); },
   rect: b => ({ x: b.x || 0, y: b.y || 0, w: b.w || 60, h: b.inkH || 60 }),
   r1: v => Math.round(v * 10) / 10,
 
@@ -97,7 +102,7 @@ const INK = {
   /** Where a new stroke goes: the ink component it starts near, or a new one. */
   target(pane, wp) {
     const near = (b, m) => { const r = INK.rect(b); return wp.x > r.x - m && wp.x < r.x + r.w + m && wp.y > r.y - m && wp.y < r.y + r.h + m; };
-    const list = INK.blocks(pane.docId), last = INK._last && list.find(b => b.id === INK._last);
+    const list = INK.reachable(pane.docId), last = INK._last && list.find(b => b.id === INK._last);
     return (last && near(last, INK.NEAR)) ? last : list.find(b => near(b, INK.NEAR / 2)) || null;
   },
   addStroke(pane, s) {
@@ -179,7 +184,7 @@ const INK = {
   erase(pane, paper, e) {
     DB.beginGroup('erase'); const touched = new Set(); INK.drawing = e.pointerId; try { paper.el.setPointerCapture(e.pointerId); } catch { }
     const at = ev => { const wp = paper.toWorld(ev.clientX, ev.clientY), rad = 9 / paper.view.z;
-      for (const b of INK.blocks(pane.docId)) { const r = INK.rect(b); if (wp.x < r.x - rad || wp.x > r.x + r.w + rad || wp.y < r.y - rad || wp.y > r.y + r.h + rad) continue;
+      for (const b of INK.reachable(pane.docId)) { const r = INK.rect(b); if (wp.x < r.x - rad || wp.x > r.x + r.w + rad || wp.y < r.y - rad || wp.y > r.y + r.h + rad) continue;
         const lx = wp.x - b.x, ly = wp.y - b.y, before = b.ink.strokes.length;
         b.ink.strokes = b.ink.strokes.filter(s => !s.p.some((p, i) => { const q = s.p[i + 1] || p, rr = rad + (s.w || 2) / 2; const vx = q[0] - p[0], vy = q[1] - p[1], L2 = vx * vx + vy * vy || 1, t = clamp(((lx - p[0]) * vx + (ly - p[1]) * vy) / L2, 0, 1); return Math.hypot(lx - p[0] - t * vx, ly - p[1] - t * vy) < rr; }));
         if (b.ink.strokes.length !== before) { touched.add(b.id); if (b.ink.strokes.length) { INK.fit(b); INK.save(pane, b); } else { INK.remove(b); const el = $(`:scope > .box[data-id="${b.id}"]`, paper.world); el && el.remove(); pane.drawWires(); } } } };
@@ -193,7 +198,7 @@ const INK = {
   inPoly(x, y, P) { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [xi, yi] = P[i], [xj, yj] = P[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi + 1e-9) + xi) c = !c; } return c; },
   lassoSelect(pane, poly) {
     if (poly.length < 3) return; const items = [];
-    INK.blocks(pane.docId).forEach(b => b.ink.strokes.forEach((s, i) => { const inside = s.p.filter(p => INK.inPoly(b.x + p[0], b.y + p[1], poly)).length; if (inside >= Math.max(1, s.p.length * .6)) items.push({ id: b.id, i }); }));
+    INK.reachable(pane.docId).forEach(b => b.ink.strokes.forEach((s, i) => { const inside = s.p.filter(p => INK.inPoly(b.x + p[0], b.y + p[1], poly)).length; if (inside >= Math.max(1, s.p.length * .6)) items.push({ id: b.id, i }); }));
     if (!items.length) return toast('Nothing inside the lasso');
     INK.sel = { docId: pane.docId, items, pane }; INK.paintSel();
   },

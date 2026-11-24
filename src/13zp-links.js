@@ -50,7 +50,7 @@ const LINKS = {
   cellMedia(boxEl, cellEl) { if (!cellEl) return null; const b = FIGOF(M.block(boxEl.dataset.id)), i = +cellEl.dataset.i; const c = b && b.fig && (b.fig.cells || [])[i]; return c && c.media || null; },
   /** The ink component nearest a point (world), within reach; skip = ids to leave out. */
   nearestInk(pane, x, y, reach = 170, skip = []) { let best = null, bd = 1e9;
-    INK.blocks(pane.docId).filter(b => !skip.includes(b.id)).forEach(b => { const r = pane.rectOf(b.id) || INK.rect(b), dx = Math.max(r.x - x, 0, x - r.x - r.w), dy = Math.max(r.y - y, 0, y - r.y - r.h), d = Math.hypot(dx, dy); if (d < bd) { bd = d; best = b; } });
+    INK.reachable(pane.docId).filter(b => !skip.includes(b.id)).forEach(b => { const r = pane.rectOf(b.id) || INK.rect(b), dx = Math.max(r.x - x, 0, x - r.x - r.w), dy = Math.max(r.y - y, 0, y - r.y - r.h), d = Math.hypot(dx, dy); if (d < bd) { bd = d; best = b; } });
     if (best && bd <= reach) return best;
     // no ink close by: a component the circle is drawn on
     const hit = $$(':scope > .box.cmp', pane.paper.world).find(el => !skip.includes(el.dataset.id) && x > el.offsetLeft - 20 && x < el.offsetLeft + el.offsetWidth + 20 && y > el.offsetTop - 20 && y < el.offsetTop + el.offsetHeight + 20);
