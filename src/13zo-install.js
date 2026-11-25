@@ -61,7 +61,7 @@ const INSTALL = {
     return el; };
   // on the computer: the same card explains installing on the other devices (step 3 already has the QR code)
   // the pairing screen: on an iPad/iPhone in Safari, install first — the Home Screen app has its own storage
-  const sc = DEVICES.screen; DEVICES.screen = function (kind) { sc.call(DEVICES, kind); if (kind === 'unreachable' || kind === 'nonotebook') return;
+  const sc = DEVICES.screen; DEVICES.screen = function (kind) { sc.call(DEVICES, kind); if (kind === 'unreachable' || kind === 'nonotebook' || kind === 'sealed') return;   // V4.115: not on the sealed screen (this is the computer)
     if (INSTALL.platform() === 'ios' && !INSTALL.standalone()) { const card = $('.dv-card'); if (card) card.prepend(h('div.ins-card.first', h('b.h', 'First, install it'), h('p.tiny', 'On the iPad and iPhone the Home Screen app keeps its own storage: install it, open it from the Home Screen, and pair there.'), INSTALL.steps())); }
     else if (!INSTALL.standalone()) { const card = $('.dv-card'); if (card) card.append(INSTALL.card()); } };
 }

@@ -1,10 +1,10 @@
 {
  "lab": {
-  "commit": "2cd99bbef2238e0677a041781add18b159949436",
-  "subject": "V4.112: Scientia — fix: ink folded away in a region is out of the pen's reach — a stroke written where it lay makes new, visible ink (it joined the hidden ink and vanished); the eraser, lasso, fill, loop and dumbbell leave it alone",
-  "date": "2026-11-23"
+  "commit": "8da8b2117125fbeea67dc138a99b96e62c940afd",
+  "subject": "V4.115: Scientia — the lab app on a computer keeps its own settings, apart from Scientia In Situ (the private app), which had sealed its notebook folder and left Open on my computer with nothing to sync; a sealed folder is now named, with one click to a fresh folder the lab cloud fills",
+  "date": "2026-11-24"
  },
- "cut": "0bb2141a22c90b4df5cd0cd2567f91e90942c4ea",
+ "cut": "ccbdd47ef5fad23d7b7c937a7dd9d4e076310c02",
  "names": [
   "DESKLAB",
   "LABSYNC",
