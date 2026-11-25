@@ -139,10 +139,11 @@ const SYNC = {
   adopt(sid, seq) { SYNC.sid = sid; SYNC.seq = seq || 0; SYNC.setMeta(); },
 
   /* ---------- launch ---------- */
-  async hello() { try { const r = await fetch('api/sync/hello', { cache: 'no-store' }); return r.ok ? await r.json() : null; } catch { return null; } },
+  async hello() { try { const r = await fetch('api/sync/hello', { cache: 'no-store' }); if (r.status === 423) { const j = await r.json().catch(() => ({})); return { sealed: true, error: j.error || '' }; } return r.ok ? await r.json() : null; } catch { return null; } },   // V4.115: 423 — a notebook folder sealed by the private app
   /** 'none' (no server or no notebook: as before), 'loading', 'pair', 'unreachable', 'offline' or 'ok'. */
   async boot() {
     const hi = await SYNC.hello();
+    if (hi && hi.sealed) return 'sealed';   // V4.115: DEVICES.screen('sealed') says why and offers a folder of this app's own
     if (!hi) {
       // whether this is the computer is remembered from the last contact (a device on a local address stays a device)
       if (_ls.get('syncLocal', SYNC.local)) return 'none'; SYNC.local = false;

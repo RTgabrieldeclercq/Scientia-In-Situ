@@ -935,7 +935,7 @@ On any device — an iPad, an iPhone, an Android phone or tablet, a Mac, a Windo
 - **Pictures and PDFs** added on other devices need a connection to show. Your notes, ink and what you add on this device do not.
 - **Refresh its files** fetches anything not kept yet. **Stop keeping it** takes the page back out; your notes stay and sync as before.
 - **Settings → Features → The notebook on this device:** the switch for this device, and *Keep it when installed*.
-- On a Windows computer, the desktop app keeps the whole notebook in a folder instead (Settings → Notebook & devices → The lab).
+- **On a Windows computer** the lab’s desktop app (the lab site → **Open on my computer**) keeps the whole notebook in a folder, in step with the lab cloud. It keeps its settings apart from Scientia In Situ (your private app), so the two never open each other’s folder. If its folder is one the private app has locked, it says so and offers **Use a new folder for this notebook** (Documents → Scientia Lab Notebook), which the lab cloud fills; the locked folder is left as it is.
 - **Done only on the computer:** importing, starting empty and switching notebooks.
 
 ---

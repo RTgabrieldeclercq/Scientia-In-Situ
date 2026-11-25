@@ -75,6 +75,19 @@ const DEVICES = {
     const m = /#pair=(\d{6})/.exec(location.hash), codeIn = h('input.inp.dv-ci', { inputmode: 'numeric', maxlength: 7, placeholder: '123 456', value: m ? m[1] : '' }), nameIn = h('input.inp', { value: DEVICES.guessName(), maxlength: 40 });
     const msg = h('p.dv-msg'), card = h('div.dv-card');
     if (kind === 'unreachable') card.append(h('h2', 'Can’t reach your computer'), h('p', 'This device has nothing saved yet, so it needs your computer once: make sure it is on with the app’s window open, and that Tailscale is connected on both.'), h('button.btn.pri', { on: { click: () => location.reload() } }, 'Try again'));
+    // V4.115 (Gabe: "The button Open my computer does not work. It opens a local window with no lab notebook sync"): the notebook folder is
+    // sealed by Scientia In Situ's own lock (the private app), so this app has nothing to open or sync — say so, and offer a folder of its own
+    // (the lab cloud fills it) or another one
+    else if (kind === 'sealed') {
+      const status = h('p.tiny.muted'), use = async path => { if (!path) return; status.textContent = 'Setting up ' + path + '…';
+        try { const r = await fetch('api/notebook', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path }) }); const j = await r.json(); if (!j.ok) throw new Error(j.error || 'not set'); location.reload(); }
+        catch (e) { status.textContent = 'Could not use that folder: ' + e.message; } };
+      const fresh = h('button.btn.pri.dv-fresh', { on: { click: async () => { let j = {}; try { j = await (await fetch('api/notebook', { cache: 'no-store' })).json(); } catch (e) { } use(j.suggest); } } }, 'Use a new folder for this notebook');
+      card.append(h('h2', 'This notebook folder is locked by your private Scientia'), h('p', 'Scientia In Situ — your private app — has sealed its files with its lock, so this app can neither open them nor keep them in step with the lab cloud. Give this app a folder of its own: the lab cloud fills it with your notebook in a few seconds.'),
+        h('div.row', { style: { gap: '8px', flexWrap: 'wrap' } }, fresh, h('button.btn', { on: { click: async () => use(await DISK.browse()) } }, 'Choose another folder…')),
+        status, h('p.tiny.muted', 'Or open your private Scientia and take its lock off this folder there. The sealed folder itself is left as it is.'));
+      fetch('api/notebook', { cache: 'no-store' }).then(r => r.json()).then(j => { if (j.path) status.textContent = 'Locked folder: ' + j.path + (j.suggest ? ' · a new one would be ' + j.suggest : ''); }).catch(() => { });
+    }
     else if (kind === 'nonotebook') card.append(h('h2', 'No notebook yet'), h('p', 'On your computer, choose a notebook folder in Settings → Notebook folder, then try again.'), h('button.btn.pri', { on: { click: () => location.reload() } }, 'Try again'));
     else {
       const go = async () => { msg.textContent = 'Asking…'; let j; try { j = await (await fetch('api/pair/claim', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: codeIn.value.replace(/\D/g, ''), name: nameIn.value.trim() || 'Device' }) })).json(); } catch { msg.textContent = 'Can’t reach your computer.'; return; }

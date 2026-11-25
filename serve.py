@@ -111,7 +111,28 @@ def vault_path(rel):
     p = os.path.normpath(os.path.join(root, rel))
     return p if p.startswith(os.path.normpath(root) + os.sep) else None
 def info():
-    return {'ok': True, 'path': notebook(), 'record': meta(), 'config': CONFIG, 'recent': (load_json(CONFIG, {}) or {}).get('recent', [])}
+    d = {'ok': True, 'path': notebook(), 'record': meta(), 'config': CONFIG, 'recent': (load_json(CONFIG, {}) or {}).get('recent', [])}
+    if sealed(): d.update(sealed=True, suggest=suggest_folder())   # V4.115: the page offers a folder of this app's own
+    return d
+def _private_folder(p):
+    # V4.115: Scientia In Situ's (the private app's): sealed by its lock, or carrying its lock (.scientia/access.json)
+    if os.path.isfile(os.path.join(p, '.scientia', 'access.json')): return True
+    try:
+        with open(os.path.join(p, '.scientia', 'record.json'), 'rb') as f: return f.read(8) == b'SiSLock1'
+    except OSError: return False
+def suggest_folder():
+    # V4.115: where this app's notebook goes when the chosen one is the private app's — Documents\Scientia Lab Notebook (or … 2, … 3);
+    # the lab cloud fills it (service.py makes the same choice for the installed app)
+    docs = os.environ.get('SIS_DOCUMENTS')
+    if not docs and os.name == 'nt':
+        try:
+            import ctypes
+            buf = ctypes.create_unicode_buffer(260)
+            if ctypes.windll.shell32.SHGetFolderPathW(None, 5, None, 0, buf) == 0 and buf.value: docs = buf.value
+        except Exception: pass
+    base = os.path.join(docs or os.path.join(os.path.expanduser('~'), 'Documents'), 'Scientia Lab Notebook'); p, i = base, 2
+    while os.path.exists(p) and (_private_folder(p) or (os.listdir(p) and not os.path.isdir(os.path.join(p, '.scientia')))): p, i = base + ' ' + str(i), i + 1
+    return p
 
 sys.path.insert(0, ROOT)
 from sisync import Sync
@@ -302,7 +323,7 @@ class H(http.server.SimpleHTTPRequestHandler):
     def lab_get(self, p):
         if p == '/api/lab/ping':
             self._cors = self.lab_origin(); st = LABSYNC.snapshot()
-            return self._json(200, {'ok': True, 'app': 'scientia-in-situ', 'version': APP_VERSION, 'port': PORT, 'notebook': bool(notebook()), 'connected': st['connected'], 'state': st['state']})
+            return self._json(200, {'ok': True, 'app': 'scientia-in-situ', 'version': APP_VERSION, 'port': PORT, 'notebook': bool(notebook()), 'connected': st['connected'], 'state': st['state'], 'sealed': bool(sealed())})   # V4.115: the lab site says so, instead of opening an empty window
         if p == '/api/lab/status':
             if not self.is_local(): return self._json(403, {'ok': False})
             off = OFFER if OFFER and time.time() < OFFER.get('until', 0) else None
