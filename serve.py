@@ -82,7 +82,27 @@ def vault_path(rel):
     p = os.path.normpath(os.path.join(root, rel))
     return p if p.startswith(os.path.normpath(root) + os.sep) else None
 def info():
-    return {'ok': True, 'path': notebook(), 'record': meta(), 'config': CONFIG, 'recent': (load_json(CONFIG, {}) or {}).get('recent', [])}
+    d = {'ok': True, 'path': notebook(), 'record': meta(), 'config': CONFIG, 'recent': (load_json(CONFIG, {}) or {}).get('recent', [])}
+    if sealed(): d.update(sealed=True, suggest=suggest_folder())   # V4.115: the page offers a folder of this app's own
+    return d
+def _private_folder(p):
+    # V4.115: locked by another copy: sealed by a lock, or carrying one (.scientia/access.json)
+    if os.path.isfile(os.path.join(p, '.scientia', 'access.json')): return True
+    try:
+        with open(os.path.join(p, '.scientia', 'record.json'), 'rb') as f: return f.read(8) == b'SiSLock1'
+    except OSError: return False
+def suggest_folder():
+    # V4.115: where this app's notebook goes when the chosen one is locked by a lock it cannot open — Documents\Scientia Notebook (or … 2, … 3)
+    docs = os.environ.get('SIS_DOCUMENTS')
+    if not docs and os.name == 'nt':
+        try:
+            import ctypes
+            buf = ctypes.create_unicode_buffer(260)
+            if ctypes.windll.shell32.SHGetFolderPathW(None, 5, None, 0, buf) == 0 and buf.value: docs = buf.value
+        except Exception: pass
+    base = os.path.join(docs or os.path.join(os.path.expanduser('~'), 'Documents'), 'Scientia Notebook'); p, i = base, 2
+    while os.path.exists(p) and (_private_folder(p) or (os.listdir(p) and not os.path.isdir(os.path.join(p, '.scientia')))): p, i = base + ' ' + str(i), i + 1
+    return p
 
 sys.path.insert(0, ROOT)
 from access import Access

@@ -10,7 +10,7 @@
   // 1. the notebook folder is the record of truth: a browser that hasn't seen its latest record loads it (and the page starts again)
   const how = demo ? 'demo' : await DISK.boot();
   if (how === 'loading') return;
-  if (how === 'pair' || how === 'unreachable' || how === 'nonotebook') { DEVICES.screen(how); return; }
+  if (how === 'pair' || how === 'unreachable' || how === 'nonotebook' || how === 'sealed') { DEVICES.screen(how); return; }
   // 2. this install's data generation: older data (the demo) is wiped once, after a copy is kept
   const st0 = DB.get('settings', 'main') || {};
   if (!demo && st0.dataEpoch !== DATA_EPOCH) {
